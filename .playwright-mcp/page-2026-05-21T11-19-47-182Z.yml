@@ -1,0 +1,122 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - navigation [ref=e4]:
+        - link "Dashboard" [ref=e5] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e7]
+          - generic [ref=e12]: Dashboard
+        - link "CRM" [ref=e13] [cursor=pointer]:
+          - /url: /dashboard/crm
+          - img [ref=e15]
+          - generic [ref=e20]: CRM
+        - link "Revenue" [ref=e21] [cursor=pointer]:
+          - /url: /dashboard/revenue
+          - img [ref=e23]
+          - generic [ref=e25]: Revenue
+        - link "Operations" [ref=e26] [cursor=pointer]:
+          - /url: /dashboard/operations
+          - img [ref=e28]
+          - generic [ref=e30]: Operations
+        - link "Report" [ref=e31] [cursor=pointer]:
+          - /url: /dashboard/reports
+          - img [ref=e33]
+          - generic [ref=e35]: Report
+        - link "Inventory" [ref=e36] [cursor=pointer]:
+          - /url: /dashboard/inventory
+          - img [ref=e38]
+          - generic [ref=e42]: Inventory
+        - link "Settings" [ref=e43] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e45]
+          - generic [ref=e48]: Settings
+    - generic [ref=e49]:
+      - banner [ref=e50]:
+        - generic [ref=e51]:
+          - button "Location" [ref=e52]:
+            - img [ref=e53]
+            - generic [ref=e56]: Location
+          - button "Floor map" [ref=e57]:
+            - img [ref=e58]
+            - generic [ref=e60]: Floor map
+          - button "Table view" [ref=e61]:
+            - img [ref=e62]
+            - generic [ref=e64]: Table view
+        - generic [ref=e65]:
+          - button "Notifications" [ref=e66]:
+            - img [ref=e67]
+            - generic [ref=e70]: "3"
+          - generic [ref=e71]:
+            - generic [ref=e72]: RS
+            - generic [ref=e73]:
+              - paragraph [ref=e74]: Rahul Sharma
+              - paragraph [ref=e75]: Center Manager
+            - img [ref=e76]
+      - main [ref=e78]:
+        - generic [ref=e79]:
+          - generic [ref=e80]:
+            - generic [ref=e81]:
+              - generic [ref=e82]:
+                - heading "Location Management" [level=1] [ref=e83]
+                - paragraph [ref=e84]: Track potential clients, manage inquiries, and convert leads
+              - button "Add Center" [ref=e85]:
+                - img [ref=e86]
+                - text: Add Center
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - generic [ref=e89]:
+                  - img [ref=e91]
+                  - generic [ref=e96]: "--"
+                - generic [ref=e97]: Total Capacity
+              - generic [ref=e98]:
+                - generic [ref=e99]:
+                  - img [ref=e101]
+                  - generic [ref=e104]: "--"
+                - generic [ref=e105]: Number of Cabins
+              - generic [ref=e106]:
+                - generic [ref=e107]:
+                  - img [ref=e109]
+                  - generic [ref=e112]: "--"
+                - generic [ref=e113]: Total Hot desk
+              - generic [ref=e114]:
+                - generic [ref=e115]:
+                  - img [ref=e117]
+                  - generic [ref=e119]: "--"
+                - generic [ref=e120]: Total bookable space
+            - generic [ref=e121]:
+              - generic [ref=e122]:
+                - heading "Floor Overview" [level=2] [ref=e123]
+                - button "Add Floor" [ref=e124]:
+                  - img [ref=e125]
+                  - text: Add Floor
+              - generic [ref=e126] [cursor=pointer]:
+                - generic [ref=e127]:
+                  - img [ref=e129]
+                  - generic [ref=e133]:
+                    - paragraph [ref=e134]: Ground Floor
+                    - paragraph [ref=e135]: 4 Zones
+                - img [ref=e136]
+              - generic [ref=e138] [cursor=pointer]:
+                - generic [ref=e139]:
+                  - img [ref=e141]
+                  - generic [ref=e145]:
+                    - paragraph [ref=e146]: First Floor
+                    - paragraph [ref=e147]: 6 Zones
+                - img [ref=e148]
+              - generic [ref=e150] [cursor=pointer]:
+                - generic [ref=e151]:
+                  - img [ref=e153]
+                  - generic [ref=e157]:
+                    - paragraph [ref=e158]: Second Floor
+                    - paragraph [ref=e159]: 3 Zones
+                - img [ref=e160]
+          - complementary [ref=e162]:
+            - heading "Selected Center" [level=3] [ref=e164]
+            - button "Add center to view here" [ref=e166]:
+              - img [ref=e167]
+              - generic [ref=e168]: Add center to view here
+            - button "Add Sub-location" [ref=e169]:
+              - img [ref=e170]
+              - text: Add Sub-location
+  - button "Open Next.js Dev Tools" [ref=e176] [cursor=pointer]:
+    - img [ref=e177]

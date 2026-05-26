@@ -1,0 +1,8 @@
+[     605ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[     691ms] [LOG] [HMR] connected @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[   10706ms] [LOG] Download the Apollo DevTools for a better development experience: %s https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[ 3070321ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[ 3070376ms] [LOG] [HMR] connected @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[ 3080395ms] [LOG] Download the Apollo DevTools for a better development experience: %s https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[14502710ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297
+[14502770ms] [LOG] [Fast Refresh] done in 166ms @ http://localhost:3005/_next/static/chunks/9da9d_next_dist_8994732a._.js:2297

@@ -1,0 +1,200 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - img [ref=e6]
+      - navigation [ref=e10]:
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e18]: Dashboard
+        - link "CRM" [ref=e19] [cursor=pointer]:
+          - /url: /dashboard/crm
+          - img [ref=e21]
+          - generic [ref=e26]: CRM
+        - link "Revenue" [ref=e27] [cursor=pointer]:
+          - /url: /dashboard/revenue
+          - img [ref=e29]
+          - generic [ref=e31]: Revenue
+        - link "Operations" [ref=e32] [cursor=pointer]:
+          - /url: /dashboard/operations
+          - img [ref=e34]
+          - generic [ref=e36]: Operations
+        - link "Report" [ref=e37] [cursor=pointer]:
+          - /url: /dashboard/reports
+          - img [ref=e39]
+          - generic [ref=e41]: Report
+        - link "Inventory" [ref=e42] [cursor=pointer]:
+          - /url: /dashboard/inventory
+          - img [ref=e44]
+          - generic [ref=e48]: Inventory
+        - link "Settings" [ref=e49] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e51]
+          - generic [ref=e54]: Settings
+      - button "Collapse sidebar" [ref=e55]:
+        - img [ref=e56]
+    - generic [ref=e58]:
+      - banner [ref=e60]:
+        - generic [ref=e61]:
+          - button "Location" [ref=e62]:
+            - img [ref=e63]
+            - generic [ref=e66]: Location
+          - button "Floor map" [ref=e67]:
+            - img [ref=e68]
+            - generic [ref=e70]: Floor map
+          - button "Table view" [ref=e71]:
+            - img [ref=e72]
+            - generic [ref=e74]: Table view
+        - generic [ref=e75]:
+          - button "Notifications" [ref=e76]:
+            - img [ref=e77]
+            - generic [ref=e80]: "3"
+          - generic [ref=e81]:
+            - generic [ref=e82]: RS
+            - generic [ref=e83]: Rahul Sharma
+            - img [ref=e84]
+      - main [ref=e86]:
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - heading "Location Management" [level=1] [ref=e91]
+                - paragraph [ref=e92]: Configure centers, sub-locations, and floor structures
+              - button "Add Center" [ref=e93] [cursor=pointer]:
+                - img [ref=e94]
+                - text: Add Center
+            - generic [ref=e95]:
+              - generic [ref=e219]:
+                - generic [ref=e220]:
+                  - img [ref=e222]
+                  - generic [ref=e227]: "210"
+                - generic [ref=e228]: Total Capacity
+              - generic [ref=e229]:
+                - generic [ref=e230]:
+                  - img [ref=e232]
+                  - generic [ref=e235]: "32"
+                - generic [ref=e236]: Number of Cabins
+              - generic [ref=e237]:
+                - generic [ref=e238]:
+                  - img [ref=e240]
+                  - generic [ref=e243]: "18"
+                - generic [ref=e244]: Total Hot desk
+              - generic [ref=e245]:
+                - generic [ref=e246]:
+                  - img [ref=e248]
+                  - generic [ref=e250]: "9"
+                - generic [ref=e251]: Total bookable space
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Floor Overview" [level=2] [ref=e118]
+                - button "Add Floor" [ref=e119] [cursor=pointer]:
+                  - img [ref=e120]
+                  - text: Add Floor
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - generic [ref=e252]:
+                    - generic [ref=e253]:
+                      - generic [ref=e254]:
+                        - generic [ref=e255]: Floor 1
+                        - generic [ref=e256]: 60 Total Seats
+                      - generic [ref=e258]: Active
+                    - generic [ref=e259]:
+                      - generic [ref=e260]:
+                        - generic [ref=e261]: "Open Seats:"
+                        - generic [ref=e262]: 40 (20 available)
+                      - generic [ref=e263]:
+                        - generic [ref=e264]: "Cabins:"
+                        - generic [ref=e265]: "10"
+                    - generic [ref=e267]:
+                      - generic [ref=e268]: Occupancy
+                      - generic [ref=e269]: 67%
+                    - button "View Floor Map" [ref=e272]:
+                      - img [ref=e273]
+                      - text: View Floor Map
+                  - generic [ref=e278]:
+                    - generic [ref=e279]:
+                      - generic [ref=e280]:
+                        - generic [ref=e281]: Floor 2
+                        - generic [ref=e282]: 55 Total Seats
+                      - generic [ref=e284]: Active
+                    - generic [ref=e285]:
+                      - generic [ref=e286]:
+                        - generic [ref=e287]: "Open Seats:"
+                        - generic [ref=e288]: 35 (15 available)
+                      - generic [ref=e289]:
+                        - generic [ref=e290]: "Cabins:"
+                        - generic [ref=e291]: "8"
+                    - generic [ref=e293]:
+                      - generic [ref=e294]: Occupancy
+                      - generic [ref=e295]: 73%
+                    - button "View Floor Map" [ref=e298]:
+                      - img [ref=e299]
+                      - text: View Floor Map
+                - generic [ref=e161]:
+                  - generic [ref=e304]:
+                    - generic [ref=e305]:
+                      - generic [ref=e306]:
+                        - generic [ref=e307]: Floor 3
+                        - generic [ref=e308]: 50 Total Seats
+                      - generic [ref=e310]: Full
+                    - generic [ref=e311]:
+                      - generic [ref=e312]:
+                        - generic [ref=e313]: "Open Seats:"
+                        - generic [ref=e314]: 30 (5 available)
+                      - generic [ref=e315]:
+                        - generic [ref=e316]: "Cabins:"
+                        - generic [ref=e317]: "12"
+                    - generic [ref=e319]:
+                      - generic [ref=e320]: Occupancy
+                      - generic [ref=e321]: 90%
+                    - button "View Floor Map" [ref=e324]:
+                      - img [ref=e325]
+                      - text: View Floor Map
+                  - generic [ref=e330]:
+                    - generic [ref=e331]:
+                      - generic [ref=e332]:
+                        - generic [ref=e333]: Floor 4
+                        - generic [ref=e334]: 45 Total Seats
+                      - generic [ref=e336]: Maintenance
+                    - generic [ref=e337]:
+                      - generic [ref=e338]:
+                        - generic [ref=e339]: "Open Seats:"
+                        - generic [ref=e340]: 25 (0 available)
+                      - generic [ref=e341]:
+                        - generic [ref=e342]: "Cabins:"
+                        - generic [ref=e343]: "6"
+                    - generic [ref=e345]:
+                      - generic [ref=e346]: Occupancy
+                      - generic [ref=e347]: 45%
+                    - button "View Floor Map" [ref=e350]:
+                      - img [ref=e351]
+                      - text: View Floor Map
+          - complementary [ref=e200]:
+            - heading "Selected Center" [level=3] [ref=e202]
+            - generic [ref=e203]:
+              - generic [ref=e356]:
+                - button "Chandigarh" [ref=e357]:
+                  - img [ref=e358]
+                  - generic [ref=e360]: Chandigarh
+                - generic [ref=e361]:
+                  - button "• IT Park" [ref=e362]:
+                    - generic [ref=e363]: • IT Park
+                  - button "• Sector 17" [ref=e364]:
+                    - generic [ref=e365]: • Sector 17
+                  - button "• Industrial Area" [ref=e366]:
+                    - generic [ref=e367]: • Industrial Area
+              - button "Mohali" [ref=e369]:
+                - img [ref=e370]
+                - generic [ref=e372]: Mohali
+              - button "Jalandhar" [ref=e374]:
+                - img [ref=e375]
+                - generic [ref=e377]: Jalandhar
+            - button "Add center to view here" [ref=e205]:
+              - img [ref=e206]
+              - generic [ref=e207]: Add center to view here
+            - button "Add Sub-location" [ref=e208]:
+              - img [ref=e209]
+              - text: Add Sub-location
+  - button "Open Next.js Dev Tools" [ref=e215] [cursor=pointer]:
+    - img [ref=e216]
+  - alert [ref=e378]
