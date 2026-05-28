@@ -1,0 +1,140 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e11]:
+          - generic [ref=e12]: SPACE JAM
+          - generic [ref=e13]: co-working offices
+      - navigation [ref=e14]:
+        - list [ref=e15]:
+          - listitem [ref=e16]:
+            - link "Dashboard" [ref=e17] [cursor=pointer]:
+              - /url: /dashboard
+              - img [ref=e18]
+              - generic [ref=e23]: Dashboard
+          - listitem [ref=e24]:
+            - link "CRM" [ref=e25] [cursor=pointer]:
+              - /url: /dashboard/crm
+              - img [ref=e26]
+              - generic [ref=e31]: CRM
+          - listitem [ref=e32]:
+            - link "Revenue" [ref=e33] [cursor=pointer]:
+              - /url: /dashboard/revenue
+              - img [ref=e34]
+              - generic [ref=e36]: Revenue
+          - listitem [ref=e37]:
+            - link "Operations" [ref=e38] [cursor=pointer]:
+              - /url: /dashboard/operations
+              - img [ref=e39]
+              - generic [ref=e41]: Operations
+          - listitem [ref=e42]:
+            - link "Report" [ref=e43] [cursor=pointer]:
+              - /url: /dashboard/reports
+              - img [ref=e44]
+              - generic [ref=e46]: Report
+          - listitem [ref=e47]:
+            - link "Inventory" [ref=e48] [cursor=pointer]:
+              - /url: /dashboard/inventory
+              - img [ref=e49]
+              - generic [ref=e53]: Inventory
+          - listitem [ref=e54]:
+            - link "Settings" [ref=e55] [cursor=pointer]:
+              - /url: /dashboard/settings
+              - img [ref=e56]
+              - generic [ref=e67]: Settings
+      - button "Collapse" [ref=e69]:
+        - img [ref=e70]
+        - generic [ref=e72]: Collapse
+    - generic [ref=e73]:
+      - banner [ref=e74]:
+        - generic [ref=e75]:
+          - button "Location" [ref=e76]:
+            - img [ref=e77]
+            - generic [ref=e80]: Location
+          - button "Floor map" [ref=e81]:
+            - img [ref=e82]
+            - generic [ref=e84]: Floor map
+          - button "Table view" [ref=e85]:
+            - img [ref=e86]
+            - generic [ref=e88]: Table view
+        - generic [ref=e89]:
+          - button "3" [ref=e90]:
+            - img [ref=e91]
+            - generic [ref=e94]: "3"
+          - generic [ref=e95]:
+            - generic [ref=e97]: RS
+            - generic [ref=e98]:
+              - paragraph [ref=e99]: Rahul Sharma
+              - paragraph [ref=e100]: Center Manager
+            - img [ref=e101]
+      - main [ref=e103]:
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - heading "Location Management" [level=1] [ref=e108]
+                - paragraph [ref=e109]: Manage your co-working space centers, floors, and zones
+              - button "Add Center" [ref=e110]:
+                - img [ref=e111]
+                - text: Add Center
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]:
+                  - generic [ref=e115]: Total Capacity
+                  - img [ref=e117]
+                - paragraph [ref=e122]: "--"
+              - generic [ref=e123]:
+                - generic [ref=e124]:
+                  - generic [ref=e125]: Number of Cabins
+                  - img [ref=e127]
+                - paragraph [ref=e130]: "--"
+              - generic [ref=e131]:
+                - generic [ref=e132]:
+                  - generic [ref=e133]: Total Hot desk
+                  - img [ref=e135]
+                - paragraph [ref=e138]: "--"
+              - generic [ref=e139]:
+                - generic [ref=e140]:
+                  - generic [ref=e141]: Total bookable space
+                  - img [ref=e143]
+                - paragraph [ref=e145]: "--"
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - heading "Floor Overview" [level=2] [ref=e148]
+                - button "Add Floor" [ref=e149]:
+                  - img [ref=e150]
+                  - text: Add Floor
+              - generic [ref=e151]:
+                - generic [ref=e152] [cursor=pointer]:
+                  - img [ref=e154]
+                  - generic [ref=e158]:
+                    - generic [ref=e159]:
+                      - heading "Ground Floor" [level=3] [ref=e160]
+                      - paragraph [ref=e161]: 4 Zones
+                    - img [ref=e162]
+                - generic [ref=e164] [cursor=pointer]:
+                  - img [ref=e166]
+                  - generic [ref=e170]:
+                    - generic [ref=e171]:
+                      - heading "First Floor" [level=3] [ref=e172]
+                      - paragraph [ref=e173]: 6 Zones
+                    - img [ref=e174]
+                - generic [ref=e176] [cursor=pointer]:
+                  - img [ref=e178]
+                  - generic [ref=e182]:
+                    - generic [ref=e183]:
+                      - heading "Second Floor" [level=3] [ref=e184]
+                      - paragraph [ref=e185]: 3 Zones
+                    - img [ref=e186]
+          - complementary [ref=e188]:
+            - generic [ref=e189]:
+              - heading "Selected Center" [level=3] [ref=e190]
+              - generic [ref=e191]:
+                - img [ref=e193]
+                - paragraph [ref=e197]: Add center to view here
+            - button "Add Sub-location" [ref=e198]:
+              - img [ref=e199]
+              - text: Add Sub-location
+  - button "Open Next.js Dev Tools" [ref=e205] [cursor=pointer]:
+    - img [ref=e206]
