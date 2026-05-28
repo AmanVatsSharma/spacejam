@@ -1,21 +1,4 @@
-/**
- * File:        apps/web/src/app/globals.css
- * Module:      Web · Global Styles
- * Purpose:     Tailwind + custom CSS variables for SpaceJam design system
- *
- * Design tokens from Figma:
- *   - Primary: #FF7847 (orange)
- *   - Background: #FBF6F4
- *   - Text: #101828, #4A5565, #6A7282
- *   - Border: #EAEAEA
- *
- * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
- */
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   --color-primary: #FF7847;
@@ -32,68 +15,8 @@
   --color-maintenance: #FEF2D3;
 }
 
-@layer base {
-  body {
-    @apply bg-[var(--color-background)] text-[var(--color-text-primary)];
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-}
-
-/* Sidebar Navigation Styles */
-@layer components {
-  .sidebar-item {
-    @apply flex flex-col items-center justify-center w-12 h-12 rounded-2xl cursor-pointer transition-all duration-200;
-  }
-
-  .sidebar-item:hover {
-    @apply bg-gray-100;
-  }
-
-  .sidebar-item.active {
-    @apply bg-[var(--color-primary)] text-white;
-  }
-
-  .sidebar-item span {
-    @apply text-[8px] mt-1;
-  }
-
-  /* Card Styles */
-  .card {
-    @apply bg-white rounded-2xl border border-[var(--color-border)] shadow-sm;
-  }
-
-  .card-hover {
-    @apply hover:shadow-md transition-shadow duration-200;
-  }
-
-  /* Button Styles */
-  .btn-primary {
-    @apply bg-[var(--color-primary)] text-white px-4 py-2 rounded-xl font-medium text-sm;
-  }
-
-  .btn-secondary {
-    @apply bg-white border border-[var(--color-border)] text-[var(--color-text-secondary)] px-4 py-2 rounded-xl font-medium text-sm;
-  }
-
-  /* Status Badge Styles */
-  .status-active {
-    @apply bg-[var(--color-active)] text-[var(--color-text-secondary)] px-3 py-1 rounded-full text-xs font-medium;
-  }
-
-  .status-full {
-    @apply bg-[var(--color-full)] text-[var(--color-text-secondary)] px-3 py-1 rounded-full text-xs font-medium;
-  }
-
-  .status-maintenance {
-    @apply bg-[var(--color-maintenance)] text-[var(--color-text-secondary)] px-3 py-1 rounded-full text-xs font-medium;
-  }
-
-  /* Progress Bar */
-  .progress-bar {
-    @apply h-2 bg-gray-200 rounded-full overflow-hidden;
-  }
-
-  .progress-bar-fill {
-    @apply h-full bg-[var(--color-primary-dark)] rounded-full;
-  }
+body {
+  background-color: #FBF6F4;
+  color: #101828;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

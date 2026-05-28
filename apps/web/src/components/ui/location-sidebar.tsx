@@ -12,7 +12,7 @@
 
 "use client";
 
-import React from { useState } from "react";
+import { useState } from "react";
 
 interface Location {
   id: string;
