@@ -1,10 +1,10 @@
 /**
  * File:        apps/web/src/app/dashboard/inventory/page.tsx
  * Module:      Web · Dashboard · Inventory Page
- * Purpose:     Main inventory management page matching Figma design
+ * Purpose:     Inventory page content - header/sidebar provided by layout
  *
  * Exports:
- *   - InventoryPage — main inventory page component
+ *   - InventoryPage — inventory page content
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-05-28
@@ -13,8 +13,6 @@
 "use client";
 
 import { useState } from "react";
-import { Sidebar } from "@/components/ui/sidebar";
-import { Header } from "@/components/ui/header";
 import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
@@ -78,9 +76,7 @@ const mockFloors = [
 ];
 
 export default function InventoryPage() {
-  const [activeNav, setActiveNav] = useState<"location" | "floor-map" | "table-view">("table-view");
   const [locations, setLocations] = useState(mockLocations);
-  const [activeSidebarTab, setActiveSidebarTab] = useState("inventory");
 
   const handleLocationSelect = (locationId: string, centerId?: string) => {
     setLocations((prev) =>
@@ -99,53 +95,45 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBF6F4]">
-      <Header activeNav={activeNav} onNavChange={setActiveNav} />
+    <div className="flex gap-6">
+      {/* Main Content */}
+      <div className="flex flex-col gap-6 flex-1">
+        {/* Page Title Card */}
+        <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[22px] font-semibold text-[#101828]">Location Management</h1>
+            <p className="text-sm text-[#4A5565]">
+              Manage coworking spaces, track capacity, and optimize utilization
+            </p>
+          </div>
+          <button className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M8 3V13M3 8H13" />
+            </svg>
+            <span>Add Center</span>
+          </button>
+        </div>
 
-      {/* Main layout container - matches Figma */}
-      <div className="flex gap-6 px-8 py-6">
-        {/* Left Sidebar - Dark container style from Figma */}
-        <Sidebar activeTab={activeSidebarTab} onTabChange={setActiveSidebarTab} />
+        {/* Stats Cards */}
+        <StatCards />
 
-        {/* Main Content Area */}
-        <div className="flex flex-col gap-6 flex-1">
-          {/* Page Title Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-[22px] font-semibold text-[#101828]">Location Management</h1>
-              <p className="text-sm text-[#4A5565]">
-                Manage coworking spaces, track capacity, and optimize utilization
-              </p>
-            </div>
+        {/* Floor Overview */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-[#101828]">Floor Overview</h2>
             <button className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M8 3V13M3 8H13" />
               </svg>
-              <span>Add Center</span>
+              <span>Add Floor</span>
             </button>
           </div>
-
-          {/* Stats Cards */}
-          <StatCards />
-
-          {/* Floor Overview */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#101828]">Floor Overview</h2>
-              <button className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M8 3V13M3 8H13" />
-                </svg>
-                <span>Add Floor</span>
-              </button>
-            </div>
-            <FloorCardGrid floors={mockFloors} />
-          </div>
+          <FloorCardGrid floors={mockFloors} />
         </div>
-
-        {/* Right Sidebar - Location Tree */}
-        <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
       </div>
+
+      {/* Right Sidebar - Location Tree */}
+      <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
     </div>
   );
 }

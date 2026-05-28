@@ -23,9 +23,9 @@ export function Header({ activeNav = "table-view", onNavChange }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="flex justify-between items-center px-8 py-4 bg-white border-b border-gray-100">
+    <header className="h-[83px] flex justify-between items-center px-8 bg-white shadow-sm sticky top-0 z-50">
       {/* Logo */}
-      <div className="w-[103px] h-[51px] bg-gradient-to-br from-[#FF7847] to-[#FF6A3D] rounded-xl flex items-center justify-center shadow-sm">
+      <div className="w-[103px] h-[51px] bg-gradient-to-br from-[#FF7847] to-[#FF6A3D] rounded-xl flex items-center justify-center shadow-md">
         <span className="text-white font-bold text-lg tracking-tight">SpaceJam</span>
       </div>
 
@@ -70,8 +70,23 @@ export function Header({ activeNav = "table-view", onNavChange }: HeaderProps) {
       </nav>
 
       {/* User Profile Card - Figma style */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-3 bg-[#F9FAFB] rounded-2xl px-3 py-2 border border-gray-100">
+      <div className="flex items-center gap-3">
+        {/* Notification Icon */}
+        <button
+          onClick={() => setShowNotifications(!showNotifications)}
+          className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full border border-gray-100 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4A5565" strokeWidth="1.5">
+            <path d="M10 2C7.24 2 5 4.24 5 7V10L3 12V13H17V12L15 10V7C15 4.24 12.76 2 10 2Z" />
+            <path d="M8 13V14C8 15.1 8.9 16 10 16C11.1 16 12 15.1 12 14V13" />
+          </svg>
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF7847] rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
+            3
+          </span>
+        </button>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3 bg-white rounded-2xl px-3 py-2 border border-gray-100 shadow-sm">
           {/* Avatar */}
           <div className="w-11 h-11 bg-gradient-to-br from-[#FF7847] to-[#FF6A3D] rounded-full flex items-center justify-center shadow-sm">
             <span className="text-white font-semibold text-sm">RS</span>
@@ -84,26 +99,12 @@ export function Header({ activeNav = "table-view", onNavChange }: HeaderProps) {
           </div>
 
           {/* Dropdown Arrow */}
-          <button className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+          <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#99A1AF" strokeWidth="1.5">
               <path d="M4 6L8 10L12 6" />
             </svg>
           </button>
         </div>
-
-        {/* Notification Icon */}
-        <button
-          onClick={() => setShowNotifications(!showNotifications)}
-          className="relative w-11 h-11 flex items-center justify-center bg-[#F9FAFB] rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors"
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4A5565" strokeWidth="1.5">
-            <path d="M10 2C7.24 2 5 4.24 5 7V10L3 12V13H17V12L15 10V7C15 4.24 12.76 2 10 2Z" />
-            <path d="M8 13V14C8 15.1 8.9 16 10 16C11.1 16 12 15.1 12 14V13" />
-          </svg>
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF7847] rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
-            3
-          </span>
-        </button>
       </div>
     </header>
   );
