@@ -1,0 +1,5 @@
+# Ignore all apps/libs except web
+apps/api
+apps/*/#
+libs/*/#
+!apps/web
