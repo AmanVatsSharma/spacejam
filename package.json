@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "build": "cd apps/web && npm run build",
+    "dev": "cd apps/web && npm run dev",
     "build:web": "npx nx build web"
   },
   "private": true,
