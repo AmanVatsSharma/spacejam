@@ -1,87 +1,177 @@
 /**
  * File:        apps/web/src/components/ui/stat-card.tsx
- * Module:      Web · UI · Stat Cards
- * Purpose:     Statistics cards showing capacity metrics
+ * Module:      Web · UI · KPI Cards
+ * Purpose:     4 KPI cards showing Revenue, Active Customers, Outstanding Dues, Bookings Today
  *
- * Exports:
- *   - StatCard — individual stat display
- *   - StatCards — grid of stat cards
+ * Design Reference: 4-KPI.png - exact Figma specs
+ * - Card: 285px x 142px (first 3), last is 292px
+ * - Border-radius: 14px
+ * - Icon container: 36x36px, background #FFF5F1, radius 10px
+ * - Value: 28px, Inter, 600 weight, color #1F2937
+ * - Label: 12px, Inter, color #6B7280
+ * - Trend: #FF7847 color, 12px
+ * - Cards span full width below welcome header
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-05-29
  */
 
 "use client";
 
 import React from "react";
 
+type TrendDirection = "up" | "down" | "neutral";
+
 interface StatCardProps {
   label: string;
-  value: number;
+  value: string | number;
   icon: React.ReactNode;
-  subLabel?: string;
+  changePercent?: number;
+  changeDirection?: TrendDirection;
+  className?: string;
 }
 
-export function StatCard({ label, value, icon, subLabel }: StatCardProps) {
+// Revenue icon - bar chart
+const RevenueIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="1.5" y="8" width="3" height="6" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <rect x="6" y="4" width="3" height="10" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <rect x="10.5" y="6" width="3" height="8" stroke="#FF6A2F" strokeWidth="1.33"/>
+  </svg>
+);
+
+// Active Customers icon - people
+const CustomersIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <circle cx="5.5" cy="5" r="2.5" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M0.5 13c0-2.5 2-4.5 5-4.5s5 2 5 4.5" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <circle cx="11" cy="5" r="2" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M13 11c0-1.5-.8-2.8-2-3.5" stroke="#FF6A2F" strokeWidth="1.33"/>
+  </svg>
+);
+
+// Outstanding Dues icon - alert/triangle
+const DuesIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <path d="M10 2L1 18H19L10 2Z" stroke="#FF7847" strokeWidth="1.67" strokeLinejoin="round"/>
+    <path d="M10 8V11" stroke="#FF7847" strokeWidth="1.67" strokeLinecap="round"/>
+    <circle cx="10" cy="14.5" r="0.83" fill="#FF7847"/>
+  </svg>
+);
+
+// Bookings icon - calendar
+const BookingsIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1.5" y="2.5" width="11" height="10" rx="1.75" stroke="#FF7847" strokeWidth="1.75"/>
+    <path d="M1.5 5.5H12.5" stroke="#FF7847" strokeWidth="1.75"/>
+    <path d="M4.5 1V3.5M9.5 1V3.5" stroke="#FF7847" strokeWidth="1.75" strokeLinecap="round"/>
+  </svg>
+);
+
+// Trend up arrow
+const TrendUpIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M6 9V3M3 6l3-3 3 3" stroke="#FF7847" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+// Trend down arrow
+const TrendDownIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M6 3v6M3 6l3 3 3-3" stroke="#FF7847" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+export function StatCard({
+  label,
+  value,
+  icon,
+  changePercent,
+  changeDirection = "up",
+  className = "",
+}: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4 flex flex-col gap-3 w-[206px]">
+    <div
+      className={`bg-white rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] flex flex-col gap-2 p-5 ${className}`}
+    >
+      {/* Top Row - Icon and Trend */}
       <div className="flex items-center justify-between">
-        <div className="w-9 h-9 bg-[#FFF7ED] rounded-lg flex items-center justify-center">
+        {/* Icon Container - 36x36px with #FFF5F1 background, 10px radius */}
+        <div className="w-[36px] h-[36px] bg-[#FFF5F1] rounded-[10px] flex items-center justify-center">
           {icon}
         </div>
+
+        {/* Trend Indicator */}
+        {changePercent !== undefined && (
+          <div className="flex items-center gap-1">
+            {changeDirection === "up" ? <TrendUpIcon /> : <TrendDownIcon />}
+            <span className="text-[12px] text-[#FF7847]">
+              {changePercent}%
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Value - 28px, Inter, 600 weight */}
       <div>
-        <span className="text-[27px] font-bold text-gray-800">{value}</span>
+        <span className="text-[28px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]">
+          {value}
+        </span>
       </div>
-      <div className="flex flex-col">
-        <span className="text-xs text-gray-500">{label}</span>
-        {subLabel && <span className="text-[10px] text-gray-400">{subLabel}</span>}
+
+      {/* Label - 12px, color #6B7280 */}
+      <div>
+        <span className="text-[12px] text-[#6B7280]">{label}</span>
       </div>
     </div>
   );
 }
 
-const CapacityIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-    <rect x="1" y="1" width="20" height="20" rx="4" stroke="#FF6A3D" strokeWidth="2"/>
-    <path d="M7 11H15M11 7V15" stroke="#FF6A3D" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const CabinIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M3 12L12 3L21 12V20H3V12Z" stroke="#FF7847" strokeWidth="2" strokeLinejoin="round"/>
-    <path d="M9 20V14H15V20" stroke="#FF7847" strokeWidth="2"/>
-  </svg>
-);
-
-const HotDeskIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <rect x="4" y="6" width="16" height="12" rx="2" stroke="#FF7847" strokeWidth="2"/>
-    <path d="M8 18V20M16 18V20" stroke="#FF7847" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
-const BookableIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="8" stroke="#FF7847" strokeWidth="2"/>
-    <path d="M12 8V12L15 14" stroke="#FF7847" strokeWidth="2" strokeLinecap="round"/>
-  </svg>
-);
-
+// Pre-configured 4 KPI cards - spans full width
 export function StatCards() {
   const stats = [
-    { label: "Total Capacity", value: 210, icon: <CapacityIcon /> },
-    { label: "Number of Cabins", value: 32, icon: <CabinIcon /> },
-    { label: "Total Hot desk", value: 18, icon: <HotDeskIcon /> },
-    { label: "Total bookable space", value: 9, icon: <BookableIcon /> },
+    {
+      label: "Revenue (MTD)",
+      value: "₹9.8L",
+      icon: <RevenueIcon />,
+      changePercent: 12,
+      changeDirection: "up" as TrendDirection,
+      className: "flex-1",
+    },
+    {
+      label: "Active Customers",
+      value: "20",
+      icon: <CustomersIcon />,
+      changePercent: 5,
+      changeDirection: "up" as TrendDirection,
+      className: "flex-1",
+    },
+    {
+      label: "Outstanding Dues",
+      value: "₹6.2L",
+      icon: <DuesIcon />,
+      changePercent: 8,
+      changeDirection: "down" as TrendDirection,
+      className: "flex-1",
+    },
+    {
+      label: "Bookings Today",
+      value: "3",
+      icon: <BookingsIcon />,
+      changePercent: 5,
+      changeDirection: "up" as TrendDirection,
+      className: "flex-1",
+    },
   ];
 
   return (
-    <div className="flex flex-row gap-4">
+    <div className="flex gap-[24px]">
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
     </div>
   );
 }
+
+// Export icons
+export { RevenueIcon, CustomersIcon, DuesIcon, BookingsIcon, TrendUpIcon, TrendDownIcon };

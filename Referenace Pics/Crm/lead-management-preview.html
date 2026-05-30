@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en"><head><script data-od-sandbox-shim="">(function(){
+  function makeStore(){
+    var data = {};
+    var api = {
+      getItem: function(k){ return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+      setItem: function(k, v){ data[k] = String(v); },
+      removeItem: function(k){ delete data[k]; },
+      clear: function(){ data = {}; },
+      key: function(i){ return Object.keys(data)[i] || null; }
+    };
+    Object.defineProperty(api, 'length', { get: function(){ return Object.keys(data).length; } });
+    return api;
+  }
+  function tryShim(name){
+    var works = false;
+    try { works = !!window[name] && typeof window[name].getItem === 'function'; void window[name].length; }
+    catch (_) { works = false; }
+    if (works) return;
+    try { Object.defineProperty(window, name, { configurable: true, value: makeStore() }); }
+    catch (_) { try { window[name] = makeStore(); } catch (__) {} }
+  }
+  tryShim('localStorage');
+  tryShim('sessionStorage');
+  document.addEventListener('click', (e) => {
+    if (!e.target || !(e.target instanceof Element)) return;
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (href === null) return;
+    var isAnchor = href.startsWith('#') || href === '';
+    if (isAnchor) {
+      e.preventDefault();
+      if (href === '' || href === '#') {
+        window.scrollTo({ top: 0 });
+        history.replaceState(null, '', ' ');
+      } else {
+        var targetId = href.slice(1);
+        var target = targetId ? document.getElementById(targetId) : null;
+        if (target) {
+          target.scrollIntoView();
+          location.hash === href && history.replaceState(null, '', ' ');
+          location.hash = href;
+        }
+      }
+    } else if (link.getAttribute('target') === '_blank') {
+      e.preventDefault();
+      let safe = false;
+      try {
+        var url = new URL(href, location.href);
+        safe =
+          url.protocol === 'http:' ||
+          url.protocol === 'https:' ||
+          url.protocol === 'mailto:';
+      } catch (_) {}
+      safe && window.open(href, '_blank', 'noopener,noreferrer');
+    }
+  });
+})();</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Management - React + Tailwind</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            primary: '#ff7847',
+            'primary-light': '#fff7ed',
+            success: '#00a63e',
+            teal: '#00d1c6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes bounce-subtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .animate-bounce-subtle {
+      animation: bounce-subtle 2s ease-in-out infinite;
+    }
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+<style data-od-tweaks-bridge-style="">
+[data-od-tweaks-hidden] .tw-panel {
+  transform: translateX(calc(100% + 32px)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.tw-restore { display: none !important; }
+</style><script data-od-tweaks-bridge="">(function(){
+  // Synchronously hide BEFORE the artifact body parses so the panel never
+  // flashes on initial paint. The host removes the attribute via postMessage
+  // once it knows the desired state.
+  document.documentElement.setAttribute('data-od-tweaks-hidden', '');
+
+  var suppressEcho = false;
+  var observer = null;
+
+  function panelEl(){ return document.querySelector('.tw-panel'); }
+
+  function applyClassesToPanel(visible){
+    var panel = panelEl();
+    if (panel) panel.classList.toggle('tw-hidden', !visible);
+  }
+
+  function setPanelVisible(visible){
+    suppressEcho = true;
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !visible);
+    applyClassesToPanel(visible);
+    // Clear flag after the MutationObserver has had a chance to fire for this
+    // change so we don't echo our own host-driven toggles back to the host.
+    Promise.resolve().then(function(){ suppressEcho = false; });
+  }
+
+  function postState(){
+    var panel = panelEl();
+    if (!panel) return;
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-panel-state',
+        visible: !panel.classList.contains('tw-hidden'),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function postAvailability(){
+    try {
+      parent.postMessage({
+        type: 'od:tweaks-available',
+        available: !!panelEl(),
+      }, '*');
+    } catch (e) {}
+  }
+
+  function attachObserver(){
+    var panel = panelEl();
+    if (!panel || observer) return;
+    observer = new MutationObserver(function(){
+      if (suppressEcho) return;
+      postState();
+    });
+    observer.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  function onReady(){
+    // Capture the panel authored visibility BEFORE we apply the host hidden
+    // attribute. The bridge sets data-od-tweaks-hidden synchronously in head
+    // (before the body parses), so on entry to onReady the attribute is
+    // always present even though the artifact may have authored the panel
+    // as default-visible. Reading the panel class first is the only place
+    // we can still observe the author intent. Then drive the attribute,
+    // classes, and posted state from that captured value so a default
+    // visible tw-panel reports visible:true and the toolbar toggle starts
+    // ON. Issue surfaced in PR #1643 review.
+    var panel = panelEl();
+    var initialVisible = !!panel && !panel.classList.contains('tw-hidden');
+    document.documentElement.toggleAttribute('data-od-tweaks-hidden', !initialVisible);
+    applyClassesToPanel(initialVisible);
+    attachObserver();
+    postAvailability();
+    // Post the captured initial visibility so the toolbar toggle reflects
+    // the default state on mount. Without this the toggle reads OFF while
+    // a default-visible tw-panel artifact clearly shows its panel and the
+    // user would have to click toggle-on then toggle-off to actually hide.
+    postState();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady);
+  } else {
+    onReady();
+  }
+
+  window.addEventListener('message', function(ev){
+    if (!ev.data || ev.data.type !== 'od:tweaks-panel-visible') return;
+    setPanelVisible(!!ev.data.visible);
+  });
+})();</script></head>
+<body class="min-h-screen bg-neutral-50">
+  <div id="app" data-od-id="path-0"></div>
+
+  <script>
+    const tokens = {
+      colors: {
+        primary: '#ff7847',
+        primaryLight: '#fff7ed',
+        success: '#00a63e',
+        bg: '#fbf6f4',
+        surface: '#ffffff',
+        textPrimary: '#101828',
+        textSecondary: '#4a5565',
+        textMuted: '#6a7282',
+        border: '#e5e7eb',
+        pipeline: {
+          inquiry: '#ff7847',
+          visited: '#fbbf24',
+          negotiation: '#14b8a6',
+          converted: '#374151',
+          cold: '#ef4444',
+        },
+        teal: '#00d1c6',
+      },
+    };
+
+    const statsData = [
+      { label: 'Total Leads', value: 125, trend: '+12%', icon: 'users' },
+      { label: 'New Leads', value: 32, trend: '+8%', icon: 'user-plus' },
+      { label: 'Visits Scheduled', value: 18, trend: '+15%', icon: 'calendar' },
+      { label: 'Converted Clients', value: 9, trend: '+5%', icon: 'check-circle' },
+    ];
+
+    const pipelineData = [
+      { label: 'Inquiry', value: 2, color: tokens.colors.pipeline.inquiry },
+      { label: 'Visited', value: 1, color: tokens.colors.pipeline.visited },
+      { label: 'Negotiation', value: 1, color: tokens.colors.pipeline.negotiation },
+      { label: 'Converted', value: 1, color: tokens.colors.pipeline.converted },
+      { label: 'Cold Leads', value: 0, color: tokens.colors.pipeline.cold },
+    ];
+
+    const leadsData = [
+      { name: 'Rahul Sharma', company: 'Freelancer', source: 'Website', plan: 'Hot Desk', assigned: 'CM Rahul', date: '12 Mar', status: 'New' },
+      { name: 'StartupX', company: 'Startup', source: 'Referral', plan: 'Cabin', assigned: 'CM Rahul', date: '10 Mar', status: 'Visited' },
+      { name: 'Ankit', company: 'Individual', source: 'Walk-in', plan: 'Dedicated Desk', assigned: 'CM Rahul', date: '9 Mar', status: 'Negotiation' },
+      { name: 'TechCorp', company: 'Enterprise', source: 'Website', plan: 'Private Office', assigned: 'CM Rahul', date: '8 Mar', status: 'Converted' },
+      { name: 'Priya Singh', company: 'Freelancer', source: 'Referral', plan: 'Hot Desk', assigned: 'CM Rahul', date: '7 Mar', status: 'New' },
+    ];
+
+    const statusColors = {
+      New: 'bg-orange-100 text-orange-600',
+      Visited: 'bg-yellow-100 text-yellow-600',
+      Negotiation: 'bg-teal-100 text-teal-600',
+      Converted: 'bg-gray-100 text-gray-600',
+    };
+
+    const Icons = {
+      users: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>`,
+      'user-plus': `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>`,
+      calendar: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>`,
+      'check-circle': `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+      search: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`,
+      plus: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>`,
+      bell: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>`,
+      chevronDown: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>`,
+      list: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>`,
+      send: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>`,
+      userCheck: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+      upload: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12" /></svg>`,
+      clipboard: `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>`,
+      dashboard: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg>`,
+      grid: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>`,
+      chart: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>`,
+      settings: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>`,
+      crm: `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>`,
+    };
+
+    const navItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: Icons.dashboard },
+      { id: 'crm', label: 'CRM', icon: Icons.crm, active: true },
+      { id: 'revenue', label: 'Revenue', icon: Icons.chart },
+      { id: 'operations', label: 'Operations', icon: Icons.grid },
+      { id: 'report', label: 'Report', icon: Icons.chart },
+      { id: 'inventory', label: 'Inventory', icon: Icons.grid },
+      { id: 'settings', label: 'Settings', icon: Icons.settings },
+    ];
+
+    let selectedLead = leadsData[0];
+    let activeTab = 'leads';
+    let searchQuery = '';
+    const tabs = ['Customers', 'Leads', 'Onboarding'];
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+          <div class="flex items-center justify-between px-8 py-4">
+            <div class="w-24 h-12 bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-lg">Cowrk</span>
+            </div>
+            <div class="bg-white rounded-full shadow-sm px-2 py-1 flex gap-1">
+              ${tabs.map(tab => `
+                <button
+                  onclick="activeTab='${tab.toLowerCase()}'; render()"
+                  class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    activeTab === tab.toLowerCase()
+                      ? 'bg-orange-50 text-orange-500 underline'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }"
+                >${tab}</button>
+              `).join('')}
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="relative">
+                <button class="w-11 h-11 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors">
+                  ${Icons.bell}
+                </button>
+                <span class="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+              </div>
+              <div class="flex items-center gap-3 bg-white rounded-full shadow-sm px-4 py-2">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-white font-semibold">RS</div>
+                <div class="text-left">
+                  <p class="text-sm font-semibold text-gray-900">Rahul Sharma</p>
+                  <p class="text-xs text-gray-500">Center Manager</p>
+                </div>
+                <span class="text-gray-400">${Icons.chevronDown}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div class="flex">
+          <!-- Sidebar -->
+          <aside class="w-20 bg-white rounded-3xl shadow-sm m-4 p-4 flex flex-col gap-4">
+            <div class="flex flex-col gap-3 flex-1">
+              ${navItems.slice(0, 6).map(item => `
+                <div class="relative group">
+                  <button
+                    onclick="render()"
+                    class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 ${
+                      item.active
+                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }"
+                  >
+                    ${item.icon}
+                  </button>
+                  <div class="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                    ${item.label}
+                    <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                  </div>
+                  ${!item.active ? `<span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-bounce-subtle">3</span>` : ''}
+                </div>
+              `).join('')}
+            </div>
+            <div class="h-px bg-gray-200"></div>
+            <div class="relative group">
+              <button class="w-12 h-12 rounded-2xl flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-all duration-200">
+                ${Icons.settings}
+              </button>
+              <div class="absolute left-full ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                Settings
+                <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main Content -->
+          <main class="flex-1 p-6">
+            <!-- Page Header -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+              <h1 class="text-xl font-semibold text-gray-900">Lead Management</h1>
+              <p class="text-sm text-gray-500 mt-1">Track potential clients, manage inquiries, and convert them into members.</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">${Icons.search}</span>
+                    <input
+                      type="text"
+                      placeholder="Search leads..."
+                      value="${searchQuery}"
+                      oninput="searchQuery=this.value; render()"
+                      class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent w-48"
+                    />
+                  </div>
+                  <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                    All status ${Icons.chevronDown}
+                  </button>
+                  <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                    All centers ${Icons.chevronDown}
+                  </button>
+                  <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                    All assigned ${Icons.chevronDown}
+                  </button>
+                  <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                    Clear Filters
+                  </button>
+                </div>
+                <button class="px-5 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                  ${Icons.plus} Add Lead
+                </button>
+              </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="flex gap-4 mb-6">
+              ${statsData.map(stat => `
+                <div class="bg-white rounded-xl shadow-sm p-4 w-52 hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1">
+                  <div class="flex items-center gap-3 mb-4">
+                    <div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 transition-transform duration-200 hover:scale-110">
+                      ${Icons[stat.icon]}
+                    </div>
+                  </div>
+                  <p class="text-3xl font-bold text-gray-900 mb-1">${stat.value}</p>
+                  <p class="text-sm text-gray-500 mb-1">${stat.label}</p>
+                  <p class="text-sm font-medium text-green-600">${stat.trend} vs last week</p>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Pipeline & Table Grid -->
+            <div class="grid grid-cols-3 gap-6">
+              <!-- Pipeline & Leads Table -->
+              <div class="col-span-2 space-y-6">
+                <!-- Pipeline -->
+                <div class="bg-white rounded-xl shadow-sm p-4">
+                  <h3 class="text-sm font-semibold text-gray-900 mb-4">Lead Pipeline</h3>
+                  <div class="flex gap-4">
+                    ${pipelineData.map((stage, index) => `
+                      <div
+                        class="flex-1 rounded-xl p-4 text-center transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
+                        style="background-color: ${stage.color}; animation-delay: ${index * 100}ms"
+                      >
+                        <p class="text-sm font-medium text-white">${stage.label}</p>
+                        <p class="text-2xl font-bold text-white">${stage.value}</p>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Leads Table -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <div class="overflow-x-auto">
+                    <table class="w-full">
+                      <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                          <th class="py-4 pl-4 pr-3 text-left text-sm font-medium text-gray-500">Lead Name</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500">Company</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Source</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Interested Plan</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Assigned To</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500">Date</th>
+                          <th class="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${leadsData
+                          .filter(lead => lead.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                          .map(lead => `
+                            <tr
+                              onclick="selectedLead=leadsData.find(l=>l.name==='${lead.name}'); render()"
+                              class="border-b border-gray-200 cursor-pointer transition-colors ${selectedLead.name === lead.name ? 'bg-orange-50' : 'hover:bg-gray-50'}"
+                            >
+                              <td class="py-3 pl-4 pr-3"><span class="text-sm font-medium text-gray-900">${lead.name}</span></td>
+                              <td class="py-3 px-3"><span class="text-sm text-gray-500">${lead.company}</span></td>
+                              <td class="py-3 px-3"><span class="text-sm text-gray-500">${lead.source}</span></td>
+                              <td class="py-3 px-3"><span class="text-sm text-gray-500">${lead.plan}</span></td>
+                              <td class="py-3 px-3"><span class="text-sm text-gray-500">${lead.assigned}</span></td>
+                              <td class="py-3 px-3"><span class="text-sm text-gray-500">${lead.date}</span></td>
+                              <td class="py-3 px-3"><span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusColors[lead.status]}">${lead.status}</span></td>
+                            </tr>
+                          `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Sidebar -->
+              <div>
+                <div class="bg-white rounded-2xl shadow-sm p-5">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-4">Lead Details</h3>
+                  <div class="space-y-4">
+                    ${[
+                      { label: 'Lead Name', value: selectedLead.name },
+                      { label: 'Phone', value: '+91 98765 43210' },
+                      { label: 'Email', value: 'rahul@example.com' },
+                      { label: 'Company', value: selectedLead.company },
+                      { label: 'Interested Plan', value: selectedLead.plan },
+                      { label: 'Team Size', value: '1 Person' },
+                      { label: 'Preferred Move-in Date', value: '15 Mar 2026' },
+                    ].map(({ label, value }) => `
+                      <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">${label}</p>
+                        <p class="text-sm font-medium text-gray-900">${value}</p>
+                      </div>
+                    `).join('')}
+                  </div>
+                  <div class="mt-6 pt-4 border-t border-gray-200 space-y-2">
+                    <button class="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
+                      ${Icons.list} Lead Details
+                    </button>
+                    <button class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+                      ${Icons.send} Send Proposal
+                    </button>
+                    <button class="w-full bg-cyan-500 text-white py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-cyan-600 transition-colors">
+                      ${Icons.userCheck} Convert to Client
+                    </button>
+                  </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm p-5 mt-4">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                  <div class="space-y-2">
+                    <button class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                      ${Icons.plus} Add Lead
+                    </button>
+                    <button class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                      ${Icons.upload} Import Leads
+                    </button>
+                    <button class="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                      ${Icons.clipboard} Manage Sources
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+
+
+<script data-od-snapshot-bridge="">(function(){
+  function copyComputedStyle(source, target){
+    if (!source || !target || source.nodeType !== 1 || target.nodeType !== 1) return;
+    var computed = window.getComputedStyle(source);
+    var style = target.getAttribute('style') || '';
+    for (var i = 0; i < computed.length; i++){
+      var prop = computed[i];
+      style += prop + ':' + computed.getPropertyValue(prop) + ';';
+    }
+    target.setAttribute('style', style);
+  }
+  function syncElementState(source, target){
+    var tag = source.tagName ? source.tagName.toLowerCase() : '';
+    if (tag === 'img' && source.currentSrc) target.setAttribute('src', source.currentSrc);
+    if (tag === 'input' || tag === 'textarea') target.setAttribute('value', source.value || '');
+    if (tag === 'canvas') {
+      try {
+        var img = document.createElement('img');
+        img.setAttribute('src', source.toDataURL('image/png'));
+        img.setAttribute('style', target.getAttribute('style') || '');
+        target.parentNode && target.parentNode.replaceChild(img, target);
+      } catch (_) {}
+    }
+  }
+  function inlineSnapshotStyles(originalRoot, cloneRoot){
+    copyComputedStyle(originalRoot, cloneRoot);
+    syncElementState(originalRoot, cloneRoot);
+    var originals = originalRoot.querySelectorAll('*');
+    var clones = cloneRoot.querySelectorAll('*');
+    var count = Math.min(originals.length, clones.length);
+    for (var i = 0; i < count; i++){
+      copyComputedStyle(originals[i], clones[i]);
+      syncElementState(originals[i], clones[i]);
+    }
+    var scripts = cloneRoot.querySelectorAll('script');
+    for (var s = scripts.length - 1; s >= 0; s--) scripts[s].remove();
+  }
+  function waitForImages(){
+    var imgs = Array.prototype.slice.call(document.images || []);
+    return Promise.all(imgs.map(function(img){
+      if (img.complete) return Promise.resolve();
+      return new Promise(function(resolve){
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    }));
+  }
+  function renderSnapshot(id){
+    var w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
+    var h = Math.max(1, window.innerHeight || document.documentElement.clientHeight || 1);
+    var dpr = window.devicePixelRatio || 1;
+    var docW = Math.max(w, document.documentElement.scrollWidth || 0, document.body ? document.body.scrollWidth : 0);
+    var docH = Math.max(h, document.documentElement.scrollHeight || 0, document.body ? document.body.scrollHeight : 0);
+    var clone = document.documentElement.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    inlineSnapshotStyles(document.documentElement, clone);
+    var serializer = new XMLSerializer();
+    var html = serializer.serializeToString(clone);
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<foreignObject x="' + (-window.scrollX || 0) + '" y="' + (-window.scrollY || 0) + '" width="' + docW + '" height="' + docH + '">' +
+      html +
+      '</foreignObject></svg>';
+    var img = new Image();
+    img.onload = function(){
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.floor(w * dpr));
+        canvas.height = Math.max(1, Math.floor(h * dpr));
+        var ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('no 2d context');
+        ctx.scale(dpr, dpr);
+        ctx.drawImage(img, 0, 0, w, h);
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height }, '*');
+      } catch (err) {
+        window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: String(err && err.message || err) }, '*');
+      }
+    };
+    img.onerror = function(){
+      window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: 'snapshot image failed' }, '*');
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:snapshot' || !data.id) return;
+    waitForImages().then(function(){ renderSnapshot(String(data.id)); });
+  });
+})();</script><script data-od-srcdoc-transport-activation="">(function(){
+  window.addEventListener('message', function(ev){
+    var data = ev && ev.data;
+    if (!data || data.type !== 'od:srcdoc-transport-activate' || typeof data.html !== 'string') return;
+    document.open();
+    document.write(data.html);
+    document.close();
+  });
+})();</script></body></html>

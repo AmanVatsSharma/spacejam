@@ -1,0 +1,1 @@
+export { SetUpNewCenter } from './lib';

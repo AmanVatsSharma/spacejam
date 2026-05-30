@@ -1,0 +1,83 @@
+/**
+ * File:        apps/web/src/app/dashboard/crm/crm.module.css
+ * Module:      Web · Dashboard · CRM Styles
+ * Purpose:     CRM page specific styles - stats cards, pipeline columns
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-05-29
+ */
+
+.statCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.statCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6A7282;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 600;
+  color: #101828;
+  line-height: 1.2;
+}
+
+.statChange {
+  font-size: 12px;
+  color: #10B981;
+  font-weight: 500;
+}
+
+.pipelineColumn {
+  padding: 16px;
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.pipelineDealCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.pipelineDealCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
