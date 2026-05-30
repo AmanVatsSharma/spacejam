@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "spacejam",
+  "project_id": "ed15f2ef-921d-40a6-ad9d-da5b62af3b66"
+}
