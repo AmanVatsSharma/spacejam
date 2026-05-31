@@ -3,13 +3,13 @@
  * Module:      Web · UI · Dashboard · Total Lead Card
  * Purpose:     KPI card showing total leads with mini bar charts
  *
- * Design Reference: Figma CSS export - exact pixel match
+ * Design Reference: Figma node 0-32565 - exact pixel match
  * - Card: 473px x 216px, 14px radius, white bg, shadow
- * - Title "Total Lead" (16px) + subtitle on left side
- * - Value "1349" (24px) + trend on right side
- * - Orange separator line (37px from top)
- * - 3 mini bar charts: Visited (orange), Inquiry (teal), Converted (yellow)
- * - Bottom values: 459, 350, 215 with 80px gap
+ * - Title "Total Lead" + subtitle at top-left
+ * - Value "1349" + trend at top-right
+ * - Orange separator line
+ * - 3 mini bar charts: Visited, Inquiry, Converted
+ * - Bottom values row: 459, 350, 215 with 80px gap
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-05-31
@@ -28,82 +28,62 @@ interface TotalLeadCardProps {
   className?: string;
 }
 
-// Bar chart with 12 bars - exact Figma positioning
-const BarChart = ({
-  color,
-  fadedColor,
-}: {
-  color: string;
-  fadedColor: string;
-}) => {
-  // Bar heights represent data distribution
-  // Left side: colored bars, Right side: faded bars
-  const coloredHeights = [2, 6, 10, 14, 18, 22, 26, 30];
-  const fadedHeights = [34, 38, 36, 40];
+// Figma bar chart images
+const imgLine53 = "https://www.figma.com/api/mcp/asset/f5025759-06ef-4004-b5c2-65be3e12f7cc";
+const imgGroupVisited = "https://www.figma.com/api/mcp/asset/7e9a488b-03cb-42ca-bfc2-c50ce624f6b3";
+const imgGroupVisitedFaded = "https://www.figma.com/api/mcp/asset/b7b9880e-d2ec-4c47-a90c-dc5511d173d9";
+const imgGroupInquiry = "https://www.figma.com/api/mcp/asset/9a1126ca-a604-49a0-84b7-4cd7dfeaad0a";
+const imgGroupInquiryFaded = "https://www.figma.com/api/mcp/asset/e2316526-44a7-40c4-ae16-9c40dcc27e65";
+const imgGroupConverted = "https://www.figma.com/api/mcp/asset/e4a647ef-a502-4047-990b-fc206400ed71";
+const imgGroupConvertedFaded = "https://www.figma.com/api/mcp/asset/425b3886-8001-4234-aa64-80bbc0707dda";
 
-  return (
-    <div className="relative w-[64px] h-[41px]">
-      {/* Colored bars */}
-      <div className="absolute left-0 top-[9px] flex items-end gap-[2px] h-[32px]">
-        {coloredHeights.map((h, i) => (
-          <div
-            key={`c-${i}`}
-            className="w-[6px]"
-            style={{
-              height: `${h}px`,
-              backgroundColor: color,
-            }}
-          />
-        ))}
-      </div>
-      {/* Faded bars */}
-      <div className="absolute left-0 top-[9px] flex items-end gap-[2px] h-[32px]">
-        {fadedHeights.map((h, i) => (
-          <div
-            key={`f-${i}`}
-            className="w-[6px]"
-            style={{
-              height: `${h}px`,
-              backgroundColor: fadedColor,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Mini KPI box with label, chart, and value
+// Mini KPI box with label, chart image, and value
 const MiniKPI = ({
   label,
   value,
-  color,
-  fadedColor,
+  chartImage,
+  fadedChartImage,
 }: {
   label: string;
   value: number;
-  color: string;
-  fadedColor: string;
+  chartImage: string;
+  fadedChartImage: string;
 }) => (
-  <div className="flex flex-col items-center gap-1 w-[120px]">
-    {/* Label - Nunito font, 16px */}
-    <span
-      className="font-['Nunito'] font-semibold text-[16px] leading-[22px] text-[#000000]"
-      style={{ paddingLeft: '11px' }}
+  <div className="h-[50px] relative shrink-0 w-[120px]">
+    {/* Label */}
+    <p
+      className="absolute font-['Nunito:SemiBold'] font-semibold text-[16px] text-black leading-[22px] whitespace-nowrap"
+      style={{
+        left: label === 'Inquiry' ? '12px' : '11px',
+        top: '9px',
+      }}
     >
       {label}
-    </span>
+    </p>
 
-    {/* Bar chart */}
-    <BarChart color={color} fadedColor={fadedColor} />
+    {/* Bar chart image */}
+    <div className="absolute left-0 top-[9px]">
+      <img
+        alt=""
+        src={chartImage}
+        className="block max-w-none w-[62px] h-[41px]"
+      />
+    </div>
 
-    {/* Value - 16px, Inter, 600 */}
-    <span
-      className="text-[16px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]"
-      style={{ width: '76px', textAlign: 'center' }}
+    {/* Faded bar chart image */}
+    <div
+      className="absolute"
+      style={{
+        left: '54px',
+        top: '44px',
+      }}
     >
-      {value}
-    </span>
+      <img
+        alt=""
+        src={fadedChartImage}
+        className="block max-w-none w-[64px] h-[6px]"
+      />
+    </div>
   </div>
 );
 
@@ -117,84 +97,127 @@ export function TotalLeadCard({
 }: TotalLeadCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] p-5 relative ${className}`}
+      className={`bg-white rounded-[14px] relative ${className}`}
       style={{
-        width: '473px',
-        height: '216px',
         boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {/* Row 1: Title/Subtitle on left, Value/Trend on right */}
-      <div className="flex justify-between items-start h-[37px]">
-        {/* Left: Title + Subtitle */}
-        <div className="flex flex-col" style={{ paddingLeft: '18px' }}>
-          <span
-            className="text-[16px] font-semibold text-[#1F2937] leading-[28px] tracking-[-0.439453px]"
-            style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            Total Lead
-          </span>
-          <span
-            className="text-[12px] text-[#6B7280] leading-[16px]"
-            style={{ paddingLeft: '6px' }}
-          >
-            Total available room and seat
-          </span>
+      {/* Title - top left */}
+      <p
+        className="absolute font-['Inter:Semi_Bold'] font-semibold text-[16px] text-[#1f2937] leading-[28px] tracking-[-0.4395px] whitespace-nowrap"
+        style={{
+          left: '18px',
+          top: '10px',
+        }}
+      >
+        Total Lead
+      </p>
+
+      {/* Subtitle */}
+      <div
+        className="absolute h-[16px] w-[148.164px]"
+        style={{
+          left: '24px',
+          top: '38px',
+        }}
+      >
+        <p
+          className="absolute font-['Inter:Regular'] font-normal text-[12px] text-[#6b7280] leading-[16px] whitespace-nowrap"
+          style={{
+            left: '-4px',
+            top: '0px',
+          }}
+        >
+          Total available room and seat
+        </p>
+      </div>
+
+      {/* Value row - top right */}
+      <div
+        className="absolute h-[37px]"
+        style={{
+          left: '20px',
+          right: '20px',
+          top: '75px',
+        }}
+      >
+        {/* Value + Trend */}
+        <div className="absolute content-stretch flex gap-[10px] items-end left-0 top-0">
+          <p className="font-['Inter:Semi_Bold'] font-semibold h-[28px] leading-[32px] text-[#1f2937] text-[24px] tracking-[0.0703px] w-[76px] shrink-0">
+            {totalLeads}
+          </p>
+          <div className="h-[16px] relative shrink-0 w-[105px]">
+            <p className="absolute leading-[16px] whitespace-nowrap">
+              <span className="font-['Inter:Bold'] font-bold text-[#00d1c6] text-[10px]">+{changePercent}%</span>
+              <span className="font-['Inter:Bold'] font-bold text-[10px]">{` `}</span>
+              <span className="leading-[16px] text-[10px]">Vs Last Week</span>
+            </p>
+          </div>
         </div>
 
-        {/* Right: Value + Trend */}
-        <div className="flex flex-col items-end">
-          <div className="flex items-end gap-[10px]">
-            <span
-              className="text-[24px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              {totalLeads}
-            </span>
-          </div>
-          <span
-            className="text-[10px] font-bold text-[#00D1C6] leading-[16px]"
-            style={{ marginTop: '-4px' }}
-          >
-            +{changePercent}% Vs Last Week
-          </span>
+        {/* Orange separator line */}
+        <div
+          className="absolute h-0 left-0 right-0 top-[37px]"
+        >
+          <img
+            alt=""
+            src={imgLine53}
+            className="block max-w-none w-full h-[1px]"
+          />
         </div>
       </div>
 
-      {/* Orange separator line - exactly 37px from top of container area */}
+      {/* 3 Mini KPI charts */}
       <div
-        className="absolute w-[433px] h-[1px] bg-[#FF7847]"
-        style={{ top: '75px', left: '20px' }}
-      />
-
-      {/* Row 2: 3 Mini KPI charts with 80px gap */}
-      <div
-        className="flex items-center gap-[80px]"
-        style={{ marginTop: '38px', paddingLeft: '20px' }}
+        className="absolute content-stretch flex gap-[31px] items-center"
+        style={{
+          left: '20px',
+          top: '120px',
+        }}
       >
-        {/* Visited - Orange */}
         <MiniKPI
           label="Visited"
           value={visited}
-          color="#FE7A49"
-          fadedColor="rgba(254, 122, 73, 0.3)"
+          chartImage={imgGroupVisited}
+          fadedChartImage={imgGroupVisitedFaded}
         />
-
-        {/* Inquiry - Teal */}
         <MiniKPI
           label="Inquiry"
           value={inquiry}
-          color="#4ECDC3"
-          fadedColor="rgba(113, 214, 206, 0.3)"
+          chartImage={imgGroupInquiry}
+          fadedChartImage={imgGroupInquiryFaded}
         />
-
-        {/* Converted - Yellow */}
         <MiniKPI
           label="Converted"
           value={converted}
-          color="#FFD167"
-          fadedColor="rgba(255, 209, 103, 0.3)"
+          chartImage={imgGroupConverted}
+          fadedChartImage={imgGroupConvertedFaded}
         />
+      </div>
+
+      {/* Bottom values row */}
+      <div
+        className="absolute content-stretch flex gap-[80px] items-center"
+        style={{
+          left: '20px',
+          top: '170px',
+        }}
+      >
+        <p
+          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[76px] shrink-0"
+        >
+          {visited}
+        </p>
+        <p
+          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[76px] shrink-0"
+        >
+          {inquiry}
+        </p>
+        <p
+          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[110px] shrink-0"
+        >
+          {converted}
+        </p>
       </div>
     </div>
   );
