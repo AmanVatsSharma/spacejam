@@ -229,7 +229,7 @@ export default function CRMPage() {
                   {filteredLeads.map((lead) => (
                     <tr
                       key={lead.name}
-                      onClick={() => setSelectedLead(lead)}
+                      onClick={() => handleLeadClick(lead)}
                       className={`border-b border-gray-200 cursor-pointer transition-colors ${
                         selectedLead.name === lead.name ? "bg-orange-50" : "hover:bg-gray-50"
                       }`}
