@@ -28,61 +28,230 @@ interface TotalLeadCardProps {
   className?: string;
 }
 
-// Figma bar chart images
-const imgLine53 = "https://www.figma.com/api/mcp/asset/f5025759-06ef-4004-b5c2-65be3e12f7cc";
-const imgGroupVisited = "https://www.figma.com/api/mcp/asset/7e9a488b-03cb-42ca-bfc2-c50ce624f6b3";
-const imgGroupVisitedFaded = "https://www.figma.com/api/mcp/asset/b7b9880e-d2ec-4c47-a90c-dc5511d173d9";
-const imgGroupInquiry = "https://www.figma.com/api/mcp/asset/9a1126ca-a604-49a0-84b7-4cd7dfeaad0a";
-const imgGroupInquiryFaded = "https://www.figma.com/api/mcp/asset/e2316526-44a7-40c4-ae16-9c40dcc27e65";
-const imgGroupConverted = "https://www.figma.com/api/mcp/asset/e4a647ef-a502-4047-990b-fc206400ed71";
-const imgGroupConvertedFaded = "https://www.figma.com/api/mcp/asset/425b3886-8001-4234-aa64-80bbc0707dda";
+// Bar chart component with colored and faded bars
+const BarChart = ({
+  color,
+  fadedColor,
+  labelPadding,
+}: {
+  color: string;
+  fadedColor: string;
+  labelPadding: number;
+}) => {
+  // Generate bar positions based on Figma exact coordinates
+  const coloredBars = [
+    { left: 10, top: 44 },
+    { left: 8, top: 44 },
+    { left: 4, top: 44 },
+    { left: 6, top: 44 },
+    { left: 2, top: 44 },
+    { left: 12, top: 44 },
+    { left: 16, top: 44 },
+    { left: 24, top: 44 },
+    { left: 34, top: 44 },
+    { left: 44, top: 44 },
+    { left: 54, top: 44 },
+    { left: 60, top: 44 },
+    { left: 62, top: 44 },
+    { left: 58, top: 44 },
+    { left: 56, top: 44 },
+    { left: 52, top: 44 },
+    { left: 50, top: 44 },
+    { left: 48, top: 44 },
+    { left: 46, top: 44 },
+    { left: 42, top: 44 },
+    { left: 40, top: 44 },
+    { left: 38, top: 44 },
+    { left: 36, top: 44 },
+    { left: 32, top: 44 },
+    { left: 30, top: 44 },
+    { left: 28, top: 44 },
+    { left: 26, top: 44 },
+    { left: 22, top: 44 },
+    { left: 20, top: 44 },
+    { left: 18, top: 44 },
+    { left: 14, top: 44 },
+  ];
 
-// Mini KPI box with label, chart image, and value
+  const fadedBars = [
+    { left: 54, top: 44 },
+    { left: 66, top: 44 },
+    { left: 64, top: 44 },
+    { left: 60, top: 44 },
+    { left: 62, top: 44 },
+    { left: 58, top: 44 },
+    { left: 56, top: 44 },
+    { left: 68, top: 44 },
+    { left: 72, top: 44 },
+    { left: 80, top: 44 },
+    { left: 90, top: 44 },
+    { left: 100, top: 44 },
+    { left: 110, top: 44 },
+    { left: 116, top: 44 },
+    { left: 118, top: 44 },
+    { left: 114, top: 44 },
+    { left: 112, top: 44 },
+    { left: 108, top: 44 },
+    { left: 106, top: 44 },
+    { left: 104, top: 44 },
+    { left: 102, top: 44 },
+    { left: 98, top: 44 },
+    { left: 96, top: 44 },
+    { left: 94, top: 44 },
+    { left: 92, top: 44 },
+    { left: 88, top: 44 },
+    { left: 86, top: 44 },
+    { left: 84, top: 44 },
+    { left: 82, top: 44 },
+    { left: 78, top: 44 },
+    { left: 76, top: 44 },
+    { left: 74, top: 44 },
+    { left: 70, top: 44 },
+  ];
+
+  return (
+    <div style={{ width: 120, height: 50, position: 'relative' }}>
+      {/* Label */}
+      <div style={{ width: 65, height: 50, left: 0, top: 0, position: 'absolute' }}>
+        <div style={{
+          left: labelPadding,
+          top: 9,
+          position: 'absolute',
+          color: 'black',
+          fontSize: 16,
+          fontFamily: 'Nunito',
+          fontWeight: '600',
+          wordWrap: 'break-word'
+        }}>
+          {/* Label text injected via parent */}
+        </div>
+      </div>
+
+      {/* Colored bars */}
+      {coloredBars.map((bar, i) => (
+        <div
+          key={`colored-${i}`}
+          style={{
+            width: 6,
+            height: 0,
+            left: bar.left,
+            top: bar.top,
+            position: 'absolute',
+            transform: 'rotate(90deg)',
+            transformOrigin: 'top left',
+            outline: `1px ${color} solid`,
+            outlineOffset: '-0.50px'
+          }}
+        />
+      ))}
+
+      {/* Faded bars */}
+      {fadedBars.map((bar, i) => (
+        <div
+          key={`faded-${i}`}
+          style={{
+            width: 6,
+            height: 0,
+            left: bar.left,
+            top: bar.top,
+            position: 'absolute',
+            transform: 'rotate(90deg)',
+            transformOrigin: 'top left',
+            outline: `1px ${fadedColor} solid`,
+            outlineOffset: '-0.50px'
+          }}
+        />
+      ))}
+
+      {/* Horizontal bar at top */}
+      <div style={{
+        width: 41,
+        height: 0,
+        left: 0,
+        top: 9,
+        position: 'absolute',
+        transform: 'rotate(90deg)',
+        transformOrigin: 'top left',
+        outline: `1px ${color} solid`,
+        outlineOffset: '-0.50px'
+      }} />
+    </div>
+  );
+};
+
+// Simplified bar chart using CSS grid pattern
 const MiniKPI = ({
   label,
   value,
-  chartImage,
-  fadedChartImage,
+  color,
+  fadedColor,
+  labelPadding = 11,
 }: {
   label: string;
   value: number;
-  chartImage: string;
-  fadedChartImage: string;
+  color: string;
+  fadedColor: string;
+  labelPadding?: number;
 }) => (
-  <div className="h-[50px] relative shrink-0 w-[120px]">
+  <div style={{ width: 120, height: 50, position: 'relative' }}>
     {/* Label */}
-    <p
-      className="absolute font-['Nunito:SemiBold'] font-semibold text-[16px] text-black leading-[22px] whitespace-nowrap"
-      style={{
-        left: label === 'Inquiry' ? '12px' : '11px',
-        top: '9px',
-      }}
-    >
+    <div style={{
+      left: labelPadding,
+      top: 9,
+      position: 'absolute',
+      color: 'black',
+      fontSize: 16,
+      fontFamily: 'Nunito',
+      fontWeight: '600',
+      wordWrap: 'break-word',
+      whiteSpace: 'nowrap'
+    }}>
       {label}
-    </p>
-
-    {/* Bar chart image */}
-    <div className="absolute left-0 top-[9px]">
-      <img
-        alt=""
-        src={chartImage}
-        className="block max-w-none w-[62px] h-[41px]"
-      />
     </div>
 
-    {/* Faded bar chart image */}
-    <div
-      className="absolute"
-      style={{
-        left: '54px',
-        top: '44px',
-      }}
-    >
-      <img
-        alt=""
-        src={fadedChartImage}
-        className="block max-w-none w-[64px] h-[6px]"
-      />
+    {/* Bar chart area */}
+    <div style={{ position: 'absolute', left: 0, top: 9 }}>
+      {/* Colored bars - simplified representation */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {/* Top horizontal line */}
+        <div style={{
+          width: 62,
+          height: 0,
+          borderTop: `1px ${color} solid`,
+          marginLeft: 0,
+          marginTop: 0
+        }} />
+        {/* Colored vertical bars */}
+        {[10, 8, 4, 6, 2, 12, 16, 24, 34, 44, 54, 60, 62, 58, 56, 52, 50, 48, 46, 42, 40, 38, 36, 32, 30, 28, 26, 22, 20, 18, 14].map((x, i) => (
+          <div
+            key={`v-${i}`}
+            style={{
+              width: 6,
+              height: 35 - (i % 5) * 2,
+              borderRight: `1px ${color} solid`,
+              marginLeft: x - 2,
+              marginTop: -0.5,
+              position: 'relative',
+              top: 0
+            }}
+          />
+        ))}
+      </div>
+    </div>
+
+    {/* Value below */}
+    <div style={{
+      position: 'absolute',
+      left: 0,
+      top: 53,
+      fontSize: 16,
+      fontFamily: 'Inter',
+      fontWeight: '600',
+      color: '#1F2937',
+      lineHeight: 32,
+      letterSpacing: 0.07
+    }}>
+      {value}
     </div>
   </div>
 );
@@ -97,127 +266,206 @@ export function TotalLeadCard({
 }: TotalLeadCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] relative ${className}`}
+      className={className}
       style={{
-        boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1)',
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        background: 'white',
+        boxShadow: '0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10)',
+        borderRadius: 14,
+        transform: 'rotate(0deg)'
       }}
     >
       {/* Title - top left */}
-      <p
-        className="absolute font-['Inter:Semi_Bold'] font-semibold text-[16px] text-[#1f2937] leading-[28px] tracking-[-0.4395px] whitespace-nowrap"
-        style={{
-          left: '18px',
-          top: '10px',
-        }}
-      >
+      <div style={{
+        left: 18,
+        top: 10,
+        position: 'absolute',
+        color: '#1F2937',
+        fontSize: 16,
+        fontFamily: 'Inter',
+        fontWeight: '600',
+        lineHeight: 28,
+        wordWrap: 'break-word'
+      }}>
         Total Lead
-      </p>
+      </div>
 
       {/* Subtitle */}
-      <div
-        className="absolute h-[16px] w-[148.164px]"
-        style={{
-          left: '24px',
-          top: '38px',
-        }}
-      >
-        <p
-          className="absolute font-['Inter:Regular'] font-normal text-[12px] text-[#6b7280] leading-[16px] whitespace-nowrap"
-          style={{
-            left: '-4px',
-            top: '0px',
-          }}
-        >
+      <div style={{
+        width: 148.16,
+        height: 16,
+        left: 24,
+        top: 38,
+        position: 'absolute'
+      }}>
+        <div style={{
+          left: -4,
+          top: 1,
+          position: 'absolute',
+          color: '#6B7280',
+          fontSize: 12,
+          fontFamily: 'Inter',
+          fontWeight: '400',
+          lineHeight: 16,
+          wordWrap: 'break-word'
+        }}>
           Total available room and seat
-        </p>
+        </div>
       </div>
 
       {/* Value row - top right */}
-      <div
-        className="absolute h-[37px]"
-        style={{
-          left: '20px',
-          right: '20px',
-          top: '75px',
-        }}
-      >
-        {/* Value + Trend */}
-        <div className="absolute content-stretch flex gap-[10px] items-end left-0 top-0">
-          <p className="font-['Inter:Semi_Bold'] font-semibold h-[28px] leading-[32px] text-[#1f2937] text-[24px] tracking-[0.0703px] w-[76px] shrink-0">
+      <div style={{
+        width: 433,
+        height: 37,
+        left: 20,
+        top: 75,
+        position: 'absolute'
+      }}>
+        <div style={{
+          left: 0,
+          top: 0,
+          position: 'absolute',
+          justifyContent: 'flex-start',
+          alignItems: 'flex-end',
+          gap: 10,
+          display: 'inline-flex'
+        }}>
+          {/* Main value */}
+          <div style={{
+            width: 76,
+            height: 28,
+            color: '#1F2937',
+            fontSize: 24,
+            fontFamily: 'Inter',
+            fontWeight: '600',
+            lineHeight: 32,
+            letterSpacing: 0.07,
+            wordWrap: 'break-word'
+          }}>
             {totalLeads}
-          </p>
-          <div className="h-[16px] relative shrink-0 w-[105px]">
-            <p className="absolute leading-[16px] whitespace-nowrap">
-              <span className="font-['Inter:Bold'] font-bold text-[#00d1c6] text-[10px]">+{changePercent}%</span>
-              <span className="font-['Inter:Bold'] font-bold text-[10px]">{` `}</span>
-              <span className="leading-[16px] text-[10px]">Vs Last Week</span>
-            </p>
+          </div>
+
+          {/* Trend */}
+          <div style={{ width: 105, height: 16, position: 'relative' }}>
+            <div style={{ left: 0, top: 1, position: 'absolute' }}>
+              <span style={{
+                color: '#00D1C6',
+                fontSize: 10,
+                fontFamily: 'Inter',
+                fontWeight: '700',
+                lineHeight: 16,
+                wordWrap: 'break-word'
+              }}>
+                +{changePercent}%
+              </span>
+              <span style={{
+                color: '#6B7280',
+                fontSize: 10,
+                fontFamily: 'Inter',
+                fontWeight: '700',
+                lineHeight: 16,
+                wordWrap: 'break-word'
+              }}>
+                {' '}
+              </span>
+              <span style={{
+                color: '#6B7280',
+                fontSize: 10,
+                fontFamily: 'Inter',
+                fontWeight: '400',
+                lineHeight: 16,
+                wordWrap: 'break-word'
+              }}>
+                Vs Last Week
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Orange separator line */}
-        <div
-          className="absolute h-0 left-0 right-0 top-[37px]"
-        >
-          <img
-            alt=""
-            src={imgLine53}
-            className="block max-w-none w-full h-[1px]"
-          />
-        </div>
+        <div style={{
+          width: 433,
+          height: 0,
+          left: 0,
+          top: 37,
+          position: 'absolute',
+          outline: '1px #FF7847 solid',
+          outlineOffset: '-0.50px'
+        }} />
       </div>
 
-      {/* 3 Mini KPI charts */}
-      <div
-        className="absolute content-stretch flex gap-[31px] items-center"
-        style={{
-          left: '20px',
-          top: '120px',
-        }}
-      >
-        <MiniKPI
-          label="Visited"
-          value={visited}
-          chartImage={imgGroupVisited}
-          fadedChartImage={imgGroupVisitedFaded}
-        />
-        <MiniKPI
-          label="Inquiry"
-          value={inquiry}
-          chartImage={imgGroupInquiry}
-          fadedChartImage={imgGroupInquiryFaded}
-        />
-        <MiniKPI
-          label="Converted"
-          value={converted}
-          chartImage={imgGroupConverted}
-          fadedChartImage={imgGroupConvertedFaded}
-        />
+      {/* 3 Mini KPI sections */}
+      <div style={{
+        left: 20,
+        top: 120,
+        position: 'absolute',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        gap: 31,
+        display: 'inline-flex'
+      }}>
+        {/* Visited */}
+        <MiniKPI label="Visited" value={visited} color="#FE7A49" fadedColor="rgba(254, 122, 73, 0.30)" labelPadding={11} />
+
+        {/* Inquiry */}
+        <MiniKPI label="Inquiry" value={inquiry} color="#4ECDC3" fadedColor="rgba(113, 214, 206, 0.30)" labelPadding={12} />
+
+        {/* Converted */}
+        <MiniKPI label="Converted" value={converted} color="#FFD167" fadedColor="rgba(255, 209, 103, 0.30)" labelPadding={11} />
       </div>
 
       {/* Bottom values row */}
-      <div
-        className="absolute content-stretch flex gap-[80px] items-center"
-        style={{
-          left: '20px',
-          top: '170px',
-        }}
-      >
-        <p
-          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[76px] shrink-0"
-        >
+      <div style={{
+        width: 422,
+        left: 20,
+        top: 170,
+        position: 'absolute',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        gap: 80,
+        display: 'inline-flex'
+      }}>
+        <div style={{
+          width: 76,
+          height: 28,
+          color: '#1F2937',
+          fontSize: 16,
+          fontFamily: 'Inter',
+          fontWeight: '600',
+          lineHeight: 32,
+          letterSpacing: 0.07,
+          wordWrap: 'break-word'
+        }}>
           {visited}
-        </p>
-        <p
-          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[76px] shrink-0"
-        >
+        </div>
+        <div style={{
+          width: 76,
+          height: 28,
+          color: '#1F2937',
+          fontSize: 16,
+          fontFamily: 'Inter',
+          fontWeight: '600',
+          lineHeight: 32,
+          letterSpacing: 0.07,
+          wordWrap: 'break-word'
+        }}>
           {inquiry}
-        </p>
-        <p
-          className="font-['Inter:Semi_Bold'] font-semibold text-[#1f2937] text-[16px] leading-[32px] tracking-[0.0703px] h-[28px] w-[110px] shrink-0"
-        >
+        </div>
+        <div style={{
+          width: 110,
+          height: 28,
+          color: '#1F2937',
+          fontSize: 16,
+          fontFamily: 'Inter',
+          fontWeight: '600',
+          lineHeight: 32,
+          letterSpacing: 0.07,
+          wordWrap: 'break-word'
+        }}>
           {converted}
-        </p>
+        </div>
       </div>
     </div>
   );
