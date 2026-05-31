@@ -13,6 +13,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Icons
 const Icons = {
@@ -121,10 +122,16 @@ const statusColors: Record<Lead["status"], string> = {
 export default function CRMPage() {
   const [selectedLead, setSelectedLead] = useState<Lead>(leadsData[0]);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   const filteredLeads = leadsData.filter((lead) =>
     lead.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleLeadClick = (lead: Lead) => {
+    setSelectedLead(lead);
+    router.push(`/dashboard/crm/${lead.name.toLowerCase().replace(/\s+/g, '-')}`);
+  };
 
   return (
     <div className="flex-1 p-6">
