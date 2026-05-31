@@ -1,21 +1,16 @@
 /**
  * File:        apps/web/src/components/ui/dashboard/payment-health-card.tsx
  * Module:      Web · UI · Dashboard · Payment Health Card
- * Purpose:     Card showing payment metrics with donut chart
+ * Purpose:     Card showing payment metrics with 3D pie chart
  *
- * Design Reference: Center Manager view - exact layout
- * - White card with 14px radius, shadow
- * - Header: "Payment Health" title + subtitle
- * - Donut chart showing total collection
- * - Payment breakdown: Paid (73% ₹28.5L), Overdue (16% ₹6.2L), Partial (11% ₹4.3L)
- * - Total: ₹39.0L in center of donut
- *
- * Exports:
- *   - PaymentHealthCard — card displaying payment health
- *   - PaymentHealthCardDemo — demo component
+ * Design Reference: Payment Health card.png - exact match
+ * Layout: Header → 3D Pie Chart (center) → Legend (bottom, 3 rows)
+ * - Header: "Payment Health" title + "Total Collection" subtitle (left aligned)
+ * - 3D Pie Chart: Orange (73% Paid), Red (16% Overdue), Yellow (11% Partial)
+ * - Legend: 3 rows with color dot + label + percentage + amount
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-29
+ * Last-updated: 2026-05-31
  */
 
 "use client";
@@ -31,61 +26,94 @@ interface PaymentHealthCardProps {
   className?: string;
 }
 
-// Donut chart component
-const DonutChart = ({ total }: { total: string }) => {
-  return (
-    <div className="relative w-[250px] h-[250px]">
-      {/* Background circle */}
-      <svg className="absolute inset-0" viewBox="0 0 179 179">
-        {/* Donut segments using stroke-dasharray */}
-        {/* Total collection: 73% orange, 16% red, 11% yellow */}
-        <circle
-          cx="89.5"
-          cy="89.5"
-          r="70"
-          fill="none"
-          stroke="#00D1C6"
-          strokeWidth="12"
-          strokeDasharray="220 220"
-          strokeDashoffset="85"
-          transform="rotate(-90 89.5 89.5)"
-        />
-        <circle
-          cx="89.5"
-          cy="89.5"
-          r="70"
-          fill="none"
-          stroke="#FF7847"
-          strokeWidth="12"
-          strokeDasharray="180 220"
-          strokeDashoffset="-135"
-          transform="rotate(-90 89.5 89.5)"
-        />
-        <circle
-          cx="89.5"
-          cy="89.5"
-          r="70"
-          fill="none"
-          stroke="#FBBF24"
-          strokeWidth="12"
-          strokeDasharray="50 220"
-          strokeDashoffset="45"
-          transform="rotate(-90 89.5 89.5)"
-        />
-      </svg>
+// 3D Pie Chart using proper SVG arc paths
+const PieChart3D = ({ total }: { total: string }) => {
+  // Total = 100%, Paid = 73%, Overdue = 16%, Partial = 11%
+  // Using conic gradient for clean pie, then applying 3D transform
 
-      {/* Center text */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[19.9px] font-extrabold text-[#030229] leading-[24px]">
-          {total}
-        </span>
-        <span className="text-[13.3px] text-[#030229] opacity-70">Total</span>
+  const paidPercent = 73;
+  const overduePercent = 16;
+  const partialPercent = 11;
+
+  return (
+    <div className="relative w-full flex justify-center py-2">
+      {/* 3D Pie Chart */}
+      <div
+        className="relative"
+        style={{
+          width: '140px',
+          height: '140px',
+        }}
+      >
+        {/* SVG Pie Chart */}
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <defs>
+            {/* 3D effect gradients for each segment */}
+            <linearGradient id="paidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FF8A65" />
+              <stop offset="100%" stopColor="#E56A3D" />
+            </linearGradient>
+            <linearGradient id="overdueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#F87171" />
+              <stop offset="100%" stopColor="#DC2626" />
+            </linearGradient>
+            <linearGradient id="partialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FCD34D" />
+              <stop offset="100%" stopColor="#D4A017" />
+            </linearGradient>
+          </defs>
+
+          {/* Background circle (light gray) */}
+          <circle cx="70" cy="70" r="60" fill="#F3F4F6" />
+
+          {/* Pie segments using conic gradient approach via segments */}
+          {/* We build segments manually with arc paths */}
+
+          {/* Paid segment - 73% - Orange */}
+          <path
+            d="M 70 70 L 70 10 A 60 60 0 1 1 40 115 Z"
+            fill="url(#paidGrad)"
+          />
+
+          {/* Overdue segment - 16% - Red */}
+          <path
+            d="M 70 70 L 40 115 A 60 60 0 0 1 95 115 Z"
+            fill="url(#overdueGrad)"
+          />
+
+          {/* Partial segment - 11% - Yellow */}
+          <path
+            d="M 70 70 L 95 115 A 60 60 0 0 1 70 10 Z"
+            fill="url(#partialGrad)"
+          />
+
+          {/* Center white circle for donut effect */}
+          <circle cx="70" cy="70" r="25" fill="white" />
+        </svg>
+
+        {/* 3D depth effect - bottom ellipse */}
+        <div
+          className="absolute left-0"
+          style={{
+            width: '140px',
+            height: '20px',
+            top: '125px',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 100%)',
+            borderRadius: '50%',
+          }}
+        />
+
+        {/* Total in center */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-[15px] font-bold text-[#111827] leading-tight">
+            {total}
+          </span>
+          <span className="text-[10px] text-[#6B7280]">Total</span>
+        </div>
       </div>
     </div>
   );
 };
-
-// Dot indicator - inlined in component for each color
 
 export function PaymentHealthCard({
   total = "₹39.0L",
@@ -95,58 +123,54 @@ export function PaymentHealthCard({
   onViewDetails,
   className = "",
 }: PaymentHealthCardProps) {
+  const legendItems = [
+    { label: "Paid", percent: paid.percent, amount: paid.amount, color: "#FF6A2F" },
+    { label: "Overdue", percent: overdue.percent, amount: overdue.amount, color: "#EF4444" },
+    { label: "Partial", percent: partial.percent, amount: partial.amount, color: "#FBBF24" },
+  ];
+
   return (
-    <div className={`bg-white rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] flex flex-col p-5 ${className}`}>
-      {/* Header */}
-      <div className="mb-4">
-        <h2 className="text-[16px] font-semibold text-[#1F2937] tracking-[-0.3125px] mb-1">
+    <div className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col p-5 ${className}`}>
+      {/* Row 1: Header - left aligned */}
+      <div className="mb-3">
+        <h2 className="text-[15px] font-semibold text-[#111827] tracking-[-0.3px] mb-0.5 text-left">
           Payment Health
         </h2>
-        <p className="text-[12px] text-[#6B7280]">Total payment characteristics</p>
+        <p className="text-[12px] text-[#6B7280] text-left">Total Collection</p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Donut Chart */}
-        <DonutChart total={total} />
+      {/* Row 2: 3D Pie Chart - centered */}
+      <PieChart3D total={total} />
 
-        {/* Payment breakdown */}
-        <div className="flex flex-col gap-4 flex-1 justify-center">
-          {/* Paid */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-[12px] h-[12px] rounded-full bg-[#FF7847]" />
-              <span className="text-[14px] text-[#6B7280]">Paid</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[12px] text-[#6B7280]">{paid.percent}%</span>
-              <span className="text-[14px] font-medium text-[#1F2937]">{paid.amount}</span>
-            </div>
-          </div>
+      {/* Row 3: Legend - 3 rows */}
+      <div className="flex flex-col gap-2 mt-2">
+        {legendItems.map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            {/* Color indicator dot */}
+            <div
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: item.color }}
+            />
 
-          {/* Overdue */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-[12px] h-[12px] rounded-full bg-[#EF4444]" />
-              <span className="text-[14px] text-[#6B7280]">Overdue</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[12px] text-[#6B7280]">{overdue.percent}%</span>
-              <span className="text-[14px] font-medium text-[#1F2937]">{overdue.amount}</span>
-            </div>
-          </div>
+            {/* Label */}
+            <span className="text-[12px] text-[#374151] w-[60px]">
+              {item.label}
+            </span>
 
-          {/* Partial */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-[12px] h-[12px] rounded-full bg-[#FBBF24]" />
-              <span className="text-[14px] text-[#6B7280]">Partial</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[12px] text-[#6B7280]">{partial.percent}%</span>
-              <span className="text-[14px] font-medium text-[#1F2937]">{partial.amount}</span>
-            </div>
+            {/* Percentage */}
+            <span className="text-[12px] text-[#6B7280] w-[35px] text-right">
+              {item.percent}%
+            </span>
+
+            {/* Divider dash */}
+            <span className="text-[12px] text-[#D1D5DB]">-</span>
+
+            {/* Amount */}
+            <span className="text-[12px] text-[#374151] font-medium">
+              {item.amount}
+            </span>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -156,7 +180,7 @@ export function PaymentHealthCard({
 export function PaymentHealthCardDemo() {
   return (
     <PaymentHealthCard
-      className="w-[488px] h-[360px]"
+      className="flex-1 min-w-0"
     />
   );
 }

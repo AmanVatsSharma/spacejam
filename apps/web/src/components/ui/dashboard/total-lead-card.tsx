@@ -100,7 +100,7 @@ export function TotalLeadCard({
 }: TotalLeadCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] p-5 ${className}`}
+      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 ${className}`}
     >
       {/* Header Row - Value on left, title on right */}
       <div className="flex justify-between items-start mb-[37px]">
@@ -119,14 +119,14 @@ export function TotalLeadCard({
         </div>
 
         {/* Right side - Title and subtitle */}
-        <div className="flex flex-col gap-0">
+        <div className="flex flex-col gap-0 text-right">
           <span
             className="text-[16px] font-semibold text-[#1F2937] leading-[28px] tracking-[-0.439453px]"
             style={{ fontFamily: "Inter, sans-serif" }}
           >
             Total Lead
           </span>
-          <span className="text-[12px] text-[#6B7280] leading-[16px] -ml-[4px]">
+          <span className="text-[12px] text-[#6B7280] leading-[16px]">
             Total available room and seat
           </span>
         </div>
@@ -174,7 +174,7 @@ export function TotalLeadCardDemo() {
       visited={459}
       inquiry={350}
       converted={215}
-      className="w-[473px] h-[216px]"
+      className="w-[473px] shrink-0"
     />
   );
 }

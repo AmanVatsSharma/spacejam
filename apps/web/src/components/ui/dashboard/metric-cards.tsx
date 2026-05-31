@@ -58,12 +58,12 @@ export function MetricCard({
 }: MetricCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] flex flex-col gap-2 p-5 ${className}`}
+      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col gap-2 p-5 ${className}`}
     >
       {/* Top Row - Icon and Trend */}
       <div className="flex items-center justify-between">
-        {/* Icon Container - 36x36px with #FFF5F1 background */}
-        <div className="w-[36px] h-[36px] bg-[#FFF5F1] rounded-[10px] flex items-center justify-center">
+        {/* Icon Container - circular with #FFF5F1 background */}
+        <div className="w-[36px] h-[36px] bg-[#FFF5F1] rounded-full flex items-center justify-center">
           {icon}
         </div>
 
@@ -99,7 +99,7 @@ export function DepositHeldCardDemo() {
       value="₹3.8L"
       icon={<DepositIcon />}
       changePercent={5}
-      className="w-[280px]"
+      className="flex-1"
     />
   );
 }
@@ -111,7 +111,7 @@ export function EventTodayCardDemo() {
       value="6"
       icon={<EventIcon />}
       changePercent={5}
-      className="w-[280px]"
+      className="flex-1"
     />
   );
 }

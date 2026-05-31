@@ -92,12 +92,12 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] flex flex-col gap-2 p-5 ${className}`}
+      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col gap-2 p-5 ${className}`}
     >
       {/* Top Row - Icon and Trend */}
       <div className="flex items-center justify-between">
-        {/* Icon Container - 36x36px with #FFF5F1 background, 10px radius */}
-        <div className="w-[36px] h-[36px] bg-[#FFF5F1] rounded-[10px] flex items-center justify-center">
+        {/* Icon Container - circular with #FFF5F1 background */}
+        <div className="w-[36px] h-[36px] bg-[#FFF5F1] rounded-full flex items-center justify-center">
           {icon}
         </div>
 
@@ -136,7 +136,7 @@ export function StatCards() {
       icon: <RevenueIcon />,
       changePercent: 12,
       changeDirection: "up" as TrendDirection,
-      className: "flex-1",
+      className: "flex-1 min-w-0",
     },
     {
       label: "Active Customers",
@@ -144,7 +144,7 @@ export function StatCards() {
       icon: <CustomersIcon />,
       changePercent: 5,
       changeDirection: "up" as TrendDirection,
-      className: "flex-1",
+      className: "flex-1 min-w-0",
     },
     {
       label: "Outstanding Dues",
@@ -152,7 +152,7 @@ export function StatCards() {
       icon: <DuesIcon />,
       changePercent: 8,
       changeDirection: "down" as TrendDirection,
-      className: "flex-1",
+      className: "flex-1 min-w-0",
     },
     {
       label: "Bookings Today",
@@ -160,12 +160,12 @@ export function StatCards() {
       icon: <BookingsIcon />,
       changePercent: 5,
       changeDirection: "up" as TrendDirection,
-      className: "flex-1",
+      className: "flex-1 min-w-0",
     },
   ];
 
   return (
-    <div className="flex gap-[24px]">
+    <div className="flex gap-[21px]">
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}

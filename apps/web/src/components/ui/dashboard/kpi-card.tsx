@@ -93,7 +93,7 @@ export function KPICard({
   secondaryLabel = "Inquiry",
 }: KPICardProps) {
   return (
-    <div className="relative bg-white rounded-xl shadow-[0px_1px_3px_rgba(0,0,0,0.1),0px_1px_2px_-1px_rgba(0,0,0,0.1)] px-5 pt-[75px] pb-5 w-[473px] min-h-[216px]">
+    <div className="relative bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] px-5 pt-[75px] pb-5 w-[473px] min-h-[216px]">
       {/* Header: value + trend */}
       <div className="flex flex-row items-end gap-2.5 mb-6">
         <span className="text-2xl font-semibold text-[#1F2937] leading-8">{value}</span>

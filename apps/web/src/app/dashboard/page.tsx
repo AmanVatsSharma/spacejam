@@ -3,15 +3,17 @@
  * Module:      Web · Dashboard · Overview Page
  * Purpose:     Main dashboard with overview stats, KPI cards, and management sections
  *
- * Layout structure (row by row):
- * - Welcome Header: greeting + subtitle
- * - KPI Cards Row: 4 cards spanning full width
- * - Second Stack Row: Total Lead (473px fixed) + Payment Health (flex remaining)
- * - Third Row: Deposit Held + Event Today (280px each, side by side)
- * - Fourth Row: Tasks & Compliance (full width)
+ * Layout structure (matches dashboard_01.png):
+ * - Welcome Header: greeting + subtitle (14px radius, subtle shadow)
+ * - KPI Cards Row: 4 cards with equal widths, 21px gap
+ * - 3-Column Grid:
+ *   - Column 1: Total Lead (top) + Deposit Held + Event Today (bottom, side by side)
+ *   - Column 2: Payment Health (full height)
+ *   - Column 3: Tasks& Compliance (full height)
+ * - Full Width: Approval Queue
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-05-31
  */
 
 "use client";
@@ -26,38 +28,43 @@ import { ApprovalQueueCardDemo } from "@/components/ui/dashboard/approval-queue-
 export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-5">
-      {/* Welcome Header */}
-      <div className="bg-white rounded-[19px] shadow-[0px_0px_6px_rgba(252,135,88,0.2),0px_0px_5px_rgba(99,99,99,0.25)] p-5">
-        <h1 className="text-[21.5px] font-semibold text-[#111827] tracking-[-0.5px] mb-1">
+      {/* Welcome Header - 14px radius with subtle shadow */}
+      <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] px-5 py-[18px]">
+        <h1 className="text-[21.5px] font-semibold text-[#111827] tracking-[-0.5px] mb-[3px]">
           Welcome back, Rahul!
         </h1>
-        <p className="text-[16px] text-[#4B5565] tracking-[-0.5px]">
+        <p className="text-[15px] text-[#4B5565] tracking-[-0.5px]">
           Monitor meeting room usage, availability and booking status
         </p>
       </div>
 
-      {/* Row 1: 4 KPI Cards */}
+      {/* Row 1: 4 KPI Cards - equal widths, 21px gap */}
       <StatCards />
 
-      {/* Row 2: Total Lead (473px fixed) + Payment Health (flex remaining) */}
-      <div className="flex gap-5">
-        <TotalLeadCardDemo />
-        <div className="flex-1">
+      {/* 3-Column Grid Row */}
+      <div className="flex gap-5 items-start">
+        {/* Column 1: Total Lead + (Deposit Held + Event Today) */}
+        <div className="flex flex-col gap-5 w-[473px] shrink-0">
+          <TotalLeadCardDemo />
+          <div className="flex gap-5">
+            <DepositHeldCardDemo />
+            <EventTodayCardDemo />
+          </div>
+        </div>
+
+        {/* Column 2: Payment Health */}
+        <div className="flex-1 min-w-0">
           <PaymentHealthCardDemo />
+        </div>
+
+        {/* Column 3: Tasks & Compliance */}
+        <div className="flex-1 min-w-0">
+          <TasksComplianceCardDemo />
         </div>
       </div>
 
-      {/* Row 3: Deposit Held + Event Today */}
-      <div className="flex gap-5">
-        <DepositHeldCardDemo />
-        <EventTodayCardDemo />
-      </div>
-
-      {/* Row 4: Approval Queue + Tasks & Compliance */}
-      <div className="flex gap-5">
-        <ApprovalQueueCardDemo />
-        <TasksComplianceCardDemo />
-      </div>
+      {/* Bottom: Approval Queue - full width */}
+      <ApprovalQueueCardDemo />
     </div>
   );
 }

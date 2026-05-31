@@ -12,6 +12,10 @@ interface Product {
   tokenValue: number;
 }
 
+interface SetUpNewCenterProps {
+  onClose?: () => void;
+}
+
 interface Step {
   number: number;
   label: string;
@@ -25,7 +29,7 @@ const steps: Step[] = [
   { number: 5, label: 'Review' },
 ];
 
-export function SetUpNewCenter() {
+export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [gstEnabled, setGstEnabled] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -513,7 +517,7 @@ export function SetUpNewCenter() {
             <h1>Set Up New Center</h1>
             <p>Configure location, products, floors and spaces</p>
           </div>
-          <button className={styles.closeBtn} aria-label="Close" />
+          <button className={styles.closeBtn} aria-label="Close" onClick={onClose} />
         </div>
         {renderStepper()}
       </div>

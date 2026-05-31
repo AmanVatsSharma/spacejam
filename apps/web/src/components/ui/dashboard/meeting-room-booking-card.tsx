@@ -51,7 +51,7 @@ export function MeetingRoomBookingCard({
   onViewAll,
 }: MeetingRoomBookingCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-[#EAEAEA] shadow-sm p-5 flex flex-col gap-4 w-[428px]">
+    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
