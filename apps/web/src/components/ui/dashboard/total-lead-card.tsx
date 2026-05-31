@@ -3,16 +3,16 @@
  * Module:      Web · UI · Dashboard · Total Lead Card
  * Purpose:     KPI card showing total leads with mini bar charts
  *
- * Design Reference: Exact Figma implementation from CSS specs
- * - Card: 473px x 216px, border-radius 14px, white bg, shadow
- * - Value "1349" (24px, Inter, 600) on left with "+1.6% Vs Last Week" (10px, teal)
- * - "Total Lead" title (16px, Inter, 600) on right with subtitle
- * - Orange separator line (#FF7847) at top: 37px
+ * Design Reference: Figma CSS export - exact pixel match
+ * - Card: 473px x 216px, 14px radius, white bg, shadow
+ * - Title "Total Lead" (16px) + subtitle on left side
+ * - Value "1349" (24px) + trend on right side
+ * - Orange separator line (37px from top)
  * - 3 mini bar charts: Visited (orange), Inquiry (teal), Converted (yellow)
- * - Values below charts: 459, 350, 215 with 80px gap
+ * - Bottom values: 459, 350, 215 with 80px gap
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-29
+ * Last-updated: 2026-05-31
  */
 
 "use client";
@@ -20,16 +20,61 @@
 import React from "react";
 
 interface TotalLeadCardProps {
-  totalLeads: number;
-  changePercent: number;
+  totalLeads?: number;
+  changePercent?: number;
   visited?: number;
   inquiry?: number;
   converted?: number;
   className?: string;
 }
 
-// Mini bar chart component - exact Figma bar visualization
-const MiniBarChart = ({
+// Bar chart with 12 bars - exact Figma positioning
+const BarChart = ({
+  color,
+  fadedColor,
+}: {
+  color: string;
+  fadedColor: string;
+}) => {
+  // Bar heights represent data distribution
+  // Left side: colored bars, Right side: faded bars
+  const coloredHeights = [2, 6, 10, 14, 18, 22, 26, 30];
+  const fadedHeights = [34, 38, 36, 40];
+
+  return (
+    <div className="relative w-[64px] h-[41px]">
+      {/* Colored bars */}
+      <div className="absolute left-0 top-[9px] flex items-end gap-[2px] h-[32px]">
+        {coloredHeights.map((h, i) => (
+          <div
+            key={`c-${i}`}
+            className="w-[6px]"
+            style={{
+              height: `${h}px`,
+              backgroundColor: color,
+            }}
+          />
+        ))}
+      </div>
+      {/* Faded bars */}
+      <div className="absolute left-0 top-[9px] flex items-end gap-[2px] h-[32px]">
+        {fadedHeights.map((h, i) => (
+          <div
+            key={`f-${i}`}
+            className="w-[6px]"
+            style={{
+              height: `${h}px`,
+              backgroundColor: fadedColor,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Mini KPI box with label, chart, and value
+const MiniKPI = ({
   label,
   value,
   color,
@@ -39,60 +84,32 @@ const MiniBarChart = ({
   value: number;
   color: string;
   fadedColor: string;
-}) => {
-  // 12 bars as in Figma - representing data points
-  // Left bars are the color, right bars are faded
-  const barHeights = [2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 36, 40];
-  const fadedIndex = 7; // 7 bars colored, 5 faded (approximately)
+}) => (
+  <div className="flex flex-col items-center gap-1 w-[120px]">
+    {/* Label - Nunito font, 16px */}
+    <span
+      className="font-['Nunito'] font-semibold text-[16px] leading-[22px] text-[#000000]"
+      style={{ paddingLeft: '11px' }}
+    >
+      {label}
+    </span>
 
-  return (
-    <div className="flex flex-col gap-1 w-[120px]">
-      {/* Label - Nunito font per Figma */}
-      <span className="text-[16px] font-semibold text-[#000000] font-['Nunito'] leading-[22px]">
-        {label}
-      </span>
+    {/* Bar chart */}
+    <BarChart color={color} fadedColor={fadedColor} />
 
-      {/* Bar chart visualization - 12 bars with gradient effect */}
-      <div className="relative w-[62px] h-[41px]">
-        {/* Colored bars (left portion) */}
-        <div className="absolute left-0 top-[9px] flex items-end gap-[3px] h-[32px]">
-          {barHeights.slice(0, fadedIndex).map((height, i) => (
-            <div
-              key={`color-${i}`}
-              className="w-[6px]"
-              style={{
-                height: `${height}px`,
-                backgroundColor: color,
-              }}
-            />
-          ))}
-        </div>
-        {/* Faded bars (right portion) */}
-        <div className="absolute left-0 top-[9px] flex items-end gap-[3px] h-[32px]">
-          {barHeights.slice(fadedIndex).map((height, i) => (
-            <div
-              key={`faded-${i}`}
-              className="w-[6px]"
-              style={{
-                height: `${height}px`,
-                backgroundColor: fadedColor,
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Value - 16px, Inter, 600 weight */}
-      <span className="text-[16px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]">
-        {value}
-      </span>
-    </div>
-  );
-};
+    {/* Value - 16px, Inter, 600 */}
+    <span
+      className="text-[16px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]"
+      style={{ width: '76px', textAlign: 'center' }}
+    >
+      {value}
+    </span>
+  </div>
+);
 
 export function TotalLeadCard({
-  totalLeads,
-  changePercent,
+  totalLeads = 1349,
+  changePercent = 1.6,
   visited = 459,
   inquiry = 350,
   converted = 215,
@@ -100,61 +117,79 @@ export function TotalLeadCard({
 }: TotalLeadCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 ${className}`}
+      className={`bg-white rounded-[14px] p-5 relative ${className}`}
+      style={{
+        width: '473px',
+        height: '216px',
+        boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1)',
+      }}
     >
-      {/* Header Row - Value on left, title on right */}
-      <div className="flex justify-between items-start mb-[37px]">
-        {/* Left side - Value and trend */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-end gap-[10px]">
-            {/* Main value "1349" - 24px, Inter, 600 */}
-            <span className="text-[24px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]">
-              {totalLeads.toLocaleString()}
-            </span>
-            {/* Trend indicator "+1.6% Vs Last Week" - 10px, teal */}
-            <span className="text-[10px] font-bold text-[#00D1C6] leading-[16px]">
-              +{changePercent}% Vs Last Week
-            </span>
-          </div>
-        </div>
-
-        {/* Right side - Title and subtitle */}
-        <div className="flex flex-col gap-0 text-right">
+      {/* Row 1: Title/Subtitle on left, Value/Trend on right */}
+      <div className="flex justify-between items-start h-[37px]">
+        {/* Left: Title + Subtitle */}
+        <div className="flex flex-col" style={{ paddingLeft: '18px' }}>
           <span
             className="text-[16px] font-semibold text-[#1F2937] leading-[28px] tracking-[-0.439453px]"
-            style={{ fontFamily: "Inter, sans-serif" }}
+            style={{ fontFamily: 'Inter, sans-serif' }}
           >
             Total Lead
           </span>
-          <span className="text-[12px] text-[#6B7280] leading-[16px]">
+          <span
+            className="text-[12px] text-[#6B7280] leading-[16px]"
+            style={{ paddingLeft: '6px' }}
+          >
             Total available room and seat
+          </span>
+        </div>
+
+        {/* Right: Value + Trend */}
+        <div className="flex flex-col items-end">
+          <div className="flex items-end gap-[10px]">
+            <span
+              className="text-[24px] font-semibold text-[#1F2937] leading-[32px] tracking-[0.0703125px]"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              {totalLeads}
+            </span>
+          </div>
+          <span
+            className="text-[10px] font-bold text-[#00D1C6] leading-[16px]"
+            style={{ marginTop: '-4px' }}
+          >
+            +{changePercent}% Vs Last Week
           </span>
         </div>
       </div>
 
-      {/* Orange separator line */}
-      <div className="w-full h-[1px] bg-[#FF7847] mb-4" />
+      {/* Orange separator line - exactly 37px from top of container area */}
+      <div
+        className="absolute w-[433px] h-[1px] bg-[#FF7847]"
+        style={{ top: '75px', left: '20px' }}
+      />
 
-      {/* Bottom section - 3 mini bar charts with 80px gap */}
-      <div className="flex gap-[80px]">
-        {/* Visited - orange bars #FE7A49, faded rgba(254, 122, 73, 0.3) */}
-        <MiniBarChart
+      {/* Row 2: 3 Mini KPI charts with 80px gap */}
+      <div
+        className="flex items-center gap-[80px]"
+        style={{ marginTop: '38px', paddingLeft: '20px' }}
+      >
+        {/* Visited - Orange */}
+        <MiniKPI
           label="Visited"
           value={visited}
           color="#FE7A49"
           fadedColor="rgba(254, 122, 73, 0.3)"
         />
 
-        {/* Inquiry - teal bars #4ECDC3, faded rgba(113, 214, 206, 0.3) */}
-        <MiniBarChart
+        {/* Inquiry - Teal */}
+        <MiniKPI
           label="Inquiry"
           value={inquiry}
           color="#4ECDC3"
           fadedColor="rgba(113, 214, 206, 0.3)"
         />
 
-        {/* Converted - yellow bars #FFD167, faded rgba(255, 209, 103, 0.3) */}
-        <MiniBarChart
+        {/* Converted - Yellow */}
+        <MiniKPI
           label="Converted"
           value={converted}
           color="#FFD167"
@@ -167,14 +202,5 @@ export function TotalLeadCard({
 
 // Demo export
 export function TotalLeadCardDemo() {
-  return (
-    <TotalLeadCard
-      totalLeads={1349}
-      changePercent={1.6}
-      visited={459}
-      inquiry={350}
-      converted={215}
-      className="w-[473px] shrink-0"
-    />
-  );
+  return <TotalLeadCard className="shrink-0" />;
 }
