@@ -1,5 +1,22 @@
-# Ignore all apps/libs except web
+# --- Backend / non-deployable apps ---
 apps/api
-apps/*/#
-libs/*/#
-!apps/web
+apps/api/**
+
+# --- Other apps in the monorepo (only web deploys) ---
+apps/*/!public/**
+
+# --- Top-level clutter ---
+.github
+.opencode
+.cursor
+.codex
+.gemini
+.agents
+.playwright-mcp
+Referenace Pics
+*.png
+*.log
+.git
+.idea
+.vscode
+.DS_Store
