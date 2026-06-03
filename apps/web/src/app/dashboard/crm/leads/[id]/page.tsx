@@ -1,6 +1,6 @@
 /**
- * File:        apps/web/src/app/dashboard/crm/[id]/page.tsx
- * Module:      Web · Dashboard · CRM · Lead Detail
+ * File:        apps/web/src/app/dashboard/crm/leads/[id]/page.tsx
+ * Module:      Web · Dashboard · CRM · Leads · Lead Detail
  * Purpose:     Detailed lead view with interactions, follow-ups, and conversion options
  *
  * Author:      AmanVatsSharma
@@ -51,7 +51,7 @@ const Icons = {
   ),
   globe: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0 3-4.03 3-9s-1.343-9 3-9m-9 9a9 9 0 019-9" />
     </svg>
   ),
   briefcase: (
@@ -325,7 +325,7 @@ export default function LeadDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleBack = () => {
-    router.push("/dashboard/crm");
+    router.push("/dashboard/crm/leads");
   };
 
   return (
@@ -630,9 +630,8 @@ export default function LeadDetailPage() {
           </div>
         </div>
       </div>
+      </div>
       <Fragment />
     </Fragment>
   );
 }
-
-// Icon helper component

@@ -175,6 +175,16 @@ Nx generators configured for `@nx/next`:
 
 ---
 
+## Deployment & Server
+
+### AWS EC2 Instance Details
+- **Instance ID**: `i-040fe592978e19408 (CS_01)`
+- **Public DNS**: `ec2-98-130-45-181.ap-south-2.compute.amazonaws.com`
+- **SSH Command**: `ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com`
+- **Key Location**: `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem`
+
+---
+
 ## File Header Format
 
 All TypeScript/TSX files should include this header:

@@ -1,11 +1,13 @@
-# --- Backend / non-deployable apps ---
-apps/api
-apps/api/**
+# --- Reference screenshots / assets (web is the project root) ---
+*.png
+*.log
+Referenace Pics
+dashboard-3rd-stack.png
+dashboard-fixed.png
+screenshot.png
+customer-detail-screenshot.png
 
-# --- Other apps in the monorepo (only web deploys) ---
-apps/*/!public/**
-
-# --- Top-level clutter ---
+# --- Editor / tooling folders accidentally inside web ---
 .github
 .opencode
 .cursor
@@ -13,10 +15,7 @@ apps/*/!public/**
 .gemini
 .agents
 .playwright-mcp
-Referenace Pics
-*.png
-*.log
-.git
 .idea
 .vscode
 .DS_Store
+.git
