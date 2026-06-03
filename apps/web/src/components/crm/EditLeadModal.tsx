@@ -24,8 +24,8 @@ interface EditLeadModalProps {
     teamSize: string;
     moveInDate: string;
     assignedCM: string;
-    preferredCenter: string;
-    notes: string;
+    preferredCenter?: string;
+    notes?: string;
   };
 }
 
