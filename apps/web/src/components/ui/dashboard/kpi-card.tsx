@@ -53,19 +53,6 @@ const TrendUpIcon = ({ color = "#FF7847" }: { color?: string }) => (
   </svg>
 );
 
-// Trend down arrow icon
-const TrendDownIcon = ({ color = "#00D1C6" }: { color?: string }) => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-    <path
-      d="M6 2V10M6 10L10 6M6 10L2 6"
-      stroke={color}
-      strokeWidth="1"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 // Default tablet icon (from Figma - streamline-sharp:one-handed-holding-tablet-handheld)
 const TabletIcon = ({ color = "#FF6A2F" }: { color?: string }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
