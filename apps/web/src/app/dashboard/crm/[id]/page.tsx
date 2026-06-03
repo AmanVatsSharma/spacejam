@@ -630,7 +630,7 @@ export default function LeadDetailPage() {
           </div>
         </div>
       </div>
-      <Fragment />
+    </div>
     </Fragment>
   );
 }
