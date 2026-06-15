@@ -180,8 +180,39 @@ Nx generators configured for `@nx/next`:
 ### AWS EC2 Instance Details
 - **Instance ID**: `i-040fe592978e19408 (CS_01)`
 - **Public DNS**: `ec2-98-130-45-181.ap-south-2.compute.amazonaws.com`
-- **SSH Command**: `ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com`
+- **SSH User**: `ubuntu`
 - **Key Location**: `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem`
+
+### SSH Connection
+```sh
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+```
+
+### Application Management (PM2)
+The application is managed by PM2 on the server.
+```sh
+pm2 status                # Check application status
+pm2 restart spacejam-web  # Restart the application
+pm2 stop spacejam-web     # Stop the application
+pm2 logs spacejam-web     # View live logs
+```
+
+### Update/Deployment Workflow
+To update the server with local changes:
+1. **Archive**: `git archive --format=tar.gz -o update.tar.gz HEAD`
+2. **Transfer**: `scp -i "..." update.tar.gz ubuntu@ec2...:/home/ubuntu/`
+3. **Extract & Build** (on server):
+   ```sh
+   sudo rm -rf spacejam && mkdir spacejam
+   tar -xzf update.tar.gz -C spacejam
+   cd spacejam && npm install && npx nx build web
+   pm2 restart spacejam-web
+   ```
+
+### Server Configuration Notes
+- **Node.js**: Managed via NVM (v20 installed).
+- **Swap**: 2GB swap file enabled to support builds on low-RAM instance (`/swapfile`).
+- **Port**: App runs on port 3000.
 
 ---
 

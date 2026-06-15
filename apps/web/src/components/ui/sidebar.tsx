@@ -4,7 +4,7 @@
  * Purpose:     Left sidebar with navigation icons for SpaceJam app
  *
  * Exports:
- *   - Sidebar — navigation component with Dashboard, CRM, Revenue, Operations, Floors, Report, Inventory, Settings
+ *   - Sidebar — navigation component with Dashboard, CRM, Revenue, Operations, Floors, Report, Inventory, Settings, Changelog
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-05-29
@@ -103,6 +103,15 @@ const BookingsIcon = ({ active }: IconProps) => (
   </svg>
 );
 
+const ChangelogIcon = ({ active }: IconProps) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 4.5C3 3.67 3.67 3 4.5 3H7L8.5 5H13.5C14.33 5 15 5.67 15 6.5V13.5C15 14.33 14.33 15 13.5 15H4.5C3.67 15 3 14.33 3 13.5V4.5Z" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinejoin="round"/>
+    <circle cx="7" cy="10" r="0.9" fill={active ? "#FFFFFF" : "#4B5563"}/>
+    <circle cx="9" cy="10" r="0.9" fill={active ? "#FFFFFF" : "#4B5563"}/>
+    <circle cx="11" cy="10" r="0.9" fill={active ? "#FFFFFF" : "#4B5563"}/>
+  </svg>
+);
+
 const icons: Record<string, (props: IconProps) => ReactNode> = {
   dashboard: DashboardIcon,
   crm: CRMIcon,
@@ -113,6 +122,7 @@ const icons: Record<string, (props: IconProps) => ReactNode> = {
   location: LocationIcon,
   floors: FloorIcon,
   bookings: BookingsIcon,
+  changelog: ChangelogIcon,
   settings: SettingsIcon,
 };
 
@@ -134,6 +144,7 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
     { id: "report", label: "Report", icon: ReportIcon, href: "/dashboard/report" },
     { id: "inventory", label: "Inventory", icon: InventoryIcon, href: "/dashboard/inventory" },
     { id: "location", label: "Location", icon: LocationIcon, href: "/dashboard/location" },
+    { id: "changelog", label: "What's new", icon: ChangelogIcon, href: "/changelog" },
     { id: "settings", label: "Settings", icon: SettingsIcon, href: "/dashboard/settings" },
   ];
 

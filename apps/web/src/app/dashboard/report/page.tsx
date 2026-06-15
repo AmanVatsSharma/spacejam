@@ -13,6 +13,7 @@
 "use client";
 
 import { useState, type ReactElement } from "react";
+import { OccupancyBarChart } from "@spacejam/ui";
 
 interface ReportCard {
   title: string;
@@ -136,18 +137,26 @@ export default function ReportPage() {
               Download PDF
             </button>
           </div>
-          {/* Placeholder Chart Area */}
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
-            <div className="text-center">
-              <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
-                <rect x="6" y="20" width="8" height="20" rx="2" />
-                <rect x="18" y="12" width="8" height="28" rx="2" />
-                <rect x="30" y="16" width="8" height="24" rx="2" />
-              </svg>
-              <p className="text-gray-500 font-medium">{selectedReport} Preview</p>
-              <p className="text-sm text-gray-400">Data visualization for {selectedPeriod}</p>
+          {/* Chart Area - Show occupancy for occupancy report */}
+          {selectedReport === "Occupancy Report" && (
+            <div className="overflow-x-auto">
+              <OccupancyBarChart />
             </div>
-          </div>
+          )}
+          {/* Placeholder for other reports */}
+          {selectedReport !== "Occupancy Report" && (
+            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
+              <div className="text-center">
+                <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+                  <rect x="6" y="20" width="8" height="20" rx="2" />
+                  <rect x="18" y="12" width="8" height="28" rx="2" />
+                  <rect x="30" y="16" width="8" height="24" rx="2" />
+                </svg>
+                <p className="text-gray-500 font-medium">{selectedReport} Preview</p>
+                <p className="text-sm text-gray-400">Data visualization for {selectedPeriod}</p>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
