@@ -211,7 +211,7 @@ Verification per page:
 
 ### Tooling
 
-Use the dev server (`npx nx dev web`) and Chrome DevTools device-emulation at 768px and 1024px viewport widths. Capture a screenshot at each width for each page and compare against the desktop baseline.
+Use the dev server (`npx nx dev web`) and Chrome DevTools device-emulation at 768px and 1024px viewport widths. Capture a screenshot at each width for each page and compare against the desktop baseline. The dev server runs on **port 3001** (changed from 3000 because the MailZen monorepo's `next start` production server holds port 3000 on this machine). URL for verification: `http://localhost:3001/dashboard/inventory`.
 
 ### Regression check
 
