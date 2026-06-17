@@ -175,7 +175,8 @@ export default function RevenuePage() {
               </select>
             </div>
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice ID</th>
@@ -205,6 +206,7 @@ export default function RevenuePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -232,7 +234,8 @@ export default function RevenuePage() {
               </select>
             </div>
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deposit ID</th>
@@ -266,6 +269,7 @@ export default function RevenuePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -293,7 +297,8 @@ export default function RevenuePage() {
               </select>
             </div>
           </div>
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract ID</th>
@@ -327,6 +332,7 @@ export default function RevenuePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
