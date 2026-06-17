@@ -246,10 +246,10 @@ export default function CustomerDetailPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex gap-6">
+    <div className="p-6 compact:p-3">
+      <div className="flex gap-6 compact:gap-3">
         {/* LEFT SIDE - Main Content */}
-        <div className="flex-1 flex flex-col gap-6">
+        <div className="flex-1 flex flex-col gap-6 compact:gap-3 min-w-0">
           {/* Page Header */}
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <div className="flex items-center justify-between">
@@ -278,7 +278,7 @@ export default function CustomerDetailPage() {
               <div className="w-20 h-20 bg-[#ff6a2f] rounded-2xl flex items-center justify-center shrink-0">
                 <span className="text-2xl font-bold text-white">{customer.initials}</span>
               </div>
-              <div className="flex-1 grid grid-cols-4 gap-x-6 gap-y-4">
+              <div className="flex-1 grid grid-cols-2 compact:grid-cols-4 gap-x-6 compact:gap-x-3 gap-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
@@ -364,7 +364,7 @@ export default function CustomerDetailPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-6 mb-5">
+              <div className="grid grid-cols-1 compact:grid-cols-4 gap-6 compact:gap-3 mb-5">
                 <div>
                   <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide mb-1">Start Date</p>
                   <p className="text-sm font-medium text-[#101828]">{plan.startDate}</p>
