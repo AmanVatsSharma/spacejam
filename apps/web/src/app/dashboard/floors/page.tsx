@@ -136,7 +136,7 @@ export default function FloorsPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 compact:grid-cols-4 gap-4 compact:gap-3">
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-sm text-gray-500 mb-2">Total Floors</p>
           <p className="text-2xl font-bold text-[#101828]">{totalFloors}</p>
@@ -180,7 +180,7 @@ export default function FloorsPage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 compact:grid-cols-3 gap-6 compact:gap-3">
         {/* Floor Visualization */}
         <div className="col-span-2 bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
@@ -202,7 +202,7 @@ export default function FloorsPage() {
           </div>
 
           {/* Seat Grid */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 compact:grid-cols-4 gap-3">
             {currentFloor.seats.map((seat) => (
               <button
                 key={seat.id}
