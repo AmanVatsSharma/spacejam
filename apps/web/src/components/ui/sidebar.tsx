@@ -153,8 +153,8 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
   };
 
   return (
-    <nav className="flex flex-col items-center py-4 px-3 bg-white rounded-3xl shadow-[0px_1px_2px_rgba(0,0,0,0.1)] w-[80px] h-[560px] ml-2 mt-4 sticky top-0" style={{ overscrollBehavior: 'contain' }}>
-      <div className="flex flex-col items-center gap-3 w-full overflow-y-auto scrollbar-hide" style={{ overscrollBehavior: 'contain' }}>
+    <nav className="flex flex-col items-center py-4 px-3 compact:py-3 compact:px-2 bg-white rounded-3xl shadow-[0px_1px_2px_rgba(0,0,0,0.1)] w-[80px] compact:w-[64px] h-[560px] compact:h-[480px] ml-2 mt-4 sticky top-0" style={{ overscrollBehavior: 'contain' }}>
+      <div className="flex flex-col items-center gap-3 compact:gap-1.5 w-full overflow-y-auto scrollbar-hide" style={{ overscrollBehavior: 'contain' }}>
         {navItems.map((item) => {
           const isActive = onTabChange ? item.id === activeTab : getActiveFromPath(item.href);
           const IconComponent = icons[item.id];
@@ -165,7 +165,7 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
                 href={item.href}
                 onClick={() => onTabChange?.(item.id)}
                 className={`
-                  flex items-center justify-center w-[48px] h-[48px] rounded-2xl cursor-pointer transition-all duration-200 no-underline
+                  flex items-center justify-center w-[48px] h-[48px] compact:w-[40px] compact:h-[40px] rounded-2xl cursor-pointer transition-all duration-200 no-underline
                   ${isActive
                     ? "bg-[#FF7847] text-white"
                     : "bg-[#F3F4F6] text-[#4B5563] hover:bg-gray-200"
@@ -174,7 +174,7 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
               >
                 <IconComponent active={isActive} />
               </Link>
-              <span className={`text-[10px] font-medium leading-none text-center ${isActive ? "text-[#FF7847]" : "text-[#4B5563]"}`}>
+              <span className={`text-[10px] compact:text-[9px] font-medium leading-none text-center ${isActive ? "text-[#FF7847]" : "text-[#4B5563]"}`}>
                 {item.label}
               </span>
             </div>
