@@ -253,6 +253,8 @@ All TypeScript/TSX files should include this header:
 
 5. **Frontend-only Mode**: The app currently runs as a standalone frontend. NestJS backend in `apps/api/` is not yet connected to the frontend.
 
+6. **Compact Variant (Tablet)**: Tailwind variant `compact:` triggers at `@media (max-width: 1023.98px)` (defined in `apps/web/tailwind.config.js`). Use it to tighten padding, gaps, and grid columns below 1024px (e.g. `compact:px-2`, `compact:grid-cols-1`). Tables should be wrapped in `overflow-x-auto` so they scroll instead of overflowing at compact width.
+
 ---
 
 ## Figma Design Reference
