@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const plugin = require("tailwindcss/plugin");
+
 module.exports = {
   content: [
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -17,5 +19,9 @@ module.exports = {
       },
     },
   },
-  plugins: [],
-}
+  plugins: [
+    plugin(function ({ addVariant }) {
+      addVariant("compact", "@media (max-width: 1023.98px)");
+    }),
+  ],
+};
