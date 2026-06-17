@@ -214,7 +214,7 @@ export default function BookingsPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 compact:grid-cols-4 gap-4 compact:gap-3">
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-sm text-gray-500 mb-2">Total Bookings</p>
           <p className="text-2xl font-bold text-[#101828]">{mockBookings.length}</p>
@@ -339,52 +339,52 @@ export default function BookingsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Space</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Space</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                <th className="px-6 py-3 compact:px-2 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {paginatedBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-[#101828]">{booking.id}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2 text-sm font-medium text-[#101828]">{booking.id}</td>
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <div>
                       <p className="text-sm font-medium text-[#101828]">{booking.guest}</p>
                       <p className="text-xs text-[#4A5565]">{booking.company}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <div>
                       <p className="text-sm text-[#101828] font-medium">{booking.space}</p>
                       <p className="text-xs text-[#4A5565]">{booking.spaceType}</p>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-[#4A5565]">{booking.date}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2 text-sm text-[#4A5565]">{booking.date}</td>
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <p className="text-sm text-[#4A5565]">{booking.checkIn}</p>
                     <p className="text-xs text-gray-400">{booking.checkOut}</p>
                   </td>
-                  <td className="px-6 py-4 text-sm text-[#4A5565]">{booking.duration}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-[#101828]">Rs.{booking.amount.toLocaleString()}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2 text-sm text-[#4A5565]">{booking.duration}</td>
+                  <td className="px-6 py-4 compact:px-2 compact:py-2 text-sm font-medium text-[#101828]">Rs.{booking.amount.toLocaleString()}</td>
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusStyles[booking.status]}`}>
                       {booking.status.replace("-", " ")}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${paymentStyles[booking.paymentStatus]}`}>
                       {booking.paymentStatus}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-2 compact:py-2">
                     <div className="flex gap-2">
                       <button className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600">
                         View
@@ -568,7 +568,7 @@ export default function BookingsPage() {
               </div>
 
               {/* Space Type & Space */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 compact:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#101828] mb-2">Space Type</label>
                   <select
@@ -640,7 +640,7 @@ export default function BookingsPage() {
               </div>
 
               {/* Time Slots */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 compact:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#101828] mb-2">Check In</label>
                   <select
