@@ -34,12 +34,12 @@ export default function DashboardLayout({
         onSetUpNewCenter={() => setShowSetUpModal(true)}
       />
 
-      <div className="flex">
+      <div className="flex compact:gap-2">
         {/* Fixed Sidebar - stays on left - routing handles active state */}
         <Sidebar />
 
         {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto px-8 py-6">
+        <main className="flex-1 overflow-y-auto px-8 py-6 compact:px-4 compact:py-4 min-w-0">
           {children}
         </main>
       </div>
