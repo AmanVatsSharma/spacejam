@@ -125,29 +125,29 @@ export default function OperationsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Space</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Space</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 compact:px-3 compact:py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {mockBookings.map((booking) => (
                 <tr key={booking.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-[#101828]">{booking.id}</td>
-                  <td className="px-6 py-4 text-sm text-[#4A5565]">{booking.guest}</td>
-                  <td className="px-6 py-4 text-sm text-[#101828] font-medium">{booking.space}</td>
-                  <td className="px-6 py-4 text-sm text-[#4A5565]">{booking.checkIn}</td>
-                  <td className="px-6 py-4 text-sm text-[#4A5565]">{booking.checkOut}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm font-medium text-[#101828]">{booking.id}</td>
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#4A5565]">{booking.guest}</td>
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#101828] font-medium">{booking.space}</td>
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#4A5565]">{booking.checkIn}</td>
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#4A5565]">{booking.checkOut}</td>
+                  <td className="px-6 py-4 compact:px-3 compact:py-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusStyles[booking.status]}`}>
                       {booking.status.replace("-", " ")}
                     </span>
                   </td>
-                  <td className="px-6 py-4 flex gap-2">
+                  <td className="px-6 py-4 compact:px-3 compact:py-2 flex gap-2">
                     {booking.status === "confirmed" && (
                       <button className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">
                         Check In
@@ -168,7 +168,7 @@ export default function OperationsPage() {
 
       {/* Check-in/Out - Quick Actions */}
       {activeTab === "check-in" && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
           <div className="bg-white rounded-2xl shadow-sm p-6">
             <h3 className="text-lg font-semibold text-[#101828] mb-4">Pending Check-ins</h3>
             <div className="space-y-4">
@@ -354,7 +354,7 @@ export default function OperationsPage() {
           </div>
 
           {/* Meeting Room Cards */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
             {/* Boardroom A */}
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <div className="flex items-start justify-between mb-4">
