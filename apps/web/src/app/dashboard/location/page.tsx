@@ -173,7 +173,7 @@ export default function LocationPage() {
   const activeFacilitiesCount = Object.values(location.facilities).filter(Boolean).length;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 compact:gap-3">
       {/* Page Header */}
       <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
         <div className="flex flex-col gap-1">
@@ -209,7 +209,7 @@ export default function LocationPage() {
       </div>
 
       {/* Center Details & Facilities Grid */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 compact:grid-cols-3 gap-6 compact:gap-3">
         {/* Center Details Card */}
         <div className="col-span-2 bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
@@ -272,7 +272,7 @@ export default function LocationPage() {
             </div>
 
             {/* City, State, Country Row */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 compact:grid-cols-3 gap-4">
               <div className={styles.inputGroup}>
                 <label className={styles.label}>City</label>
                 {isEditing ? (
@@ -371,7 +371,7 @@ export default function LocationPage() {
       </div>
 
       {/* Operating Hours & Contact Grid */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
         {/* Operating Hours Card */}
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
