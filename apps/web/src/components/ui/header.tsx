@@ -27,9 +27,9 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <header className="h-[83px] flex justify-between items-center px-8 bg-[#FBF6F4] sticky top-0 z-50">
+    <header className="h-[83px] flex justify-between items-center px-8 compact:px-4 bg-[#FBF6F4] sticky top-0 z-50">
       {/* Logo */}
-      <div className="w-[120px] h-[50px]">
+      <div className="w-[120px] h-[50px] compact:w-[100px] compact:h-[40px]">
         <Image
           src={Logo}
           alt="SpaceJam Logo"
@@ -44,7 +44,7 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
         <button
           onClick={() => onNavChange?.("location")}
           className={`
-            px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
+            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
             ${activeNav === "location"
               ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
               : "text-[#4A5565] hover:bg-white"
@@ -56,7 +56,7 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
         <button
           onClick={() => onNavChange?.("floor-map")}
           className={`
-            px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
+            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
             ${activeNav === "floor-map"
               ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
               : "text-[#4A5565] hover:bg-white"
@@ -68,7 +68,7 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
         <button
           onClick={() => onNavChange?.("table-view")}
           className={`
-            px-5 py-2 rounded-full text-sm font-medium transition-all duration-200
+            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
             ${activeNav === "table-view"
               ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
               : "text-[#4A5565] hover:bg-white"
@@ -82,13 +82,13 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
       {/* Set Up New Center Button */}
       <button
         onClick={onSetUpNewCenter}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm"
+        className="flex items-center gap-2 px-4 py-2.5 compact:px-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <line x1="8" y1="2" x2="8" y2="14" />
           <line x1="2" y1="8" x2="14" y2="8" />
         </svg>
-        Set Up New Center
+        <span className="compact:hidden">Set Up New Center</span>
       </button>
 
       {/* Notifications & User Profile */}
@@ -121,7 +121,7 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
           </div>
 
           {/* User Info */}
-          <div className="flex flex-col justify-center px-3 h-9">
+          <div className="flex flex-col justify-center px-3 h-9 compact:hidden">
             <span className="text-sm font-semibold text-[#1F2937] leading-[17px]">Rahul Sharma</span>
             <span className="text-xs font-normal text-[#6B7280] leading-[15px]">Center Manager</span>
           </div>
