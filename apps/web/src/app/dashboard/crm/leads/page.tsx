@@ -172,7 +172,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Stats Cards - Top */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-4 compact:grid-cols-2 gap-4 compact:gap-3 mb-6">
         {statsData.map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1">
             <div className="flex items-center gap-3 mb-4">
@@ -188,7 +188,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Lead Details - Below stats */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 compact:grid-cols-3 gap-6 compact:gap-3 mb-6">
         <div className="col-span-2">
           {/* Pipeline */}
           <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
@@ -214,12 +214,12 @@ export default function LeadsPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="py-4 pl-4 pr-3 text-left text-sm font-medium text-gray-500">Lead Name</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500">Company</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Source</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Interested Plan</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Assigned To</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500">Date</th>
-                    <th className="px-3 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Status</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500">Company</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Source</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Interested Plan</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Assigned To</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500">Date</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Status</th>
                   </tr>
                 </thead>
                 <tbody>
