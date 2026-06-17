@@ -40,14 +40,14 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
   };
 
   return (
-    <aside className="flex flex-col items-start py-6 px-6 gap-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px]">
+    <aside className="flex flex-col items-start py-6 px-6 compact:py-4 compact:px-3 compact:gap-3 bg-white rounded-2xl shadow-sm w-[320px] compact:w-[200px] h-[859px] compact:h-[480px] overflow-y-auto">
       <div className="flex flex-col gap-6 self-stretch">
         {locations.map((location) => (
           <div key={location.id} className="flex flex-col gap-2 self-stretch">
             {/* City Button */}
             <button
               onClick={() => toggleLocation(location.id)}
-              className="flex items-center gap-2 w-[272px] h-[40px] px-3 rounded-xl bg-[#FFF5F2] hover:bg-[#FFEDE6] transition-colors"
+              className="flex items-center gap-2 w-[272px] compact:w-full h-[40px] compact:h-[36px] px-3 compact:px-2 rounded-xl bg-[#FFF5F2] hover:bg-[#FFEDE6] transition-colors text-sm compact:text-xs"
             >
               <svg
                 width="16"
@@ -70,7 +70,7 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
                     key={center.id}
                     onClick={() => onLocationSelect?.(location.id, center.id)}
                     className={`
-                      flex items-center gap-2 w-[325.8px] h-[40px] px-3 rounded-xl transition-colors text-left
+                      flex items-center gap-2 w-[325.8px] compact:w-full h-[40px] compact:h-[36px] px-3 compact:px-2 rounded-xl transition-colors text-left
                       ${center.selected
                         ? "bg-[#FFF5F2] text-[#FF6A3D] font-medium"
                         : "text-gray-500 hover:bg-gray-50"
