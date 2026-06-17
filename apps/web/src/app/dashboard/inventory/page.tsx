@@ -95,9 +95,9 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="flex gap-6">
+    <div className="flex gap-6 compact:gap-3">
       {/* Main Content */}
-      <div className="flex flex-col gap-6 flex-1">
+      <div className="flex flex-col gap-6 compact:gap-3 flex-1 min-w-0">
         {/* Page Title Card */}
         <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
           <div className="flex flex-col gap-1">
