@@ -72,7 +72,7 @@ export default function ReportPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 compact:gap-3">
       {/* Page Header */}
       <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center justify-between">
         <div className="flex flex-col gap-1">
@@ -96,7 +96,7 @@ export default function ReportPage() {
               </button>
             ))}
           </div>
-          <button className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm">
+          <button className="hidden compact:flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V8L11 11" />
               <circle cx="8" cy="8" r="5" />
@@ -109,7 +109,7 @@ export default function ReportPage() {
       {/* Quick Reports Grid */}
       <div>
         <h2 className="text-lg font-semibold text-[#101828] mb-4">Quick Reports</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 compact:grid-cols-2 gap-4 compact:gap-3">
           {quickReports.map((report, index) => (
             <button
               key={index}
