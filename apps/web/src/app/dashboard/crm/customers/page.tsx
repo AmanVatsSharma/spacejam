@@ -138,7 +138,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-4 compact:grid-cols-2 gap-4 compact:gap-3 mb-6">
         {statsData.map((stat, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center justify-between mb-3">
@@ -153,7 +153,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 compact:grid-cols-3 gap-6 compact:gap-3">
         {/* Table Section */}
         <div className="col-span-2 space-y-4">
           {/* Filters */}
@@ -201,12 +201,12 @@ export default function CustomersPage() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="py-4 pl-4 pr-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Team Size</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Join Date</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Billing</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Invoice</th>
-                    <th className="px-3 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Team Size</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Join Date</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Billing</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Invoice</th>
+                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
                 <tbody>
