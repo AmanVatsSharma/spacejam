@@ -84,7 +84,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="h-10 px-4 bg-white border border-[#E5E7EB] rounded-xl text-sm font-medium text-[#364152] hover:bg-gray-50 transition-colors">
+          <button className="h-10 px-4 compact:hidden bg-white border border-[#E5E7EB] rounded-xl text-sm font-medium text-[#364152] hover:bg-gray-50 transition-colors">
             View Analytics
           </button>
           <button className="h-10 px-4 bg-[#FF7847] text-white rounded-xl text-sm font-medium hover:bg-[#FF6A3D] transition-colors shadow-sm">
@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <StatCards />
 
       {/* Main Grid Section */}
-      <div className="flex gap-6 items-start">
+      <div className="flex gap-6 compact:gap-3 items-start">
         {/* Left Column - Room & Booking Management */}
         <div className="flex flex-col gap-6">
           <RoomAvailabilityCard rooms={sampleRooms} title="Meeting Room Availability" onViewAll={() => {}} />
@@ -106,8 +106,8 @@ export default function DashboardPage() {
 
         {/* Middle Column - Lead Performance */}
         <div className="flex flex-col gap-6">
-          <TotalLeadCard className="!w-[428px]" />
-          <div className="bg-white rounded-[14px] shadow-sm p-5 w-[428px]">
+          <TotalLeadCard className="!w-[428px] compact:!w-[260px]" />
+          <div className="bg-white rounded-[14px] shadow-sm p-5 compact:p-3 w-[428px] compact:w-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold text-gray-800">Quick Actions</h3>
             </div>
