@@ -1,0 +1,28 @@
+.container {
+  width: 100%;
+}
+
+.centerValue {
+  font-size: 24px;
+  font-weight: 700;
+  fill: #101828;
+}
+
+.centerLabel {
+  font-size: 12px;
+  fill: #9CA3AF;
+}
+
+.legendLabel {
+  font-size: 14px;
+  fill: #4A5565;
+  dominant-baseline: middle;
+}
+
+.legendAmount {
+  font-size: 14px;
+  font-weight: 600;
+  fill: #101828;
+  text-anchor: end;
+  dominant-baseline: middle;
+}

@@ -1,0 +1,30 @@
+.container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart {
+  display: block;
+}
+
+.gridLabel {
+  font-size: 10px;
+  fill: #9CA3AF;
+}
+
+.monthLabel {
+  font-size: 12px;
+  fill: #4A5565;
+  font-weight: 500;
+}
+
+.dataLabel {
+  font-size: 10px;
+  fill: #101828;
+  font-weight: 600;
+}
+
+.legendText {
+  font-size: 12px;
+  fill: #4A5565;
+}

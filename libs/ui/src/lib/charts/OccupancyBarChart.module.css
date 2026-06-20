@@ -1,0 +1,35 @@
+.container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart {
+  display: block;
+}
+
+.label {
+  font-size: 14px;
+  fill: #4A5565;
+}
+
+.valueLabel {
+  font-size: 14px;
+  fill: white;
+  font-weight: 600;
+}
+
+.percentageLabel {
+  font-size: 14px;
+  fill: #4A5565;
+  font-weight: 600;
+}
+
+.title {
+  font-size: 12px;
+  fill: #9CA3AF;
+  font-weight: 600;
+}
+
+.barBackground {
+  fill: #F3F4F6;
+}

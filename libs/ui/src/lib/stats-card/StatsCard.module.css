@@ -1,0 +1,64 @@
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #FF6A2F;
+  border-radius: 14px 0 0 14px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+  margin-bottom: 8px;
+}
+
+.value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.change {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.positive {
+  color: #10B981;
+}
+
+.negative {
+  color: #EF4444;
+}
+
+.neutral {
+  color: #6B7280;
+}
+
+.icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FFF7ED;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF6A2F;
+}

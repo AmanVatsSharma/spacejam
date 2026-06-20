@@ -1,0 +1,112 @@
+.container {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.header {
+  padding: 20px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.viewAll {
+  font-size: 14px;
+  color: #FF6A2F;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.table {
+  width: 100%;
+}
+
+.table th {
+  padding: 12px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  background: #FF6A2F;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.email {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.lastActive {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status.active {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.status.inactive {
+  background: #FEE2E2;
+  color: #991B1B;
+}
