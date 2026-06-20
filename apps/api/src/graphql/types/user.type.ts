@@ -91,11 +91,26 @@ export class User {
   @Field()
   isActive!: boolean;
 
+  @Field()
+  active!: boolean;
+
+  @Field()
+  emailVerified!: boolean;
+
+  @Field()
+  twoFactorEnabled!: boolean;
+
   @Field({ nullable: true })
   lastLogin?: Date;
 
+  @Field({ nullable: true })
+  lastLoginAt?: Date;
+
   @Field()
   createdAt!: Date;
+
+  @Field()
+  updatedAt!: Date;
 }
 
 @ObjectType()
@@ -356,17 +371,34 @@ export class RevenueReport {
   growth!: number;
 }
 
+/**
+ * Result of a successful authentication. Either tokens are populated OR
+ * `twoFactorRequired` is true and `challengeToken` carries a short-lived
+ * credential for `verifyTwoFactor`.
+ */
 @ObjectType()
 export class AuthPayload {
-  @Field()
-  accessToken!: string;
+  @Field(() => User, { nullable: true })
+  user?: User | null;
+
+  @Field({ nullable: true })
+  accessToken?: string | null;
+
+  @Field({ nullable: true })
+  refreshToken?: string | null;
+
+  @Field({ nullable: true })
+  expiresIn?: number | null;
 
   @Field()
-  refreshToken!: string;
-
-  @Field(() => User)
-  user!: User;
+  accessTokenExpiresAt!: Date;
 
   @Field()
-  expiresIn!: number;
+  refreshTokenExpiresAt!: Date;
+
+  @Field()
+  twoFactorRequired!: boolean;
+
+  @Field({ nullable: true })
+  challengeToken?: string | null;
 }
