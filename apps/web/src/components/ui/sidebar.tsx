@@ -149,7 +149,11 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
   ];
 
   const getActiveFromPath = (href: string) => {
-    return pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+    if (pathname === href) return true;
+    if (href !== "/dashboard" && pathname.startsWith(href)) return true;
+    // /dashboard/revenue is the legacy alias for /dashboard/invoices; highlight it there.
+    if (href === "/dashboard/revenue" && pathname.startsWith("/dashboard/invoices")) return true;
+    return false;
   };
 
   return (
