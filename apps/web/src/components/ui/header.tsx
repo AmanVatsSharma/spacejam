@@ -1,13 +1,15 @@
 /**
  * File:        apps/web/src/components/ui/header.tsx
  * Module:      Web · UI · Header
- * Purpose:     Top header with logo, nav buttons, and user profile
+ * Purpose:     Top header with logo, contextual nav pills, and user profile.
+ *              The center pill nav is driven by the active route — see
+ *              `dashboard/layout.tsx` for the route → tabs mapping.
  *
  * Exports:
  *   - Header — top header component
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-29
+ * Last-updated: 2026-06-20
  */
 
 "use client";
@@ -17,13 +19,31 @@ import Image from "next/image";
 import Logo from "@/assets/logo.png";
 import Avatar from "@/assets/avatar.png";
 
-interface HeaderProps {
-  activeNav?: "location" | "floor-map" | "table-view";
-  onNavChange?: (nav: "location" | "floor-map" | "table-view") => void;
-  onSetUpNewCenter?: () => void;
+export interface HeaderTab {
+  /** Stable id used to derive the active state from the URL. */
+  id: string;
+  /** Visible label, e.g. "Invoices". */
+  label: string;
+  /** Route to push when the tab is clicked. */
+  href: string;
 }
 
-export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter }: HeaderProps) {
+interface HeaderProps {
+  /** Tabs to render in the center pill. Empty array hides the pill. */
+  tabs?: HeaderTab[];
+  /**
+   * Active tab id. If omitted, the header derives it from the current path
+   * by matching each tab's `href` as a prefix of `window.location.pathname`.
+   */
+  activeTabId?: string;
+  /** Called when a tab is clicked. If omitted, the header navigates via `tabs[i].href`. */
+  onTabChange?: (tab: HeaderTab) => void;
+  onSetUpNewCenter?: () => void;
+  /** When true, the "Set Up New Center" button is hidden. */
+  hideSetUpButton?: boolean;
+}
+
+export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
@@ -40,44 +60,31 @@ export function Header({ activeNav = "table-view", onNavChange, onSetUpNewCenter
       </div>
 
       {/* Center Navigation - Pill style from Figma */}
-      <nav className="flex items-center gap-1 bg-[#F3F4F6] rounded-full px-1 py-1">
-        <button
-          onClick={() => onNavChange?.("location")}
-          className={`
-            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
-            ${activeNav === "location"
-              ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
-              : "text-[#4A5565] hover:bg-white"
-            }
-          `}
-        >
-          Location
-        </button>
-        <button
-          onClick={() => onNavChange?.("floor-map")}
-          className={`
-            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
-            ${activeNav === "floor-map"
-              ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
-              : "text-[#4A5565] hover:bg-white"
-            }
-          `}
-        >
-          Floor map
-        </button>
-        <button
-          onClick={() => onNavChange?.("table-view")}
-          className={`
-            px-5 py-2 compact:px-3 compact:py-1.5 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
-            ${activeNav === "table-view"
-              ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
-              : "text-[#4A5565] hover:bg-white"
-            }
-          `}
-        >
-          Table view
-        </button>
-      </nav>
+      {tabs.length > 0 && (
+        <nav className="flex items-center gap-1 bg-white shadow-[0px_1px_1.5px_rgba(0,0,0,0.1),0px_1px_1px_rgba(0,0,0,0.1)] rounded-full px-2 py-1.5">
+          {tabs.map((tab) => {
+            const isActive = activeTabId === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (onTabChange) onTabChange(tab);
+                  else if (typeof window !== "undefined") window.location.href = tab.href;
+                }}
+                className={`
+                  px-4 py-1.5 compact:px-3 compact:py-1 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
+                  ${isActive
+                    ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
+                    : "text-[#4A5565] hover:bg-gray-50"
+                  }
+                `}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Set Up New Center Button */}
       <button
