@@ -1,0 +1,188 @@
+scalar DateTime
+scalar Json
+
+type Query {
+  # User & Auth
+  me: User
+  users: [User!]!
+  user(id: ID!): User
+
+  # Centers
+  centers: [Center!]!
+  center(id: ID!): Center
+  myCenters: [Center!]!
+
+  # Locations
+  locations: [Location!]!
+  location(id: ID!): Location
+
+  # Floors & Seats
+  floors(centerId: ID): [Floor!]!
+  seats(floorId: ID): [Seat!]!
+  seat(id: ID!): Seat
+
+  # Bookings
+  bookings(filters: BookingFilters): [Booking!]!
+  myBookings: [Booking!]!
+  booking(id: ID!): Booking
+
+  # Analytics
+  dashboardMetrics(centerId: ID): DashboardMetrics!
+  revenueReport(centerId: ID, period: TimePeriod): RevenueReport!
+  occupancyReport(centerId: ID, period: TimePeriod): OccupancyReport!
+}
+
+type Mutation {
+  # Authentication
+  login(email: String!, password: String!): AuthPayload!
+  refreshToken(refreshToken: String!): AuthPayload!
+  logout: Boolean!
+
+  # Centers
+  createCenter(input: CreateCenterInput!): Center!
+  updateCenter(id: ID!, input: UpdateCenterInput!): Center!
+  deleteCenter(id: ID!): Boolean!
+
+  # Locations
+  createLocation(input: CreateLocationInput!): Location!
+  updateLocation(id: ID!, input: UpdateLocationInput!): Location!
+
+  # Floors & Seats
+  createFloor(input: CreateFloorInput!): Floor!
+  createSeat(input: CreateSeatInput!): Seat!
+  updateSeat(id: ID!, input: UpdateSeatInput!): Seat!
+
+  # Bookings
+  createBooking(input: CreateBookingInput!): Booking!
+  cancelBooking(id: ID!): Booking!
+  processPayment(paymentId: ID!, method: PaymentMethod!): Payment!
+
+  # Admin
+  inviteUser(email: String!, role: UserRole!, centerId: ID): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+
+  # Payments
+  createPaymentIntent(bookingId: ID!): PaymentIntent!
+  refundPayment(paymentId: ID!, amount: Float): Payment!
+}
+
+type Subscription {
+  bookingUpdated: Booking!
+  paymentStatusChanged: Payment!
+  centerOccupancyChanged: CenterOccupancy!
+}
+
+# Input Types
+input CreateCenterInput {
+  name: String!
+  locationId: String!
+  settings: Json
+}
+
+input UpdateCenterInput {
+  name: String
+  status: CenterStatus
+  settings: Json
+}
+
+input CreateLocationInput {
+  name: String!
+  city: String!
+  state: String!
+  country: String!
+  fullAddress: String!
+  coordinates: String
+  timezone: String! = "Asia/Kolkata"
+}
+
+input UpdateLocationInput {
+  name: String
+  city: String
+  state: String
+  country: String
+  fullAddress: String
+  coordinates: String
+  timezone: String
+}
+
+input CreateFloorInput {
+  centerId: String!
+  name: String!
+  layout: Json
+}
+
+input CreateSeatInput {
+  floorId: String!
+  number: String!
+  type: SeatType!
+  features: Json
+  location: String
+  price: Float
+}
+
+input UpdateSeatInput {
+  number: String
+  type: SeatType
+  features: Json
+  status: SeatStatus
+  price: Float
+}
+
+input CreateBookingInput {
+  seatId: ID!
+  startDate: DateTime!
+  endDate: DateTime!
+  planId: ID!
+  discountCode: String
+  notes: String
+}
+
+input BookingFilters {
+  centerId: ID
+  userId: ID
+  status: BookingStatus
+  startDate: DateTime
+  endDate: DateTime
+}
+
+input UpdateUserInput {
+  name: String
+  phone: String
+  avatar: String
+  centerId: ID
+}
+
+# Response Types
+type PaymentIntent {
+  clientSecret: String!
+  amount: Int!
+  currency: String!
+}
+
+type CenterOccupancy {
+  centerId: ID!
+  occupancyRate: Float!
+  availableSeats: Int!
+  occupiedSeats: Int!
+}
+
+type OccupancyReport {
+  centerId: ID!
+  byDay: [OccupancyDay!]!
+  bySeatType: [SeatTypeOccupancy!]!
+  averageRate: Float!
+}
+
+type OccupancyDay {
+  date: DateTime!
+  totalBookings: Int!
+  occupancyRate: Float!
+  revenue: Float!
+}
+
+type SeatTypeOccupancy {
+  type: SeatType!
+  count: Int!
+  occupancyRate: Float!
+}
