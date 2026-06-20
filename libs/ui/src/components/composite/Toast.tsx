@@ -216,8 +216,8 @@ const ToastContainer = ({ toasts, onDismiss }: ToastContainerProps) => {
   const [containerRef, setContainerRef] = React.useState<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    if (typeof document !== "undefined") {
-      setContainerRef(document.body);
+    if (typeof document !== "undefined" && document.body) {
+      setContainerRef(document.body as HTMLDivElement);
     }
   }, []);
 
@@ -323,4 +323,4 @@ export function useToast(): UseToastReturn {
 // Export
 // ---------------------------------------------------------------------------
 
-export { Toast, ToastContainer, useToast };
+export { Toast, ToastContainer };

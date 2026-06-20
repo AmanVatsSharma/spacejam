@@ -184,9 +184,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             value={currentValue}
             onChange={handleChange}
-            aria-describedby={descriptionId}
+            aria-describedby={hasError ? errorId : hasWarning ? warningId : descriptionId}
             aria-invalid={hasError}
-            aria-describedby={hasError ? errorId : hasWarning ? warningId : undefined}
             className={cn(
               "w-full px-4 py-2.5 rounded-lg border transition-colors outline-none",
               "focus:ring-2 focus:ring-offset-0",

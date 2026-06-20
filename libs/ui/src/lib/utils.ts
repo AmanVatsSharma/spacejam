@@ -4,18 +4,42 @@
  * Purpose:     Shared utility functions for the UI component library
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-07
+ * Last-updated: 2026-06-20
  */
 
 /**
  * Merge class names with proper precedence.
  * Later classes override earlier ones for conflicting properties.
  *
- * Uses clsx pattern internally — accepts strings, arrays, objects.
+ * Accepts strings, arrays, objects, and conditional values.
  *
  * @example
  * cn("px-4 py-2", condition && "bg-red-500", { "opacity-50": disabled })
  */
-export function cn(...inputs: (string | undefined | false | null)[]) {
-  return inputs.filter(Boolean).join(" ");
+export type ClassValue =
+  | string
+  | number
+  | bigint
+  | boolean
+  | null
+  | undefined
+  | ClassValue[]
+  | { [key: string]: boolean | null | undefined };
+
+export function cn(...inputs: ClassValue[]): string {
+  const out: string[] = [];
+  for (const input of inputs) {
+    if (!input) continue;
+    if (typeof input === "string" || typeof input === "number") {
+      out.push(String(input));
+    } else if (Array.isArray(input)) {
+      const nested = cn(...input);
+      if (nested) out.push(nested);
+    } else if (typeof input === "object") {
+      for (const [key, value] of Object.entries(input)) {
+        if (value) out.push(key);
+      }
+    }
+  }
+  return out.join(" ");
 }

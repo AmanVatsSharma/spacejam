@@ -54,3 +54,5 @@ export default function Grid({
     </div>
   );
 }
+
+export { Grid };

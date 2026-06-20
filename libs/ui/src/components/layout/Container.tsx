@@ -45,3 +45,5 @@ export default function Container({
     </div>
   );
 }
+
+export { Container };

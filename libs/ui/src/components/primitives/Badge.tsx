@@ -48,3 +48,5 @@ export default function Badge({
 
   return <span className={classes}>{children}</span>;
 }
+
+export { Badge };
