@@ -70,7 +70,7 @@ export default function PaymentDonutChart() {
   let currentAngle = startAngle;
 
   const totalPercentage = mockPaymentData.reduce((sum, item) => sum + item.percentage, 0);
-  const adjustPercentage = (percentage: number) => (percentage / totalPercentage) * 100;
+  void totalPercentage; // reserved for normalization helper
 
   return (
     <div className={styles.container}>
