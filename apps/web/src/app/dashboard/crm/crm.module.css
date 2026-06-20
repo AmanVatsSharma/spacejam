@@ -1,11 +1,60 @@
 /**
  * File:        apps/web/src/app/dashboard/crm/crm.module.css
  * Module:      Web · Dashboard · CRM Styles
- * Purpose:     CRM page specific styles - stats cards, pipeline columns
+ * Purpose:     CRM page specific styles - stats cards, pipeline columns,
+ *              page header (used by customers, leads, onboarding views).
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-29
+ * Last-updated: 2026-06-20
  */
+
+/* Page header — used by customers, leads, and onboarding views.
+   Matches the revenue/deposits/contracts pattern. */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.pageHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #101828;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023.98px) {
+  .pageHeader {
+    margin-bottom: 16px;
+  }
+  .pageTitle {
+    font-size: 20px;
+  }
+}
 
 .statCard {
   display: flex;

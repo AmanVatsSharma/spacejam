@@ -29,14 +29,24 @@ import { SetUpNewCenter } from "@/components/ui/set-up-new-center";
  */
 const SECTION_TABS: Record<string, HeaderTab[]> = {
   revenue: [
-    { id: "invoices", label: "Invoices", href: "/dashboard/revenue" },
-    { id: "deposits", label: "Deposit", href: "/dashboard/revenue/deposits" },
-    { id: "contracts", label: "Contracts", href: "/dashboard/revenue/contracts" },
+    { id: "invoices", label: "Invoices", href: "/dashboard/invoices" },
+    { id: "deposits", label: "Deposit", href: "/dashboard/invoices/deposits" },
+    { id: "contracts", label: "Contracts", href: "/dashboard/invoices/contracts" },
+  ],
+  invoices: [
+    { id: "invoices", label: "Invoices", href: "/dashboard/invoices" },
+    { id: "deposits", label: "Deposit", href: "/dashboard/invoices/deposits" },
+    { id: "contracts", label: "Contracts", href: "/dashboard/invoices/contracts" },
   ],
   floors: [
     { id: "location", label: "Location", href: "/dashboard/floors" },
     { id: "floor-map", label: "Floor map", href: "/dashboard/floors/floor-map" },
     { id: "table-view", label: "Table view", href: "/dashboard/floors/table-view" },
+  ],
+  crm: [
+    { id: "customers", label: "Customers", href: "/dashboard/crm/customers" },
+    { id: "leads", label: "Leads", href: "/dashboard/crm/leads" },
+    { id: "onboarding", label: "Onboarding", href: "/dashboard/crm/onboarding" },
   ],
 };
 
