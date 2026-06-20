@@ -1,0 +1,936 @@
+/* Revenue (Invoices) Page Styles */
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pageHeaderCompact {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pageTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: #101828;
+  line-height: 1.2;
+}
+
+.pageSubtitle {
+  font-size: 13px;
+  color: #4A5565;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  background: #FFFFFF;
+  color: #1F1F1F;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.exportBtn:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: background 0.2s;
+}
+
+.createBtn:hover {
+  background: #E55A25;
+}
+
+/* Two-column layout — stays side-by-side down to small tablets */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 14px;
+  }
+}
+
+/* Stack only on phones / very narrow viewports */
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.asideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Card primitive */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cardTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.cardSubtitle {
+  font-size: 12px;
+  color: #6A7282;
+}
+
+.cardKicker {
+  font-size: 11px;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+/* Revenue Report — chart */
+.reportTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.totalRevenue {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.totalRevenueLabel {
+  font-size: 11px;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.totalRevenueValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.1;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: #4A5565;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legendSwatchPaid {
+  background: #FF6A2F;
+}
+
+.legendSwatchOutstanding {
+  background: #FFD9C9;
+}
+
+.legendAmount {
+  color: #101828;
+  font-weight: 600;
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+  height: 160px;
+  padding: 4px 0 4px;
+  border-bottom: 1px dashed #E5E7EB;
+  position: relative;
+}
+
+.chartBarGroup {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  position: relative;
+}
+
+.chartBar {
+  width: 8px;
+  border-radius: 4px 4px 0 0;
+  transition: opacity 0.2s;
+}
+
+.chartBarPaid {
+  background: #FF6A2F;
+}
+
+.chartBarOutstanding {
+  background: #FFD9C9;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #6A7282;
+  padding: 0 2px;
+}
+
+.chartAxis span {
+  flex: 1;
+  text-align: center;
+}
+
+/* Invoices table */
+.invoicesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.searchField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInput {
+  height: 32px;
+  width: 220px;
+  padding: 0 10px 0 32px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  font-size: 13px;
+  color: #101828;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.12);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.filterSelect {
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FFFFFF
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'><path d='M2 3.5L5 6.5L8 3.5' stroke='%236A7282' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    no-repeat right 10px center;
+  font-size: 13px;
+  color: #101828;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.12);
+}
+
+.clearAll {
+  font-size: 12px;
+  color: #FF6A2F;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.clearAll:hover {
+  text-decoration: underline;
+}
+
+.viewAllLink {
+  font-size: 12px;
+  color: #FF6A2F;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.viewAllLink:hover {
+  text-decoration: underline;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 12px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #101828;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #FBF6F4;
+}
+
+.cellClient {
+  font-weight: 500;
+  color: #101828;
+}
+
+.cellAmount {
+  font-weight: 600;
+  color: #101828;
+}
+
+.cellDate {
+  color: #4A5565;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statusPaid {
+  background: #DCFCE7;
+  color: #047857;
+}
+
+.statusPaid .statusDot {
+  background: #10B981;
+}
+
+.statusPending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.statusPending .statusDot {
+  background: #F59E0B;
+}
+
+.statusOverdue {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.statusOverdue .statusDot {
+  background: #EF4444;
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+  color: #4A5565;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.iconBtn:hover {
+  background: #F3F4F6;
+  color: #101828;
+}
+
+/* Upcoming Invoices */
+.upcomingHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.upcomingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.upcomingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #F3F4F6;
+  border-radius: 10px;
+  background: #FBF6F4;
+}
+
+.upcomingItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.upcomingAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF6A2F;
+  background: #FFE6D9;
+  flex-shrink: 0;
+}
+
+.upcomingMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.upcomingClient {
+  font-size: 13px;
+  font-weight: 600;
+  color: #101828;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcomingDue {
+  font-size: 11px;
+  color: #6A7282;
+}
+
+.upcomingRight {
+  display: flex;
+  flex-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.upcomingAmount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #101828;
+}
+
+/* Aside — stat cards */
+.statCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.statHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.statValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+}
+
+.statMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.statSubLabel {
+  font-size: 11px;
+  color: #6A7282;
+}
+
+.statSubValue {
+  font-size: 12px;
+  color: #101828;
+  font-weight: 600;
+}
+
+.statBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #DCFCE7;
+  color: #047857;
+}
+
+.statBadgeNegative {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.statDivider {
+  height: 1px;
+  background: #F3F4F6;
+  margin: 10px -18px;
+}
+
+/* Renewal Alert card */
+.alertCard {
+  background: #FFF7F2;
+  border: 1px solid #FFE0CE;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.alertHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.alertTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.alertText {
+  font-size: 12px;
+  color: #4A5565;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.alertActions {
+  display: flex;
+  gap: 8px;
+}
+
+.alertPrimary {
+  flex: 1;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.alertPrimary:hover {
+  background: #E55A25;
+}
+
+.alertSecondary {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #FFD9C9;
+  background: #FFFFFF;
+  color: #FF6A2F;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.alertSecondary:hover {
+  background: #FFF2EA;
+}
+
+/* Recent Activities */
+.activitiesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activityItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.activityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF6A2F;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.activityDotBlue {
+  background: #3B82F6;
+}
+
+.activityDotGreen {
+  background: #10B981;
+}
+
+.activityDotPurple {
+  background: #8B5CF6;
+}
+
+.activityBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activityText {
+  font-size: 12px;
+  color: #101828;
+  line-height: 1.5;
+}
+
+.activityText strong {
+  font-weight: 600;
+}
+
+.activityTime {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: #6A7282;
+  text-align: center;
+  padding: 10px 0 4px;
+}
+
+/* Compact (tablet) overrides — keep two columns, tighten spacing */
+@media (max-width: 1023.98px) {
+  .pageHeader {
+    padding: 14px 18px;
+  }
+  .pageTitle {
+    font-size: 20px;
+  }
+  .pageSubtitle {
+    font-size: 12px;
+  }
+  .headerActions {
+    gap: 8px;
+  }
+  .exportBtn,
+  .createBtn {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+  .card {
+    padding: 16px;
+  }
+  .cardTitle {
+    font-size: 15px;
+  }
+  .cardSubtitle {
+    font-size: 11px;
+  }
+  .totalRevenueValue {
+    font-size: 22px;
+  }
+  .chart {
+    height: 130px;
+    gap: 4px;
+  }
+  .chartBar {
+    width: 6px;
+  }
+  .chartAxis {
+    font-size: 9px;
+  }
+  .searchInput {
+    width: 180px;
+  }
+  .filterSelect {
+    font-size: 12px;
+  }
+  .table {
+    font-size: 12px;
+  }
+  .table thead th {
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+  .table tbody td {
+    padding: 10px;
+  }
+  .iconBtn {
+    width: 26px;
+    height: 26px;
+  }
+  .upcomingItem {
+    padding: 10px;
+  }
+  .upcomingAvatar {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  .statCard {
+    padding: 14px 16px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .alertCard {
+    padding: 14px 16px;
+  }
+  .alertTitle {
+    font-size: 13px;
+  }
+  .alertText {
+    font-size: 11px;
+  }
+  .alertPrimary,
+  .alertSecondary {
+    height: 30px;
+    font-size: 11px;
+  }
+  .activityText {
+    font-size: 11px;
+  }
+  .activityTime {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 820px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 12px;
+  }
+  .searchInput {
+    width: 150px;
+  }
+  .headerActions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 720px) {
+  .searchInput {
+    width: 140px;
+  }
+  .card {
+    padding: 14px;
+  }
+  .invoicesHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterBar {
+    width: 100%;
+  }
+  .searchInput {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .headerActions {
+    width: 100%;
+  }
+  .exportBtn,
+  .createBtn {
+    flex: 1;
+    justify-content: center;
+  }
+  .statHeader {
+    flex-wrap: wrap;
+  }
+  .upcomingItem {
+    flex-wrap: wrap;
+  }
+  .upcomingRight {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+}

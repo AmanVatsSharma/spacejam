@@ -132,9 +132,17 @@ export default function CustomersPage() {
   return (
     <div className="flex-1 p-6">
       {/* Page Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage all onboarded clients and organizations</p>
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold text-[#101828]">Customers</h1>
+          <p className="text-[#4A5565]">Manage all onboarded clients and organizations</p>
+        </div>
+        <button className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M8 3V13M3 8H13" />
+          </svg>
+          <span>Add Customer</span>
+        </button>
       </div>
 
       {/* Stats Cards */}
