@@ -87,16 +87,18 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
       )}
 
       {/* Set Up New Center Button */}
-      <button
-        onClick={onSetUpNewCenter}
-        className="flex items-center gap-2 px-4 py-2.5 compact:px-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <line x1="8" y1="2" x2="8" y2="14" />
-          <line x1="2" y1="8" x2="14" y2="8" />
-        </svg>
-        <span className="compact:hidden">Set Up New Center</span>
-      </button>
+      {!hideSetUpButton && (
+        <button
+          onClick={onSetUpNewCenter}
+          className="flex items-center gap-2 px-4 py-2.5 compact:px-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <line x1="8" y1="2" x2="8" y2="14" />
+            <line x1="2" y1="8" x2="14" y2="8" />
+          </svg>
+          <span className="compact:hidden">Set Up New Center</span>
+        </button>
+      )}
 
       {/* Notifications & User Profile */}
       <div className="flex items-center gap-3">

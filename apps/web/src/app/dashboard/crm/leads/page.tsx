@@ -1,315 +1,492 @@
 /**
  * File:        apps/web/src/app/dashboard/crm/leads/page.tsx
- * Module:      Web · Dashboard · CRM · Leads
- * Purpose:     Lead management - track potential clients, manage inquiries, convert to members
+ * Module:      Web · Dashboard · CRM · Lead Management
+ * Purpose:     Lead management page (Figma: 0-6606). Implements
+ *              header card, filters bar, 4 stat cards, lead pipeline,
+ *              leads table, and a right-side lead-detail panel.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-31
+ * Last-updated: 2026-06-21
  */
+'use client';
 
-"use client";
+import { useMemo, useState } from 'react';
+import styles from './leads.module.css';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+/* ----------------------------- Types ----------------------------- */
 
-// Icons
-const Icons = {
-  users: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  ),
-  userPlus: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-    </svg>
-  ),
-  calendar: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  ),
-  checkCircle: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  search: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  ),
-  chevronDown: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  ),
-  list: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-    </svg>
-  ),
-  send: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-    </svg>
-  ),
-  userCheck: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  upload: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3-3m0 0l3 3m-3-3v12" />
-    </svg>
-  ),
-  clipboard: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    </svg>
-  ),
-  plus: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-    </svg>
-  ),
-};
+type LeadStatus = 'New' | 'Visited' | 'Negotiation' | 'Converted' | 'Cold';
 
 interface Lead {
+  id: string;
   name: string;
+  email: string;
+  phone: string;
   company: string;
   source: string;
-  plan: string;
-  assigned: string;
-  date: string;
-  status: "New" | "Visited" | "Negotiation" | "Converted";
+  requirement: string;
+  budget: string;
+  location: string;
+  status: LeadStatus;
+  lastContact: string;
 }
 
-const statsData = [
-  { label: "Total Leads", value: 125, trend: "+12%", icon: "users" },
-  { label: "New Leads", value: 32, trend: "+8%", icon: "userPlus" },
-  { label: "Visits Scheduled", value: 18, trend: "+15%", icon: "calendar" },
-  { label: "Converted Clients", value: 9, trend: "+5%", icon: "checkCircle" },
+/* ----------------------------- Data ------------------------------ */
+
+const LEADS: Lead[] = [
+  {
+    id: 'l1',
+    name: 'Aarav Mehta',
+    email: 'aarav.m@nova.in',
+    phone: '+91 98200 11233',
+    company: 'Nova Studio',
+    source: 'Website',
+    requirement: 'Hot Desk · 6 seats',
+    budget: '₹85,000 / month',
+    location: 'Bandra Kurla Complex',
+    status: 'New',
+    lastContact: '2 days ago',
+  },
+  {
+    id: 'l2',
+    name: 'Priya Shah',
+    email: 'priya@brightloop.io',
+    phone: '+91 99675 44321',
+    company: 'Brightloop Tech',
+    source: 'Referral',
+    requirement: 'Private Office · 12 seats',
+    budget: '₹2,40,000 / month',
+    location: 'Andheri East',
+    status: 'Visited',
+    lastContact: '1 day ago',
+  },
+  {
+    id: 'l3',
+    name: 'Rohan Kapoor',
+    email: 'rohan.k@quanta.dev',
+    phone: '+91 90040 56789',
+    company: 'Quanta Labs',
+    source: 'Walk-in',
+    requirement: 'Dedicated Desk · 4 seats',
+    budget: '₹48,000 / month',
+    location: 'Powai',
+    status: 'Negotiation',
+    lastContact: '5 hours ago',
+  },
+  {
+    id: 'l4',
+    name: 'Anjali Verma',
+    email: 'anjali.v@pixel8.co',
+    phone: '+91 99209 87412',
+    company: 'Pixel8 Agency',
+    source: 'Social',
+    requirement: 'Meeting Room · 1 day pass',
+    budget: '₹8,500 / day',
+    location: 'Lower Parel',
+    status: 'Converted',
+    lastContact: '3 days ago',
+  },
+  {
+    id: 'l5',
+    name: 'Karan Bhatia',
+    email: 'karan@orbitalhq.in',
+    phone: '+91 98921 23498',
+    company: 'Orbital HQ',
+    source: 'Website',
+    requirement: 'Enterprise Floor · 30 seats',
+    budget: '₹6,50,000 / month',
+    location: 'Worli',
+    status: 'Cold',
+    lastContact: '12 days ago',
+  },
+  {
+    id: 'l6',
+    name: 'Neha Iyer',
+    email: 'neha.iyer@cumulus.app',
+    phone: '+91 97730 55664',
+    company: 'Cumulus App',
+    source: 'Email',
+    requirement: 'Hot Desk · 3 seats',
+    budget: '₹42,000 / month',
+    location: 'Malad',
+    status: 'New',
+    lastContact: 'Today',
+  },
+  {
+    id: 'l7',
+    name: 'Vikram Joshi',
+    email: 'vikram@northgate.in',
+    phone: '+91 98330 77821',
+    company: 'Northgate Capital',
+    source: 'Referral',
+    requirement: 'Private Office · 8 seats',
+    budget: '₹1,60,000 / month',
+    location: 'Goregaon',
+    status: 'Visited',
+    lastContact: 'Yesterday',
+  },
 ];
 
-const pipelineData = [
-  { label: "Inquiry", value: 2, color: "#ff7847" },
-  { label: "Visited", value: 1, color: "#fbbf24" },
-  { label: "Negotiation", value: 1, color: "#14b8a6" },
-  { label: "Converted", value: 1, color: "#374151" },
-  { label: "Cold Leads", value: 0, color: "#ef4444" },
-];
+/* --------------------------- Helpers ----------------------------- */
 
-const leadsData: Lead[] = [
-  { name: "Rahul Sharma", company: "Freelancer", source: "Website", plan: "Hot Desk", assigned: "CM Rahul", date: "12 Mar", status: "New" },
-  { name: "StartupX", company: "Startup", source: "Referral", plan: "Cabin", assigned: "CM Rahul", date: "10 Mar", status: "Visited" },
-  { name: "Ankit", company: "Individual", source: "Walk-in", plan: "Dedicated Desk", assigned: "CM Rahul", date: "9 Mar", status: "Negotiation" },
-  { name: "TechCorp", company: "Enterprise", source: "Website", plan: "Private Office", assigned: "CM Rahul", date: "8 Mar", status: "Converted" },
-  { name: "Priya Singh", company: "Freelancer", source: "Referral", plan: "Hot Desk", assigned: "CM Rahul", date: "7 Mar", status: "New" },
-];
-
-const statusColors: Record<Lead["status"], string> = {
-  New: "bg-orange-100 text-orange-600",
-  Visited: "bg-yellow-100 text-yellow-600",
-  Negotiation: "bg-teal-100 text-teal-600",
-  Converted: "bg-gray-100 text-gray-600",
+const STATUS_PILL_CLASS: Record<LeadStatus, string> = {
+  New: styles.pillNew,
+  Visited: styles.pillVisited,
+  Negotiation: styles.pillNegotiation,
+  Converted: styles.pillConverted,
+  Cold: styles.pillCold,
 };
 
-export default function LeadsPage() {
-  const [selectedLead, setSelectedLead] = useState<Lead>(leadsData[0]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter();
+/* ----------------------------- Icons ----------------------------- */
 
-  const filteredLeads = leadsData.filter((lead) =>
-    lead.name.toLowerCase().includes(searchQuery.toLowerCase())
+const Icon = {
+  Search: (
+    <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  Caret: (
+    <svg className={styles.selectCaret} viewBox="0 0 10 6" fill="none">
+      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  PillCaret: (
+    <svg className="caret" viewBox="0 0 10 6" fill="none" style={{ width: 9, height: 5 }}>
+      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Plus: (
+    <svg viewBox="0 0 14 14" fill="none">
+      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  Phone: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Mail: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Calendar: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  ),
+  Note: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  ),
+  Edit: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Download: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Check: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Users: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Trend: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <polyline points="3 17 9 11 13 15 21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points="14 7 21 7 21 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  Clock: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  ),
+  Target: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  ),
+  IndRupee: (
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M6 3h12M6 8h12M6 13l8 8M6 13h3a5 5 0 0 0 0-10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
+/* --------------------------- Component --------------------------- */
+
+export default function LeadsPage() {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | LeadStatus>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
+  const [sort, setSort] = useState<'Recent' | 'Name' | 'Budget'>('Recent');
+  const [selectedId, setSelectedId] = useState<string>('l3');
+
+  const filtered = useMemo(() => {
+    return LEADS.filter((l) => {
+      const q = search.trim().toLowerCase();
+      const matchesQuery =
+        q.length === 0 ||
+        l.name.toLowerCase().includes(q) ||
+        l.email.toLowerCase().includes(q) ||
+        l.company.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
+      const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
+      return matchesQuery && matchesStatus && matchesSource;
+    });
+  }, [search, statusFilter, sourceFilter]);
+
+  const selected = useMemo(
+    () => LEADS.find((l) => l.id === selectedId) ?? LEADS[0],
+    [selectedId],
   );
 
-  const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
-    router.push(`/dashboard/crm/leads/${lead.name.toLowerCase().replace(/\s+/g, '-')}`);
-  };
+  const stats = useMemo(() => {
+    const total = LEADS.length;
+    const converted = LEADS.filter((l) => l.status === 'Converted').length;
+    const conversionRate = total ? Math.round((converted / total) * 100) : 0;
+    return [
+      { label: 'Total Leads',     value: '128', trend: '+12% this month', icon: Icon.Users },
+      { label: 'Active Pipeline', value: '46',  trend: '+8% this week',   icon: Icon.IndRupee },
+      { label: 'Conversion Rate', value: `${conversionRate || 28}%`, trend: '+5% vs last month', icon: Icon.Target },
+      { label: 'Avg Response',    value: '2.4h', trend: '−18% vs last month', icon: Icon.Clock },
+    ];
+  }, []);
+
+  const pipeline = [
+    { name: 'Inquiry',    count: 32, cls: styles.tileInquiry },
+    { name: 'Visited',    count: 18, cls: styles.tileVisited },
+    { name: 'Negotiate',  count: 12, cls: styles.tileNegotiate },
+    { name: 'Converted',  count: 7,  cls: styles.tileConverted },
+    { name: 'Cold',       count: 9,  cls: styles.tileCold },
+  ];
 
   return (
-    <div className="flex-1 p-6">
-      {/* Page Header */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Lead Management</h1>
-        <p className="text-sm text-gray-500 mt-1">Track potential clients, manage inquiries, and convert them into members.</p>
-      </div>
+    <div className={styles.shell}>
+      {/* --------------------------- Main column --------------------------- */}
+      <div className={styles.main}>
+        {/* Header card */}
+        <div className={styles.headerCard}>
+          <h1 className={styles.headerTitle}>Lead Management</h1>
+          <p className={styles.headerSub}>
+            Manage your leads, track their progress and convert them into customers.
+          </p>
+        </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{Icons.search}</span>
-              <input
-                type="text"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent w-48"
-              />
+        {/* Filters bar */}
+        <div className={styles.filtersBar}>
+          <div className={styles.searchWrap}>
+            {Icon.Search}
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search leads..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filtersRight}>
+            <div className={styles.select}>
+              <button type="button" className={styles.selectBtn}>
+                {statusFilter === 'all' ? 'All Status' : statusFilter}
+                {Icon.Caret}
+              </button>
             </div>
-            <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-              All status {Icons.chevronDown}
-            </button>
-            <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-              All centers {Icons.chevronDown}
-            </button>
-            <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-              All assigned {Icons.chevronDown}
-            </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            <div className={styles.select}>
+              <button
+                type="button"
+                className={styles.selectBtn}
+                onClick={() =>
+                  setSourceFilter((p) =>
+                    p === 'all' ? 'Website' : p === 'Website' ? 'Referral' : p === 'Referral' ? 'Walk-in' : p === 'Walk-in' ? 'Social' : p === 'Social' ? 'Email' : 'all',
+                  )
+                }
+              >
+                {sourceFilter === 'all' ? 'All Sources' : sourceFilter}
+                {Icon.Caret}
+              </button>
+            </div>
+            <div className={styles.select}>
+              <button
+                type="button"
+                className={styles.selectBtn}
+                onClick={() => setSort((p) => (p === 'Recent' ? 'Name' : p === 'Name' ? 'Budget' : 'Recent'))}
+              >
+                Sort: {sort}
+                {Icon.Caret}
+              </button>
+            </div>
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('all');
+                setSourceFilter('all');
+              }}
+            >
               Clear Filters
             </button>
+            <button type="button" className={styles.addLeadBtn}>
+              {Icon.Plus}
+              Add Lead
+            </button>
           </div>
-          <button className="px-5 py-2 bg-orange-500 text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors">
-            {Icons.plus} Add Lead
-          </button>
         </div>
-      </div>
 
-      {/* Stats Cards - Top */}
-      <div className="grid grid-cols-4 compact:grid-cols-2 gap-4 compact:gap-3 mb-6">
-        {statsData.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-shadow duration-300 transform hover:-translate-y-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 transition-transform duration-200 hover:scale-110">
-                {Icons[stat.icon as keyof typeof Icons]}
+        {/* Stats */}
+        <div className={styles.statsGrid}>
+          {stats.map((s) => (
+            <div key={s.label} className={styles.statCard}>
+              <div className={styles.statIconWrap}>{s.icon}</div>
+              <h3 className={styles.statValue}>{s.value}</h3>
+              <p className={styles.statLabel}>{s.label}</p>
+              <p className={styles.statTrend}>{s.trend}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Pipeline */}
+        <div className={styles.pipelineCard}>
+          <h2 className={styles.pipelineTitle}>Lead Pipeline</h2>
+          <div className={styles.pipelineGrid}>
+            {pipeline.map((p) => (
+              <div key={p.name} className={`${styles.pipelineTile} ${p.cls}`}>
+                <h4>{p.name}</h4>
+                <p>{p.count}</p>
               </div>
-            </div>
-            <p className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</p>
-            <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-            <p className="text-sm font-medium text-green-600">{stat.trend} vs last week</p>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* Lead Details - Below stats */}
-      <div className="grid grid-cols-1 compact:grid-cols-3 gap-6 compact:gap-3 mb-6">
-        <div className="col-span-2">
-          {/* Pipeline */}
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Lead Pipeline</h3>
-            <div className="flex gap-4">
-              {pipelineData.map((stage) => (
-                <div
-                  key={stage.label}
-                  className="flex-1 rounded-xl p-4 text-center transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
-                  style={{ backgroundColor: stage.color }}
-                >
-                  <p className="text-sm font-medium text-white">{stage.label}</p>
-                  <p className="text-2xl font-bold text-white">{stage.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Leads Table */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="py-4 pl-4 pr-3 text-left text-sm font-medium text-gray-500">Lead Name</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500">Company</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Source</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Interested Plan</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Assigned To</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500">Date</th>
-                    <th className="px-3 py-4 compact:px-2 compact:py-2 text-left text-sm font-medium text-gray-500 uppercase tracking-wide text-xs">Status</th>
+        {/* Leads table */}
+        <div className={styles.tableCard}>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Lead Name</th>
+                  <th>Company</th>
+                  <th>Requirement</th>
+                  <th>Budget</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Last Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((l) => (
+                  <tr
+                    key={l.id}
+                    onClick={() => setSelectedId(l.id)}
+                    className={l.id === selectedId ? styles.selectedRow : undefined}
+                  >
+                    <td className={styles.leadNameCell}>{l.name}</td>
+                    <td>{l.company}</td>
+                    <td>{l.requirement}</td>
+                    <td>{l.budget}</td>
+                    <td>{l.source}</td>
+                    <td>
+                      <span
+                        className={`${styles.statusPill} ${STATUS_PILL_CLASS[l.status]}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        {l.status}
+                        {Icon.PillCaret}
+                      </span>
+                    </td>
+                    <td>{l.lastContact}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredLeads.map((lead) => (
-                    <tr
-                      key={lead.name}
-                      onClick={() => handleLeadClick(lead)}
-                      className={`border-b border-gray-200 cursor-pointer transition-colors ${
-                        selectedLead.name === lead.name ? "bg-orange-50" : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <td className="py-3 pl-4 pr-3">
-                        <span className="text-sm font-medium text-gray-900">{lead.name}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-gray-500">{lead.company}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-gray-500">{lead.source}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-gray-500">{lead.plan}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-gray-500">{lead.assigned}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="text-sm text-gray-500">{lead.date}</span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusColors[lead.status]}`}>
-                          {lead.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Sidebar - Lead Details */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Lead Details</h3>
-            <div className="space-y-4">
-              {[
-                { label: "Lead Name", value: selectedLead.name },
-                { label: "Phone", value: "+91 98765 43210" },
-                { label: "Email", value: "rahul@example.com" },
-                { label: "Company", value: selectedLead.company },
-                { label: "Interested Plan", value: selectedLead.plan },
-                { label: "Team Size", value: "1 Person" },
-                { label: "Preferred Move-in Date", value: "15 Mar 2026" },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
-                  <p className="text-sm font-medium text-gray-900">{value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
-              <button className="w-full bg-orange-500 text-white py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
-                {Icons.list} Lead Details
-              </button>
-              <button className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
-                {Icons.send} Send Proposal
-              </button>
-              <button className="w-full bg-cyan-500 text-white py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-cyan-600 transition-colors">
-                {Icons.userCheck} Convert to Client
-              </button>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-2">
-              <button className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.plus} Add Lead
-              </button>
-              <button className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.upload} Import Leads
-              </button>
-              <button className="w-full bg-white border border-gray-200 text-gray-700 py-2.5 rounded-lg font-medium text-sm flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.clipboard} Manage Sources
-              </button>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
+      {/* ------------------------- Right sidebar --------------------------- */}
+      <aside className={styles.sidebar}>
+        <div className={styles.panel}>
+          <h3 className={styles.panelTitle}>Lead Details</h3>
+          <div className={styles.leadDetailsList}>
+            <div className={styles.detailRow}>
+              <p className={styles.detailLabel}>Name</p>
+              <p className={styles.detailValue}>{selected.name}</p>
+            </div>
+            <div className={styles.detailRow}>
+              <p className={styles.detailLabel}>Email</p>
+              <p className={styles.detailValue}>{selected.email}</p>
+            </div>
+            <div className={styles.detailRow}>
+              <p className={styles.detailLabel}>Phone</p>
+              <p className={styles.detailValue}>{selected.phone}</p>
+            </div>
+            <div className={styles.detailRow}>
+              <p className={styles.detailLabel}>Location</p>
+              <p className={styles.detailValue}>{selected.location}</p>
+            </div>
+          </div>
+
+          <div className={styles.detailActions}>
+            <button type="button" className={styles.btnPrimary}>
+              {Icon.Check}
+              Convert to Customer
+            </button>
+            <button type="button" className={styles.btnOutline}>
+              {Icon.Calendar}
+              Schedule Visit
+            </button>
+            <button type="button" className={styles.btnTeal}>
+              {Icon.Download}
+              Export Details
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.panel}>
+          <h3 className={styles.panelTitle}>Quick Actions</h3>
+          <div className={styles.quickActions}>
+            <button type="button" className={styles.quickBtn}>
+              {Icon.Phone}
+              Call Lead
+            </button>
+            <button type="button" className={styles.quickBtn}>
+              {Icon.Mail}
+              Send Email
+            </button>
+            <button type="button" className={styles.quickBtn}>
+              {Icon.Note}
+              Add Note
+            </button>
+            <button type="button" className={styles.quickBtn}>
+              {Icon.Edit}
+              Edit Details
+            </button>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

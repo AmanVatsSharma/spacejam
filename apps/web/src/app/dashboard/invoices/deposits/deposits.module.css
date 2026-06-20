@@ -1,0 +1,505 @@
+/**
+ * File:        apps/web/src/app/dashboard/invoices/deposits/deposits.module.css
+ * Module:      Web · Dashboard · Deposits
+ * Purpose:     Scoped styles for the Security Deposits page — hero card,
+ *              KPI cards, deposits table, status pill, and right rail cards.
+ *              Layout/spacing is handled with Tailwind; CSS handles
+ *              component-level visual details (shadows, radii, status tints).
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-06-21
+ */
+
+/* ---------- Layout shell ---------- */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1180px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Hero card ---------- */
+.hero {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 19px;
+  box-shadow:
+    0 0 6px 0 rgba(252, 135, 88, 0.2),
+    0 0 5px 0 rgba(99, 99, 99, 0.25);
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.heroTitle {
+  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.5px;
+  line-height: 36px;
+  margin: 0;
+}
+
+.heroSubtitle {
+  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #717182;
+  letter-spacing: -0.3125px;
+  line-height: 24px;
+  margin: 4px 0 0 0;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 20px;
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  color: #364153;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1504px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.exportBtn:hover {
+  border-color: #ff7847;
+  background: #fff7ed;
+}
+
+/* ---------- Filter row ---------- */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterInput {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 45px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  min-width: 240px;
+  flex: 1 1 240px;
+  color: #4b5563;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+}
+
+.filterInput input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.filterInput input::placeholder {
+  color: #4b5563;
+  opacity: 0.7;
+}
+
+.filterSelect {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 45px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  min-width: 142px;
+  color: #4b5563;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+  position: relative;
+}
+
+.filterSelect select {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 45px;
+  padding: 0 22px;
+  background: #ffe5d9;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  color: #4b5563;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.clearBtn:hover {
+  background: #ffd6c2;
+}
+
+/* ---------- KPI cards ---------- */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+@media (max-width: 900px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.kpiCard {
+  background: #ffffff;
+  border-radius: 13px;
+  box-shadow:
+    0 0.938px 1.408px rgba(0, 0, 0, 0.1),
+    0 0.938px 0.938px rgba(0, 0, 0, 0.1);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 134px;
+}
+
+.kpiIconWrap {
+  height: 34px;
+  width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 120, 71, 0.05);
+  color: #ff7847;
+  border-radius: 9px;
+}
+
+.kpiValue {
+  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 22.5px;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: 0.066px;
+  line-height: 30px;
+  margin: 8px 0 0 0;
+}
+
+.kpiLabel {
+  font-size: 13.14px;
+  font-weight: 400;
+  color: #717182;
+  letter-spacing: -0.1411px;
+  line-height: 18.77px;
+  margin: 0;
+}
+
+/* ---------- Deposits table ---------- */
+.tableCard {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 0.862px 1.293px rgba(0, 0, 0, 0.1),
+    0 0.862px 0.862px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table thead th {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5565;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 24px 16px;
+  line-height: 18px;
+}
+
+.table tbody td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 18px 16px;
+  font-size: 14px;
+  color: #4a5565;
+  letter-spacing: -0.1504px;
+  line-height: 21px;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.nameCell {
+  font-weight: 500;
+  color: #101828;
+  white-space: normal;
+  line-height: 18px;
+}
+
+.amountCell {
+  font-weight: 600;
+  color: #ff7847;
+  white-space: nowrap;
+}
+
+.statusCell {
+  white-space: nowrap;
+}
+
+.dateCell {
+  white-space: nowrap;
+  color: #4a5565;
+}
+
+.actionCell {
+  width: 64px;
+  text-align: right;
+}
+
+/* ---------- Status pill + dropdown ---------- */
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #364153;
+  background: #f3f4f6;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  min-width: 84px;
+  justify-content: space-between;
+}
+
+.statusPill .pillCaret {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: transform 150ms ease;
+}
+
+.statusPill[data-open="true"] .pillCaret {
+  transform: rotate(180deg);
+}
+
+.statusPill.toneActive {
+  background: rgba(49, 147, 25, 0.2);
+  color: #319319;
+}
+
+.statusPill.toneFrozen {
+  background: rgba(0, 209, 198, 0.2);
+  color: #00a39a;
+}
+
+.statusPill.tonePending {
+  background: rgba(255, 120, 71, 0.2);
+  color: #c9521c;
+}
+
+.statusPill.toneRelease {
+  background: rgba(0, 201, 80, 0.2);
+  color: #00a040;
+}
+
+.statusMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  min-width: 120px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+  padding: 6px 0;
+}
+
+.statusMenuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  letter-spacing: -0.2882px;
+  line-height: 18px;
+}
+
+.statusMenuItem:hover {
+  background: #f9fafb;
+}
+
+/* ---------- Right column: Quick Actions + Recent Activities ---------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 19px;
+  box-shadow:
+    0 0 6px 0 rgba(252, 135, 88, 0.2),
+    0 0 5px 0 rgba(99, 99, 99, 0.25);
+}
+
+.cardHeader {
+  padding: 22px 24px 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.5px;
+  line-height: 28px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #0a0a0a;
+  letter-spacing: -0.3125px;
+  line-height: 24px;
+}
+
+/* Quick actions */
+.quickActions {
+  padding: 8px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quickBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.1504px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+  text-align: left;
+}
+
+.quickBtn:hover {
+  background: #fff7ed;
+  border-color: #ff7847;
+}
+
+.quickBtn svg {
+  flex-shrink: 0;
+  color: #ff7847;
+}
+
+/* Recent activities */
+.activityList {
+  padding: 8px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+  letter-spacing: -0.1504px;
+  line-height: 20px;
+}
+
+.activityItem .iconWrap {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activityItem .iconWrap.tonePlus {
+  color: #ff7847;
+}
+
+.activityItem .iconWrap.toneRefund {
+  color: #00a040;
+}
+
+.activityItem .iconWrap.toneFreeze {
+  color: #00a0c8;
+}
+
+.activityItem .activityText {
+  flex: 1;
+  white-space: pre-wrap;
+}

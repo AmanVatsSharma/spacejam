@@ -81,6 +81,7 @@ export default function DashboardLayout({
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
+        hideSetUpButton={!pathname.startsWith('/dashboard/inventory')}
       />
 
       <div className="flex compact:gap-2">
