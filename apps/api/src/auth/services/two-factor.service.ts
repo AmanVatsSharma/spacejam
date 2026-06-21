@@ -11,6 +11,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class TwoFactorService {
@@ -47,5 +48,26 @@ export class TwoFactorService {
     if (!ok) {
       throw new UnauthorizedException('Invalid or expired 2FA code');
     }
+  }
+
+  /**
+   * Generate N one-shot recovery codes. Each is an 8-character
+   * human-friendly string (`XXXXX-XXXXX`). They are returned in plaintext
+   * exactly once — the caller is responsible for showing them to the user
+   * and persisting only the hashed versions.
+   */
+  generateRecoveryCodes(count = 10): string[] {
+    const codes: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const part = () => crypto.randomBytes(3).toString('hex').slice(0, 5).toUpperCase();
+      codes.push(`${part()}-${part()}`);
+    }
+    return codes;
+  }
+
+  /** Constant-time SHA-256 hash of a recovery code, suitable for DB lookup. */
+  hashRecoveryCode(code: string): string {
+    const normalized = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    return crypto.createHash('sha256').update(normalized).digest('hex');
   }
 }

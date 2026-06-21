@@ -8,8 +8,8 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
-import { TypeormService } from '../typeorm/typeorm.service';
-import { CacheService } from '../cache/cache.service';
+import { TypeormService } from '../../typeorm/typeorm.service';
+import { CacheService } from '../../cache/cache.service';
 import {
   Center,
   Location,

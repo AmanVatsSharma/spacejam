@@ -8,8 +8,8 @@
  */
 
 import { Resolver, Query, Args } from '@nestjs/graphql';
-import { TypeormService } from '../typeorm/typeorm.service';
-import { CacheService } from '../cache/cache.service';
+import { TypeormService } from '../../typeorm/typeorm.service';
+import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {

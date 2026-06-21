@@ -21,8 +21,10 @@ import { SigninInput } from '../../auth/dto/signin.input';
 import { SignupInput } from '../../auth/dto/signup.input';
 import { ForgotPasswordInput } from '../../auth/dto/forgot-password.input';
 import { ResetPasswordInput } from '../../auth/dto/reset-password.input';
+import { ChangePasswordInput } from '../../auth/dto/change-password.input';
 import { VerifyTwoFactorInput } from '../../auth/dto/verify-two-factor.input';
 import { EnableTwoFactorInput } from '../../auth/dto/enable-two-factor.input';
+import { VerifyMagicLinkInput } from '../../auth/dto/verify-magic-link.input';
 
 @Resolver(() => AuthPayload)
 export class AuthResolver {
@@ -72,20 +74,62 @@ export class AuthResolver {
 
   @Public()
   @Mutation(() => Boolean, { description: 'Send a password-reset email if the account exists' })
-  async requestPasswordReset(@Args('input') input: ForgotPasswordInput): Promise<boolean> {
-    return this.authService.requestPasswordReset(input.email);
+  async requestPasswordReset(
+    @Args('input') input: ForgotPasswordInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<boolean> {
+    return this.authService.requestPasswordReset(input.email, this.buildCtx(context));
   }
 
   @Public()
   @Mutation(() => Boolean, { description: 'Reset password using a token from the reset email' })
-  async resetPassword(@Args('input') input: ResetPasswordInput): Promise<boolean> {
-    return this.authService.resetPassword(input);
+  async resetPassword(
+    @Args('input') input: ResetPasswordInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<boolean> {
+    return this.authService.resetPassword(input, this.buildCtx(context));
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean, { description: 'Change the current user\'s password (signed-in flow)' })
+  async changePassword(
+    @CurrentUser() user: JwtPayload,
+    @Args('input') input: ChangePasswordInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<boolean> {
+    return this.authService.changePassword(
+      user.sub,
+      input.currentPassword,
+      input.newPassword,
+      this.buildCtx(context),
+    );
   }
 
   @Public()
   @Mutation(() => AuthPayload, { description: 'Exchange a 2FA challenge token + TOTP code for real tokens' })
-  async verifyTwoFactor(@Args('input') input: VerifyTwoFactorInput): Promise<AuthPayload> {
-    return this.authService.verifyTwoFactor(input);
+  async verifyTwoFactor(
+    @Args('input') input: VerifyTwoFactorInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<AuthPayload> {
+    return this.authService.verifyTwoFactor(input, this.buildCtx(context));
+  }
+
+  @Public()
+  @Mutation(() => Boolean, { description: 'Send a one-time sign-in link to the given email if the account exists' })
+  async requestMagicLink(
+    @Args('input') input: ForgotPasswordInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<boolean> {
+    return this.authService.requestMagicLink(input.email, this.buildCtx(context));
+  }
+
+  @Public()
+  @Mutation(() => AuthPayload, { description: 'Exchange a magic-link token for a real access/refresh pair' })
+  async verifyMagicLink(
+    @Args('input') input: VerifyMagicLinkInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<AuthPayload> {
+    return this.authService.consumeMagicLink(input.token, this.buildCtx(context));
   }
 
   // ---------- authenticated setup flows ----------
@@ -108,8 +152,9 @@ export class AuthResolver {
   async confirmTwoFactorSetup(
     @CurrentUser() user: JwtPayload,
     @Args('input') input: EnableTwoFactorInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<string[]> {
-    return this.authService.confirmTwoFactorSetup(user.sub, input);
+    return this.authService.confirmTwoFactorSetup(user.sub, input, this.buildCtx(context));
   }
 
   @UseGuards(GqlAuthGuard)
@@ -117,7 +162,14 @@ export class AuthResolver {
   async disableTwoFactor(
     @CurrentUser() user: JwtPayload,
     @Args('code') code: string,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.disableTwoFactor(user.sub, code);
+    return this.authService.disableTwoFactor(user.sub, code, this.buildCtx(context));
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(() => Number, { description: 'Number of unused 2FA recovery codes remaining' })
+  async recoveryCodesRemaining(@CurrentUser() user: JwtPayload): Promise<number> {
+    return this.authService.recoveryCodesRemaining(user.sub);
   }
 }

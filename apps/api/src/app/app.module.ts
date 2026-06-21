@@ -34,6 +34,8 @@ import { RevenueAnalytics } from '../typeorm/entities/revenue-analytics.entity';
 import { UserSession } from '../typeorm/entities/user-session.entity';
 import { AuditLog } from '../typeorm/entities/audit-log.entity';
 import { Invitation } from '../typeorm/entities/invitation.entity';
+import { RecoveryCode } from '../typeorm/entities/recovery-code.entity';
+import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
 
 @Module({
   imports: [
@@ -47,7 +49,27 @@ import { Invitation } from '../typeorm/entities/invitation.entity';
       autoSchemaFile: true,
       sortSchema: true,
       introspection: process.env.NODE_ENV !== 'production',
-      context: ({ req, res }) => ({ req, res }),
+      context: ({ req, res, connectionParams, extra }: any) => ({
+        req,
+        res,
+        connectionParams,
+        extra,
+      }),
+      subscriptions: {
+        'graphql-ws': {
+          // Authorization hook for ws connections — extract the bearer
+          // token from `connectionParams.Authorization` and attach the
+          // decoded user to the GraphQL context.
+          onConnect: (context: any) => {
+            const params = context.connectionParams ?? {};
+            const auth = (params.Authorization || params.authorization) as string | undefined;
+            if (auth && typeof auth === 'string' && auth.startsWith('Bearer ')) {
+              return { token: auth.slice(7) };
+            }
+            return true;
+          },
+        },
+      },
     }),
 
     // Database
@@ -64,6 +86,8 @@ import { Invitation } from '../typeorm/entities/invitation.entity';
       UserSession,
       AuditLog,
       Invitation,
+      RecoveryCode,
+      MagicLinkToken,
     ]),
 
     // Caching

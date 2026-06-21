@@ -59,6 +59,54 @@ export class EmailService {
     return this.send(args.to, subject, text, html);
   }
 
+  /**
+   * Send a "new device signed in to your account" alert. Logged in dev mode
+   * (when no SMTP is configured) so a developer can confirm the path was
+   * actually exercised.
+   */
+  async sendLoginAlert(args: {
+    to: string;
+    ipAddress?: string;
+    userAgent?: string;
+    occurredAt: Date;
+  }): Promise<void> {
+    const subject = 'New sign-in to your SpaceJam account';
+    const ua = args.userAgent ?? 'unknown device';
+    const ip = args.ipAddress ?? 'unknown location';
+    const when = args.occurredAt.toISOString();
+    const text =
+      `A new sign-in to your SpaceJam account just happened.\n\n` +
+      `When: ${when}\nIP: ${ip}\nDevice: ${ua}\n\n` +
+      `If this was not you, please reset your password immediately.`;
+    const html = `
+      <p>A new sign-in to your SpaceJam account just happened.</p>
+      <ul>
+        <li><strong>When:</strong> ${when}</li>
+        <li><strong>IP:</strong> ${ip}</li>
+        <li><strong>Device:</strong> ${ua}</li>
+      </ul>
+      <p>If this was not you, please reset your password immediately.</p>
+    `;
+    return this.send(args.to, subject, text, html);
+  }
+
+  /** Magic-link sign-in email. The link contains the raw token, which the
+   *  backend hashes and stores. Never log or persist the raw link. */
+  async sendMagicLink(args: { to: string; link: string; ttlMinutes: number }): Promise<void> {
+    const subject = 'Your SpaceJam sign-in link';
+    const text =
+      `Click the link below to sign in to your SpaceJam account. ` +
+      `It expires in ${args.ttlMinutes} minutes and can only be used once.\n\n${args.link}\n\n` +
+      `If you didn't request this, you can safely ignore this email.`;
+    const html = `
+      <p>Click the link below to sign in to your SpaceJam account.</p>
+      <p><a href="${args.link}">Sign in to SpaceJam</a></p>
+      <p>This link expires in ${args.ttlMinutes} minutes and can only be used once.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    `;
+    return this.send(args.to, subject, text, html);
+  }
+
   private async send(to: string, subject: string, text: string, html: string) {
     if (!this.transporter) {
       this.logger.log(`[email:dev] to=${to} subject="${subject}" body=${text}`);

@@ -59,6 +59,37 @@ export class User {
   @Column({ name: 'emailVerified', default: false })
   emailVerified!: boolean;
 
+  // --- 2FA (TOTP) ---
+  @Column({ name: 'twoFactorSecret', type: 'varchar', length: 64, nullable: true, select: false })
+  twoFactorSecret!: string | null;
+
+  @Column({ name: 'twoFactorEnabled', default: false })
+  twoFactorEnabled!: boolean;
+
+  // --- Account lockout / brute-force protection ---
+  @Column({ name: 'failedLoginCount', type: 'int', default: 0 })
+  failedLoginCount!: number;
+
+  @Column({ name: 'lockoutUntil', type: 'timestamp', nullable: true })
+  lockoutUntil!: Date | null;
+
+  @Column({ name: 'lastFailedLoginAt', type: 'timestamp', nullable: true })
+  lastFailedLoginAt!: Date | null;
+
+  // --- Password policy / rotation ---
+  @Column({ name: 'passwordChangedAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  passwordChangedAt!: Date;
+
+  @Column({ name: 'passwordHistory', type: 'jsonb', nullable: true, select: false })
+  passwordHistory!: string[] | null;
+
+  // --- Password reset (short-lived tokens) ---
+  @Column({ name: 'passwordResetToken', type: 'varchar', length: 128, nullable: true, select: false })
+  passwordResetToken!: string | null;
+
+  @Column({ name: 'passwordResetExpiresAt', type: 'timestamp', nullable: true })
+  passwordResetExpiresAt!: Date | null;
+
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 

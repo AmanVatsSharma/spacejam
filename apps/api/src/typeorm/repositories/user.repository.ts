@@ -35,6 +35,20 @@ export class UserRepository {
     });
   }
 
+  /**
+   * Look up a user by id and only return them if they are currently active.
+   * Used by the JWT strategies to short-circuit requests for deactivated
+   * accounts without giving the client any signal about the difference
+   * between "user doesn't exist" and "user is disabled".
+   */
+  async findByIdActive(id: string): Promise<User | null> {
+    const user = await this.userRepo.findOne({
+      where: { id, isActive: true },
+      relations: ['center'],
+    });
+    return user ?? null;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepo.findOne({
       where: { email },
