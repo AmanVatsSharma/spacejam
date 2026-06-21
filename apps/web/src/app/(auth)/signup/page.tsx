@@ -1,35 +1,29 @@
 /**
  * File:        apps/web/src/app/(auth)/signup/page.tsx
  * Module:      Web · Auth · Sign Up Page
- * Purpose:     User registration sign-up page
- *
- * Exports:
- *   - SignUpPage — sign-up form component
+ * Purpose:     User registration sign-up page. Keeps the orange-shape
+ *              marketing layout and delegates the form to <SignupForm>,
+ *              which calls useAuth().signup() and redirects to /dashboard
+ *              on success. Wrapped in <Suspense> for parity with the other
+ *              auth pages.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-06-21
  */
+'use client';
 
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import Logo from "@/assets/logo.png";
-import styles from "../auth.module.css";
+import { Suspense } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import Logo from '@/assets/logo.png';
+import { SignupForm } from '@/components/auth/signup-form';
+import styles from '../auth.module.css';
 
 export default function SignUpPage() {
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
   return (
     <div className={styles.container}>
       {/* Left Side - Decorative */}
       <div className={styles.leftSide}>
-        {/* Abstract Orange Shapes */}
         <div className={styles.shape1} />
         <div className={styles.shape2} />
         <div className={styles.shape3} />
@@ -40,8 +34,6 @@ export default function SignUpPage() {
         <div className={styles.shape8} />
         <div className={styles.shape9} />
         <div className={styles.shape10} />
-
-        {/* Logo */}
         <div className={styles.logoContainer}>
           <Image src={Logo} alt="SpaceJam" className={styles.logoImage} />
         </div>
@@ -52,74 +44,9 @@ export default function SignUpPage() {
         <div className={styles.card}>
           <h1 className={styles.title}>Create your workspace account</h1>
 
-          <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
-            {/* Full Name - Floating Input */}
-            <div className={styles.floatingInput}>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <label htmlFor="name">Full Name</label>
-            </div>
-
-            {/* Email - Floating Input */}
-            <div className={styles.floatingInput}>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <label htmlFor="email">Email</label>
-            </div>
-
-            {/* Password - Floating Input */}
-            <div className={styles.floatingInput}>
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <label htmlFor="password">Password</label>
-              <button
-                type="button"
-                className={styles.passwordToggle}
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6A7282" strokeWidth="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a21.77 21.77 0 015.06 5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a21.77 21.77 0 01-5.06 5.94M14.12 14.12a3 3 0 11-4.24-4.24M1 1l22 22" />
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6A7282" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-8zm11 3a3 3 0 100-6 3 3 0 000 6zm0 2a5 5 0 110-10 5 5 0 010 10z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-
-            {/* Terms Checkbox */}
-            <div className={styles.checkboxRow}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                />
-                <span className={styles.checkboxText}>
-                  I agree to the <a href="#" className={styles.footerLink}>Terms of Service</a> and <a href="#" className={styles.footerLink}>Privacy Policy</a>
-                </span>
-              </label>
-            </div>
-
-            {/* Submit */}
-            <button type="submit" className={styles.submitBtn} disabled={!agreeTerms}>
-              Create account
-            </button>
-          </form>
+          <Suspense fallback={null}>
+            <SignupForm />
+          </Suspense>
 
           {/* Divider */}
           <div className={styles.divider}>
@@ -149,7 +76,7 @@ export default function SignUpPage() {
 
           {/* Footer */}
           <p className={styles.footerText}>
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link href="/signin" className={styles.footerLink}>Sign in</Link>
           </p>
         </div>

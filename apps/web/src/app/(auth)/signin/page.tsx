@@ -1,34 +1,29 @@
 /**
  * File:        apps/web/src/app/(auth)/signin/page.tsx
  * Module:      Web · Auth · Sign In Page
- * Purpose:     User authentication sign-in page
- *
- * Exports:
- *   - SignInPage — sign-in form component
+ * Purpose:     User authentication sign-in page. Keeps the orange-shape
+ *              marketing layout and delegates the form to <AuthFormWrapper>
+ *              → <SigninForm>, which calls useAuth().signin() and redirects
+ *              to /dashboard on success. Wrapped in <Suspense> so
+ *              useSearchParams() inside <SigninForm> works during prerender.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-06-21
  */
+'use client';
 
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import Logo from "@/assets/logo.png";
-import styles from "../auth.module.css";
+import { Suspense } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import Logo from '@/assets/logo.png';
+import AuthFormWrapper from './auth-form-wrapper';
+import styles from '../auth.module.css';
 
 export default function SignInPage() {
-  const [rememberMe, setRememberMe] = useState(false);
-  const [emailValue, setEmailValue] = useState("");
-  const [passwordValue, setPasswordValue] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
   return (
     <div className={styles.container}>
       {/* Left Side - Decorative */}
       <div className={styles.leftSide}>
-        {/* Abstract Orange Shapes */}
         <div className={styles.shape1} />
         <div className={styles.shape2} />
         <div className={styles.shape3} />
@@ -39,8 +34,6 @@ export default function SignInPage() {
         <div className={styles.shape8} />
         <div className={styles.shape9} />
         <div className={styles.shape10} />
-
-        {/* Logo */}
         <div className={styles.logoContainer}>
           <Image src={Logo} alt="SpaceJam" className={styles.logoImage} />
         </div>
@@ -51,62 +44,9 @@ export default function SignInPage() {
         <div className={styles.card}>
           <h1 className={styles.title}>Sign in to your workspace</h1>
 
-          <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
-            {/* Email - Floating Input */}
-            <div className={styles.floatingInput}>
-              <input
-                type="email"
-                id="email"
-                value={emailValue}
-                onChange={(e) => setEmailValue(e.target.value)}
-              />
-              <label htmlFor="email">Email</label>
-            </div>
-
-            {/* Password - Floating Input */}
-            <div className={styles.floatingInput}>
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={passwordValue}
-                onChange={(e) => setPasswordValue(e.target.value)}
-              />
-              <label htmlFor="password">Password</label>
-              <button
-                type="button"
-                className={styles.passwordToggle}
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6A7282" strokeWidth="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a21.77 21.77 0 015.06 5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a21.77 21.77 0 01-5.06 5.94M14.12 14.12a3 3 0 11-4.24-4.24M1 1l22 22" />
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6A7282" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-8zm11 3a3 3 0 100-6 3 3 0 000 6zm0 2a5 5 0 110-10 5 5 0 010 10z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-
-            {/* Remember & Forgot */}
-            <div className={styles.checkboxRow}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className={styles.checkboxText}>Remember me</span>
-              </label>
-              <a href="#" className={styles.forgotLink}>Forgot password?</a>
-            </div>
-
-            {/* Submit */}
-            <button type="submit" className={styles.submitBtn}>
-              Sign in
-            </button>
-          </form>
+          <Suspense fallback={null}>
+            <AuthFormWrapper />
+          </Suspense>
 
           {/* Divider */}
           <div className={styles.divider}>
@@ -136,7 +76,7 @@ export default function SignInPage() {
 
           {/* Footer */}
           <p className={styles.footerText}>
-            Don&apos;t have an account?{" "}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className={styles.footerLink}>Sign up</Link>
           </p>
         </div>
