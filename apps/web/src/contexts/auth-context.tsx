@@ -44,6 +44,7 @@ export interface AuthUser {
   active: boolean;
   emailVerified: boolean;
   twoFactorEnabled: boolean;
+  avatar?: string | null;
   lastLoginAt?: string | null;
   createdAt: string;
 }
@@ -304,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         active: true,
         emailVerified: true,
         twoFactorEnabled: false,
+        avatar: null,
         createdAt: new Date().toISOString(),
       };
       setUser(devUser);
