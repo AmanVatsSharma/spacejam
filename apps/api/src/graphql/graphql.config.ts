@@ -14,6 +14,8 @@ import { GraphQLError, BuildSchemaOptions } from 'graphql';
 import { DataSource } from 'typeorm';
 
 import { GqlDataLoaders } from './dataloaders';
+import { MetricsService } from '../observability/metrics.service';
+import { createGraphqlMetricsPlugin } from '../observability/graphql-metrics.plugin';
 
 const MAX_COMPLEXITY = parseInt(process.env.GRAPHQL_MAX_COMPLEXITY ?? '1000', 10);
 const MAX_DEPTH = parseInt(process.env.GRAPHQL_MAX_DEPTH ?? '8', 10);
@@ -38,7 +40,10 @@ const SAFE_CODES = new Set([
  * `DataSource` as a dependency so we can pull repos from a single
  * shared connection rather than maintaining our own pool.
  */
-export async function buildSchemaOptions(dataSource: DataSource): Promise<ApolloDriverConfig> {
+export async function buildSchemaOptions(
+  dataSource: DataSource,
+  metrics: MetricsService,
+): Promise<ApolloDriverConfig> {
   let schema: ReturnType<typeof import('graphql').buildSchema> | null = null;
   try {
     const fs = await import('fs');
@@ -63,6 +68,7 @@ export async function buildSchemaOptions(dataSource: DataSource): Promise<Apollo
     playground: process.env.NODE_ENV !== 'production',
     introspection: process.env.NODE_ENV !== 'production',
     validationRules,
+    plugins: [createGraphqlMetricsPlugin(metrics)],
     context: async ({ req, res, connectionParams, extra }: any) => {
       const loaders = buildRequestLoaders(dataSource);
       return { req, res, connectionParams, extra, loaders };

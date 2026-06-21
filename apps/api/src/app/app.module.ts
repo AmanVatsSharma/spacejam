@@ -10,6 +10,7 @@
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { LoggerModule } from 'nestjs-pino';
 import { buildSchemaOptions } from '../graphql/graphql.config';
 import { TypeormConfigModule } from '../typeorm/typeorm.module';
 import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
@@ -27,6 +28,8 @@ import { AnalyticsResolver } from '../graphql/resolvers/analytics.resolver';
 import { GqlDataLoaders } from '../graphql/dataloaders';
 import { FieldRateLimitGuard } from '../graphql/guards/field-rate-limit.guard';
 import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
+import { ObservabilityModule } from '../observability/observability.module';
+import { MetricsService } from '../observability/metrics.service';
 import { User } from '../typeorm/entities/user.entity';
 import { Center } from '../typeorm/entities/center.entity';
 import { Location } from '../typeorm/entities/location.entity';
@@ -46,12 +49,47 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
     // Configuration
     ConfigModule,
 
+    // Structured logging via pino. LOG_LEVEL controls verbosity.
+    // In production, logs are newline-delimited JSON; in dev, pretty.
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+        autoLogging: true,
+        transport:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : {
+                target: 'pino-pretty',
+                options: {
+                  singleLine: true,
+                  colorize: true,
+                  translateTime: 'SYS:HH:MM:ss.l',
+                },
+              },
+        // Add request id to every log emitted during the request
+        genReqId: (req, res) => {
+          const existing = req.headers['x-request-id'];
+          if (existing) {
+            res.setHeader('x-request-id', existing as string);
+            return existing as string;
+          }
+          const id =
+            (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)).toUpperCase();
+          res.setHeader('x-request-id', id);
+          return id;
+        },
+      },
+    }),
+
     // GraphQL
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
       imports: [TypeOrmModule.forFeature([])],
-      inject: [getDataSourceToken()],
-      useFactory: (ds: import('typeorm').DataSource) => buildSchemaOptions(ds),
+      inject: [getDataSourceToken(), MetricsService],
+      useFactory: (
+        ds: import('typeorm').DataSource,
+        metrics: MetricsService,
+      ) => buildSchemaOptions(ds, metrics),
     }),
 
     // Database
@@ -77,6 +115,9 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
 
     // Real-time pub/sub (singleton)
     PubSubModule,
+
+    // Metrics, traces, structured logging
+    ObservabilityModule,
 
     // Authentication
     AuthModule,
