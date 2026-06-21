@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, Subscription } from '@nestjs/graphql';
 import { TypeormService } from '../../typeorm/typeorm.service';
 import { CacheService } from '../../cache/cache.service';
 import {
@@ -24,6 +24,12 @@ import { Center as CenterEntity } from '../../typeorm/entities/center.entity';
 import { Location as LocationEntity } from '../../typeorm/entities/location.entity';
 import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
+import { PubSubService } from '../pubsub/pubsub.service';
+
+export const CENTER_TRIGGERS = {
+  centerUpdated: 'center.updated',
+  floorUpdated: 'floor.updated',
+} as const;
 
 @Resolver(() => Center)
 export class CenterResolver {
@@ -38,6 +44,7 @@ export class CenterResolver {
     private floorRepo: Repository<FloorEntity>,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
+    private readonly pubSub: PubSubService,
   ) {}
 
   @Query(() => [Center])
@@ -107,6 +114,7 @@ export class CenterResolver {
       relations: ['location'],
     });
     await this.cache.invalidatePattern(`center:${id}`);
+    await this.pubSub.publish(CENTER_TRIGGERS.centerUpdated, { centerUpdated: center });
     return center as unknown as Center;
   }
 
@@ -180,6 +188,7 @@ export class FloorResolver {
     private cache: CacheService,
     @InjectRepository(FloorEntity)
     private floorRepo: Repository<FloorEntity>,
+    private readonly pubSub: PubSubService,
   ) {}
 
   @Query(() => [Floor])
@@ -209,6 +218,7 @@ export class SeatResolver {
     private cache: CacheService,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
+    private readonly pubSub: PubSubService,
   ) {}
 
   @Query(() => [Seat])
@@ -250,7 +260,37 @@ export class SeatResolver {
 
     await this.cache.invalidatePattern(`floor:*`);
     await this.cache.invalidatePattern(`center:*`);
+    await this.pubSub.publish(CENTER_TRIGGERS.floorUpdated, {
+      floorUpdated: seat?.floor,
+    });
 
     return seat as unknown as Seat;
+  }
+
+  /**
+   * Subscription: fires when any seat in the system updates (status,
+   * price, label). The UI listens to keep the floor plan in sync.
+   */
+  @Subscription(() => Seat, {
+    name: 'seatUpdated',
+    description: 'Seat updated (status, price, label, etc.)',
+    filter: (payload: { seatUpdated: SeatEntity | null }, vars: { floorId?: string }) => {
+      if (!vars.floorId) return true;
+      return payload.seatUpdated?.floorId === vars.floorId;
+    },
+  })
+  seatUpdatedSubscription(@Args('floorId', { nullable: true }) _floorId?: string) {
+    return this.pubSub.asyncIterator(CENTER_TRIGGERS.floorUpdated);
+  }
+
+  /**
+   * Subscription: fires when any center is updated.
+   */
+  @Subscription(() => Center, {
+    name: 'centerUpdated',
+    description: 'Center updated (name, status, location, etc.)',
+  })
+  centerUpdatedSubscription() {
+    return this.pubSub.asyncIterator(CENTER_TRIGGERS.centerUpdated);
   }
 }
