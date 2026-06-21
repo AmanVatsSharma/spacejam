@@ -1,5 +1,7 @@
 import './globals.css';
 
+import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
+
 export const metadata = {
   title: 'SpaceJam - Coworking Space Management',
   description: 'Manage your coworking space efficiently',
@@ -12,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ApolloProviderWrapper>{children}</ApolloProviderWrapper>
+      </body>
     </html>
   );
 }
