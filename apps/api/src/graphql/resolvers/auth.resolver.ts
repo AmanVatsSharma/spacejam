@@ -16,6 +16,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { GqlRefreshAuthGuard } from '../../auth/guards/gql-refresh-auth.guard';
 import { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { FieldRateLimit, FieldRateLimitGuard } from '../guards/field-rate-limit.guard';
 
 import { SigninInput } from '../../auth/dto/signin.input';
 import { SignupInput } from '../../auth/dto/signup.input';
@@ -26,6 +27,7 @@ import { VerifyTwoFactorInput } from '../../auth/dto/verify-two-factor.input';
 import { EnableTwoFactorInput } from '../../auth/dto/enable-two-factor.input';
 import { VerifyMagicLinkInput } from '../../auth/dto/verify-magic-link.input';
 
+@UseGuards(FieldRateLimitGuard)
 @Resolver(() => AuthPayload)
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
@@ -39,6 +41,7 @@ export class AuthResolver {
   }
 
   @Public()
+  @FieldRateLimit({ name: 'signin', limit: 10, windowSec: 60 })
   @Mutation(() => AuthPayload, { description: 'Sign in with email + password (optionally a 2FA code)' })
   async signin(
     @Args('input') input: SigninInput,
@@ -48,6 +51,7 @@ export class AuthResolver {
   }
 
   @Public()
+  @FieldRateLimit({ name: 'signup', limit: 5, windowSec: 60 })
   @Mutation(() => AuthPayload, { description: 'Create a new account' })
   async signup(
     @Args('input') input: SignupInput,
@@ -73,6 +77,7 @@ export class AuthResolver {
   }
 
   @Public()
+  @FieldRateLimit({ name: 'requestPasswordReset', limit: 5, windowSec: 60 })
   @Mutation(() => Boolean, { description: 'Send a password-reset email if the account exists' })
   async requestPasswordReset(
     @Args('input') input: ForgotPasswordInput,
@@ -115,6 +120,7 @@ export class AuthResolver {
   }
 
   @Public()
+  @FieldRateLimit({ name: 'requestMagicLink', limit: 5, windowSec: 60 })
   @Mutation(() => Boolean, { description: 'Send a one-time sign-in link to the given email if the account exists' })
   async requestMagicLink(
     @Args('input') input: ForgotPasswordInput,

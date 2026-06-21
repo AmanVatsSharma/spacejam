@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-20
  */
 import { UseGuards } from '@nestjs/common';
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -19,6 +19,7 @@ import { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 
+import { GqlDataLoaders } from '../dataloaders';
 import { User, UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
 
 /**
@@ -60,11 +61,16 @@ function toGraphqlUser(user: UserEntity): User {
 @Resolver(() => User)
 @UseGuards(GqlAuthGuard, RolesGuard)
 export class UserResolver {
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(
+    private readonly userRepo: UserRepository,
+    private readonly loaders: GqlDataLoaders,
+  ) {}
 
   @Query(() => User, { description: 'The currently signed-in user' })
   async me(@CurrentUser() current: JwtPayload): Promise<User> {
-    const user = await this.userRepo.findById(current.sub);
+    // Prefer the DataLoader so this can be batched with sibling `user(id:)`
+    // calls in the same request.
+    const user = await this.loaders.userById.load(current.sub);
     if (!user) throw new Error('User not found');
     return toGraphqlUser(user);
   }

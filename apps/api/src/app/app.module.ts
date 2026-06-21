@@ -10,8 +10,9 @@
 import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { buildSchemaOptions } from '../graphql/graphql.config';
 import { TypeormConfigModule } from '../typeorm/typeorm.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { AuthModule } from '../auth/auth.module';
 import { ConfigModule } from '../config/module';
@@ -23,6 +24,8 @@ import { AuthResolver } from '../graphql/resolvers/auth.resolver';
 import { CenterResolver } from '../graphql/resolvers/center.resolver';
 import { BookingResolver } from '../graphql/resolvers/booking.resolver';
 import { AnalyticsResolver } from '../graphql/resolvers/analytics.resolver';
+import { GqlDataLoaders } from '../graphql/dataloaders';
+import { FieldRateLimitGuard } from '../graphql/guards/field-rate-limit.guard';
 import { User } from '../typeorm/entities/user.entity';
 import { Center } from '../typeorm/entities/center.entity';
 import { Location } from '../typeorm/entities/location.entity';
@@ -43,33 +46,11 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
     ConfigModule,
 
     // GraphQL
-    GraphQLModule.forRoot<ApolloDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,
-      playground: process.env.NODE_ENV !== 'production',
-      autoSchemaFile: true,
-      sortSchema: true,
-      introspection: process.env.NODE_ENV !== 'production',
-      context: ({ req, res, connectionParams, extra }: any) => ({
-        req,
-        res,
-        connectionParams,
-        extra,
-      }),
-      subscriptions: {
-        'graphql-ws': {
-          // Authorization hook for ws connections — extract the bearer
-          // token from `connectionParams.Authorization` and attach the
-          // decoded user to the GraphQL context.
-          onConnect: (context: any) => {
-            const params = context.connectionParams ?? {};
-            const auth = (params.Authorization || params.authorization) as string | undefined;
-            if (auth && typeof auth === 'string' && auth.startsWith('Bearer ')) {
-              return { token: auth.slice(7) };
-            }
-            return true;
-          },
-        },
-      },
+      imports: [TypeOrmModule.forFeature([])],
+      inject: [getDataSourceToken()],
+      useFactory: (ds: import('typeorm').DataSource) => buildSchemaOptions(ds),
     }),
 
     // Database
@@ -107,6 +88,8 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
     CenterResolver,
     BookingResolver,
     AnalyticsResolver,
+    GqlDataLoaders,
+    FieldRateLimitGuard,
   ],
 })
 export class AppModule {}
