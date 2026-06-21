@@ -103,6 +103,15 @@ const BookingsIcon = ({ active }: IconProps) => (
   </svg>
 );
 
+const MeetingRoomIcon = ({ active }: IconProps) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2.5" y="3" width="13" height="12" rx="2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
+    <path d="M5 6.5H13" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round"/>
+    <circle cx="6" cy="11" r="1.2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.3"/>
+    <path d="M9 11H13" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 const ChangelogIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M3 4.5C3 3.67 3.67 3 4.5 3H7L8.5 5H13.5C14.33 5 15 5.67 15 6.5V13.5C15 14.33 14.33 15 13.5 15H4.5C3.67 15 3 14.33 3 13.5V4.5Z" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinejoin="round"/>
@@ -122,6 +131,7 @@ const icons: Record<string, (props: IconProps) => ReactNode> = {
   location: LocationIcon,
   floors: FloorIcon,
   bookings: BookingsIcon,
+  "meeting-room": MeetingRoomIcon,
   changelog: ChangelogIcon,
   settings: SettingsIcon,
 };
@@ -140,6 +150,7 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
     { id: "revenue", label: "Revenue", icon: RevenueIcon, href: "/dashboard/revenue" },
     { id: "operations", label: "Operations", icon: OperationsIcon, href: "/dashboard/operations" },
     { id: "bookings", label: "Bookings", icon: BookingsIcon, href: "/dashboard/bookings" },
+    { id: "meeting-room", label: "Meeting Rooms", icon: MeetingRoomIcon, href: "/dashboard/meeting-room" },
     { id: "floors", label: "Floors", icon: FloorIcon, href: "/dashboard/floors" },
     { id: "report", label: "Report", icon: ReportIcon, href: "/dashboard/report" },
     { id: "inventory", label: "Inventory", icon: InventoryIcon, href: "/dashboard/inventory" },

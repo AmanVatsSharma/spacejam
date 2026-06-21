@@ -1,0 +1,451 @@
+/* ===========================================================
+   Meeting Room — Figma node 0-8190
+   =========================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+}
+
+/* ---------------- Hero status card ---------------- */
+
+.heroCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 22px 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.heroLeft { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.heroTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.heroSubtitle {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.heroAction:hover { background: #E85A1F; }
+
+.plusIcon {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: -1px;
+}
+
+/* ---------------- Stats grid ---------------- */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.statCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.statIconWrap {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFEBE0;
+  border-radius: 8px;
+}
+.statLabel {
+  font-size: 12px;
+  color: #4A5565;
+  font-weight: 500;
+}
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.statUnit { font-size: 18px; font-weight: 700; color: #101828; }
+
+/* ---------------- Layout / Table toggle ---------------- */
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  display: inline-flex;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.viewBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4A5565;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.viewBtn:hover { color: #1F1F1F; }
+.viewBtnActive {
+  background: #FF6A2F;
+  color: #FFFFFF;
+}
+.viewBtnActive:hover { color: #FFFFFF; }
+
+.showingCount {
+  font-size: 12px;
+  color: #6A7282;
+}
+
+/* ---------------- Timeline ---------------- */
+
+.timelineCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.timelineHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.timelineTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+.legend { display: flex; gap: 16px; flex-wrap: wrap; }
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #6A7282;
+  font-weight: 500;
+}
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.timelineBlock_section { display: flex; flex-direction: column; gap: 6px; }
+.dayNightLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #FF6A2F;
+  text-align: center;
+  padding: 2px 0 4px;
+  border-bottom: 1px dashed #E5E7EB;
+}
+
+.hourRow { display: flex; align-items: center; }
+.hourLabelSpacer { width: 110px; flex-shrink: 0; }
+.hourLabels {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  flex: 1;
+  font-size: 9px;
+  color: #9CA3AF;
+  text-align: center;
+}
+.hourLabel {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.timelineRow {
+  display: flex;
+  align-items: center;
+  height: 26px;
+}
+.timelineLabel {
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4A5565;
+  padding-right: 12px;
+}
+.timelineTrack {
+  position: relative;
+  flex: 1;
+  height: 18px;
+  background: #F9FAFB;
+  border-radius: 4px;
+}
+.timelineBlock {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+}
+
+/* ---------------- Rooms grid ---------------- */
+
+.roomsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.roomCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 170px;
+}
+
+.roomCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.roomCardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.statusPill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.roomCardCapacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6A7282;
+  font-weight: 500;
+}
+
+.roomCardBooking {
+  background: #FFFBF5;
+  border: 1px solid #FFEDD5;
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+.bookingLabel {
+  font-size: 10px;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+.bookingTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #101828;
+  margin-top: 1px;
+}
+.bookingTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #6A7282;
+}
+
+.roomCardAction {
+  margin-top: auto;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.05s;
+}
+.roomCardAction:hover { opacity: 0.92; }
+.roomCardAction:active { transform: translateY(1px); }
+
+/* ---------------- Add-ons ---------------- */
+
+.addonsCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.addonsTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+  padding-bottom: 4px;
+}
+.addonsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.addonRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F9FAFB;
+  border-radius: 10px;
+  padding: 12px 16px;
+  gap: 12px;
+  min-height: 56px;
+}
+.addonLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.addonIconWrap {
+  width: 36px;
+  height: 36px;
+  background: #FFEBE0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.addonTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #101828;
+  line-height: 1.2;
+}
+.addonSubtitle {
+  font-size: 11px;
+  color: #6A7282;
+  margin-top: 2px;
+  line-height: 1.2;
+}
+.addonRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.iconBtn {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: inline-flex;
+}
+.approvedPill {
+  font-size: 12px;
+  font-weight: 600;
+  color: #10B981;
+}
+
+/* ---------------- Responsive / Compact (≤1023.98px) ---------------- */
+
+@media (max-width: 1023.98px) {
+  .statsGrid { grid-template-columns: repeat(2, 1fr); }
+  .roomsGrid { grid-template-columns: repeat(2, 1fr); }
+  .heroCard { padding: 18px 20px; }
+  .heroTitle { font-size: 20px; }
+  .hourLabelSpacer, .timelineLabel { width: 88px; }
+  .hourLabels { font-size: 8px; grid-template-columns: repeat(11, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .statsGrid { grid-template-columns: 1fr; }
+  .roomsGrid { grid-template-columns: 1fr; }
+  .heroCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .heroAction { align-self: stretch; justify-content: center; }
+  .statValue { font-size: 24px; }
+  .statUnit { font-size: 16px; }
+  .toggleRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .timelineCard { padding: 16px; }
+  .hourLabelSpacer, .timelineLabel { width: 72px; font-size: 10px; }
+  .hourLabels { font-size: 7px; }
+  .legend { gap: 10px; }
+  .legendItem { font-size: 10px; }
+  .addonRow { padding: 10px 12px; }
+  .addonIconWrap { width: 32px; height: 32px; }
+}

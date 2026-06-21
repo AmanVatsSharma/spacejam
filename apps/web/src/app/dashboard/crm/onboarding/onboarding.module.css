@@ -2,8 +2,8 @@
  * File:        apps/web/src/app/dashboard/crm/onboarding/onboarding.module.css
  * Module:      Web · Dashboard · CRM · Onboarding
  * Purpose:     Figma-accurate styles for the Onboarding tab
- *              (node 0-25984). Tokens mirror `leads.module.css` so the
- *              whole CRM section reads as one design system.
+ *              (node 0-25984). Tokens mirror the shared CRM design
+ *              system so the page reads as one continuous surface.
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-21
@@ -39,338 +39,67 @@
 /* ----------------------------- Header card ------------------------ */
 
 .headerCard {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  padding: 28px 32px;
-  overflow: hidden;
-}
-
-.headerCopy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  align-items: flex-start;
+  gap: 4px;                  /* ~3.552px in Figma — rounded to a clean token */
+  background: #FFFFFF;
+  border-radius: 14px;       /* Figma: 14.208px */
+  box-shadow:
+    0 0.888px 1.332px rgba(0, 0, 0, 0.10),
+    0 0.888px 0.888px rgba(0, 0, 0, 0.10);
+  padding: 21px 21px;        /* Figma: 21.312px all sides */
+  width: 100%;
+  max-width: 1206px;         /* Figma card width inside the page */
+  box-sizing: border-box;
 }
 
 .headerTitle {
-  font-size: 22px;
-  line-height: 1.2;
-  font-weight: 600;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 21px;           /* Figma: 21.312px */
+  line-height: 28px;         /* Figma: 28.417px */
+  font-weight: 600;          /* Inter Semi Bold */
   color: #101828;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.0624px;
   margin: 0;
 }
 
 .headerSub {
-  font-size: 14px;
-  line-height: 1.55;
-  color: #6A7282;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 12.4px;         /* Figma: 12.432px */
+  line-height: 18px;         /* Figma: 17.76px */
+  font-weight: 400;          /* Inter Regular */
+  color: #4A5565;
+  letter-spacing: -0.1335px;
   margin: 0;
-  max-width: 640px;
-}
-
-.headerArt {
-  flex: 0 0 auto;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #FFF1EA 0%, #FFE0CC 100%);
-  color: #FF7847;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.headerArt svg {
-  width: 28px;
-  height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 @media (max-width: 1023.98px) {
   .headerCard {
-    padding: 22px 24px;
-    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 14px;
   }
   .headerTitle {
     font-size: 20px;
+  }
+  .headerSub {
+    font-size: 12.5px;
   }
 }
 
 @media (max-width: 640px) {
   .headerCard {
-    padding: 18px 18px;
+    padding: 16px 18px;
   }
   .headerTitle {
     font-size: 18px;
   }
   .headerSub {
-    font-size: 13px;
-  }
-  .headerArt {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-  }
-  .headerArt svg {
-    width: 24px;
-    height: 24px;
-  }
-}
-
-/* ----------------------------- Stats grid ------------------------- */
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.statCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  padding: 16px 18px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  transition: box-shadow 0.18s ease, transform 0.18s ease;
-}
-
-.statCard:hover {
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
-  transform: translateY(-1px);
-}
-
-.statIconWrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.statIconWrap svg {
-  width: 22px;
-  height: 22px;
-}
-
-.statBody {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.statValue {
-  font-size: 20px;
-  line-height: 1.1;
-  font-weight: 600;
-  color: #101828;
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-
-.statLabel {
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: #6A7282;
-  margin: 0;
-}
-
-.iconTeal {
-  background: #E6F4F1;
-  color: #0F766E;
-}
-.iconOrange {
-  background: #FFF1EA;
-  color: #FF7847;
-}
-.iconBlue {
-  background: #E8EFFC;
-  color: #1D4ED8;
-}
-.iconGreen {
-  background: #E7F8F1;
-  color: #047857;
-}
-
-@media (max-width: 1023.98px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-  .statCard {
-    padding: 14px 16px;
-  }
-}
-
-/* ----------------------------- Pipeline --------------------------- */
-
-.pipelineCard {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  padding: 22px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.pipelineHead {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.pipelineTitle {
-  font-size: 16px;
-  line-height: 1.3;
-  font-weight: 600;
-  color: #101828;
-  margin: 0 0 4px;
-}
-
-.pipelineSub {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #6A7282;
-  margin: 0;
-}
-
-.pipelineCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #FF7847;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 9px 16px;
-  cursor: pointer;
-  transition: background 0.16s ease, transform 0.16s ease;
-}
-
-.pipelineCta:hover {
-  background: #F25F2A;
-}
-
-.pipelineCta:active {
-  transform: translateY(1px);
-}
-
-.pipelineCta svg {
-  width: 14px;
-  height: 14px;
-}
-
-/* ------------------------------- Steps ---------------------------- */
-
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  position: relative;
-}
-
-.step {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: #FBF6F4;
-  border: 1px solid #F0E4DD;
-  border-radius: 12px;
-  padding: 18px 18px 20px;
-  min-height: 168px;
-}
-
-.stepBadge {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: #FFFFFF;
-  border: 1px solid #FF7847;
-  color: #FF7847;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.stepBadge span {
-  display: block;
-}
-
-.stepBody {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.stepTitle {
-  font-size: 14px;
-  line-height: 1.3;
-  font-weight: 600;
-  color: #101828;
-  margin: 0;
-}
-
-.stepDesc {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: #6A7282;
-  margin: 0;
-}
-
-.stepDivider {
-  display: none;
-}
-
-@media (max-width: 1023.98px) {
-  .pipelineCard {
-    padding: 18px 18px 20px;
-  }
-  .steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .steps {
-    grid-template-columns: 1fr;
-  }
-  .step {
-    min-height: 0;
-  }
-  .pipelineCta {
-    width: 100%;
-    justify-content: center;
+    font-size: 12px;
+    white-space: normal;
   }
 }
