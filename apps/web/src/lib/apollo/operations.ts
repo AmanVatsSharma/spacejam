@@ -120,3 +120,81 @@ export const RESEND_VERIFICATION = gql`
     }
   }
 `;
+
+/**
+ * Change the password for the currently-authenticated user. Used by
+ * the in-app "change password" surface (different from reset-password,
+ * which is for users who forgot theirs and use a one-time link).
+ */
+export const CHANGE_PASSWORD = gql`
+  mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
+    changePassword(currentPassword: $currentPassword, newPassword: $newPassword) {
+      ok
+      message
+    }
+  }
+`;
+
+/**
+ * Request a magic link to be sent to the given email. The link lets
+ * the user sign in without a password, just by clicking the URL in
+ * their inbox. Always returns ok: true (to avoid email enumeration).
+ */
+export const REQUEST_MAGIC_LINK = gql`
+  mutation RequestMagicLink($email: String!) {
+    requestMagicLink(email: $email) {
+      ok
+      message
+    }
+  }
+`;
+
+/**
+ * Verify a magic-link token (from the URL the user clicked in email).
+ * Returns the same AuthPayload as signin on success.
+ */
+export const VERIFY_MAGIC_LINK = gql`
+  mutation VerifyMagicLink($token: String!) {
+    verifyMagicLink(token: $token) {
+      accessToken
+      refreshToken
+      accessTokenExpiresAt
+      refreshTokenExpiresAt
+      twoFactorRequired
+      user {
+        id
+        email
+        name
+        role
+        active
+        emailVerified
+        twoFactorEnabled
+        avatar
+        lastLoginAt
+        createdAt
+      }
+    }
+  }
+`;
+
+/**
+ * How many one-time recovery codes the current user has left.
+ * Returns 0 once they're all used; the UI should prompt the user to
+ * regenerate when this drops below 3.
+ */
+export const RECOVERY_CODES_REMAINING = gql`
+  query RecoveryCodesRemaining {
+    recoveryCodesRemaining
+  }
+`;
+
+/**
+ * Regenerate the user's one-time recovery codes. Returns the fresh
+ * codes as a string array — the UI must show them once and never
+ * again. The old codes are invalidated immediately.
+ */
+export const REGENERATE_RECOVERY_CODES = gql`
+  mutation RegenerateRecoveryCodes {
+    regenerateRecoveryCodes
+  }
+`;

@@ -19,12 +19,17 @@ import {
 import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 
 import {
+  CHANGE_PASSWORD,
   LOGOUT_MUTATION,
   ME_QUERY,
-  RESET_PASSWORD,
+  RECOVERY_CODES_REMAINING,
+  REGENERATE_RECOVERY_CODES,
+  REQUEST_MAGIC_LINK,
   REQUEST_PASSWORD_RESET,
+  RESET_PASSWORD,
   SIGNIN_MUTATION,
   SIGNUP_MUTATION,
+  VERIFY_MAGIC_LINK,
   VERIFY_TWO_FACTOR,
 } from '@/lib/apollo/operations';
 import {
@@ -73,6 +78,11 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   resetPassword: (token: string, newPassword: string) => Promise<boolean>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ ok: boolean; message: string }>;
+  requestMagicLink: (email: string) => Promise<{ ok: boolean; message: string }>;
+  verifyMagicLink: (token: string) => Promise<void>;
+  recoveryCodesRemaining: () => Promise<number>;
+  regenerateRecoveryCodes: () => Promise<string[]>;
   refresh: () => Promise<void>;
   /**
    * Dev-only: install a fake auth session without contacting the backend.
@@ -96,6 +106,7 @@ interface AuthPayloadShape {
   signin?: AuthPayloadResult;
   signup?: AuthPayloadResult;
   verifyTwoFactor?: AuthPayloadResult;
+  verifyMagicLink?: AuthPayloadResult;
 }
 
 interface AuthPayloadResult {
@@ -156,6 +167,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [logoutMutation] = useMutation(LOGOUT_MUTATION);
   const [requestResetMutation] = useMutation(REQUEST_PASSWORD_RESET);
   const [resetMutation] = useMutation(RESET_PASSWORD);
+  const [changePasswordMutation] = useMutation(CHANGE_PASSWORD);
+  const [requestMagicLinkMutation] = useMutation(REQUEST_MAGIC_LINK);
+  const [verifyMagicLinkMutation] = useMutation<AuthPayloadShape>(VERIFY_MAGIC_LINK);
+  const [regenerateRecoveryCodesMutation] = useMutation(REGENERATE_RECOVERY_CODES);
 
   const signin = useCallback(
     async (input: SigninInput) => {
@@ -232,6 +247,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [resetMutation],
   );
+
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const res = await changePasswordMutation({
+        variables: { currentPassword, newPassword },
+      });
+      const result = res.data?.changePassword ?? { ok: false, message: 'Network error' };
+      return { ok: !!result.ok, message: result.message ?? '' };
+    },
+    [changePasswordMutation],
+  );
+
+  const requestMagicLink = useCallback(
+    async (email: string) => {
+      const res = await requestMagicLinkMutation({ variables: { email } });
+      const result = res.data?.requestMagicLink ?? { ok: true, message: 'If an account exists, a link has been sent' };
+      return { ok: !!result.ok, message: result.message ?? '' };
+    },
+    [requestMagicLinkMutation],
+  );
+
+  const verifyMagicLink = useCallback(
+    async (token: string) => {
+      const res = await verifyMagicLinkMutation({ variables: { token } });
+      const payload = res.data?.verifyMagicLink;
+      if (!payload) throw new Error('Magic link verification failed');
+      if (payload.twoFactorRequired) {
+        throw new Error('2FA required for this signin');
+      }
+      const result = applyAuthPayload(payload);
+      if (result.user) setUser(result.user);
+      setHasToken(true);
+    },
+    [verifyMagicLinkMutation],
+  );
+
+  const recoveryCodesRemaining = useCallback(async (): Promise<number> => {
+    // Issue a single-field query on demand. Apollo caches it briefly.
+    const { data } = await apolloClient.query<{ recoveryCodesRemaining: number }>({
+      query: RECOVERY_CODES_REMAINING,
+      fetchPolicy: 'network-only',
+    });
+    return data?.recoveryCodesRemaining ?? 0;
+  }, [apolloClient]);
+
+  const regenerateRecoveryCodes = useCallback(async (): Promise<string[]> => {
+    const res = await regenerateRecoveryCodesMutation();
+    return (res.data?.regenerateRecoveryCodes as string[] | undefined) ?? [];
+  }, [regenerateRecoveryCodesMutation]);
 
   const refresh = useCallback(async () => {
     await refetch();
@@ -326,11 +390,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       requestPasswordReset,
       resetPassword,
+      changePassword,
+      requestMagicLink,
+      verifyMagicLink,
+      recoveryCodesRemaining,
+      regenerateRecoveryCodes,
       refresh,
       devSignIn,
       isDevLoginAvailable,
     }),
-    [user, hasToken, loading, signin, signup, verifyTwoFactor, logout, requestPasswordReset, resetPassword, refresh, devSignIn, isDevLoginAvailable],
+    [
+      user,
+      hasToken,
+      loading,
+      signin,
+      signup,
+      verifyTwoFactor,
+      logout,
+      requestPasswordReset,
+      resetPassword,
+      changePassword,
+      requestMagicLink,
+      verifyMagicLink,
+      recoveryCodesRemaining,
+      regenerateRecoveryCodes,
+      refresh,
+      devSignIn,
+      isDevLoginAvailable,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

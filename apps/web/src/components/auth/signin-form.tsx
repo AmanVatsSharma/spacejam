@@ -192,6 +192,12 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
         </Link>
       </div>
 
+      <div className="text-center mt-2">
+        <Link href="/signin/magic-link" className="text-sm text-[#4A5565] hover:text-[#101828]">
+          Sign in with a magic link instead
+        </Link>
+      </div>
+
       {error && <p className="text-sm text-[#EF4444]">{error}</p>}
 
       <button

@@ -13,6 +13,7 @@
 "use client";
 
 import { useState } from "react";
+import SecurityPanel from "@/components/settings/security-panel";
 
 interface SettingSection {
   id: string;
@@ -169,7 +170,7 @@ export default function SettingsPage() {
         {activeSection === "notifications" && renderNotificationsSection()}
         {activeSection === "center" && renderComingSoonSection("Center Settings")}
         {activeSection === "billing" && renderComingSoonSection("Billing & Payments")}
-        {activeSection === "security" && renderComingSoonSection("Security")}
+        {activeSection === "security" && <SecurityPanel />}
         {activeSection === "integrations" && renderComingSoonSection("Integrations")}
       </div>
     </div>
