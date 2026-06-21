@@ -26,6 +26,7 @@ import { BookingResolver } from '../graphql/resolvers/booking.resolver';
 import { AnalyticsResolver } from '../graphql/resolvers/analytics.resolver';
 import { GqlDataLoaders } from '../graphql/dataloaders';
 import { FieldRateLimitGuard } from '../graphql/guards/field-rate-limit.guard';
+import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
 import { User } from '../typeorm/entities/user.entity';
 import { Center } from '../typeorm/entities/center.entity';
 import { Location } from '../typeorm/entities/location.entity';
@@ -73,6 +74,9 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
 
     // Caching
     CacheModule,
+
+    // Real-time pub/sub (singleton)
+    PubSubModule,
 
     // Authentication
     AuthModule,
