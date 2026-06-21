@@ -14,10 +14,12 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Logo from "@/assets/logo.png";
 import Avatar from "@/assets/avatar.png";
+import { useAuth } from "@/contexts/auth-context";
 
 export interface HeaderTab {
   /** Stable id used to derive the active state from the URL. */
@@ -43,8 +45,32 @@ interface HeaderProps {
   hideSetUpButton?: boolean;
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: "Administrator",
+  CENTER_MANAGER: "Center Manager",
+  MEMBER: "Member",
+};
+
 export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Defer user-conditional rendering to post-mount to avoid hydration mismatches.
+  const user = mounted ? auth.user : null;
+  const displayName = user?.name ?? "Guest";
+  const displayRole = user?.role ? (ROLE_LABEL[user.role] ?? user.role) : "Member";
+  const avatarSrc = user?.avatar ?? Avatar;
+
+  const handleSignOut = async () => {
+    await auth.logout();
+    router.push("/signin");
+  };
 
   return (
     <header className="h-[83px] flex justify-between items-center px-8 compact:px-4 bg-[#FBF6F4] sticky top-0 z-50">
@@ -121,8 +147,8 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
           {/* Avatar - 36x36px */}
           <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
             <Image
-              src={Avatar}
-              alt="User Avatar"
+              src={avatarSrc}
+              alt={displayName}
               width={36}
               height={36}
               className="object-cover"
@@ -131,12 +157,17 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
 
           {/* User Info */}
           <div className="flex flex-col justify-center px-3 h-9 compact:hidden">
-            <span className="text-sm font-semibold text-[#1F2937] leading-[17px]">Rahul Sharma</span>
-            <span className="text-xs font-normal text-[#6B7280] leading-[15px]">Center Manager</span>
+            <span className="text-sm font-semibold text-[#1F2937] leading-[17px]">{displayName}</span>
+            <span className="text-xs font-normal text-[#6B7280] leading-[15px]">{displayRole}</span>
           </div>
 
-          {/* Dropdown Arrow */}
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0">
+          {/* Dropdown Arrow - also acts as sign-out trigger */}
+          <button
+            onClick={handleSignOut}
+            aria-label="Sign out"
+            title="Sign out"
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+          >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
               <path d="M3 4.5L6 7.5L9 4.5" />
             </svg>
