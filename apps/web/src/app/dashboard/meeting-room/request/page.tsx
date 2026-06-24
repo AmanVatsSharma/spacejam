@@ -1,11 +1,12 @@
 /**
  * File:        apps/web/src/app/dashboard/meeting-room/request/page.tsx
- * Module:      Web · Dashboard · Meeting Room · Request
- * Purpose:     Form page for raising a new meeting room booking request
- *
- * Design:      Figma node 0-12998 — SpaceJam-VB
- *              Two-column layout: booking form on the left,
- *              contextual room/center info on the right.
+ * Module:      Web · Dashboard · Meeting Room · Request & Registration
+ * Purpose:     Manage inbound meeting room booking requests and approvals.
+ *              Pixel-perfect match to Figma SpaceJam-VB node 0-12998.
+ *              Header + filter bar (search, status tabs with counts,
+ *              "All Requests" + "Meeting Room" dropdowns) followed by a
+ *              two-column body: a Total Request stats card on the left
+ *              and a paginated Recent Activities table on the right.
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-24
@@ -13,448 +14,442 @@
 
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import styles from "./request.module.css";
 
-type RoomOption = {
+type RequestStatus = "approved" | "pending" | "rejected" | "completed";
+
+interface RoomRequest {
   id: string;
-  name: string;
-  capacity: number;
-  price: string;
-};
+  user: { name: string; email: string };
+  room: string;
+  date: string;
+  time: string;
+  purpose: string;
+  status: RequestStatus;
+}
 
-// Mock data — wired to backend later
-const ROOMS: RoomOption[] = [
-  { id: "saturn-1", name: "Saturn 1", capacity: 8, price: "₹600/hr" },
-  { id: "saturn-2", name: "Saturn 2", capacity: 8, price: "₹600/hr" },
-  { id: "mercury", name: "Mercury", capacity: 4, price: "₹400/hr" },
-  { id: "jupiter", name: "Jupiter", capacity: 12, price: "₹900/hr" },
-  { id: "neptune", name: "Neptune", capacity: 6, price: "₹500/hr" },
+const REQUESTS: RoomRequest[] = [
+  {
+    id: "REQ-001",
+    user: { name: "Priya Sharma", email: "priya.s@techcorp.in" },
+    room: "Room A · 8 seats",
+    date: "Apr 25, 2026",
+    time: "09:00 AM",
+    purpose: "Quarterly product planning",
+    status: "approved",
+  },
+  {
+    id: "REQ-002",
+    user: { name: "Rahul Verma", email: "rahul@startupxyz.io" },
+    room: "Room B · 6 seats",
+    date: "Apr 25, 2026",
+    time: "11:30 AM",
+    purpose: "Client onboarding session",
+    status: "pending",
+  },
+  {
+    id: "REQ-003",
+    user: { name: "Ananya Iyer", email: "ananya@creative.studio" },
+    room: "Conference Hall · 12 seats",
+    date: "Apr 26, 2026",
+    time: "02:00 PM",
+    purpose: "Design sprint workshop",
+    status: "approved",
+  },
+  {
+    id: "REQ-004",
+    user: { name: "Vikram Singh", email: "vikram@venturecap.vc" },
+    room: "Room C · 5 seats",
+    date: "Apr 27, 2026",
+    time: "04:30 PM",
+    purpose: "Series A pitch rehearsal",
+    status: "pending",
+  },
+  {
+    id: "REQ-005",
+    user: { name: "Meera Nair", email: "meera@fintech.co.in" },
+    room: "Room A · 8 seats",
+    date: "Apr 28, 2026",
+    time: "10:00 AM",
+    purpose: "Quarterly board review",
+    status: "completed",
+  },
+  {
+    id: "REQ-006",
+    user: { name: "Arjun Kapoor", email: "arjun@innovateco.in" },
+    room: "Conference Hall · 25 seats",
+    date: "Apr 29, 2026",
+    time: "03:00 PM",
+    purpose: "Team off-site planning",
+    status: "rejected",
+  },
+  {
+    id: "REQ-007",
+    user: { name: "Sara Khan", email: "sara.khan@brightlabs.ai" },
+    room: "Room B · 6 seats",
+    date: "Apr 30, 2026",
+    time: "11:00 AM",
+    purpose: "AI ethics roundtable",
+    status: "approved",
+  },
 ];
 
-const CENTERS = [
-  { id: "downtown", name: "Downtown Center" },
-  { id: "tech-park", name: "Tech Park Center" },
-  { id: "marina", name: "Marina Center" },
+const STATUS_TABS: { id: "all" | RequestStatus; label: string }[] = [
+  { id: "all", label: "All Requests" },
+  { id: "approved", label: "Approved" },
+  { id: "pending", label: "Pending" },
+  { id: "rejected", label: "Rejected" },
+  { id: "completed", label: "Completed" },
 ];
 
-const AMENITIES = [
-  "Projector",
-  "Whiteboard",
-  "TV / Display",
-  "Conference Phone",
-  "Video Conferencing",
-  "Standing Desks",
-];
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
 
 export default function MeetingRoomRequestPage() {
-  // Form state
-  const [center, setCenter] = useState(CENTERS[0].id);
-  const [room, setRoom] = useState(ROOMS[0].id);
-  const [date, setDate] = useState("2026-06-25");
-  const [startTime, setStartTime] = useState("10:00");
-  const [endTime, setEndTime] = useState("11:00");
-  const [attendees, setAttendees] = useState("6");
-  const [purpose, setPurpose] = useState("");
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
-    "Projector",
-    "Whiteboard",
-  ]);
-  const [specialRequest, setSpecialRequest] = useState("");
+  const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] =
+    useState<(typeof STATUS_TABS)[number]["id"]>("all");
+  const [requestType, setRequestType] = useState("All Requests");
+  const [roomFilter, setRoomFilter] = useState("Meeting Room");
 
-  const toggleAmenity = (amenity: string) => {
-    setSelectedAmenities((prev) =>
-      prev.includes(amenity)
-        ? prev.filter((a) => a !== amenity)
-        : [...prev, amenity]
-    );
-  };
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: REQUESTS.length };
+    for (const r of REQUESTS) counts[r.status] = (counts[r.status] ?? 0) + 1;
+    return counts;
+  }, []);
 
-  const selectedRoom = ROOMS.find((r) => r.id === room)!;
-  const selectedCenter = CENTERS.find((c) => c.id === center)!;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: wire to backend
-    console.log({
-      center: selectedCenter.name,
-      room: selectedRoom.name,
-      date,
-      startTime,
-      endTime,
-      attendees,
-      purpose,
-      selectedAmenities,
-      specialRequest,
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return REQUESTS.filter((r) => {
+      if (activeTab !== "all" && r.status !== activeTab) return false;
+      if (!q) return true;
+      return (
+        r.id.toLowerCase().includes(q) ||
+        r.user.name.toLowerCase().includes(q) ||
+        r.user.email.toLowerCase().includes(q) ||
+        r.room.toLowerCase().includes(q) ||
+        r.purpose.toLowerCase().includes(q)
+      );
     });
-  };
+  }, [query, activeTab]);
 
   return (
     <div className={styles.page}>
       {/* Page header */}
-      <header className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Request Meeting Room</h1>
-          <p className={styles.pageSubtitle}>
-            Fill in the details below to book a meeting room for your team.
-          </p>
-        </div>
-        <button
-          type="button"
-          className={styles.backLink}
-          onClick={() => window.history.back()}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M10 3L5 8l5 5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+      <div className={styles.header}>
+        <h1 className={styles.title}>Request &amp; Registration</h1>
+        <p className={styles.subtitle}>
+          Review, approve, and track every meeting room booking request in one place.
+        </p>
+      </div>
+
+      {/* Filter bar */}
+      <div className={styles.filterBar}>
+        <div className={styles.searchInput}>
+          <svg
+            className={styles.searchIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
           </svg>
-          Back
-        </button>
-      </header>
+          <input
+            className={styles.searchField}
+            placeholder="Search by ID, user, room, or purpose"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search requests"
+          />
+        </div>
 
-      <form className={styles.grid} onSubmit={handleSubmit}>
-        {/* Left column — form */}
-        <section className={styles.formCard}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>Booking Details</h2>
-            <p className={styles.cardSubtitle}>
-              Choose a center, room and time for your meeting.
-            </p>
-          </div>
+        <div className={styles.tabGroup} role="tablist">
+          {STATUS_TABS.map((t) => {
+            const active = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`${styles.tab} ${active ? styles.tabActive : ""}`}
+                onClick={() => setActiveTab(t.id)}
+              >
+                {t.label}
+                <span className={styles.tabCount}>{tabCounts[t.id] ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
 
-          {/* Center & Room */}
-          <div className={styles.fieldGroup}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="center">
-                Center <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.selectWrap}>
-                <select
-                  id="center"
-                  value={center}
-                  onChange={(e) => setCenter(e.target.value)}
-                  className={styles.select}
-                >
-                  {CENTERS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronIcon />
-              </div>
-            </div>
+        <div className={styles.selectWrap}>
+          <select
+            className={styles.select}
+            value={requestType}
+            onChange={(e) => setRequestType(e.target.value)}
+            aria-label="Request type"
+          >
+            <option>All Requests</option>
+            <option>My Requests</option>
+            <option>Department Requests</option>
+          </select>
+          <svg
+            className={styles.selectIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="room">
-                Meeting Room <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.selectWrap}>
-                <select
-                  id="room"
-                  value={room}
-                  onChange={(e) => setRoom(e.target.value)}
-                  className={styles.select}
-                >
-                  {ROOMS.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} — Capacity {r.capacity}
-                    </option>
-                  ))}
-                </select>
-                <ChevronIcon />
-              </div>
-            </div>
-          </div>
+        <div className={styles.selectWrap}>
+          <select
+            className={styles.select}
+            value={roomFilter}
+            onChange={(e) => setRoomFilter(e.target.value)}
+            aria-label="Room filter"
+          >
+            <option>Meeting Room</option>
+            <option>Conference Hall</option>
+            <option>Phone Booth</option>
+            <option>All Rooms</option>
+          </select>
+          <svg
+            className={styles.selectIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </div>
+      </div>
 
-          {/* Date */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="date">
-              Date <span className={styles.required}>*</span>
-            </label>
-            <div className={styles.inputWrap}>
-              <input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className={styles.input}
-              />
-            </div>
-          </div>
-
-          {/* Time range */}
-          <div className={styles.fieldGroup}>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="startTime">
-                Start Time <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.inputWrap}>
-                <input
-                  id="startTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className={styles.input}
-                />
-                <ClockIcon />
-              </div>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="endTime">
-                End Time <span className={styles.required}>*</span>
-              </label>
-              <div className={styles.inputWrap}>
-                <input
-                  id="endTime"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className={styles.input}
-                />
-                <ClockIcon />
-              </div>
-            </div>
-          </div>
-
-          {/* Attendees */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="attendees">
-              Number of Attendees <span className={styles.required}>*</span>
-            </label>
-            <div className={styles.inputWrap}>
-              <input
-                id="attendees"
-                type="number"
-                min={1}
-                max={selectedRoom.capacity}
-                value={attendees}
-                onChange={(e) => setAttendees(e.target.value)}
-                className={styles.input}
-              />
-              <UsersIcon />
-            </div>
-            <p className={styles.helperText}>
-              Maximum capacity for {selectedRoom.name} is{" "}
-              {selectedRoom.capacity} people.
-            </p>
-          </div>
-
-          {/* Purpose */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="purpose">
-              Purpose of Meeting
-            </label>
-            <textarea
-              id="purpose"
-              rows={3}
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              placeholder="Briefly describe what this meeting is about…"
-              className={`${styles.input} ${styles.textarea}`}
-            />
-          </div>
-
-          {/* Amenities */}
-          <div className={styles.field}>
-            <label className={styles.label}>Required Amenities</label>
-            <div className={styles.chips}>
-              {AMENITIES.map((amenity) => {
-                const active = selectedAmenities.includes(amenity);
-                return (
-                  <button
-                    key={amenity}
-                    type="button"
-                    onClick={() => toggleAmenity(amenity)}
-                    className={`${styles.chip} ${
-                      active ? styles.chipActive : ""
-                    }`}
-                  >
-                    {amenity}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Special request */}
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="specialRequest">
-              Special Request <span className={styles.optional}>(optional)</span>
-            </label>
-            <textarea
-              id="specialRequest"
-              rows={3}
-              value={specialRequest}
-              onChange={(e) => setSpecialRequest(e.target.value)}
-              placeholder="Catering, seating arrangement, AV support, etc."
-              className={`${styles.input} ${styles.textarea}`}
-            />
-          </div>
-
-          {/* Actions */}
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={() => window.history.back()}
+      {/* Body: stats + table */}
+      <div className={styles.body}>
+        {/* Stats card */}
+        <aside className={styles.statsCard} aria-label="Total requests">
+          <div className={styles.statsHead}>
+            <h3 className={styles.statsTitle}>Total Request</h3>
+            <svg
+              className={styles.statsDots}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
             >
-              Cancel
-            </button>
-            <button type="submit" className={styles.btnPrimary}>
-              Submit Request
-            </button>
+              <circle cx="5" cy="12" r="1.6" />
+              <circle cx="12" cy="12" r="1.6" />
+              <circle cx="19" cy="12" r="1.6" />
+            </svg>
           </div>
-        </section>
-
-        {/* Right column — summary panel */}
-        <aside className={styles.summary}>
-          <div className={styles.summaryCard}>
-            <h3 className={styles.summaryTitle}>Booking Summary</h3>
-
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Center</span>
-              <span className={styles.summaryValue}>{selectedCenter.name}</span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Room</span>
-              <span className={styles.summaryValue}>{selectedRoom.name}</span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Capacity</span>
-              <span className={styles.summaryValue}>
-                Up to {selectedRoom.capacity} people
-              </span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Date</span>
-              <span className={styles.summaryValue}>
-                {new Date(date).toLocaleDateString("en-IN", {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Time</span>
-              <span className={styles.summaryValue}>
-                {startTime} – {endTime}
-              </span>
-            </div>
-            <div className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>Rate</span>
-              <span className={styles.summaryValue}>{selectedRoom.price}</span>
-            </div>
-
-            <div className={styles.divider} />
-
-            <div className={styles.notice}>
-              <InfoIcon />
-              <p>
-                Your request will be sent to the center admin for approval.
-                You&apos;ll be notified once it&apos;s confirmed.
-              </p>
-            </div>
+          <div className={styles.statsValue}>
+            <span className={styles.statsNumber}>847</span>
+            <span className={styles.statsChange}>+12.4%</span>
+          </div>
+          <p style={{ margin: 0, fontSize: 12, color: "#6A7282", lineHeight: 1.5 }}>
+            Compared to <strong style={{ color: "#101828" }}>753</strong> last month
+            across all meeting spaces.
+          </p>
+          <div className={styles.statsMeta}>
+            <span>Updated just now</span>
+            <button type="button" className={styles.viewAll}>
+              View All
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
           </div>
         </aside>
-      </form>
+
+        {/* Table card */}
+        <section className={styles.tableCard} aria-label="Recent activities">
+          <div className={styles.tableHead}>
+            <div>
+              <h2 className={styles.tableTitle}>Recent Activities</h2>
+              <p className={styles.tableSub}>
+                Showing {filtered.length} of {REQUESTS.length} requests
+              </p>
+            </div>
+            <div className={styles.selectWrap}>
+              <select
+                className={styles.select}
+                defaultValue="Last 7 days"
+                aria-label="Date range"
+              >
+                <option>Today</option>
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+                <option>This quarter</option>
+              </select>
+              <svg
+                className={styles.selectIcon}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+          </div>
+
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead className={styles.thead}>
+                <tr>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Room</th>
+                  <th>Date &amp; Time</th>
+                  <th>Purpose</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Action</th>
+                </tr>
+              </thead>
+              <tbody className={styles.tbody}>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: "center", padding: "32px 16px", color: "#6A7282" }}>
+                      No requests match the current filters.
+                    </td>
+                  </tr>
+                )}
+                {filtered.map((r) => (
+                  <tr key={r.id}>
+                    <td className={styles.idCell}>{r.id}</td>
+                    <td>
+                      <div className={styles.userCell}>
+                        <span className={styles.avatar}>{initials(r.user.name)}</span>
+                        <span className={styles.userMeta}>
+                          <span className={styles.userName}>{r.user.name}</span>
+                          <span className={styles.userEmail}>{r.user.email}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>{r.room}</td>
+                    <td className={styles.dateCell}>
+                      {r.date}
+                      <span className={styles.dateSub}>{r.time}</span>
+                    </td>
+                    <td className={styles.purposeCell}>{r.purpose}</td>
+                    <td>
+                      <StatusBadge status={r.status} />
+                    </td>
+                    <td className={styles.actionCell}>
+                      <button
+                        type="button"
+                        className={`${styles.iconBtn} ${styles.iconBtnPrimary}`}
+                        aria-label={`Approve ${r.id}`}
+                        title="Approve"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        aria-label={`Reject ${r.id}`}
+                        title="Reject"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M18 6 6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconBtn}
+                        aria-label={`More options for ${r.id}`}
+                        title="More"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                          <circle cx="5" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="19" cy="12" r="1.6" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.tableFoot}>
+            <span>Showing 1–{filtered.length} of {REQUESTS.length}</span>
+            <div className={styles.pager}>
+              <button type="button" className={styles.pagerBtn} aria-label="Previous page">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m15 6-6 6 6 6" />
+                </svg>
+              </button>
+              <button type="button" className={`${styles.pagerBtn} ${styles.pagerBtnActive}`}>1</button>
+              <button type="button" className={styles.pagerBtn}>2</button>
+              <button type="button" className={styles.pagerBtn}>3</button>
+              <button type="button" className={styles.pagerBtn} aria-label="Next page">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
 
-function ChevronIcon() {
-  return (
-    <svg
-      className={styles.selectIcon}
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-    >
-      <path
-        d="M4 6l4 4 4-4"
-        stroke="#6A7282"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+/* ---------------- Status badge ---------------- */
 
-function ClockIcon() {
+function StatusBadge({ status }: { status: RequestStatus }) {
+  const label = status[0].toUpperCase() + status.slice(1);
+  const cls =
+    status === "approved"
+      ? styles.statusApproved
+      : status === "pending"
+      ? styles.statusPending
+      : status === "rejected"
+      ? styles.statusRejected
+      : styles.statusCompleted;
   return (
-    <svg
-      className={styles.inputIcon}
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-    >
-      <circle cx="8" cy="8" r="6.5" stroke="#6A7282" strokeWidth="1.2" />
-      <path
-        d="M8 4.5V8l2 1.5"
-        stroke="#6A7282"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg
-      className={styles.inputIcon}
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-    >
-      <circle cx="6" cy="5.5" r="2.5" stroke="#6A7282" strokeWidth="1.2" />
-      <path
-        d="M1.5 13c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4"
-        stroke="#6A7282"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <circle cx="11" cy="5" r="2" stroke="#6A7282" strokeWidth="1.2" />
-      <path
-        d="M12.5 9.5c1.6.5 2.5 1.8 2.5 3.5"
-        stroke="#6A7282"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function InfoIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      className={styles.infoIcon}
-    >
-      <circle cx="8" cy="8" r="6.5" stroke="#FF6A2F" strokeWidth="1.2" />
-      <path
-        d="M8 7.5v4"
-        stroke="#FF6A2F"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      <circle cx="8" cy="5" r="0.8" fill="#FF6A2F" />
-    </svg>
+    <span className={`${styles.statusBadge} ${cls}`}>
+      <span className={styles.statusDot} />
+      {label}
+    </span>
   );
 }

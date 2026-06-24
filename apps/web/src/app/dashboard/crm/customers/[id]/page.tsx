@@ -188,6 +188,16 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
     </svg>
   ),
+  plus: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  ),
+  lockClosed: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+    </svg>
+  ),
 };
 
 /* ----- Tabs config ----- */
@@ -567,6 +577,12 @@ export default function CustomerDetailPage() {
       <SendReminderDialog
         open={showReminderDialog}
         onClose={() => setShowReminderDialog(false)}
+      />
+
+      <FreezeAccountDialog
+        open={showFreezeDialog}
+        customerName="TechNova Solutions"
+        onClose={() => setShowFreezeDialog(false)}
       />
     </div>
   );
@@ -1160,6 +1176,179 @@ function SendReminderDialog({
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----- Freeze Account Dialog (Figma node 0:24139) ----- */
+const FREEZE_REASONS = [
+  "Pending Payment",
+  "Contract Dispute",
+  "Security Review",
+  "Customer Request",
+  "Maintenance Hold",
+  "Other",
+];
+
+function FreezeAccountDialog({
+  open,
+  customerName,
+  onClose,
+}: {
+  open: boolean;
+  customerName: string;
+  onClose: () => void;
+}) {
+  const [account, setAccount] = useState(customerName);
+  const [reason, setReason] = useState("Pending Payment");
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={styles.dialogBackdrop}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className={styles.freezeDialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="freeze-account-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <header className={styles.freezeHeader}>
+          <div className={styles.freezeHeaderMeta}>
+            <h2 id="freeze-account-title" className={styles.freezeTitle}>
+              Freeze Account
+            </h2>
+            <p className={styles.freezeSubtitle}>
+              Temporarily freeze a security deposit
+            </p>
+          </div>
+          <button
+            type="button"
+            className={styles.freezeCloseBtn}
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            {Icons.close}
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className={styles.freezeBody}>
+          {/* Two-column row: Account Name + Freeze Reason */}
+          <div className={styles.freezeRow}>
+            <div className={styles.freezeFieldHalf}>
+              <label className={styles.freezeFieldLabel} htmlFor="freeze-account">
+                Account Name
+              </label>
+              <div className={styles.freezeSelectWrap}>
+                <select
+                  id="freeze-account"
+                  className={styles.freezeSelect}
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                >
+                  <option value={customerName}>{customerName}</option>
+                </select>
+                <span className={styles.freezeSelectChevron} aria-hidden="true">
+                  {Icons.chevronDown}
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.freezeFieldHalf}>
+              <label className={styles.freezeFieldLabel} htmlFor="freeze-reason">
+                Freeze Reason
+              </label>
+              <div className={styles.freezeSelectWrap}>
+                <select
+                  id="freeze-reason"
+                  className={styles.freezeSelect}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                >
+                  {FREEZE_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.freezeSelectChevron} aria-hidden="true">
+                  {Icons.chevronDown}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Notes */}
+          <div className={styles.freezeNotesBlock}>
+            <label className={styles.freezeFieldLabel} htmlFor="freeze-notes">
+              Additional Notes
+            </label>
+            <textarea
+              id="freeze-notes"
+              className={styles.freezeTextarea}
+              placeholder="Enter additional notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+            <button type="button" className={styles.freezeAddNoteBtn}>
+              <span className={styles.freezeAddNoteIcon} aria-hidden="true">
+                {Icons.plus}
+              </span>
+              <span>Add Note</span>
+            </button>
+          </div>
+
+          {/* Info callout */}
+          <div className={styles.freezeCallout}>
+            <span className={styles.freezeCalloutIcon} aria-hidden="true">
+              {Icons.alertCircle}
+            </span>
+            <div className={styles.freezeCalloutText}>
+              <p className={styles.freezeCalloutTitle}>
+                Account will be frozen immediately
+              </p>
+              <p className={styles.freezeCalloutBody}>
+                The client will be notified about the freeze and the reason
+                provided.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className={styles.freezeFooter}>
+          <button
+            type="button"
+            className={styles.freezeCancelBtn}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button type="button" className={styles.freezeConfirmBtn}>
+            <span className={styles.freezeConfirmIcon} aria-hidden="true">
+              {Icons.send}
+            </span>
+            <span>Freeze Account</span>
+          </button>
+        </footer>
       </div>
     </div>
   );
