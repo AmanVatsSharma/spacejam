@@ -1,14 +1,14 @@
 /**
- * File:        apps/web/src/middleware.test.ts
- * Module:      Web · Middleware · Tests
+ * File:        apps/web/src/proxy.test.ts
+ * Module:      Web · Proxy · Tests
  * Purpose:     Unit tests for the pure `decide` function (no Next runtime).
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-06-24
  */
 import { describe, expect, it } from 'vitest';
 
-import { decide } from './middleware';
+import { decide } from './proxy';
 
 function makeJwt(payload: Record<string, unknown>): string {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
@@ -16,7 +16,7 @@ function makeJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.`;
 }
 
-describe('middleware.decide', () => {
+describe('proxy.decide', () => {
   describe('dashboard routes', () => {
     it('redirects unauthenticated users to /signin with `next` preserved', () => {
       const d = decide({ pathname: '/dashboard/inventory', search: '' });

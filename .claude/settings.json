@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git fetch *)",
       "Bash(curl -s -o /dev/null -w \"Port 3001: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3001/)",
-      "Bash(curl -s -o /dev/null -w \"Port 3000: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"Port 3000: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3000/)",
+      "mcp__plugin_figma_figma__get_design_context"
     ]
   },
   "hooks": {

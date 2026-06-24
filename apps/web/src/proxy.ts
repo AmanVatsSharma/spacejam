@@ -1,12 +1,14 @@
 /**
- * File:        apps/web/src/middleware.ts
- * Module:      Web · Middleware
+ * File:        apps/web/src/proxy.ts
+ * Module:      Web · Proxy (formerly Middleware)
  * Purpose:     Route guard — keep authenticated and unauthenticated users
  *              on the correct side of the gate, and bounce mismatched roles
- *              out of admin-only areas.
+ *              out of admin-only areas. In Next.js 16, the `middleware`
+ *              file convention was renamed to `proxy`; the runtime behavior
+ *              is unchanged.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-06-24
  */
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -114,7 +116,7 @@ export const decide = ({
   return null;
 };
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const accessToken = req.cookies.get(ACCESS_COOKIE)?.value ?? null;
   const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value ?? null;
