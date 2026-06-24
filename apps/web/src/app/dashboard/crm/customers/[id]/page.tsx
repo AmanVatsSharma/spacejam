@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./customer-detail.module.css";
 
@@ -82,6 +82,97 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
     </svg>
   ),
+  userPlus: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+    </svg>
+  ),
+  trash: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    </svg>
+  ),
+  edit: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+    </svg>
+  ),
+  payment: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+    </svg>
+  ),
+  invoice: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  ),
+  seat: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  ),
+  support: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+    </svg>
+  ),
+  onboarding: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+    </svg>
+  ),
+  filter: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+    </svg>
+  ),
+  upload: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+    </svg>
+  ),
+  view: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+  download: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 8.25L12 12.75m0 0l4.5-4.5M12 12.75V3" />
+    </svg>
+  ),
+  filePdf: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  ),
+  fileImage: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+    </svg>
+  ),
+  close: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  ),
+  chevronDown: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  ),
+  checkThin: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  ),
+  checkTiny: (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 6.5l2.5 2.5 4.5-5" />
+    </svg>
+  ),
 };
 
 /* ----- Tabs config ----- */
@@ -93,31 +184,163 @@ const TAB_LIST: { key: Tab; label: string }[] = [
 ];
 
 /* ----- Field config (Overview tab) ----- */
-const MEMBERSHIP_FIELDS = [
+type MembershipField = { label: string; value: string };
+type FinancialField = { label: string; value: string; highlight?: boolean };
+type UsageField = { label: string; value: string; trend?: string; subtext?: string };
+
+const MEMBERSHIP_FIELDS: MembershipField[] = [
   { label: "Plan Type", value: "Enterprise" },
-  { label: "Number of Seats", value: "25 seats" },
-  { label: "Type of Seat", value: "Dedicated" },
+  { label: "Number of Seats", value: "25" },
+  { label: "Type of Seat", value: "Hot Desk" },
   { label: "Active Since", value: "Jan 15, 2024" },
   { label: "Renewal Date", value: "Jan 15, 2026" },
   { label: "Contact Email", value: "contact@technova.com" },
-  { label: "Phone Number", value: "+91 98765 43210" },
+  { label: "Phone Number", value: "+1 555 0101" },
 ];
 
-const FINANCIAL_FIELDS = [
-  { label: "Total Paid", value: "₹150,000", secondary: true },
+const FINANCIAL_FIELDS: FinancialField[] = [
+  { label: "Total Paid", value: "₹25,000", highlight: true },
   { label: "Pending Dues", value: "₹0" },
-  { label: "Last Payment", value: "₹25,000" },
-  { label: "Mode of Payment", value: "NEFT" },
+  { label: "Last Payment", value: "Feb 1, 2026" },
+  { label: "Mode of Payment", value: "UPI" },
   { label: "Payment Cycle", value: "Monthly" },
-  { label: "Invoice Date", value: "Jan 01, 2025" },
-  { label: "Invoice Amount", value: "₹25,000" },
-  { label: "Security Deposit", value: "₹5,000" },
+  { label: "Invoice Date", value: "Feb 1, 2026" },
+  { label: "Invoice Amount", value: "₹500" },
+  { label: "Security Deposit", value: "Feb 1, 2026" },
 ];
 
-const USAGE_FIELDS = [
-  { label: "Meeting Rooms (This Month)", value: "12", trend: "20% from last month" },
-  { label: "Printing Credits", value: "850" },
-  { label: "Wallet Balance", value: "₹3,200", secondary: true },
+const USAGE_FIELDS: UsageField[] = [
+  { label: "Meeting Rooms (This Month)", value: "18", trend: "+12% from last month" },
+  { label: "Printing Credits", value: "245", subtext: "pages remaining" },
+  { label: "Wallet Balance", value: "₹185", subtext: "available credit" },
+];
+
+/* ----- Activity Timeline tab data ----- */
+type Activity = {
+  id: string;
+  actor: string;
+  actorInitials: string;
+  message: string;
+  time: string;
+};
+
+const ACTIVITIES: Activity[] = [
+  {
+    id: "a1",
+    actor: "Priya Sharma",
+    actorInitials: "PS",
+    message: "marked Invoice #INV-2025-0142 as paid via NEFT transfer",
+    time: "2 hours ago",
+  },
+  {
+    id: "a2",
+    actor: "System",
+    actorInitials: "SY",
+    message: "auto-generated monthly invoice for Enterprise plan (25 seats)",
+    time: "1 day ago",
+  },
+  {
+    id: "a3",
+    actor: "Raj Patel",
+    actorInitials: "RP",
+    message: "assigned hot desk HD-205 to new team member Sarah Chen",
+    time: "3 days ago",
+  },
+  {
+    id: "a4",
+    actor: "Aman Verma",
+    actorInitials: "AV",
+    message: "resolved support ticket #TKT-342 regarding meeting room double booking",
+    time: "5 days ago",
+  },
+  {
+    id: "a5",
+    actor: "Priya Sharma",
+    actorInitials: "PS",
+    message: "marked Invoice #INV-2025-0141 as paid",
+    time: "1 week ago",
+  },
+  {
+    id: "a6",
+    actor: "System",
+    actorInitials: "SY",
+    message: "onboarded customer with Enterprise plan and 25 active seats",
+    time: "2 weeks ago",
+  },
+];
+
+/* ----- Documents tab data ----- */
+type Document = {
+  id: string;
+  name: string;
+  type: "PDF" | "DOCX" | "JPG" | "PNG";
+  size: string;
+  uploadedAt: string;
+  variant: "pdf" | "image";
+};
+
+const DOCUMENTS: Document[] = [
+  {
+    id: "d1",
+    name: "Business Registration Certificate",
+    type: "PDF",
+    size: "2.4 MB",
+    uploadedAt: "Jan 15, 2024",
+    variant: "pdf",
+  },
+  {
+    id: "d2",
+    name: "Service Agreement - Signed",
+    type: "PDF",
+    size: "1.8 MB",
+    uploadedAt: "Jan 15, 2024",
+    variant: "pdf",
+  },
+  {
+    id: "d3",
+    name: "Payment Authorization Form",
+    type: "PDF",
+    size: "890 KB",
+    uploadedAt: "Jan 15, 2024",
+    variant: "image",
+  },
+];
+
+/* ----- Employees tab data ----- */
+type Employee = {
+  name: string;
+  email: string;
+  role: string;
+  seat: string;
+  status: "active" | "inactive" | "invited";
+  actions: ("edit" | "remove")[];
+};
+
+const EMPLOYEES: Employee[] = [
+  {
+    name: "Alex Thompson",
+    email: "alex@technova.com",
+    role: "CTO",
+    seat: "A-101",
+    status: "active",
+    actions: ["remove"],
+  },
+  {
+    name: "Jamie Lee",
+    email: "jamie@technova.com",
+    role: "Lead Developer",
+    seat: "A-102",
+    status: "active",
+    actions: ["remove"],
+  },
+  {
+    name: "Morgan Davis",
+    email: "morgan@technova.com",
+    role: "Product Manager",
+    seat: "A-103",
+    status: "active",
+    actions: ["edit", "remove"],
+  },
 ];
 
 /* ============================================================
@@ -127,6 +350,18 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [note, setNote] = useState("");
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+
+  // Lock body scroll while dialog is open
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!showUpgradeDialog) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showUpgradeDialog]);
 
   return (
     <div className={styles.shell}>
@@ -226,7 +461,7 @@ export default function CustomerDetailPage() {
                       key={f.label}
                       label={f.label}
                       value={f.value}
-                      secondary={f.secondary}
+                      highlight={f.highlight}
                     />
                   ))}
                 </div>
@@ -240,8 +475,8 @@ export default function CustomerDetailPage() {
                       key={f.label}
                       label={f.label}
                       value={f.value}
-                      secondary={f.secondary}
                       trend={f.trend}
+                      subtext={f.subtext}
                     />
                   ))}
                 </div>
@@ -249,21 +484,9 @@ export default function CustomerDetailPage() {
             </>
           )}
 
-          {activeTab === "employees" && (
-            <div className={styles.placeholderTab}>
-              Employees list will appear here.
-            </div>
-          )}
-          {activeTab === "activity" && (
-            <div className={styles.placeholderTab}>
-              Activity timeline will appear here.
-            </div>
-          )}
-          {activeTab === "documents" && (
-            <div className={styles.placeholderTab}>
-              Documents will appear here.
-            </div>
-          )}
+          {activeTab === "employees" && <EmployeesList employees={EMPLOYEES} />}
+          {activeTab === "activity" && <ActivityList activities={ACTIVITIES} />}
+          {activeTab === "documents" && <DocumentsList documents={DOCUMENTS} />}
         </div>
 
         {/* Right column */}
@@ -276,7 +499,7 @@ export default function CustomerDetailPage() {
           <section className={`${styles.card} ${styles.cardCompact}`}>
             <h2 className={styles.cardTitle}>Quick Actions</h2>
             <div className={styles.quickActionsList}>
-              <ActionButton icon={Icons.arrowUp} label="Upgrade Plan" />
+              <ActionButton icon={Icons.arrowUp} label="Upgrade Plan" onClick={() => setShowUpgradeDialog(true)} />
               <ActionButton icon={Icons.refresh} label="Renew Membership" />
               <ActionButton icon={Icons.snowflake} label="Freeze Account" />
               <ActionButton icon={Icons.logOut} label="Initiate Exit" />
@@ -303,7 +526,7 @@ export default function CustomerDetailPage() {
             <h2 className={styles.cardTitle}>Internal Notes</h2>
             <textarea
               className={styles.notesTextarea}
-              placeholder="Add a private note about this customer..."
+              placeholder="Add notes for team members..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -313,6 +536,12 @@ export default function CustomerDetailPage() {
           </section>
         </aside>
       </div>
+
+      <PlanUpgradeDialog
+        open={showUpgradeDialog}
+        customerName="TechNova Solutions"
+        onClose={() => setShowUpgradeDialog(false)}
+      />
     </div>
   );
 }
@@ -342,22 +571,29 @@ function Field({
   value,
   secondary,
   trend,
+  subtext,
+  highlight,
 }: {
   label: string;
   value: string;
   secondary?: boolean;
   trend?: string;
+  subtext?: string;
+  highlight?: boolean;
 }) {
   return (
     <div className={styles.fieldItem}>
       <p className={styles.fieldLabel}>{label}</p>
       <p
-        className={`${styles.fieldValue} ${secondary ? styles.fieldValueSecondary : ""}`}
+        className={`${styles.fieldValue} ${secondary ? styles.fieldValueSecondary : ""} ${highlight ? styles.fieldValueHighlight : ""}`}
       >
         {value}
       </p>
       {trend && (
         <p className={`${styles.fieldTrend} ${styles.fieldTrendUp}`}>{trend}</p>
+      )}
+      {subtext && (
+        <p className={styles.fieldTrend}>{subtext}</p>
       )}
     </div>
   );
@@ -366,14 +602,364 @@ function Field({
 function ActionButton({
   icon,
   label,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
+  onClick?: () => void;
 }) {
   return (
-    <button type="button" className={styles.quickActionBtn}>
+    <button type="button" className={styles.quickActionBtn} onClick={onClick}>
       {icon}
       <span className={styles.quickActionLabel}>{label}</span>
     </button>
+  );
+}
+
+/* ----- Employees tab (matches Figma node 0:23393) ----- */
+function EmployeesList({ employees }: { employees: Employee[] }) {
+  return (
+    <section className={styles.employeesCard}>
+      <header className={styles.employeesHeader}>
+        <h2 className={styles.employeesTitle}>Team Members ({employees.length})</h2>
+        <button type="button" className={styles.addEmployeeBtn}>
+          {Icons.userPlus}
+          <span>Add Employee</span>
+        </button>
+      </header>
+
+      <div className={styles.empTable} role="table" aria-label="Team members">
+        <div className={styles.empHeaderRow} role="row">
+          <div className={styles.empHeaderCell} role="columnheader">Name</div>
+          <div className={styles.empHeaderCell} role="columnheader">Role</div>
+          <div className={styles.empHeaderCell} role="columnheader">Assigned Seat</div>
+          <div className={styles.empHeaderCell} role="columnheader">Status</div>
+          <div className={`${styles.empHeaderCell} ${styles.empHeaderCellActions}`} role="columnheader">Actions</div>
+        </div>
+
+        <div className={styles.empBody} role="rowgroup">
+          {employees.map((emp) => (
+            <div key={emp.email} className={styles.empRow} role="row">
+              <div className={styles.empCell} role="cell">
+                <div className={styles.empName}>{emp.name}</div>
+                <div className={styles.empEmail}>{emp.email}</div>
+              </div>
+              <div className={styles.empCell} role="cell">
+                <span className={styles.empRole}>{emp.role}</span>
+              </div>
+              <div className={styles.empCell} role="cell">
+                <span className={styles.empSeatBadge}>{emp.seat}</span>
+              </div>
+              <div className={styles.empCell} role="cell">
+                <span className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}>
+                  {emp.status}
+                </span>
+              </div>
+              <div className={styles.empCell} role="cell">
+                <div className={styles.empActions}>
+                  {emp.actions.includes("edit") && (
+                    <button type="button" className={styles.empActionBtn}>
+                      {Icons.edit}
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  {emp.actions.includes("remove") && (
+                    <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`}>
+                      {Icons.trash}
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ActivityList({ activities }: { activities: Activity[] }) {
+  return (
+    <section className={styles.activityCard}>
+      <header className={styles.activityHeader}>
+        <h2 className={styles.activityTitle}>Recent Activity</h2>
+        <button type="button" className={styles.activityFilterBtn}>
+          {Icons.filter}
+          <span>Last 30 days</span>
+        </button>
+      </header>
+
+      <ol className={styles.activityList}>
+        {activities.map((a, idx) => {
+          const isLast = idx === activities.length - 1;
+          return (
+            <li key={a.id} className={styles.activityItem}>
+              <span className={styles.activityAvatar} aria-hidden="true">
+                {a.actorInitials}
+              </span>
+              {!isLast && <span className={styles.activityLine} aria-hidden="true" />}
+              <div className={styles.activityBody}>
+                <p className={styles.activityText}>
+                  <strong className={styles.activityActor}>{a.actor}</strong>
+                  {" "}
+                  <span className={styles.activityMessage}>{a.message}</span>
+                </p>
+                <span className={styles.activityTime}>{a.time}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+function DocumentsList({ documents }: { documents: Document[] }) {
+  return (
+    <section className={styles.documentsCard}>
+      <header className={styles.documentsHeader}>
+        <h2 className={styles.documentsTitle}>Uploaded Documents</h2>
+        <button type="button" className={styles.documentsUploadBtn}>
+          {Icons.upload}
+          <span>Upload Document</span>
+        </button>
+      </header>
+
+      <div className={styles.documentsList}>
+        {documents.map((d) => (
+          <article key={d.id} className={styles.documentsRow}>
+            <div
+              className={`${styles.documentsIconWrap} ${d.variant === "image" ? styles.documentsIconWrapImage : ""}`}
+              aria-hidden="true"
+            >
+              {d.variant === "pdf" ? Icons.filePdf : Icons.fileImage}
+            </div>
+
+            <div className={styles.documentsMeta}>
+              <p className={styles.documentsName}>{d.name}</p>
+              <p className={styles.documentsSub}>
+                {d.type} · {d.size} · Uploaded {d.uploadedAt}
+              </p>
+            </div>
+
+            <div className={styles.documentsActions}>
+              <button type="button" className={styles.documentsViewBtn}>
+                {Icons.view}
+                <span>View</span>
+              </button>
+              <button
+                type="button"
+                className={styles.documentsDownloadBtn}
+                aria-label={`Download ${d.name}`}
+              >
+                {Icons.download}
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ----- Plan Upgrade Dialog (Figma node 0:23983) ----- */
+const UPGRADE_PLANS = ["Hot Desk", "Private Cabin", "Dedicated Desk", "Meeting Room"];
+const UPGRADE_DURATIONS = ["1 month", "3 months", "6 months", "12 months"];
+const UPGRADE_AMENITIES = ["WiFi", "AC", "Projector", "Coffee", "Whiteboard", "Printer"];
+
+function PlanUpgradeDialog({
+  open,
+  customerName,
+  onClose,
+}: {
+  open: boolean;
+  customerName: string;
+  onClose: () => void;
+}) {
+  const [plan, setPlan] = useState("Private Cabin");
+  const [duration, setDuration] = useState("3 months");
+  const [amenities, setAmenities] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const toggleAmenity = (a: string) => {
+    setAmenities((prev) => {
+      const next = new Set(prev);
+      if (next.has(a)) next.delete(a);
+      else next.add(a);
+      return next;
+    });
+  };
+
+  return (
+    <div
+      className={styles.dialogBackdrop}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className={styles.dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plan-upgrade-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <header className={styles.dialogHeader}>
+          <div className={styles.dialogHeaderMeta}>
+            <h2 id="plan-upgrade-title" className={styles.dialogTitle}>
+              Plan Upgrade
+            </h2>
+            <p className={styles.dialogSubtitle}>{customerName}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.dialogCloseBtn}
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            {Icons.close}
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className={styles.dialogBody}>
+          {/* Two-column comparison */}
+          <div className={styles.upgradeColumns}>
+            {/* Current Plan */}
+            <div className={styles.upgradeCurrentCard}>
+              <p className={styles.upgradeCurrentLabel}>Current Plan</p>
+              <h3 className={styles.upgradeCurrentName}>Hot Desk</h3>
+              <p className={styles.upgradeCurrentPrice}>₹ 10,000</p>
+              <ul className={styles.upgradeCurrentList}>
+                <li className={styles.upgradeCurrentListItem}>
+                  <span className={styles.upgradeCheckIcon}>{Icons.checkThin}</span>
+                  <span>Shared workspace</span>
+                </li>
+                <li className={styles.upgradeCurrentListItem}>
+                  <span className={styles.upgradeCheckIcon}>{Icons.checkThin}</span>
+                  <span>WiFi access</span>
+                </li>
+                <li className={styles.upgradeCurrentListItem}>
+                  <span className={styles.upgradeCheckIcon}>{Icons.checkThin}</span>
+                  <span>Coffee/Tea</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Upgrade form */}
+            <div className={styles.upgradeFormCard}>
+              <div className={styles.upgradeField}>
+                <label className={styles.upgradeFieldLabel} htmlFor="upgrade-plan">
+                  Upgrade plan
+                </label>
+                <div className={styles.upgradeSelectWrap}>
+                  <select
+                    id="upgrade-plan"
+                    className={styles.upgradeSelect}
+                    value={plan}
+                    onChange={(e) => setPlan(e.target.value)}
+                  >
+                    {UPGRADE_PLANS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.upgradeSelectChevron} aria-hidden="true">
+                    {Icons.chevronDown}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.upgradeField}>
+                <label className={styles.upgradeFieldLabel} htmlFor="upgrade-duration">
+                  Duration
+                </label>
+                <div className={styles.upgradeSelectWrap}>
+                  <select
+                    id="upgrade-duration"
+                    className={styles.upgradeSelect}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                  >
+                    {UPGRADE_DURATIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                  <span className={styles.upgradeSelectChevron} aria-hidden="true">
+                    {Icons.chevronDown}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.upgradeAmenitiesBlock}>
+                <p className={styles.upgradeAmenitiesLabel}>Amenities</p>
+                <div className={styles.upgradeAmenitiesGrid}>
+                  {UPGRADE_AMENITIES.map((a) => {
+                    const checked = amenities.has(a);
+                    return (
+                      <label key={a} className={styles.upgradeAmenityItem}>
+                        <input
+                          type="checkbox"
+                          className={styles.upgradeAmenityCheckbox}
+                          checked={checked}
+                          onChange={() => toggleAmenity(a)}
+                          aria-label={a}
+                        />
+                        <span className={styles.upgradeAmenityCheckBox}>
+                          {checked ? (
+                            <span className={styles.upgradeAmenityCheckMark}>
+                              {Icons.checkTiny}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className={styles.upgradeAmenityText}>{a}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cost callout */}
+          <div className={styles.upgradeCostCallout}>
+            <span className={styles.upgradeCostLabel}>Additional Monthly Cost</span>
+            <span className={styles.upgradeCostValue}>+ ₹ 10,000</span>
+          </div>
+
+          {/* Benefits */}
+          <div className={styles.upgradeBenefits}>
+            <h4 className={styles.upgradeBenefitsTitle}>Benefits of Upgrading</h4>
+            <ul className={styles.upgradeBenefitsList}>
+              <li>• Enhanced workspace amenities</li>
+              <li>• Increased productivity and privacy</li>
+              <li>• Professional image for clients</li>
+              <li>• Priority support and services</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className={styles.dialogFooter}>
+          <button type="button" className={styles.upgradeConfirmBtn}>
+            Confirm Upgrade &amp; Generate Invoice
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }
