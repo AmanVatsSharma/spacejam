@@ -1,0 +1,81 @@
+/* ===========================================================
+   Meeting Room · Request — placeholder
+   =========================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+}
+
+.heroCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 22px 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.heroLeft { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.heroTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.heroSubtitle {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+  line-height: 1.4;
+}
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.heroAction:hover { background: #E85A1F; }
+
+.placeholderCard {
+  background: #FFFFFF;
+  border: 1px dashed #E5E7EB;
+  border-radius: 14px;
+  padding: 64px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.placeholderTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+}
+.placeholderText {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.5;
+}
