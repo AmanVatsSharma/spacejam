@@ -173,6 +173,21 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 6.5l2.5 2.5 4.5-5" />
     </svg>
   ),
+  envelope: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </svg>
+  ),
+  alertCircle: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+    </svg>
+  ),
+  send: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+    </svg>
+  ),
 };
 
 /* ----- Tabs config ----- */
@@ -351,6 +366,7 @@ export default function CustomerDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [note, setNote] = useState("");
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
 
   // Lock body scroll while dialog is open
   useEffect(() => {
@@ -399,7 +415,11 @@ export default function CustomerDetailPage() {
             {Icons.receipt}
             Generate Invoice
           </button>
-          <button type="button" className={styles.actionBtnOutline}>
+          <button
+            type="button"
+            className={styles.actionBtnOutline}
+            onClick={() => setShowReminderDialog(true)}
+          >
             {Icons.bell}
             Send Reminder
           </button>
@@ -541,6 +561,11 @@ export default function CustomerDetailPage() {
         open={showUpgradeDialog}
         customerName="TechNova Solutions"
         onClose={() => setShowUpgradeDialog(false)}
+      />
+
+      <SendReminderDialog
+        open={showReminderDialog}
+        onClose={() => setShowReminderDialog(false)}
       />
     </div>
   );
@@ -959,6 +984,181 @@ function PlanUpgradeDialog({
             Confirm Upgrade &amp; Generate Invoice
           </button>
         </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ----- Send Reminder Dialog (Figma node 0:24082) ----- */
+const REMINDER_TYPES = [
+  "Payment Due Reminder",
+  "Invoice Reminder",
+  "Membership Renewal",
+  "Document Submission",
+];
+const REMINDER_METHODS = [
+  { value: "email", label: "Email", iconKey: "envelope" },
+  { value: "sms", label: "SMS" },
+  { value: "whatsapp", label: "WhatsApp" },
+] as const;
+
+function SendReminderDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [reminderType, setReminderType] = useState("Payment Due Reminder");
+  const [method, setMethod] = useState<string>("email");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={styles.dialogBackdrop}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className={styles.reminderDialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="send-reminder-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <header className={styles.reminderHeader}>
+          <h2 id="send-reminder-title" className={styles.reminderTitle}>
+            Send Reminder
+          </h2>
+          <p className={styles.reminderSubtitle}>
+            Send a reminder to a client about their deposit
+          </p>
+          <button
+            type="button"
+            className={styles.reminderCloseBtn}
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            {Icons.close}
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className={styles.reminderBody}>
+          {/* Reminder Type */}
+          <div className={styles.reminderField}>
+            <label className={styles.reminderFieldLabel} htmlFor="reminder-type">
+              Reminder Type
+            </label>
+            <div className={styles.reminderSelectWrap}>
+              <select
+                id="reminder-type"
+                className={styles.reminderSelect}
+                value={reminderType}
+                onChange={(e) => setReminderType(e.target.value)}
+              >
+                {REMINDER_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <span className={styles.reminderSelectChevron} aria-hidden="true">
+                {Icons.chevronDown}
+              </span>
+            </div>
+          </div>
+
+          {/* Communication Method */}
+          <div className={styles.reminderField}>
+            <label className={styles.reminderFieldLabel} htmlFor="reminder-method">
+              Communication Method
+            </label>
+            <div className={styles.reminderSelectWrap}>
+              <span className={styles.reminderMethodIcon} aria-hidden="true">
+                {Icons.envelope}
+              </span>
+              <select
+                id="reminder-method"
+                className={`${styles.reminderSelect} ${styles.reminderSelectWithIcon}`}
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                {REMINDER_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <span className={styles.reminderSelectChevron} aria-hidden="true">
+                {Icons.chevronDown}
+              </span>
+            </div>
+          </div>
+
+          {/* Reminder Message */}
+          <div className={styles.reminderField}>
+            <label className={styles.reminderFieldLabel} htmlFor="reminder-message">
+              Reminder Message
+            </label>
+            <textarea
+              id="reminder-message"
+              className={styles.reminderTextarea}
+              placeholder="Enter reminder message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+            />
+            <p className={styles.reminderHint}>
+              Personalize your message or use the default template
+            </p>
+          </div>
+
+          {/* Info callout */}
+          <div className={styles.reminderCallout}>
+            <span className={styles.reminderCalloutIcon} aria-hidden="true">
+              {Icons.alertCircle}
+            </span>
+            <div className={styles.reminderCalloutText}>
+              <p className={styles.reminderCalloutTitle}>
+                Reminder will be sent immediately
+              </p>
+              <p className={styles.reminderCalloutBody}>
+                The client will receive this notification via the selected
+                communication method.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className={styles.reminderFooter}>
+            <button
+              type="button"
+              className={styles.reminderCancelBtn}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button type="button" className={styles.reminderSendBtn}>
+              <span className={styles.reminderSendIcon} aria-hidden="true">
+                {Icons.send}
+              </span>
+              <span>Send Reminder</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
