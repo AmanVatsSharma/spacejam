@@ -367,6 +367,7 @@ export default function CustomerDetailPage() {
   const [note, setNote] = useState("");
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [showFreezeDialog, setShowFreezeDialog] = useState(false);
 
   // Lock body scroll while dialog is open
   useEffect(() => {
@@ -521,7 +522,7 @@ export default function CustomerDetailPage() {
             <div className={styles.quickActionsList}>
               <ActionButton icon={Icons.arrowUp} label="Upgrade Plan" onClick={() => setShowUpgradeDialog(true)} />
               <ActionButton icon={Icons.refresh} label="Renew Membership" />
-              <ActionButton icon={Icons.snowflake} label="Freeze Account" />
+              <ActionButton icon={Icons.snowflake} label="Freeze Account" onClick={() => setShowFreezeDialog(true)} />
               <ActionButton icon={Icons.logOut} label="Initiate Exit" />
             </div>
           </section>
