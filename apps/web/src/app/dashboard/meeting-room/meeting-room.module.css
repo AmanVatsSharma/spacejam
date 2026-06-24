@@ -164,10 +164,10 @@
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
   border-radius: 14px;
-  padding: 20px 24px 24px;
+  padding: 18px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 16px;
 }
 
 .timelineHeader {
@@ -181,6 +181,7 @@
   font-size: 14px;
   font-weight: 600;
   color: #101828;
+  letter-spacing: -0.01em;
 }
 .legend { display: flex; gap: 16px; flex-wrap: wrap; }
 .legendItem {
@@ -188,66 +189,116 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #6A7282;
+  color: #4A5565;
   font-weight: 500;
 }
 .legendSwatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
+  width: 14px;
+  height: 7px;
+  border-radius: 3px;
   display: inline-block;
 }
 
-.timelineBlock_section { display: flex; flex-direction: column; gap: 6px; }
-.dayNightLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: #FF6A2F;
-  text-align: center;
-  padding: 2px 0 4px;
-  border-bottom: 1px dashed #E5E7EB;
+/* Two halves side-by-side with shared room rows */
+.timelineBody {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
 }
 
-.hourRow { display: flex; align-items: center; }
-.hourLabelSpacer { width: 110px; flex-shrink: 0; }
-.hourLabels {
-  display: grid;
-  grid-template-columns: repeat(11, 1fr);
-  flex: 1;
-  font-size: 9px;
-  color: #9CA3AF;
-  text-align: center;
+.timelineHalf {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.hourLabel {
-  font-weight: 500;
+
+.timelineDivider {
+  width: 1px;
+  background: #E5E7EB;
+  margin: 0 12px;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+/* Floating pill labels above each half */
+.halfHeader {
+  position: relative;
+  height: 22px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.halfPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
   white-space: nowrap;
 }
+.halfPillDay {
+  background: #FFF7ED;
+  color: #FF7847;
+}
+.halfPillNight {
+  background: #F0FDFA;
+  color: #009689;
+}
 
+/* Hour axis — flex row with N equal segments */
+.hourAxis {
+  display: flex;
+  align-items: center;
+  padding-left: 102px;     /* align with track start (label + gap) */
+  padding-right: 6px;
+  padding-bottom: 2px;
+}
+.hourLabel {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 500;
+  color: #6A7282;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Each room row: name + track */
 .timelineRow {
   display: flex;
   align-items: center;
   height: 26px;
+  gap: 6px;
 }
 .timelineLabel {
-  width: 110px;
+  width: 96px;
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 500;
-  color: #4A5565;
-  padding-right: 12px;
+  color: #364153;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .timelineTrack {
   position: relative;
-  flex: 1;
-  height: 18px;
+  flex: 1 1 0;
+  height: 22px;
   background: #F9FAFB;
   border-radius: 4px;
+  overflow: hidden;
 }
 .timelineBlock {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 4px;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
 }
 
 /* ---------------- Rooms grid ---------------- */
@@ -418,6 +469,118 @@
   color: #10B981;
 }
 
+/* ---------------- Room Table (Table View) ---------------- */
+
+.tableCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+/* Horizontal scroll on compact widths (≤1023.98px) — keeps Figma column widths intact */
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 6-column grid that mirrors the Figma header proportions.
+   Room name (left, wide) · Capacity · Status · Current booking (wide) · Next available · Actions (right) */
+.tableGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 1.1fr 1.9fr 1.1fr 1.1fr;
+  min-width: 880px;
+}
+
+.tableHeader {
+  display: contents;
+}
+.tableHeader .th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 14px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+.tableHeader .th:first-child { border-top-left-radius: 12px; }
+.tableHeader .th:last-child { border-top-right-radius: 12px; }
+.thActions { text-align: right; }
+
+/* Body row */
+.tableRow {
+  display: contents;
+}
+.tableRow .td {
+  font-size: 14px;
+  color: #1F1F1F;
+  padding: 14px;
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+}
+.tableRow:last-child .td { border-bottom: none; }
+
+.tdName { font-weight: 600; color: #1F1F1F; }
+.tdCapacity { gap: 6px; color: #4A5565; }
+.tdCapacity svg { flex-shrink: 0; }
+
+.tdStatus { padding: 14px 12px; }
+
+.tableStatusPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.tdBooking { gap: 4px; }
+.bookingCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bookingTitle {
+  font-weight: 600;
+  color: #1F1F1F;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bookingTime {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6A7282;
+}
+
+.dashCell { color: #9CA3AF; font-weight: 500; }
+
+.tdActions { justify-content: flex-end; }
+.viewDetailsBtn {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.viewDetailsBtn:hover { background: #E85A22; }
+
 /* ---------------- Responsive / Compact (≤1023.98px) ---------------- */
 
 @media (max-width: 1023.98px) {
@@ -425,8 +588,15 @@
   .roomsGrid { grid-template-columns: repeat(2, 1fr); }
   .heroCard { padding: 18px 20px; }
   .heroTitle { font-size: 20px; }
-  .hourLabelSpacer, .timelineLabel { width: 88px; }
-  .hourLabels { font-size: 8px; grid-template-columns: repeat(11, 1fr); }
+  .timelineBody { flex-direction: column; gap: 16px; }
+  .timelineDivider { display: none; }
+  .hourAxis { padding-left: 88px; }
+  .timelineLabel { width: 82px; }
+  .tableCard { padding: 12px; }
+  .tableHeader .th { padding: 10px 8px; font-size: 11px; }
+  .tableRow .td { padding: 12px 8px; min-height: 56px; font-size: 13px; }
+  .bookingTitle { font-size: 13px; }
+  .hourLabel { font-size: 8px; }
 }
 
 @media (max-width: 640px) {
@@ -441,9 +611,10 @@
   .statValue { font-size: 24px; }
   .statUnit { font-size: 16px; }
   .toggleRow { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .timelineCard { padding: 16px; }
-  .hourLabelSpacer, .timelineLabel { width: 72px; font-size: 10px; }
-  .hourLabels { font-size: 7px; }
+  .timelineCard { padding: 14px; }
+  .timelineLabel { width: 68px; font-size: 10px; }
+  .hourAxis { padding-left: 74px; }
+  .hourLabel { font-size: 7px; }
   .legend { gap: 10px; }
   .legendItem { font-size: 10px; }
   .addonRow { padding: 10px 12px; }

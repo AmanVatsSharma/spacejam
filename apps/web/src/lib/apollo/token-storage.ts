@@ -19,7 +19,7 @@ const hasDocument = () => typeof document !== 'undefined';
 
 const writeCookie = (name: string, value: string, maxAgeSeconds: number) => {
   if (!hasDocument()) return;
-  // Read by both client code and Next.js middleware (which uses the request cookies).
+  // Read by both client code and Next.js proxy (which uses the request cookies).
   document.cookie = `${name}=${value}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
 };
 const clearCookie = (name: string) => {

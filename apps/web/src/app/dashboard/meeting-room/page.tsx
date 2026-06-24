@@ -1,20 +1,22 @@
 /**
  * File:        apps/web/src/app/dashboard/meeting-room/page.tsx
  * Module:      Web · Dashboard · Meeting Room
- * Purpose:     Meeting Room status dashboard. Pixel-perfect match to
- *              Figma SpaceJam-VB → node 0-8190. Mirrors the section
- *              tabs in the header and reuses the RoomCard grid,
- *              Day/Night timeline, and Active Add-ons panel.
+ * Purpose:     Meeting Room status dashboard with Layout (cards) and
+ *              Table (rows) view modes. Pixel-perfect match to
+ *              Figma SpaceJam-VB:
+ *                - Layout view  → node 0-8190
+ *                - Table view   → node 0-9849
+ *              Both modes share the hero card, 4 stat cards, view
+ *              toggle, and Active Add-ons panel.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-06-24
  */
 
-import styles from "./meeting-room.module.css";
+"use client";
 
-export const metadata = {
-  title: "Meeting Rooms · SpaceJam",
-};
+import { useState } from "react";
+import styles from "./meeting-room.module.css";
 
 type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
 
@@ -221,26 +223,40 @@ const CrossCircle = () => (
 
 interface TimelineRow {
   room: string;
-  /** Day timeline blocks: [start%, width%] */
+  /** Day timeline blocks (9 AM – 6 PM): [start%, width%] */
   day: [number, number][];
-  /** Night timeline blocks */
+  /** Night timeline blocks (7 PM – 6 AM): [start%, width%] */
   night: [number, number][];
 }
 
 const TIMELINE_ROWS: TimelineRow[] = [
   // Block: [start%, width%]
-  { room: "Boardroom A",   day: [[10, 20], [40, 8]],  night: [[6, 30], [60, 18]] },
-  { room: "Meeting Room 1", day: [[4, 16], [55, 8]],   night: [[12, 26], [70, 14]] },
-  { room: "Conference 1",  day: [[18, 12], [55, 8]],  night: [[4, 18], [55, 22]] },
-  { room: "Meeting Room 2", day: [[24, 22], [60, 10]], night: [[14, 30]] },
-  { room: "Boardroom B",   day: [[38, 18]],             night: [[4, 24], [80, 16]] },
-  { room: "Meeting Room 3", day: [[25, 12]],             night: [[8, 22]] },
+  { room: "Boardroom A",    day: [[10, 15], [50, 20]], night: [[0, 17], [33, 12]] },
+  { room: "Meeting Room 1", day: [[0, 20], [70, 10]],  night: [[8, 33], [55, 13]] },
+  { room: "Conference 1",   day: [[20, 15], [70, 10]], night: [[4, 12], [50, 17]] },
+  { room: "Meeting Room 2", day: [[40, 20]],            night: [[25, 42]] },
+  { room: "Boardroom B",    day: [[60, 20]],            night: [[0, 25], [67, 12]] },
+  { room: "Meeting Room 3", day: [[30, 10]],            night: [[12, 25]] },
 ];
 
-const HOURS_DAY = ["9 AM", "10 AM", "11 AM", "12 AM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM"];
-const HOURS_NIGHT = ["7 PM", "8 PM", "9 PM", "10 PM", "11 PM", "12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM"];
+const HOURS_DAY: string[] = [
+  "9 AM", "10 AM", "11 AM", "12 PM",
+  "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM",
+];
+const HOURS_NIGHT: string[] = [
+  "7 PM", "8 PM", "9 PM", "10 PM", "11 PM", "12 AM",
+  "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM",
+];
 
-function TimelineBlock({ start, width, color }: { start: number; width: number; color: string }) {
+function TimelineBlock({
+  start,
+  width,
+  color,
+}: {
+  start: number;
+  width: number;
+  color: string;
+}) {
   return (
     <div
       className={styles.timelineBlock}
@@ -253,17 +269,18 @@ function TimelineBlock({ start, width, color }: { start: number; width: number; 
   );
 }
 
-function TimelineRowBlock({ row, isNight }: { row: TimelineRow; isNight: boolean }) {
-  const blocks = isNight ? row.night : row.day;
-  const color = isNight ? "#10B981" : "#FF7A4D";
+function TimelineRowTrack({
+  blocks,
+  color,
+}: {
+  blocks: [number, number][];
+  color: string;
+}) {
   return (
-    <div className={styles.timelineRow}>
-      <div className={styles.timelineLabel}>{row.room}</div>
-      <div className={styles.timelineTrack}>
-        {blocks.map(([s, w], i) => (
-          <TimelineBlock key={i} start={s} width={w} color={color} />
-        ))}
-      </div>
+    <div className={styles.timelineTrack}>
+      {blocks.map(([s, w], i) => (
+        <TimelineBlock key={i} start={s} width={w} color={color} />
+      ))}
     </div>
   );
 }
@@ -348,9 +365,99 @@ function AddonRowItem({ item }: { item: AddonRow }) {
   );
 }
 
+/* ---------------- Room Table (Table View) ---------------- */
+
+/**
+ * Derives the "next available" time string for the table view.
+ * - For a "Next booking" entry we surface that time.
+ * - For a "Current Booking" entry we assume the room is open again at 2:00 PM
+ *   after the meeting ends (placeholder value matching the Figma mock).
+ * - For rooms with no booking info we return undefined so the cell renders "—".
+ */
+const nextAvailableFor = (room: RoomCard): string | undefined => {
+  if (!room.booking) return undefined;
+  if (room.booking.label === "Next booking") return room.booking.time;
+  return "2:00 PM";
+};
+
+function StatusPill({ status }: { status: RoomStatus }) {
+  const p = STATUS_PILL[status];
+  return (
+    <span
+      className={styles.tableStatusPill}
+      style={{ color: p.color, background: p.bg }}
+    >
+      {p.label.toUpperCase()}
+    </span>
+  );
+}
+
+function RoomTable({ rows }: { rows: RoomCard[] }) {
+  return (
+    <section className={styles.tableCard}>
+      <div className={styles.tableScroll}>
+        <div className={styles.tableGrid} role="table" aria-label="Meeting rooms table">
+          {/* Header row */}
+          <div className={styles.tableHeader} role="row">
+            <div className={styles.th} role="columnheader">Room Name</div>
+            <div className={styles.th} role="columnheader">Capacity</div>
+            <div className={styles.th} role="columnheader">Status</div>
+            <div className={styles.th} role="columnheader">Current Booking</div>
+            <div className={styles.th} role="columnheader">Next Available</div>
+            <div className={`${styles.th} ${styles.thActions}`} role="columnheader">Actions</div>
+          </div>
+
+          {/* Body rows */}
+          {rows.map((room) => {
+            const next = nextAvailableFor(room);
+            const isCurrent = room.booking?.label === "Current Booking";
+            return (
+              <div key={room.id} className={styles.tableRow} role="row">
+                <div className={`${styles.td} ${styles.tdName}`} role="cell">
+                  {room.name}
+                </div>
+                <div className={`${styles.td} ${styles.tdCapacity}`} role="cell">
+                  <PeopleIcon stroke="#6A7282" />
+                  <span>{room.capacity}</span>
+                </div>
+                <div className={`${styles.td} ${styles.tdStatus}`} role="cell">
+                  <StatusPill status={room.status} />
+                </div>
+                <div className={`${styles.td} ${styles.tdBooking}`} role="cell">
+                  {isCurrent && room.booking ? (
+                    <div className={styles.bookingCell}>
+                      <span className={styles.bookingTitle}>{room.booking.title}</span>
+                      <span className={styles.bookingTime}>
+                        <ClockIcon stroke="#6A7282" />
+                        {room.booking.time}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className={styles.dashCell}>—</span>
+                  )}
+                </div>
+                <div className={`${styles.td} ${styles.tdNext}`} role="cell">
+                  {next ?? <span className={styles.dashCell}>—</span>}
+                </div>
+                <div className={`${styles.td} ${styles.tdActions}`} role="cell">
+                  <button type="button" className={styles.viewDetailsBtn}>
+                    View Details
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------------- Page ---------------- */
 
 export default function MeetingRoomPage() {
+  const [view, setView] = useState<"layout" | "table">("layout");
+
   return (
     <div className={styles.page}>
       {/* Hero status card */}
@@ -400,7 +507,12 @@ export default function MeetingRoomPage() {
       {/* Layout / Table toggle */}
       <section className={styles.toggleRow}>
         <div className={styles.viewToggle}>
-          <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>
+          <button
+            type="button"
+            className={`${styles.viewBtn} ${view === "layout" ? styles.viewBtnActive : ""}`}
+            onClick={() => setView("layout")}
+            aria-pressed={view === "layout"}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
               <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.4" />
@@ -409,7 +521,12 @@ export default function MeetingRoomPage() {
             </svg>
             <span>Layout View</span>
           </button>
-          <button type="button" className={styles.viewBtn}>
+          <button
+            type="button"
+            className={`${styles.viewBtn} ${view === "table" ? styles.viewBtnActive : ""}`}
+            onClick={() => setView("table")}
+            aria-pressed={view === "table"}
+          >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <rect x="1" y="2" width="12" height="2.5" rx="0.6" stroke="currentColor" strokeWidth="1.3" />
               <rect x="1" y="6" width="12" height="2.5" rx="0.6" stroke="currentColor" strokeWidth="1.3" />
@@ -421,61 +538,87 @@ export default function MeetingRoomPage() {
         <div className={styles.showingCount}>Showing 12 of 12 rooms</div>
       </section>
 
-      {/* Today's Timeline */}
+      {/* Today's Timeline — shared by both Layout and Table views */}
       <section className={styles.timelineCard}>
+        {/* Header row: title + legend */}
         <div className={styles.timelineHeader}>
-          <div className={styles.timelineTitle}>Today's Timeline</div>
+          <div className={styles.timelineTitle}>Today&apos;s Timeline</div>
           <div className={styles.legend}>
             <span className={styles.legendItem}>
-              <span className={styles.legendSwatch} style={{ background: "#FF7A4D" }} />
+              <span
+                className={styles.legendSwatch}
+                style={{ background: "#FF7847" }}
+              />
               <span>Day (9AM-7PM)</span>
             </span>
             <span className={styles.legendItem}>
-              <span className={styles.legendSwatch} style={{ background: "#10B981" }} />
-              <span>Night (7PM-3AM)</span>
+              <span
+                className={styles.legendSwatch}
+                style={{ background: "#00D5BE" }}
+              />
+              <span>Night (7PM-7AM)</span>
             </span>
           </div>
         </div>
 
-        {/* Day timeline */}
-        <div className={styles.timelineBlock_section}>
-          <div className={styles.dayNightLabel}>Day Timeline</div>
-          <div className={styles.hourRow}>
-            <div className={styles.hourLabelSpacer} />
-            <div className={styles.hourLabels}>
+        {/* Day + Night halves with shared room list */}
+        <div className={styles.timelineBody}>
+          {/* Day half */}
+          <div className={styles.timelineHalf}>
+            <div className={styles.halfHeader}>
+              <span className={`${styles.halfPill} ${styles.halfPillDay}`}>
+                Day Timeline
+              </span>
+            </div>
+            <div className={styles.hourAxis}>
               {HOURS_DAY.map((h) => (
                 <div key={h} className={styles.hourLabel}>{h}</div>
               ))}
             </div>
+            {TIMELINE_ROWS.map((r) => (
+              <div key={r.room} className={styles.timelineRow}>
+                <div className={styles.timelineLabel}>{r.room}</div>
+                <TimelineRowTrack blocks={r.day} color="#FF7847" />
+              </div>
+            ))}
           </div>
-          {TIMELINE_ROWS.map((r) => (
-            <TimelineRowBlock key={r.room} row={r} isNight={false} />
-          ))}
-        </div>
 
-        {/* Night timeline */}
-        <div className={styles.timelineBlock_section}>
-          <div className={styles.dayNightLabel} style={{ color: "#0EA5A4" }}>Night Timeline</div>
-          <div className={styles.hourRow}>
-            <div className={styles.hourLabelSpacer} />
-            <div className={styles.hourLabels}>
+          {/* Vertical separator */}
+          <div className={styles.timelineDivider} aria-hidden="true" />
+
+          {/* Night half */}
+          <div className={styles.timelineHalf}>
+            <div className={styles.halfHeader}>
+              <span className={`${styles.halfPill} ${styles.halfPillNight}`}>
+                Night Timeline
+              </span>
+            </div>
+            <div className={styles.hourAxis}>
               {HOURS_NIGHT.map((h) => (
                 <div key={h} className={styles.hourLabel}>{h}</div>
               ))}
             </div>
+            {TIMELINE_ROWS.map((r) => (
+              <div key={`night-${r.room}`} className={styles.timelineRow}>
+                <div className={styles.timelineLabel}>{r.room}</div>
+                <TimelineRowTrack blocks={r.night} color="#00D5BE" />
+              </div>
+            ))}
           </div>
-          {TIMELINE_ROWS.map((r) => (
-            <TimelineRowBlock key={`night-${r.room}`} row={r} isNight={true} />
-          ))}
         </div>
       </section>
 
-      {/* 12 Room Cards grid */}
-      <section className={styles.roomsGrid}>
-        {ROOMS.map((room) => (
-          <RoomCard key={room.id} room={room} />
-        ))}
-      </section>
+      {/* Layout-view body: 12 room cards grid */}
+      {view === "layout" && (
+        <section className={styles.roomsGrid}>
+          {ROOMS.map((room) => (
+            <RoomCard key={room.id} room={room} />
+          ))}
+        </section>
+      )}
+
+      {/* Table-view body: full-width room table */}
+      {view === "table" && <RoomTable rows={ROOMS} />}
 
       {/* Active Add-ons & Requests */}
       <section className={styles.addonsCard}>

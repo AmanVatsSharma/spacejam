@@ -136,15 +136,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasToken, setHasToken] = useState<boolean>(false);
   const apolloClient = useApolloClient();
 
+  // Memoized so the effects below can use it as a stable dependency.
+  // Defined before the effects that depend on it.
+  const isDevLoginAvailable = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const { hostname } = window.location;
+    const flagEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true';
+    // Visible automatically on localhost / 127.0.0.1 / ::1, even without the
+    // env flag. Anywhere else, the env flag is required.
+    const isLocalhost =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '[::1]' ||
+      hostname.endsWith('.localhost');
+    return isLocalhost || flagEnabled;
+  }, []);
+
   useEffect(() => {
     setHasToken(!!getAccessToken());
   }, []);
 
   // Single useQuery to keep the user in sync with the backend.
+  // Skip in dev mode: the dev login sets the user directly, and the GraphQL
+  // endpoint isn't reachable until the NestJS API is wired up — letting the
+  // query run would 404 and trip the error-handler below into wiping the
+  // freshly-minted dev session.
   const { data, loading, refetch, error } = useQuery<{ me: AuthUser | null }>(ME_QUERY, {
     fetchPolicy: 'cache-and-network',
     notifyOnNetworkStatusChange: true,
-    skip: !hasToken,
+    skip: !hasToken || isDevLoginAvailable,
   });
 
   useEffect(() => {
@@ -152,14 +173,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [data]);
 
   // If the backend rejects the token (e.g. 401 after refresh failure), drop
-  // the user and clear tokens.
+  // the user and clear tokens. Skipped in dev mode so a missing /api/graphql
+  // route can't log a dev session out.
   useEffect(() => {
-    if (error) {
+    if (error && !isDevLoginAvailable) {
       setUser(null);
       setHasToken(false);
       clearTokens();
     }
-  }, [error]);
+  }, [error, isDevLoginAvailable]);
 
   const [signinMutation] = useMutation<AuthPayloadShape>(SIGNIN_MUTATION);
   const [signupMutation] = useMutation<AuthPayloadShape>(SIGNUP_MUTATION);
@@ -301,25 +323,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refetch();
   }, [refetch]);
 
-  const isDevLoginAvailable = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    const { hostname } = window.location;
-    const flagEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true';
-    // Visible automatically on localhost / 127.0.0.1 / ::1, even without the
-    // env flag. Anywhere else, the env flag is required.
-    const isLocalhost =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0' ||
-      hostname === '[::1]' ||
-      hostname.endsWith('.localhost');
-    return isLocalhost || flagEnabled;
-  }, []);
-
   /**
-   * Mints a fake JWT-shaped access + refresh token locally so the middleware
+   * Mints a fake JWT-shaped access + refresh token locally so the proxy
    * (which only inspects the cookie) lets the developer into /dashboard
-   * without any DB. The middleware only checks the cookie existence + role
+   * without any DB. The proxy only checks the cookie existence + role
    * claim, and the dashboard pages render mock data, so this is enough for
    * a full UI walkthrough.
    */
