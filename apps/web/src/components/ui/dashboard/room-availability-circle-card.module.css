@@ -1,0 +1,213 @@
+/* Room Availability Circle Card - Figma node 0:32796 */
+
+.card {
+  width: 100%;
+  min-width: 347px;
+  min-height: 388px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.titleSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 28px;
+  letter-spacing: -0.3125px;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6B7280;
+  line-height: 16px;
+  margin: 0;
+}
+
+.viewPlanBtn {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.viewPlanBtn:hover {
+  background: #E55A1F;
+}
+
+/* Chart section */
+.chartSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.circleWrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg {
+  display: block;
+}
+
+.circleCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.centerRatio {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 22px;
+  letter-spacing: -0.2px;
+}
+
+.centerChange {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #10B981;
+  line-height: 14px;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendDotOrange {
+  background: #FF7847;
+}
+
+.legendDotGray {
+  background: #9CA3AF;
+}
+
+.legendLabel {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: #6B7280;
+  line-height: 14px;
+}
+
+/* Sub stats grid */
+.subStatsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.subStat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subStatHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+}
+
+.subStatLabel {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1F2937;
+  line-height: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subStatValue {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 5px;
+  background: #F3F4F6;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF7847 0%, #FF6A2F 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}

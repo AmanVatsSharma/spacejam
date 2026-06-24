@@ -35,6 +35,20 @@ export {
   type AvailabilityStatus,
 } from "./room-availability-card";
 
+// New Figma-style cards
+export {
+  RoomAvailabilityCircleCard,
+  RoomAvailabilityCircleCardDemo,
+  type RoomSubStat,
+} from "./room-availability-circle-card";
+
+export {
+  MeetingRoomBookingGrid,
+  MeetingRoomBookingGridDemo,
+  type MeetingRoom,
+  type RoomStatus,
+} from "./meeting-room-booking-grid";
+
 // Metric Cards - second stack
 export { MetricCard, DepositHeldCardDemo, EventTodayCardDemo } from "./metric-cards";
 

@@ -1,0 +1,120 @@
+/* Meeting Room Booking Grid - Figma node 0:32446 */
+
+.card {
+  width: 100%;
+  min-width: 525px;
+  min-height: 388px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 28px;
+  letter-spacing: -0.3125px;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6B7280;
+  line-height: 16px;
+  margin: 0;
+}
+
+/* Grid 2x3 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 13px;
+  flex: 1;
+}
+
+/* Individual room card */
+.roomCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+  border-radius: 10px;
+  min-height: 131px;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.roomCard:hover {
+  border-color: #FFE4DA;
+  background: #FFFBFA;
+}
+
+.roomName {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 18px;
+  letter-spacing: -0.2px;
+  margin: 0;
+}
+
+/* Status pill */
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+  align-self: flex-start;
+  transition: opacity 0.15s ease;
+}
+
+.statusPill:hover {
+  opacity: 0.85;
+}
+
+.statusLabel {
+  letter-spacing: -0.1px;
+}
+
+/* Capacity */
+.capacity {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.capacityText {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: #9CA3AF;
+  line-height: 14px;
+}

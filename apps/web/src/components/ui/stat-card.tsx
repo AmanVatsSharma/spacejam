@@ -68,6 +68,25 @@ const BookingsIcon = () => (
   </svg>
 );
 
+// Deposit Held icon - tablet/handheld
+const DepositIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="2.5" y="1.5" width="9" height="13" rx="1.5" stroke="#FF7847" strokeWidth="1.33"/>
+    <rect x="5" y="3.5" width="4" height="6" rx="0.5" fill="#FF7847"/>
+    <path d="M5.5 12H8.5" stroke="#FF7847" strokeWidth="1.33" strokeLinecap="round"/>
+  </svg>
+);
+
+// Event Today icon - calendar with event
+const EventIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#FF7847" strokeWidth="1.33"/>
+    <path d="M2 6.5H14" stroke="#FF7847" strokeWidth="1.33"/>
+    <path d="M5 1.5V4M11 1.5V4" stroke="#FF7847" strokeWidth="1.33" strokeLinecap="round"/>
+    <circle cx="8" cy="10" r="1.5" fill="#FF7847"/>
+  </svg>
+);
+
 // Trend up arrow
 const TrendUpIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -127,7 +146,7 @@ export function StatCard({
   );
 }
 
-// Pre-configured 4 KPI cards - spans full width
+// Pre-configured 6 KPI cards - spans full width
 export function StatCards() {
   const stats = [
     {
@@ -139,7 +158,7 @@ export function StatCards() {
       className: "flex-1 min-w-0",
     },
     {
-      label: "Active Customers",
+      label: "Active Customer",
       value: "20",
       icon: <CustomersIcon />,
       changePercent: 5,
@@ -155,9 +174,25 @@ export function StatCards() {
       className: "flex-1 min-w-0",
     },
     {
-      label: "Bookings Today",
+      label: "Booking Today",
       value: "3",
       icon: <BookingsIcon />,
+      changePercent: 5,
+      changeDirection: "up" as TrendDirection,
+      className: "flex-1 min-w-0",
+    },
+    {
+      label: "Deposit Held",
+      value: "₹3.8L",
+      icon: <DepositIcon />,
+      changePercent: 5,
+      changeDirection: "up" as TrendDirection,
+      className: "flex-1 min-w-0",
+    },
+    {
+      label: "Event Today",
+      value: "6",
+      icon: <EventIcon />,
       changePercent: 5,
       changeDirection: "up" as TrendDirection,
       className: "flex-1 min-w-0",
@@ -165,7 +200,7 @@ export function StatCards() {
   ];
 
   return (
-    <div className="flex gap-[21px]">
+    <div className="grid grid-cols-6 compact:grid-cols-3 gap-[21px] compact:gap-3">
       {stats.map((stat, index) => (
         <StatCard key={index} {...stat} />
       ))}
@@ -174,4 +209,4 @@ export function StatCards() {
 }
 
 // Export icons
-export { RevenueIcon, CustomersIcon, DuesIcon, BookingsIcon, TrendUpIcon, TrendDownIcon };
+export { RevenueIcon, CustomersIcon, DuesIcon, BookingsIcon, DepositIcon, EventIcon, TrendUpIcon, TrendDownIcon };

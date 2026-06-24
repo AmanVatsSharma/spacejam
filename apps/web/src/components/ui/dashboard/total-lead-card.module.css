@@ -1,7 +1,8 @@
 /* Total Lead Card - Exact Figma Match */
 
 .card {
-  width: 479px;
+  width: 100%;
+  min-width: 473px;
   height: 222px;
   background: #FFFFFF;
   border-radius: 14px;
