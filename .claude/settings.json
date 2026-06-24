@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git fetch *)",
+      "Bash(curl -s -o /dev/null -w \"Port 3001: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3001/)",
+      "Bash(curl -s -o /dev/null -w \"Port 3000: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3000/)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -10,11 +17,6 @@
           }
         ]
       }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(git fetch *)"
     ]
   }
 }
