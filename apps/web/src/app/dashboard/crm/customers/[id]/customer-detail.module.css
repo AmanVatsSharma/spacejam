@@ -1,0 +1,502 @@
+/* ============================================================
+   Customer 360° – Figma-accurate styles
+   Node: 0:23687 (file key vLt2UqE3C8JCWb7uJOuOu7)
+   ============================================================ */
+
+.shell {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #101828;
+  padding: 24px;
+  background: transparent;
+}
+
+/* ============================================================
+   Profile header (Row 1)
+   ============================================================ */
+.profileHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.profileLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.backBtn {
+  width: 36px;
+  height: 36px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #101828;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.backBtn:hover { background: #e5e7eb; }
+.backBtn svg { width: 18px; height: 18px; }
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
+  background: #ff6a2f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.07px;
+  flex-shrink: 0;
+}
+
+.profileMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.customerName {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 600;
+  color: #101828;
+  letter-spacing: 0.37px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #4a5565;
+  letter-spacing: -0.15px;
+}
+.metaItem svg { width: 16px; height: 16px; color: #4a5565; }
+
+.profileActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.actionBtnOutline {
+  height: 44px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.15px;
+  border-radius: 12px;
+  padding: 0 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.actionBtnOutline:hover { background: #f9fafb; border-color: #d1d5db; }
+.actionBtnOutline svg { width: 16px; height: 16px; }
+
+/* ============================================================
+   KPI cards row (Row 2)
+   ============================================================ */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.1), 0px 1px 1px rgba(0, 0, 0, 0.1);
+  padding: 16px 21px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 138px;
+}
+
+.kpiIconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #ffefe9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff6a2f;
+  flex-shrink: 0;
+}
+.kpiIconWrap svg { width: 20px; height: 20px; }
+
+.kpiValue {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  color: #101828;
+  letter-spacing: 0.07px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.kpiLabel {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #6a7282;
+  letter-spacing: -0.15px;
+  margin: 0;
+}
+
+/* ============================================================
+   Main two-column row (Row 3)
+   ============================================================ */
+.mainRow {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.leftCol {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rightCol {
+  width: 300px;
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+.tabBar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 5px;
+  height: 45px;
+  width: fit-content;
+  min-width: 320px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.tab {
+  flex: 1 0 auto;
+  min-width: 80px;
+  height: 33px;
+  padding: 5px 16px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.15px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tab:hover { background: #f9fafb; }
+
+.tabActive {
+  background: #ff6a2f;
+  color: #ffffff;
+  border-color: transparent;
+}
+.tabActive:hover { background: #e55a26; }
+
+/* ============================================================
+   Generic card (used for left + right columns)
+   ============================================================ */
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.1), 0px 1px 1px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.cardCompact {
+  padding: 21px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  line-height: 27px;
+  font-weight: 600;
+  color: #101828;
+  letter-spacing: -0.44px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cardTitle svg { width: 16px; height: 16px; color: #ff6a2f; }
+
+/* ============================================================
+   Field grid (Membership / Financial / Usage)
+   ============================================================ */
+.fieldGrid {
+  display: grid;
+  gap: 24px 32px;
+  width: 100%;
+}
+.fieldGrid3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fieldGrid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.fieldItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #6a7282;
+  letter-spacing: -0.15px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fieldValue {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #101828;
+  letter-spacing: -0.31px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fieldValueHighlight {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.45px;
+  color: #ff6a2f;
+}
+
+.fieldValueSecondary {
+  color: #e17100;
+}
+
+.fieldValueLarge {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: 0.07px;
+}
+
+.fieldTrend {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: #6a7282;
+  margin: 0;
+}
+.fieldTrendUp { color: #ff6a2f; }
+
+.fieldStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.fieldStackLarge {
+  gap: 4px;
+  min-height: 76px;
+}
+
+/* ============================================================
+   Right-column specific cards
+   ============================================================ */
+.alertsCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.1), 0px 1px 1px rgba(0, 0, 0, 0.1);
+  padding: 21px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.alertsCard:hover { background: #f9fafb; }
+.alertsCard svg { width: 16px; height: 16px; color: #ff6a2f; }
+.alertsCard .cardTitle { font-size: 16px; }
+
+.quickActionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.quickActionBtn {
+  width: 100%;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.15px;
+  border-radius: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.quickActionBtn:hover { background: #f9fafb; border-color: #d1d5db; }
+.quickActionBtn svg { width: 16px; height: 16px; color: #0a0a0a; flex-shrink: 0; }
+.quickActionLabel { text-align: left; }
+
+.notesTextarea {
+  width: 100%;
+  min-height: 100px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #101828;
+  letter-spacing: -0.15px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.notesTextarea::placeholder { color: #717182; }
+.notesTextarea:focus {
+  border-color: #ff6a2f;
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.12);
+}
+
+.saveNoteBtn {
+  width: 100%;
+  height: 32px;
+  background: #ff6a2f;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+.saveNoteBtn:hover { background: #e55a26; }
+.saveNoteBtn:active { transform: translateY(1px); }
+
+.placeholderTab {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0px 1px 1.5px rgba(0, 0, 0, 0.1), 0px 1px 1px rgba(0, 0, 0, 0.1);
+  padding: 60px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #6a7282;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1279.98px) {
+  .rightCol {
+    width: 260px;
+    flex-basis: 260px;
+  }
+  .fieldGrid4 { gap: 20px 24px; }
+}
+
+@media (max-width: 1023.98px) {
+  .shell { padding: 16px; }
+  .kpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mainRow { flex-direction: column; }
+  .rightCol {
+    width: 100%;
+    flex-basis: auto;
+  }
+  .fieldGrid3,
+  .fieldGrid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profileHeader { flex-direction: column; align-items: flex-start; }
+  .profileActions { width: 100%; flex-wrap: wrap; }
+  .actionBtnOutline { flex: 1 1 auto; justify-content: center; }
+  .customerName { font-size: 28px; line-height: 34px; }
+}
+
+@media (max-width: 767.98px) {
+  .kpiGrid { grid-template-columns: 1fr; }
+  .fieldGrid3,
+  .fieldGrid4 { grid-template-columns: 1fr; }
+  .metaRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tabBar { width: 100%; }
+  .customerName { font-size: 24px; line-height: 30px; }
+}
