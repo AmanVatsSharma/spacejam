@@ -39,7 +39,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Hover effect */
   hoverable?: boolean;
   /** Click handler (makes it feel like a button) */
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLDivElement>) => void;
   /** Padding size */
   padding?: "none" | "sm" | "md" | "lg";
 }
@@ -111,9 +111,6 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     );
 
     if (onClick) {
-      const triggerClick = () => {
-        onClick({} as React.MouseEvent<HTMLDivElement>);
-      };
       return (
         <div
           ref={ref}
@@ -123,7 +120,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              triggerClick();
+              handleClick(e as unknown as React.MouseEvent<HTMLDivElement>);
             }
           }}
           {...props}

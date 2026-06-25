@@ -87,7 +87,7 @@ const toastStyles: Record<
 // Individual Toast Component
 // ---------------------------------------------------------------------------
 
-const Toast = ({
+export const Toast = ({
   type = "info",
   title,
   message,
@@ -212,12 +212,12 @@ export interface ToastContainerProps {
   onDismiss: (id: string) => void;
 }
 
-const ToastContainer = ({ toasts, onDismiss }: ToastContainerProps) => {
-  const [containerRef, setContainerRef] = React.useState<HTMLDivElement | null>(null);
+export const ToastContainer = ({ toasts, onDismiss }: ToastContainerProps) => {
+  const [containerRef, setContainerRef] = React.useState<HTMLElement | null>(null);
 
   React.useEffect(() => {
-    if (typeof document !== "undefined" && document.body) {
-      setContainerRef(document.body as HTMLDivElement);
+    if (typeof document !== "undefined") {
+      setContainerRef(document.body);
     }
   }, []);
 
@@ -323,4 +323,4 @@ export function useToast(): UseToastReturn {
 // Export
 // ---------------------------------------------------------------------------
 
-export { Toast, ToastContainer };
+// (Toast, ToastContainer, useToast are already exported above)

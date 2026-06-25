@@ -14,7 +14,6 @@ import {
   Booking,
   BookingStatus,
   Payment,
-  BookingFilters,
   SeatStatus,
   Seat,
   PaymentStatus,
@@ -26,7 +25,7 @@ import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { GqlDataLoaders } from '../dataloaders';
 import { PubSubService } from '../pubsub/pubsub.service';
-import { CreateBookingInput } from '../inputs/booking.input';
+import { CreateBookingInput, BookingFiltersInput } from '../inputs/booking.input';
 
 export const TRIGGERS = {
   bookingUpdated: 'booking.updated',
@@ -63,7 +62,7 @@ export class BookingResolver {
 
   @Query(() => [Booking])
   async bookings(
-    @Args('filters', { nullable: true }) filters?: BookingFilters
+    @Args('filters', { nullable: true }) filters?: BookingFiltersInput
   ): Promise<Booking[]> {
     const where: any = {};
     if (filters) {

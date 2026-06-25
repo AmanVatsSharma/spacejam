@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
 
 // Enums
 export enum UserRole {
@@ -154,8 +154,8 @@ export class Center {
   @Field(() => CenterStatus)
   status!: CenterStatus;
 
-  @Field({ nullable: true })
-  settings?: any;
+  @Field(() => String, { nullable: true })
+  settings?: string;
 
   @Field()
   owner!: string;
@@ -181,8 +181,8 @@ export class Floor {
   @Field()
   name!: string;
 
-  @Field({ nullable: true })
-  layout?: any;
+  @Field(() => String, { nullable: true })
+  layout?: string;
 
   @Field()
   totalSeats!: number;
@@ -208,8 +208,8 @@ export class Seat {
   @Field(() => SeatType)
   type!: SeatType;
 
-  @Field({ nullable: true })
-  features?: any;
+  @Field(() => String, { nullable: true })
+  features?: string;
 
   @Field({ nullable: true })
   location?: string;
@@ -266,8 +266,7 @@ export class Booking {
   seat?: Seat;
 
   @Field(() => Payment, { nullable: true })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payment?: any;
+  payment?: Payment | null;
 
   @Field()
   createdAt!: Date;
@@ -382,13 +381,13 @@ export class AuthPayload {
   @Field(() => User, { nullable: true })
   user?: User | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   accessToken?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   refreshToken?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   expiresIn?: number | null;
 
   @Field()
@@ -400,7 +399,7 @@ export class AuthPayload {
   @Field()
   twoFactorRequired!: boolean;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   challengeToken?: string | null;
 }
 

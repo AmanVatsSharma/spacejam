@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-24
  */
-import { Field, ID, InputType } from '@nestjs/graphql';
+import { Field, ID, InputType, Int } from '@nestjs/graphql';
 
 @InputType()
 export class CreateBookingInput {
@@ -19,6 +19,30 @@ export class CreateBookingInput {
   @Field()
   endTime!: Date;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   notes?: string;
+}
+
+@InputType()
+export class BookingFiltersInput {
+  @Field(() => ID, { nullable: true })
+  centerId?: string;
+
+  @Field(() => ID, { nullable: true })
+  userId?: string;
+
+  @Field(() => String, { nullable: true })
+  status?: string;
+
+  @Field({ nullable: true })
+  startDate?: Date;
+
+  @Field({ nullable: true })
+  endDate?: Date;
+
+  @Field(() => Int, { nullable: true })
+  limit?: number;
+
+  @Field(() => Int, { nullable: true })
+  offset?: number;
 }
