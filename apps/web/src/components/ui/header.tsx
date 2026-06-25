@@ -1,9 +1,9 @@
 /**
  * File:        apps/web/src/components/ui/header.tsx
  * Module:      Web · UI · Header
- * Purpose:     Top header with logo, contextual nav pills, and user profile.
- *              The center pill nav is driven by the active route — see
- *              `dashboard/layout.tsx` for the route → tabs mapping.
+ * Purpose:     Top header with logo, contextual nav pills, and user profile
+ *              dropdown. The center pill nav is driven by the active route —
+ *              see `dashboard/layout.tsx` for the route → tabs mapping.
  *
  * Exports:
  *   - Header — top header component
@@ -14,12 +14,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import Logo from "@/assets/logo.png";
-import Avatar from "@/assets/avatar.png";
-import { useAuth } from "@/contexts/auth-context";
 
 export interface HeaderTab {
   /** Stable id used to derive the active state from the URL. */
@@ -28,6 +25,17 @@ export interface HeaderTab {
   label: string;
   /** Route to push when the tab is clicked. */
   href: string;
+}
+
+export interface HeaderUser {
+  /** Display name. Falls back to the email if not provided. */
+  name: string;
+  /** Optional email — used to compute initials and the alt text. */
+  email?: string;
+  /** Display role label (e.g. "Center Manager"). */
+  role: string;
+  /** Called when the user picks "Log out" from the dropdown. */
+  onLogout?: () => void;
 }
 
 interface HeaderProps {
@@ -43,34 +51,44 @@ interface HeaderProps {
   onSetUpNewCenter?: () => void;
   /** When true, the "Set Up New Center" button is hidden. */
   hideSetUpButton?: boolean;
+  /** When provided, the user profile card surfaces the real user and a dropdown with "Log out". */
+  user?: HeaderUser;
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Administrator",
+  ADMIN: "Admin",
+  SUPER_ADMIN: "Super Admin",
   CENTER_MANAGER: "Center Manager",
   MEMBER: "Member",
 };
 
-export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false }: HeaderProps) {
+export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false, user }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const auth = useAuth();
-  const router = useRouter();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // Close the user menu on outside click.
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!showUserMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showUserMenu]);
 
-  // Defer user-conditional rendering to post-mount to avoid hydration mismatches.
-  const user = mounted ? auth.user : null;
   const displayName = user?.name ?? "Guest";
-  const displayRole = user?.role ? (ROLE_LABEL[user.role] ?? user.role) : "Member";
-  const avatarSrc = user?.avatar ?? Avatar;
-
-  const handleSignOut = async () => {
-    await auth.logout();
-    router.push("/signin");
-  };
+  const displayRole = user?.role
+    ? ROLE_LABEL[user.role] ?? user.role
+    : "Sign in";
+  const initials = displayName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="h-[83px] flex justify-between items-center px-8 compact:px-4 bg-[#FBF6F4] sticky top-0 z-50">
@@ -131,6 +149,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
         {/* Notification Icon */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
+          aria-label="Notifications"
           className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-colors"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4A5565" strokeWidth="1.5">
@@ -142,36 +161,63 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
           </span>
         </button>
 
-        {/* User Profile Card - Figma exact dimensions */}
-        <div className="flex items-center h-11 px-1 bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)]">
-          {/* Avatar - 36x36px */}
-          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
-            <Image
-              src={avatarSrc}
-              alt={displayName}
-              width={36}
-              height={36}
-              className="object-cover"
-            />
-          </div>
-
-          {/* User Info */}
-          <div className="flex flex-col justify-center px-3 h-9 compact:hidden">
-            <span className="text-sm font-semibold text-[#1F2937] leading-[17px]">{displayName}</span>
-            <span className="text-xs font-normal text-[#6B7280] leading-[15px]">{displayRole}</span>
-          </div>
-
-          {/* Dropdown Arrow - also acts as sign-out trigger */}
+        {/* User Profile Card */}
+        <div className="relative" ref={userMenuRef}>
           <button
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            title="Sign out"
-            className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors flex-shrink-0"
+            type="button"
+            onClick={() => setShowUserMenu((v) => !v)}
+            className="flex items-center h-11 px-1 bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-colors"
+            aria-haspopup="menu"
+            aria-expanded={showUserMenu}
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
-              <path d="M3 4.5L6 7.5L9 4.5" />
-            </svg>
+            {/* Avatar with initials */}
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 bg-[#FF6A2F] flex items-center justify-center text-xs font-semibold text-white">
+              <span>{initials || "SJ"}</span>
+            </div>
+
+            {/* User Info */}
+            <div className="flex flex-col justify-center px-3 h-9 compact:hidden text-left">
+              <span className="text-sm font-semibold text-[#1F2937] leading-[17px]">{displayName}</span>
+              <span className="text-xs font-normal text-[#6B7280] leading-[15px]">{displayRole}</span>
+            </div>
+
+            {/* Dropdown Arrow */}
+            <span className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
+                <path d="M3 4.5L6 7.5L9 4.5" />
+              </svg>
+            </span>
           </button>
+
+          {showUserMenu && (
+            <div
+              role="menu"
+              className="absolute right-0 top-12 w-56 rounded-2xl border border-[#E5E7EB] bg-white py-1 shadow-lg"
+            >
+              <div className="border-b border-[#F3F4F6] px-4 py-3">
+                <p className="text-sm font-semibold text-[#1F2937]">{displayName}</p>
+                <p className="text-xs text-[#6B7280]">{user?.email ?? "Signed in"}</p>
+              </div>
+              {user?.onLogout && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    user.onLogout?.();
+                  }}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[#EF4444] hover:bg-[#FEF2F2]"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Log out
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>
