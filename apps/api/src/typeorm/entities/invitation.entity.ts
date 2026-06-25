@@ -26,7 +26,7 @@ export class Invitation {
   @Column({ type: 'enum', enum: UserRole })
   role!: UserRole;
 
-  @Column({ name: 'centerId', nullable: true })
+  @Column({ name: 'centerId', type: 'uuid', nullable: true })
   centerId!: string | null;
 
   @Column({ unique: true })
@@ -35,7 +35,7 @@ export class Invitation {
   @Column({ type: 'timestamp' })
   expiresAt!: Date;
 
-  @Column({ name: 'acceptedAt', nullable: true })
+  @Column({ name: 'acceptedAt', type: 'timestamp', nullable: true })
   acceptedAt!: Date | null;
 
   @CreateDateColumn({ name: 'createdAt' })

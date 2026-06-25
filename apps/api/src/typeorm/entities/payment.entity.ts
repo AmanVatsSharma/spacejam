@@ -39,10 +39,10 @@ export class Payment {
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   status!: PaymentStatus;
 
-  @Column({ name: 'transactionId', nullable: true })
+  @Column({ name: 'transactionId', type: 'varchar', nullable: true })
   transactionId!: string | null;
 
-  @Column({ name: 'gatewayRef', nullable: true })
+  @Column({ name: 'gatewayRef', type: 'varchar', nullable: true })
   gatewayRef!: string | null;
 
   @Column({ type: 'jsonb', nullable: true })

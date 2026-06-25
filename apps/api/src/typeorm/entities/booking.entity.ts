@@ -37,7 +37,7 @@ export class Booking {
   @Column({ name: 'centerId' })
   centerId!: string;
 
-  @Column({ name: 'planId', nullable: true })
+  @Column({ name: 'planId', type: 'uuid', nullable: true })
   planId!: string | null;
 
   @Column({ type: 'timestamp' })
@@ -49,7 +49,7 @@ export class Booking {
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
   status!: BookingStatus;
 
-  @Column({ name: 'paymentId', nullable: true })
+  @Column({ name: 'paymentId', type: 'uuid', nullable: true })
   paymentId!: string | null;
 
   @Column({ type: 'float' })
@@ -58,10 +58,10 @@ export class Booking {
   @Column({ type: 'float', default: 0 })
   discount!: number;
 
-  @Column({ name: 'discountCode', nullable: true })
+  @Column({ name: 'discountCode', type: 'varchar', nullable: true })
   discountCode!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   notes!: string | null;
 
   @CreateDateColumn({ name: 'createdAt' })

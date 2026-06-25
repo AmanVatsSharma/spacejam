@@ -31,10 +31,10 @@ export class UserSession {
   @Column({ type: 'timestamp' })
   expiresAt!: Date;
 
-  @Column({ name: 'ipAddress', nullable: true })
+  @Column({ name: 'ipAddress', type: 'varchar', nullable: true })
   ipAddress!: string | null;
 
-  @Column({ name: 'userAgent', nullable: true })
+  @Column({ name: 'userAgent', type: 'text', nullable: true })
   userAgent!: string | null;
 
   @Column({ default: true })

@@ -37,8 +37,8 @@ export class Location {
   @Column({ name: 'fullAddress' })
   fullAddress!: string;
 
-  @Column({ nullable: true })
-  coordinates!: string | null;
+  @Column({ nullable: true, type: 'varchar' })
+  coordinates!: string;
 
   @Column({ default: 'Asia/Kolkata' })
   timezone!: string;

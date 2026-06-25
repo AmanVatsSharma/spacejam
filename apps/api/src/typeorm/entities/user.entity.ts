@@ -41,28 +41,28 @@ export class User {
   @Column({ name: 'passwordHash', select: false })
   passwordHash!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   centerId!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   avatar!: string | null;
 
   @Column({ name: 'isActive', default: true })
   isActive!: boolean;
 
-  @Column({ name: 'lastLogin', nullable: true })
+  @Column({ name: 'lastLogin', type: 'timestamp', nullable: true })
   lastLogin!: Date | null;
 
   @Column({ name: 'emailVerified', default: false })
   emailVerified!: boolean;
 
-  @Column({ name: 'emailVerifyToken', nullable: true, select: false })
+  @Column({ name: 'emailVerifyToken', type: 'varchar', nullable: true, select: false })
   emailVerifyToken!: string | null;
 
-  @Column({ name: 'emailVerifyExpiresAt', nullable: true })
+  @Column({ name: 'emailVerifyExpiresAt', type: 'timestamp', nullable: true })
   emailVerifyExpiresAt!: Date | null;
 
   @CreateDateColumn({ name: 'createdAt' })

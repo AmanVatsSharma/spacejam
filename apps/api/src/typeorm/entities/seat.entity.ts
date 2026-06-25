@@ -38,7 +38,7 @@ export class Seat {
   @Column({ type: 'jsonb', nullable: true })
   features!: Record<string, any> | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   location!: string | null;
 
   @Column({ type: 'float', default: 0 })
