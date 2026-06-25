@@ -84,5 +84,6 @@ export class Booking {
   center!: Center;
 
   @OneToOne(() => Payment, (payment) => payment.booking)
-  payment!: Payment;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payment!: any;
 }

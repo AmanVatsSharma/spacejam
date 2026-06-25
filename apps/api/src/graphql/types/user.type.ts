@@ -266,7 +266,8 @@ export class Booking {
   seat?: Seat;
 
   @Field(() => Payment, { nullable: true })
-  payment?: Payment;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payment?: any;
 
   @Field()
   createdAt!: Date;
@@ -401,4 +402,17 @@ export class AuthPayload {
 
   @Field({ nullable: true })
   challengeToken?: string | null;
+}
+
+/**
+ * Result of an out-of-band action (e.g. verify-email). The frontend can use
+ * `ok` to decide whether to show a success or error banner.
+ */
+@ObjectType()
+export class GenericActionResult {
+  @Field()
+  ok!: boolean;
+
+  @Field()
+  message!: string;
 }

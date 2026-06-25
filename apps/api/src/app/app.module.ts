@@ -12,7 +12,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { LoggerModule } from 'nestjs-pino';
 import { buildSchemaOptions } from '../graphql/graphql.config';
-import { TypeormConfigModule } from '../typeorm/typeorm.module';
+import { TypeOrmConfigModule } from '../typeorm/typeorm.module';
 import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { AuthModule } from '../auth/auth.module';
@@ -43,6 +43,11 @@ import { AuditLog } from '../typeorm/entities/audit-log.entity';
 import { Invitation } from '../typeorm/entities/invitation.entity';
 import { RecoveryCode } from '../typeorm/entities/recovery-code.entity';
 import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
+
+import { UserRepository } from '../typeorm/repositories/user.repository';
+import { CenterRepository } from '../typeorm/repositories/center.repository';
+import { SeatRepository } from '../typeorm/repositories/seat.repository';
+import { BookingRepository } from '../typeorm/repositories/booking.repository';
 
 @Module({
   imports: [
@@ -93,7 +98,7 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
     }),
 
     // Database
-    TypeormConfigModule,
+    TypeOrmConfigModule,
     TypeOrmModule.forFeature([
       User,
       Center,
@@ -135,6 +140,10 @@ import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
     AnalyticsResolver,
     GqlDataLoaders,
     FieldRateLimitGuard,
+    UserRepository,
+    CenterRepository,
+    SeatRepository,
+    BookingRepository,
   ],
 })
 export class AppModule {}

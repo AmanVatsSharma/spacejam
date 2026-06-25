@@ -57,5 +57,6 @@ export class Payment {
   // Relations
   @OneToOne(() => Booking, (booking) => booking.payment)
   @JoinColumn({ name: 'bookingId' })
-  booking!: Booking;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  booking!: any;
 }

@@ -9,28 +9,34 @@
 
 import { DynamicModule, Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { ConfigModule } from '../config/module';
-
-export const typeOrmConfig: TypeOrmModuleOptions = {
-  type: 'postgres',
-  host: process.env.DATABASE_HOST || 'localhost',
-  port: parseInt(process.env.DATABASE_PORT) || 5432,
-  username: process.env.DATABASE_USER || 'spacejam',
-  password: process.env.DATABASE_PASSWORD || 'spacejam',
-  database: process.env.DATABASE_NAME || 'spacejam',
-  entities: [__dirname + '/entities/*.entity{.ts,.js}'],
-  synchronize: process.env.NODE_ENV !== 'production',
-  logging: process.env.NODE_ENV === 'development',
-  ssl: process.env.DATABASE_SSL === 'true',
-  extra: {
-    max: parseInt(process.env.DATABASE_POOL_SIZE) || 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-  },
-};
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeormService } from './typeorm.service';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(typeOrmConfig)],
-  exports: [TypeOrmModule],
+  imports: [
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): TypeOrmModuleOptions => ({
+        type: 'postgres',
+        host: config.get<string>('DATABASE_HOST') || 'localhost',
+        port: parseInt(config.get<string>('DATABASE_PORT')) || 5432,
+        username: config.get<string>('DATABASE_USER') || 'spacejam',
+        password: config.get<string>('DATABASE_PASSWORD') || 'spacejam',
+        database: config.get<string>('DATABASE_NAME') || 'spacejam',
+        entities: [__dirname + '/entities/*.entity{.ts,.js}'],
+        synchronize: true,
+        logging: process.env.NODE_ENV === 'development',
+        ssl: config.get<string>('DATABASE_SSL') === 'true',
+        extra: {
+          max: parseInt(config.get<string>('DATABASE_POOL_SIZE')) || 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
+        },
+      }),
+    }),
+  ],
+  providers: [TypeormService],
+  exports: [TypeOrmModule, TypeormService],
 })
 export class TypeOrmConfigModule {}

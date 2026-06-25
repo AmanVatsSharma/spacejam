@@ -6,11 +6,11 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-20
  */
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
 import { AuthService } from '../../auth/services/auth.service';
-import { AuthPayload } from '../types/user.type';
+import { AuthPayload, GenericActionResult } from '../types/user.type';
 import { Public } from '../../auth/decorators/public.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -177,5 +177,23 @@ export class AuthResolver {
   @Query(() => Number, { description: 'Number of unused 2FA recovery codes remaining' })
   async recoveryCodesRemaining(@CurrentUser() user: JwtPayload): Promise<number> {
     return this.authService.recoveryCodesRemaining(user.sub);
+  }
+
+  @Public()
+  @Mutation(() => GenericActionResult, {
+    description: 'Verify an email-address using the ?token=… from the verification email',
+  })
+  async verifyEmail(
+    @Args('token') token: string,
+  ): Promise<GenericActionResult> {
+    return this.authService.verifyEmail(token);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => Boolean, {
+    description: 'Send (or resend) a verification email to the currently signed-in user',
+  })
+  async resendVerification(@CurrentUser() user: JwtPayload): Promise<boolean> {
+    return this.authService.sendEmailVerification(user.sub);
   }
 }

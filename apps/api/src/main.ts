@@ -1,36 +1,29 @@
 /**
  * File:        apps/api/src/main.ts
  * Module:      API · Application Bootstrap
- * Purpose:     Production-grade application bootstrap with validation,
- *              OpenTelemetry tracing, structured (pino) logging, and
- *              Prometheus metrics.
- *
- *              IMPORTANT: The tracing import MUST be the first line
- *              so the OpenTelemetry SDK patches HTTP, Express, GraphQL,
- *              ioredis, etc. before NestJS has a chance to import them.
+ * Purpose:     Production-grade application bootstrap with validation
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-21
+ * Last-updated: 2026-06-20
  */
-
-// Tracing MUST be imported first — it patches node modules at require time.
-import './observability/tracing';
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { Logger as NestPinoLogger } from 'nestjs-pino';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    // Pino replaces Nest's default logger; reads LOG_LEVEL env.
-    bufferLogs: true,
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
-  app.useLogger(app.get(NestPinoLogger));
 
   // Global prefix
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+
+  // Cookies — required for refresh-token handling on the GraphQL path
+  app.use(cookieParser());
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -50,7 +43,7 @@ async function bootstrap() {
     origin: process.env.NODE_ENV === 'production' ? [corsOrigin] : '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Apollo-Operation-Name'],
     maxAge: 3600,
   });
 
@@ -66,10 +59,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
 
-  // Use the structured logger from here on
-  const logger = app.get(NestPinoLogger);
-  logger.log(
-    `SpaceJam API listening at http://localhost:${port}/${globalPrefix} (graphql at /${globalPrefix}/graphql, metrics at /${globalPrefix}/metrics)`,
+  console.log(
+    `🚀 SpaceJam API running on: http://localhost:${port}/${globalPrefix}`,
+    `\n📊 GraphQL endpoint: http://localhost:${port}/${globalPrefix}/graphql`,
   );
 }
 
