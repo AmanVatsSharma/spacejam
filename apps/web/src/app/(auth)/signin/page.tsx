@@ -1,29 +1,28 @@
 /**
  * File:        apps/web/src/app/(auth)/signin/page.tsx
  * Module:      Web · Auth · Sign In Page
- * Purpose:     User authentication sign-in page. Keeps the orange-shape
- *              marketing layout and delegates the form to <AuthFormWrapper>
- *              → <SigninForm>, which calls useAuth().signin() and redirects
- *              to /dashboard on success. Wrapped in <Suspense> so
- *              useSearchParams() inside <SigninForm> works during prerender.
+ * Purpose:     User authentication sign-in page
+ *
+ * Exports:
+ *   - SignInPage — sign-in form component
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-21
+ * Last-updated: 2026-06-20
  */
-'use client';
 
-import { Suspense } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import Logo from '@/assets/logo.png';
-import AuthFormWrapper from './auth-form-wrapper';
-import styles from '../auth.module.css';
+import { Suspense } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Logo from "@/assets/logo.png";
+import styles from "../auth.module.css";
+import { SigninForm } from "@/components/auth/signin-form";
 
 export default function SignInPage() {
   return (
     <div className={styles.container}>
       {/* Left Side - Decorative */}
       <div className={styles.leftSide}>
+        {/* Abstract Orange Shapes */}
         <div className={styles.shape1} />
         <div className={styles.shape2} />
         <div className={styles.shape3} />
@@ -34,6 +33,8 @@ export default function SignInPage() {
         <div className={styles.shape8} />
         <div className={styles.shape9} />
         <div className={styles.shape10} />
+
+        {/* Logo */}
         <div className={styles.logoContainer}>
           <Image src={Logo} alt="SpaceJam" className={styles.logoImage} />
         </div>
@@ -44,8 +45,8 @@ export default function SignInPage() {
         <div className={styles.card}>
           <h1 className={styles.title}>Sign in to your workspace</h1>
 
-          <Suspense fallback={null}>
-            <AuthFormWrapper />
+          <Suspense fallback={<p className="text-sm text-[#6A7282]">Loading…</p>}>
+            <SigninForm />
           </Suspense>
 
           {/* Divider */}
@@ -76,7 +77,7 @@ export default function SignInPage() {
 
           {/* Footer */}
           <p className={styles.footerText}>
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className={styles.footerLink}>Sign up</Link>
           </p>
         </div>

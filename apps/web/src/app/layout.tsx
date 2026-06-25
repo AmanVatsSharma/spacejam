@@ -1,4 +1,14 @@
+/**
+ * File:        apps/web/src/app/layout.tsx
+ * Module:      Web · Root Layout
+ * Purpose:     Root layout — wires Apollo + Auth providers around the tree
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-06-20
+ */
+
 import './globals.css';
+import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
 
 import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
 

@@ -1,29 +1,28 @@
 /**
  * File:        apps/web/src/app/(auth)/signup/page.tsx
  * Module:      Web · Auth · Sign Up Page
- * Purpose:     User registration sign-up page. Keeps the orange-shape
- *              marketing layout and delegates the form to <SignupForm>,
- *              which calls useAuth().signup() and redirects to /dashboard
- *              on success. Wrapped in <Suspense> for parity with the other
- *              auth pages.
+ * Purpose:     User registration sign-up page
+ *
+ * Exports:
+ *   - SignUpPage — sign-up form component
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-21
+ * Last-updated: 2026-06-20
  */
-'use client';
 
-import { Suspense } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import Logo from '@/assets/logo.png';
-import { SignupForm } from '@/components/auth/signup-form';
-import styles from '../auth.module.css';
+import { Suspense } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Logo from "@/assets/logo.png";
+import styles from "../auth.module.css";
+import { SignupForm } from "@/components/auth/signup-form";
 
 export default function SignUpPage() {
   return (
     <div className={styles.container}>
       {/* Left Side - Decorative */}
       <div className={styles.leftSide}>
+        {/* Abstract Orange Shapes */}
         <div className={styles.shape1} />
         <div className={styles.shape2} />
         <div className={styles.shape3} />
@@ -34,6 +33,8 @@ export default function SignUpPage() {
         <div className={styles.shape8} />
         <div className={styles.shape9} />
         <div className={styles.shape10} />
+
+        {/* Logo */}
         <div className={styles.logoContainer}>
           <Image src={Logo} alt="SpaceJam" className={styles.logoImage} />
         </div>
@@ -44,7 +45,7 @@ export default function SignUpPage() {
         <div className={styles.card}>
           <h1 className={styles.title}>Create your workspace account</h1>
 
-          <Suspense fallback={null}>
+          <Suspense fallback={<p className="text-sm text-[#6A7282]">Loading…</p>}>
             <SignupForm />
           </Suspense>
 
@@ -76,7 +77,7 @@ export default function SignUpPage() {
 
           {/* Footer */}
           <p className={styles.footerText}>
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link href="/signin" className={styles.footerLink}>Sign in</Link>
           </p>
         </div>

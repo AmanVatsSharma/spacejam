@@ -20,6 +20,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Header, type HeaderTab } from "@/components/ui/header";
 import { SetUpNewCenter } from "@/components/ui/set-up-new-center";
+import { useAuth } from "@/contexts/auth-context";
 
 /**
  * Per-section sub-navigation. The first tab of each section is the
@@ -29,14 +30,9 @@ import { SetUpNewCenter } from "@/components/ui/set-up-new-center";
  */
 const SECTION_TABS: Record<string, HeaderTab[]> = {
   revenue: [
-    { id: "invoices", label: "Invoices", href: "/dashboard/invoices" },
-    { id: "deposits", label: "Deposit", href: "/dashboard/invoices/deposits" },
-    { id: "contracts", label: "Contracts", href: "/dashboard/invoices/contracts" },
-  ],
-  invoices: [
-    { id: "invoices", label: "Invoices", href: "/dashboard/invoices" },
-    { id: "deposits", label: "Deposit", href: "/dashboard/invoices/deposits" },
-    { id: "contracts", label: "Contracts", href: "/dashboard/invoices/contracts" },
+    { id: "invoices", label: "Invoices", href: "/dashboard/revenue" },
+    { id: "deposits", label: "Deposit", href: "/dashboard/revenue/deposits" },
+    { id: "contracts", label: "Contracts", href: "/dashboard/revenue/contracts" },
   ],
   floors: [
     { id: "location", label: "Location", href: "/dashboard/floors" },
@@ -47,11 +43,6 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: "customers", label: "Customers", href: "/dashboard/crm/customers" },
     { id: "leads", label: "Leads", href: "/dashboard/crm/leads" },
     { id: "onboarding", label: "Onboarding", href: "/dashboard/crm/onboarding" },
-  ],
-  "meeting-room": [
-    { id: "meeting-rooms", label: "Meeting Rooms", href: "/dashboard/meeting-room" },
-    { id: "events", label: "Events", href: "/dashboard/meeting-room/events" },
-    { id: "request", label: "Request", href: "/dashboard/meeting-room/request" },
   ],
 };
 
@@ -77,6 +68,10 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { tabs, activeId } = getTabsForPath(pathname);
+  // The middleware blocks unauthenticated access, but reading the auth context
+  // here keeps the user object available for child components that render the
+  // role badge or surface account actions (logout, profile menu).
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#FBF6F4]">
@@ -86,7 +81,19 @@ export default function DashboardLayout({
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
-        hideSetUpButton={!pathname.startsWith('/dashboard/inventory')}
+        hideSetUpButton={user?.role === 'MEMBER'}
+        user={
+          user
+            ? {
+                name: user.name ?? user.email,
+                email: user.email,
+                role: user.role,
+                onLogout: () => {
+                  void logout().then(() => router.push('/signin'));
+                },
+              }
+            : undefined
+        }
       />
 
       <div className="flex compact:gap-2">
