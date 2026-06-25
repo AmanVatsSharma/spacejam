@@ -26,6 +26,7 @@ import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { GqlDataLoaders } from '../dataloaders';
 import { PubSubService } from '../pubsub/pubsub.service';
+import { CreateBookingInput } from '../inputs/booking.input';
 
 export const TRIGGERS = {
   bookingUpdated: 'booking.updated',
@@ -108,7 +109,7 @@ export class BookingResolver {
 
   @Mutation(() => Booking)
   async createBooking(
-    @Args('input') input: any,
+    @Args('input') input: CreateBookingInput,
     @Context() context
   ): Promise<Booking> {
     const userId = context.req.user?.id;

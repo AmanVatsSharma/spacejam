@@ -25,6 +25,16 @@ import { Location as LocationEntity } from '../../typeorm/entities/location.enti
 import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
+import {
+  CreateCenterInput,
+  UpdateCenterInput,
+  CreateLocationInput,
+  UpdateLocationInput,
+  CreateFloorInput,
+  UpdateFloorInput,
+  CreateSeatInput,
+  UpdateSeatInput,
+} from '../inputs/center.input';
 
 export const CENTER_TRIGGERS = {
   centerUpdated: 'center.updated',
@@ -84,7 +94,7 @@ export class CenterResolver {
 
   @Mutation(() => Center)
   async createCenter(
-    @Args('input') input: any,
+    @Args('input') input: CreateCenterInput,
     @Context() context
   ): Promise<Center> {
     const userId = context.req.user?.id;
@@ -102,7 +112,7 @@ export class CenterResolver {
   @Mutation(() => Center)
   async updateCenter(
     @Args('id') id: string,
-    @Args('input') input: any,
+    @Args('input') input: UpdateCenterInput,
     @Context() context
   ): Promise<Center> {
     const userId = context.req.user?.id;
@@ -159,7 +169,7 @@ export class LocationResolver {
 
   @Mutation(() => Location)
   async createLocation(
-    @Args('input') input: any,
+    @Args('input') input: CreateLocationInput,
     @Context() context
   ): Promise<Location> {
     const userId = context.req.user?.id;
@@ -173,7 +183,7 @@ export class LocationResolver {
   @Mutation(() => Location)
   async updateLocation(
     @Args('id') id: string,
-    @Args('input') input: any
+    @Args('input') input: UpdateLocationInput
   ): Promise<Location> {
     await this.locationRepo.update(id, input);
     const location = await this.locationRepo.findOne({ where: { id } });
@@ -203,7 +213,7 @@ export class FloorResolver {
 
   @Mutation(() => Floor)
   async createFloor(
-    @Args('input') input: any
+    @Args('input') input: CreateFloorInput
   ): Promise<Floor> {
     const newFloor = this.floorRepo.create(input);
     const floor = await this.floorRepo.save(newFloor);
@@ -241,7 +251,7 @@ export class SeatResolver {
   }
 
   @Mutation(() => Seat)
-  async createSeat(@Args('input') input: any): Promise<Seat> {
+  async createSeat(@Args('input') input: CreateSeatInput): Promise<Seat> {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
     return seat as unknown as Seat;
@@ -250,7 +260,7 @@ export class SeatResolver {
   @Mutation(() => Seat)
   async updateSeat(
     @Args('id') id: string,
-    @Args('input') input: any
+    @Args('input') input: UpdateSeatInput
   ): Promise<Seat> {
     await this.seatRepo.update(id, input);
     const seat = await this.seatRepo.findOne({
