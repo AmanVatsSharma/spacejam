@@ -6,8 +6,8 @@
     "rootDir": "src",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": false,
-    "target": "es2021"
+    "emitDecoratorMetadata": true,
+    "target": "es2017"
   },
   "include": ["src/**/*.ts"],
   "exclude": []

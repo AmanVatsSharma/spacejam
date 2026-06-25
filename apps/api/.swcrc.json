@@ -1,10 +1,10 @@
 {
   "jsc": {
     "parser": {"syntax": "typescript", "decorators": true, "dynamicImport": true},
-    "target": "es2021",
+    "target": "es2017",
     "transform": {
       "legacyDecorator": true,
-      "decoratorMetadata": false,
+      "decoratorMetadata": true,
       "useDefineForClassFields": false
     }
   },
