@@ -37,7 +37,7 @@ export class RecoveryCode {
   @Column({ type: 'varchar', length: 128 })
   codeHash!: string;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   usedAt?: Date | null;
 

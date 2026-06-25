@@ -34,7 +34,7 @@ export class MagicLinkToken {
   @Column({ type: 'varchar', length: 128 })
   tokenHash!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 255, nullable: true })
   redirectTo!: string | null;
 
@@ -42,15 +42,15 @@ export class MagicLinkToken {
   @Column({ type: 'timestamp' })
   expiresAt!: Date;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   usedAt!: Date | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 64, nullable: true })
   ipAddress!: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   userAgent!: string | null;
 

@@ -371,6 +371,48 @@ export class RevenueReport {
   growth!: number;
 }
 
+@ObjectType()
+export class OccupancyDay {
+  @Field()
+  date!: Date;
+
+  @Field(() => Int)
+  totalBookings!: number;
+
+  @Field()
+  occupancyRate!: number;
+
+  @Field()
+  revenue!: number;
+}
+
+@ObjectType()
+export class SeatTypeOccupancy {
+  @Field(() => String)
+  type!: string;
+
+  @Field(() => Int)
+  count!: number;
+
+  @Field()
+  occupancyRate!: number;
+}
+
+@ObjectType()
+export class OccupancyReport {
+  @Field(() => ID)
+  centerId!: string;
+
+  @Field(() => [OccupancyDay])
+  byDay!: OccupancyDay[];
+
+  @Field(() => [SeatTypeOccupancy])
+  bySeatType!: SeatTypeOccupancy[];
+
+  @Field()
+  averageRate!: number;
+}
+
 /**
  * Result of a successful authentication. Either tokens are populated OR
  * `twoFactorRequired` is true and `challengeToken` carries a short-lived
