@@ -10,8 +10,6 @@
 import './globals.css';
 import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
 
-import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
-
 export const metadata = {
   title: 'SpaceJam - Coworking Space Management',
   description: 'Manage your coworking space efficiently',
