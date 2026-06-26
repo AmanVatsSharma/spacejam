@@ -218,6 +218,7 @@ export default function MeetingRoomRequestPage() {
     setSearchQuery("");
     setCategoryFilter("All Categories");
     setStatusFilter("All Statuses");
+    setShowOnlyPending(false);
   };
 
   const handleAction = (requestId: string, action: "Approve" | "Reject" | "Delete") => {
