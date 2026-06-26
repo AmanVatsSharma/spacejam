@@ -20,29 +20,42 @@ function randomChoice<T>(arr: T[]): T {
 
 const colors = ["#FFC4A6", "#FFA782", "#FF946B", "#FFD7C4"];
 
-// Generate 50 beautifully varied geometric shapes
-const SHAPES = Array.from({ length: 50 }).map(() => {
+// Generate 120 geometric shapes with true 3D depth and parallax physics
+const SHAPES = Array.from({ length: 120 }).map(() => {
   let x = 0;
   let y = 0;
   
-  // The left column is roughly 600px wide and 800px tall.
-  // Center is at 0,0.
-  // We want to generate shapes within the visible area (-350 to +350 for X, -450 to +450 for Y)
-  // Safe Zone: Keep an empty 300x200px area in the center for the logo (-150 to +150 for X)
+  // Safe Zone: Keep an empty 300x200px area in the center for the logo
   do {
-    x = randomRange(-350, 350);
-    y = randomRange(-450, 450);
-  } while (Math.abs(x) < 150 && Math.abs(y) < 100);
+    x = randomRange(-400, 400);
+    y = randomRange(-500, 500);
+  } while (Math.abs(x) < 160 && Math.abs(y) < 110);
 
-  const isHollow = random() > 0.65;
-  const isGlowing = random() > 0.8;
+  // Z represents depth (0 = far away background, 1 = right up close to camera)
+  const z = random(); 
   
-  // Make them proper orthogonal boxes/squares
-  let w = randomRange(40, 160);
-  let h = random() > 0.7 ? randomRange(w * 0.8, w * 1.5) : w; // Some are rectangles, most are perfect squares
+  const isHollow = random() > 0.6;
+  const isGlass = isHollow && z > 0.5; // Only foreground hollow items become glass
+
+  // Dimensions scale with depth (close = huge, far = tiny)
+  const sizeBase = (z * 120) + 20; 
+  let w = randomRange(sizeBase * 0.8, sizeBase * 1.5);
+  let h = random() > 0.7 ? randomRange(w * 0.6, w * 1.5) : w; 
   
   const color = randomChoice(colors);
-  const glowAmount = isGlowing ? randomRange(15, 40) : 0;
+  
+  // Depth of field physics
+  const blur = (1 - z) * 10; // Items far away are blurry (up to 10px blur)
+  const opacity = (z * 0.5) + 0.15; // Far away = 15% opacity, close = 65% opacity
+  const zIndex = Math.floor(z * 40); // Layering based on depth
+  
+  // 3D Shadows
+  const dropShadowY = z * 25; // Close items cast a longer shadow
+  const dropShadowBlur = z * 40;
+  const shadowOpacity = z * 0.3;
+  
+  // Parallax Speed (close = fast, far = incredibly slow)
+  const duration = (1 - z) * 60 + 20; // 20s to 80s
   
   return {
     w,
@@ -51,12 +64,14 @@ const SHAPES = Array.from({ length: 50 }).map(() => {
     y,
     bg: isHollow ? "transparent" : color,
     border: isHollow ? color : null,
-    br: "0px", // Crisp sharp square boxes, as requested
-    glow: glowAmount > 0 ? `0 0 ${glowAmount}px ${color}` : "none",
-    op: randomRange(0.15, 0.85), // Wide range of opacity for depth
-    a: Math.floor(randomRange(1, 5)), // asteroid1 to asteroid4
-    d: randomRange(20, 60), // slow tumbling
-    transform: "",
+    isGlass,
+    blur,
+    shadow: `0px ${dropShadowY}px ${dropShadowBlur}px rgba(0, 0, 0, ${shadowOpacity})`,
+    op: opacity,
+    zIdx: zIndex,
+    a: Math.floor(randomRange(1, 5)), // Animation class
+    d: duration,
+    delay: randomRange(-60, 0), // Randomize start phase so they don't sync up
   };
 });
 
@@ -73,12 +88,15 @@ export function AuthBackground() {
             marginLeft: `${s.x}px`,
             marginTop: `${s.y}px`,
             backgroundColor: s.bg,
-            border: s.border ? `2px solid ${s.border}` : "none",
-            borderRadius: s.br,
-            boxShadow: s.glow,
+            border: s.border ? `${s.zIdx > 20 ? 4 : 2}px solid ${s.border}` : "none",
+            borderRadius: "0px", // Crisp 3D squares
+            boxShadow: s.shadow,
             opacity: s.op,
+            filter: `blur(${s.blur}px)`,
+            backdropFilter: s.isGlass ? "blur(8px)" : "none",
+            zIndex: s.zIdx,
             animationDuration: `${s.d}s`,
-            animationDelay: `${(i % 10) * -4}s`,
+            animationDelay: `${s.delay}s`,
           } as React.CSSProperties}
         />
       ))}
