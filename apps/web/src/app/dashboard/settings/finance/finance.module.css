@@ -1,0 +1,674 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  padding-bottom: 24px;
+}
+
+/* ---------------- Top Cards ---------------- */
+
+.headerCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px 32px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+.headerTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.headerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.headerSubtitle {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.resetBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  color: #4B5563;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.resetBtn:hover {
+  background: #F9FAFB;
+}
+.saveBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF7847;
+  border: 1px solid #FF7847;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.saveBtn:hover {
+  background: #E66A3D;
+}
+
+/* ---------------- Sub Tabs ---------------- */
+
+.subTabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.subTab {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4B5563;
+  background: #FFFFFF;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0px 1px 2px rgba(0,0,0,0.05);
+}
+.subTabActive {
+  background: #FF7847;
+  color: #FFFFFF;
+}
+
+/* ---------------- Split Layout ---------------- */
+
+.splitLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.leftCol {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.rightCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.contentCard {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.contentCardSmallPadding {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------- Form Content ---------------- */
+.formHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #F3F4F6;
+}
+.formIcon {
+  width: 32px;
+  height: 32px;
+  background: #FFF3ED;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FF7847;
+}
+.formTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0;
+}
+
+.inputGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.inputGrid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inputLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+}
+.inputBox {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1F2937;
+  outline: none;
+}
+.inputBox:focus {
+  border-color: #FF7847;
+}
+.inputWithSuffix {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.inputWithSuffix input {
+  padding-right: 60px;
+}
+.inputSuffix {
+  position: absolute;
+  right: 14px;
+  font-size: 14px;
+  color: #9CA3AF;
+}
+.selectBox {
+  appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%236B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+.inputSub {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+
+.rangeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rangeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rangeValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FF7847;
+}
+.rangeBarWrapper {
+  width: 100%;
+  height: 6px;
+  background: #E5E7EB;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.rangeBarFill {
+  height: 100%;
+  background: #FF7847;
+  border-radius: 3px;
+}
+
+.toggleCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.toggleCardsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.toggleCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+.toggleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.toggleTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.toggleSub {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+/* Toggle Switch Base */
+.toggleSwitch {
+  width: 44px;
+  height: 24px;
+  background: #FF7847;
+  border-radius: 12px;
+  padding: 2px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggleSwitchOff {
+  background: #D1D5DB;
+}
+.toggleKnob {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ---------------- Helper & Info Boxes ---------------- */
+.helperBox {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #FFE4D6;
+  background: #FFF9F6;
+  align-items: flex-start;
+}
+.helperIcon {
+  color: #FF7847;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.helperContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.helperTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF7847;
+}
+.helperText {
+  font-size: 12px;
+  color: #FF7847;
+  line-height: 1.5;
+}
+
+.inlineInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------------- Pill Buttons ---------------- */
+.pillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #F3F4F6;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pillActive {
+  background: #FF7847;
+  color: #FFFFFF;
+}
+
+/* ---------------- Right Col Content ---------------- */
+
+.flowTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+}
+.flowSub {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-bottom: 24px;
+}
+
+.flowSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.flowStep {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+.stepNum {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #FF7847;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.stepNumGrey {
+  background: #E5E7EB;
+  color: #6B7280;
+}
+.stepInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stepTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.stepDesc {
+  font-size: 12px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+.noteBox {
+  margin-top: 32px;
+  padding: 16px;
+  background: #FFF3ED;
+  border: 1px solid #FFE4D6;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #FF7847;
+  line-height: 1.5;
+}
+
+.overviewSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.overviewLabel {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-bottom: 8px;
+}
+.overviewBigText {
+  font-size: 48px;
+  font-weight: 700;
+  color: #FF7847;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.overviewBigText span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.summaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.summaryList:last-child {
+  border-bottom: none;
+}
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.summaryLabel {
+  font-size: 13px;
+  color: #6B7280;
+}
+.summaryValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.summaryValueGreen {
+  color: #10B981;
+}
+
+.infoBoxList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.infoBoxList li {
+  font-size: 12px;
+  color: #059669;
+  list-style: none;
+  position: relative;
+  padding-left: 12px;
+}
+.infoBoxList li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #059669;
+}
+.infoBoxBgGreen {
+  background: #ECFDF5;
+  border: 1px solid #D1FAE5;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.infoBoxTitleGreen {
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+  margin-bottom: 8px;
+}
+
+/* Invoice Preview styling */
+.invoicePreviewCard {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.invoiceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.invoiceLogo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.invoiceLogoAvatar {
+  width: 32px;
+  height: 32px;
+  background: #FF7847;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+.invoiceCompany {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.invoiceCompanySub {
+  font-size: 12px;
+  color: #6B7280;
+}
+.invoiceIdWrap {
+  text-align: right;
+}
+.invoiceIdLabel {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+.invoiceId {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.invoiceDates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.invoiceDateRow {
+  display: flex;
+  justify-content: space-between;
+}
+.invoiceDateLabel {
+  font-size: 13px;
+  color: #6B7280;
+}
+.invoiceDateValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.invoiceDateDue {
+  color: #EF4444;
+}
+
+.invoiceLines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
+  padding: 16px 0;
+}
+.invoiceLine {
+  display: flex;
+  justify-content: space-between;
+}
+.invoiceLineLabel {
+  font-size: 13px;
+  color: #4B5563;
+}
+.invoiceLineValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.invoiceTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFF9F6;
+  padding: 16px;
+  border-radius: 8px;
+}
+.invoiceTotalLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.invoiceTotalValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FF7847;
+}
+
+.policyGroup {
+  margin-bottom: 24px;
+}
+.policyGroup:last-child {
+  margin-bottom: 0;
+}
+.policyTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.policyTitleIcon {
+  color: #FF7847;
+}
+.policyTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .splitLayout {
+    flex-direction: column;
+  }
+  .leftCol, .rightCol {
+    width: 100%;
+  }
+}
+@media (max-width: 768px) {
+  .inputGrid, .inputGrid3 {
+    grid-template-columns: 1fr;
+  }
+  .toggleCardsRow {
+    grid-template-columns: 1fr;
+  }
+}
