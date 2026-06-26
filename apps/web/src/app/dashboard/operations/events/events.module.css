@@ -7,8 +7,6 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
   padding-bottom: 24px;
 }
 
@@ -507,4 +505,13 @@
   .clearAll { margin-left: 0; }
   .eventRight { flex-wrap: wrap; gap: 8px; }
   .eventActions { width: 100%; justify-content: flex-end; }
+}
+
+@media (max-width: 640px) {
+  .heroCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .heroAction { align-self: stretch; justify-content: center; }
 }

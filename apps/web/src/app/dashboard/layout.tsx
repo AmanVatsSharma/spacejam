@@ -47,6 +47,8 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
   operations: [
     { id: "operations", label: "Operations", href: "/dashboard/operations" },
     { id: "meeting-room", label: "Meeting Room", href: "/dashboard/operations/meeting-room" },
+    { id: "events", label: "Events", href: "/dashboard/operations/events" },
+    { id: "request", label: "Request", href: "/dashboard/operations/request" },
   ],
 };
 
