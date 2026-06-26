@@ -50,6 +50,11 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: "events", label: "Events", href: "/dashboard/operations/events" },
     { id: "request", label: "Request", href: "/dashboard/operations/request" },
   ],
+  report: [
+    { id: "overview", label: "Overview", href: "/dashboard/report" },
+    { id: "revenue", label: "Revenue", href: "/dashboard/report/revenue" },
+    { id: "occupancy", label: "Occupancy", href: "/dashboard/report/occupancy" },
+  ],
 };
 
 function getTabsForPath(pathname: string | null): { tabs: HeaderTab[]; activeId: string | undefined } {

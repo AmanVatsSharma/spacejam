@@ -1,5 +1,5 @@
 /**
- * File:        apps/web/src/app/dashboard/operations/meeting-room/request/page.tsx
+ * File:        apps/web/src/app/dashboard/operations/request/page.tsx
  * Module:      Web · Dashboard · Meeting Room · Request & Registration
  * Purpose:     Manage all types of requests (events, printers, upgrades, services).
  *              Pixel-perfect match to Figma SpaceJam-VB node 0-12998.
