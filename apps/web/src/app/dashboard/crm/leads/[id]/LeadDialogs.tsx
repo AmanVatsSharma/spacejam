@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React from "react";
 
 const DialogOverlay = ({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) => {
   if (!open) return null;

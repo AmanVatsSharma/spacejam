@@ -1,6 +1,7 @@
-/* ===========================================================
+/* ================================================================
    Meeting Room · Request & Registration — Figma node 0-12998
-   =========================================================== */
+   Matches the SpaceJam-VB Figma design for iPad Pro 12.9"
+   ================================================================ */
 
 .page {
   display: flex;
@@ -10,38 +11,116 @@
   padding-bottom: 24px;
 }
 
-/* ---------------- Header card ---------------- */
+/* ---------------- Two-column stat cards ---------------- */
 
-.headerCard {
-  display: flex;
-  flex-direction: column;
+.statCardsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+@media (max-width: 1023.98px) {
+  .statCardsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  padding: 24px;
-}
-
-.headerContent {
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
+  /* subtle shadow matching Figma: shadow-[0px_0px_6px_0px_rgba(252,135,88,0.2),0px_0px_5px_0px_rgba(99,99,99,0.25)] */
+  box-shadow: 0 0 6px 0 rgba(252, 135, 88, 0.2), 0 0 5px 0 rgba(99, 99, 99, 0.25);
 }
 
-.title {
-  font-size: 24px;
+.statCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.statCardLabel {
+  font-size: 18px;
   font-weight: 700;
-  color: #101828;
-  line-height: 1.2;
-  margin: 0;
+  color: #111827;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.statCardCount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
   letter-spacing: -0.01em;
 }
 
-.subtitle {
+.statCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.statCardSub {
   font-size: 14px;
   color: #6A7282;
-  margin: 0;
-  line-height: 1.5;
+  font-weight: 500;
+}
+
+.viewPendingButton {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+.viewPendingButton:hover {
+  background: #e55a22;
+}
+
+/* ---------------- Recent Activities ---------------- */
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.activityItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.activityText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activityTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 1.4;
+}
+
+.activityDesc {
+  font-size: 14px;
+  color: #6A7282;
+  line-height: 1.4;
 }
 
 /* ---------------- Search bar ---------------- */
@@ -49,18 +128,24 @@
 .searchBar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1px solid #D7D7D7;
   border-radius: 10px;
   padding: 12px 16px;
   width: 100%;
   max-width: 400px;
+  transition: border-color 0.15s;
+}
+
+.searchBar:focus-within {
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.1);
 }
 
 .searchIcon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: #9CA3AF;
   flex-shrink: 0;
 }
@@ -73,6 +158,7 @@
   font-size: 14px;
   color: #101828;
   min-width: 0;
+  font-family: inherit;
 }
 
 .searchInput::placeholder {
@@ -98,14 +184,22 @@
   appearance: none;
   -webkit-appearance: none;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #D7D7D7;
   border-radius: 10px;
-  color: #101828;
+  color: #4A5565;
   font-size: 14px;
   font-weight: 500;
-  padding: 10px 36px 10px 16px;
+  padding: 10px 36px 10px 14px;
   cursor: pointer;
   min-width: 160px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.1);
 }
 
 .selectIcon {
@@ -124,13 +218,14 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-radius: 10px;
   transition: background 0.15s;
+  font-family: inherit;
 }
 
 .clearButton:hover {
-  background: #FBF6F4;
+  background: rgba(255, 106, 47, 0.08);
 }
 
 /* ---------------- Table card ---------------- */
@@ -138,25 +233,9 @@
 .tableCard {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
-}
-
-.tableHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px 16px;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.tableTitle {
-  font-size: 18px;
-  font-weight: 700;
-  color: #101828;
-  margin: 0;
-  letter-spacing: -0.01em;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
 }
 
 .tableScroll {
@@ -170,33 +249,77 @@
   min-width: 800px;
 }
 
+.thead {
+  background: #F9FAFB;
+}
+
+.thead tr {
+  display: grid;
+  grid-template-columns: 107px 120px 1fr 90px 90px 80px 40px;
+  align-items: center;
+}
+
 .thead th {
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #6A7282;
+  color: #4A5565;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 12px 16px;
-  background: #F9FAFB;
-  border-bottom: 1px solid #E5E7EB;
+  letter-spacing: 0.6px;
+  padding: 38px 16px 12px;
   white-space: nowrap;
+}
+
+.tbody {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 107px 120px 1fr 90px 90px 80px 40px;
+  align-items: center;
+  border-bottom: 1px solid #E5E7EB;
+  transition: background 0.12s;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background: #FBF6F4;
 }
 
 .tbody td {
   padding: 20px 16px;
-  border-bottom: 1px solid #F1F2F4;
-  color: #1F1F1F;
+  color: #101828;
   vertical-align: middle;
   font-size: 14px;
+  line-height: 1.4;
 }
 
-.tbody tr:last-child td {
-  border-bottom: none;
+.cellType {
+  font-weight: 600;
+  color: #101828;
 }
 
-.tbody tr:hover {
-  background: #FBF6F4;
+.cellRequestedBy {
+  font-weight: 500;
+  color: #101828;
+}
+
+.cellDetails {
+  color: #4A5565;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cellDate {
+  color: #4A5565;
+  white-space: nowrap;
 }
 
 .checkbox {
@@ -208,51 +331,58 @@
 
 .emptyState {
   text-align: center;
-  padding: 32px 16px;
-  color: #6A7282;
+  padding: 40px 16px;
+  color: #9CA3AF;
+  font-size: 14px;
+  grid-column: 1 / -1;
 }
 
-/* ---------------- Status badge ---------------- */
+/* ---------------- Status badge (Figma: pill, 9px, with checkmark icon) ---------------- */
 
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 9px;
   font-weight: 600;
-  padding: 4px 12px;
+  padding: 5px 12px;
   border-radius: 999px;
   white-space: nowrap;
-  min-width: 80px;
-}
-
-.statusApproved {
-  background: #ECFDF5;
-  color: #047857;
+  letter-spacing: 0.02em;
 }
 
 .statusPending {
-  background: #FFFBEB;
-  color: #B45309;
+  background: rgba(255, 120, 71, 0.2);
+  color: #4A5565;
+}
+
+.statusApproved {
+  background: rgba(20, 184, 166, 0.2);
+  color: #4A5565;
 }
 
 .statusRejected {
-  background: #FEF2F2;
-  color: #B91C1C;
+  background: rgba(239, 68, 68, 0.2);
+  color: #4A5565;
 }
 
-/* ---------------- Action button + menu ---------------- */
+.statusIcon {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+/* ---------------- Action button + dropdown menu ---------------- */
 
 .actionCell {
   position: relative;
   text-align: center;
-  width: 60px;
 }
 
 .actionButton {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #E5E7EB;
   background: #FFFFFF;
   color: #4A5565;
@@ -261,6 +391,8 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+  padding: 0;
+  vertical-align: middle;
 }
 
 .actionButton:hover {
@@ -271,14 +403,14 @@
 
 .actionMenu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-  min-width: 120px;
-  z-index: 10;
+  border-radius: 16px;
+  box-shadow: 0 0 7.6px 0 rgba(0, 0, 0, 0.25);
+  min-width: 128px;
+  z-index: 50;
   padding: 6px 0;
 }
 
@@ -287,12 +419,14 @@
   background: transparent;
   border: none;
   text-align: left;
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 10px 16px;
+  font-size: 11.8px;
   font-weight: 500;
-  color: #101828;
+  color: #4A5565;
   cursor: pointer;
   transition: background 0.15s;
+  letter-spacing: -0.01em;
+  font-family: inherit;
 }
 
 .actionMenuItem:hover {
@@ -302,5 +436,5 @@
 .actionMenuDivider {
   height: 1px;
   background: #E5E7EB;
-  margin: 0;
+  margin: 2px 0;
 }

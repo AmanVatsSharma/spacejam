@@ -7,13 +7,11 @@
  *   - SignInPage — sign-in form component
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-06-26
  */
 
 import { Suspense } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import Logo from "@/assets/logo.png";
 import styles from "../auth.module.css";
 import { AuthBackground } from "@/components/auth/auth-background";
 import { SigninForm } from "@/components/auth/signin-form";

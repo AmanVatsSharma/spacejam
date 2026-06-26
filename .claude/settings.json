@@ -6,7 +6,8 @@
       "Bash(curl -s -o /dev/null -w \"Port 3000: HTTP %{http_code} | %{time_total}s\\\\n\" --max-time 3 http://localhost:3000/)",
       "mcp__plugin_figma_figma__get_design_context",
       "Skill(deep-research)",
-      "Skill(deep-research:*)"
+      "Skill(deep-research:*)",
+      "Bash(python3 -c ' *)"
     ]
   },
   "hooks": {
