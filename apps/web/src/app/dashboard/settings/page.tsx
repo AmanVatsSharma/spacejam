@@ -1,178 +1,506 @@
-/**
- * File:        apps/web/src/app/dashboard/settings/page.tsx
- * Module:      Web · Dashboard · Settings Page
- * Purpose:     App configuration, user preferences, and system settings
- *
- * Exports:
- *   - SettingsPage — settings page content
- *
- * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
- */
-
 "use client";
 
 import { useState } from "react";
-import SecurityPanel from "@/components/settings/security-panel";
+import styles from "./settings.module.css";
 
-interface SettingSection {
-  id: string;
-  title: string;
-  description: string;
-}
+const Icons = {
+  search: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
+  ),
+  plus: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  ),
+  camera: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+      <circle cx="12" cy="13" r="4"></circle>
+    </svg>
+  ),
+  editPencil: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+    </svg>
+  ),
+  chevronDown: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  ),
+  phone: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+      <line x1="12" y1="18" x2="12.01" y2="18"></line>
+    </svg>
+  ),
+  laptop: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+      <line x1="2" y1="20" x2="22" y2="20"></line>
+    </svg>
+  ),
+  logout: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+  )
+};
 
-const settingSections: SettingSection[] = [
-  { id: "profile", title: "Profile", description: "Manage your account details and preferences" },
-  { id: "center", title: "Center Settings", description: "Configure your coworking center details" },
-  { id: "billing", title: "Billing & Payments", description: "Payment methods and invoice settings" },
-  { id: "notifications", title: "Notifications", description: "Email and push notification preferences" },
-  { id: "security", title: "Security", description: "Password and two-factor authentication" },
-  { id: "integrations", title: "Integrations", description: "Connect third-party apps and services" },
+const DUMMY_USERS = [
+  { id: 1, name: "Sarah Johnson", group: "FRANCHISE OWNERS", role: "Franchise Owner", sub: "All Centers", status: "Active" },
+  { id: 2, name: "Michael Chen", group: "FRANCHISE OWNERS", role: "Franchise Owner", sub: "Chandigarh", status: "Active" },
+  { id: 3, name: "Priya Sharma", group: "CENTER MANAGERS", role: "Center Manager", sub: "Chandigarh-sec 18", status: "Active", email: "priya.sharma@spacejam.com", phone: "+91 98765 43210", assignedCenter: "Chandigarh", reportingManager: "Reporting Manager" },
+  { id: 4, name: "Rahul Verma", group: "CENTER MANAGERS", role: "Center Manager", sub: "Jalandhar", status: "Active" },
+  { id: 5, name: "Anita Desai", group: "CENTER MANAGERS", role: "Center Manager", sub: "Chandigarh", status: "Suspended" },
+  { id: 6, name: "Vijay Kumar", group: "SUPPORT STAFF", role: "Support Staff", sub: "Chandigarh sec 34", status: "Active" },
+  { id: 7, name: "Neha Patel", group: "SUPPORT STAFF", role: "Support Staff", sub: "Chandigarh sec 34", status: "Active" },
 ];
 
-interface ToggleSetting {
-  label: string;
-  description: string;
-  enabled: boolean;
-}
+export default function SettingsAccessPage() {
+  const [activeTab, setActiveTab] = useState("Profile");
+  const [activeUser, setActiveUser] = useState(DUMMY_USERS[2]); // Default Priya
+  const [accountEnabled, setAccountEnabled] = useState(true);
 
-const notificationSettings: ToggleSetting[] = [
-  { label: "Booking Confirmations", description: "Get notified when a booking is confirmed", enabled: true },
-  { label: "Check-in Reminders", description: "Receive reminders before guest check-in", enabled: true },
-  { label: "Daily Reports", description: "Daily summary of bookings and revenue", enabled: false },
-  { label: "System Updates", description: "Important updates about the platform", enabled: true },
-];
+  const getInitials = (name: string) => {
+    return name.split(" ").map(n => n[0]).join("");
+  };
 
-export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("profile");
-  const [notifications, setNotifications] = useState(notificationSettings);
+  const renderUserGroup = (groupName: string) => {
+    const usersInGroup = DUMMY_USERS.filter(u => u.group === groupName);
+    if (usersInGroup.length === 0) return null;
 
-  const toggleNotification = (index: number) => {
-    setNotifications((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, enabled: !item.enabled } : item))
+    return (
+      <div className={styles.directoryGroup} key={groupName}>
+        <div className={styles.groupLabel}>{groupName}</div>
+        {usersInGroup.map(user => {
+          const isActive = activeUser.id === user.id;
+          return (
+            <div 
+              key={user.id} 
+              className={`${styles.userItem} ${isActive ? styles.userItemActive : ''}`}
+              onClick={() => { setActiveUser(user); setAccountEnabled(user.status === "Active"); }}
+            >
+              <div className={styles.listAvatar}>{getInitials(user.name)}</div>
+              <div className={styles.listUserInfo}>
+                <span className={styles.listUserName}>{user.name}</span>
+                <span className={styles.listUserSub}>{user.role}<br/>{user.sub}</span>
+              </div>
+              <span className={`${styles.listUserStatus} ${user.status === 'Active' ? styles.statusTxtActive : styles.statusTxtSuspended}`}>
+                {user.status}
+              </span>
+              <span className={styles.editIcon}>{Icons.editPencil}</span>
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
-  const renderProfileSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-[#101828] mb-4">Personal Information</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-2 block">Full Name</label>
-            <input
-              type="text"
-              defaultValue="Rahul Sharma"
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF7847]"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-2 block">Email</label>
-            <input
-              type="email"
-              defaultValue="rahul@spacejam.dev"
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF7847]"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-2 block">Phone</label>
-            <input
-              type="tel"
-              defaultValue="+91 98765 43210"
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF7847]"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600 mb-2 block">Role</label>
-            <input
-              type="text"
-              defaultValue="Center Manager"
-              disabled
-              className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500"
-            />
-          </div>
+  return (
+    <div className={styles.page}>
+      
+      {/* Top Header Card */}
+      <div className={styles.headerCard}>
+        <div className={styles.headerTitleWrap}>
+          <h1 className={styles.headerTitle}>Access & Permissions</h1>
+          <p className={styles.headerSubtitle}>Manage users, roles, and system access</p>
         </div>
-        <button className="mt-4 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors">
-          Save Changes
+        <button className={styles.addUserBtn}>
+          {Icons.plus} Add User
         </button>
       </div>
-    </div>
-  );
 
-  const renderNotificationsSection = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-[#101828] mb-4">Notification Preferences</h3>
-        <div className="space-y-4">
-          {notifications.map((setting, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div>
-                <p className="font-medium text-[#101828]">{setting.label}</p>
-                <p className="text-sm text-gray-500">{setting.description}</p>
+      {/* Sub Tabs */}
+      <div className={styles.subTabs}>
+        {["Profile", "Permissions", "Centers", "Security", "Notifications"].map(tab => (
+          <div 
+            key={tab} 
+            className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </div>
+        ))}
+      </div>
+
+      {/* Split Layout */}
+      <div className={styles.splitLayout}>
+        
+        {/* LEFT COLUMN: FORM / PERMISSIONS */}
+        <div className={styles.leftCol}>
+          
+          {activeTab === "Profile" ? (
+            <>
+              <div className={styles.formHeader}>
+                <div className={styles.avatarWrap}>
+                  {getInitials(activeUser.name)}
+                  <div className={styles.cameraIcon}>{Icons.camera}</div>
+                </div>
+                <div className={styles.formUserInfo}>
+                  <h2 className={styles.formUserName}>{activeUser.name}</h2>
+                  <p className={styles.formUserRole}>{activeUser.role}</p>
+                </div>
               </div>
-              <button
-                onClick={() => toggleNotification(index)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${
-                  setting.enabled ? "bg-[#FF7847]" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    setting.enabled ? "translate-x-7" : "translate-x-1"
-                  }`}
-                />
-              </button>
+
+              <div className={styles.formGrid}>
+                <div className={styles.formGroupFull}>
+                  <label className={styles.formLabel}>Full Name</label>
+                  <input type="text" className={styles.formInput} value={activeUser.name} readOnly />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Email</label>
+                  <input type="email" className={styles.formInput} value={activeUser.email || ""} placeholder="No email provided" readOnly />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Phone</label>
+                  <input type="text" className={styles.formInput} value={activeUser.phone || ""} placeholder="No phone provided" readOnly />
+                </div>
+                <div className={styles.formGroupFull}>
+                  <label className={styles.formLabel}>Role</label>
+                  <input type="text" className={styles.formInput} value={activeUser.role} disabled />
+                </div>
+                <div className={styles.formGroupFull}>
+                  <label className={styles.formLabel}>Assigned Centers</label>
+                  <input type="text" className={styles.formInput} value={activeUser.assignedCenter || activeUser.sub} disabled />
+                </div>
+                <div className={styles.formGroupFull}>
+                  <label className={styles.formLabel}>Reporting Manager</label>
+                  <input type="text" className={styles.formInput} value={activeUser.reportingManager || "Reporting Manager"} disabled />
+                </div>
+              </div>
+
+              <div>
+                <div className={styles.statusRow}>
+                  <div className={styles.statusInfo}>
+                    <span className={styles.statusLabel}>Account Status</span>
+                    <span className={styles.statusDesc}>User can access the system</span>
+                  </div>
+                  <div className={`${styles.toggleSwitch} ${!accountEnabled ? styles.toggleSwitchOff : ''}`} onClick={() => setAccountEnabled(!accountEnabled)}>
+                    <div className={styles.toggleKnob} style={{ transform: accountEnabled ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.formActions}>
+                <button className={styles.saveBtn}>Save Changes</button>
+                <div className={styles.dangerActions}>
+                  <button className={styles.suspendBtn}>Suspend Access</button>
+                  <button className={styles.deleteBtn}>Delete User</button>
+                </div>
+              </div>
+            </>
+          ) : activeTab === "Permissions" ? (
+            <>
+              <input type="text" className={styles.permSearchBox} placeholder="Search permissions" />
+              
+              <div className={styles.permGroup}>
+                <div className={styles.permGroupHeader}>
+                  <span className={styles.permGroupTitle}>Booking Permissions</span>
+                  <span className={styles.permEnableAll}>Enable All</span>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Edit bookings</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Cancel bookings</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Override room limits</span>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.permGroup}>
+                <div className={styles.permGroupHeader}>
+                  <span className={styles.permGroupTitle}>Financial Permissions</span>
+                  <span className={styles.permEnableAll}>Enable All</span>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Issue refunds</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Freeze deposits</span>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Access invoices</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.permGroup}>
+                <div className={styles.permGroupHeader}>
+                  <span className={styles.permGroupTitle}>Marketing Permissions</span>
+                  <span className={styles.permEnableAll}>Enable All</span>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Send campaigns</span>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>View analytics</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Manage offers</span>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.permGroup}>
+                <div className={styles.permGroupHeader}>
+                  <span className={styles.permGroupTitle}>User Permissions</span>
+                  <span className={styles.permEnableAll}>Enable All</span>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Create users</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Edit permissions</span>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+                <div className={styles.permRow}>
+                  <span className={styles.permLabel}>Delete users</span>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+              </div>
+
+            </>
+          ) : activeTab === "Centers" ? (
+            <>
+              <p className={styles.centersSubtitle}>Select which centers this user can access and manage</p>
+              
+              <div className={styles.radioList}>
+                <div className={styles.radioGroup}>
+                  <div className={styles.radioItem}>
+                    <div className={`${styles.radioIcon} ${styles.radioIconActive}`}>
+                      <div className={styles.radioDot}></div>
+                    </div>
+                    <span className={styles.radioLabel}>Chandigarh</span>
+                  </div>
+                  
+                  <div className={styles.radioChildren}>
+                    <div className={styles.radioItem}>
+                      <div className={styles.radioIcon}></div>
+                      <span className={styles.radioLabelSub}>Sector 18</span>
+                    </div>
+                    <div className={styles.radioItem}>
+                      <div className={styles.radioIcon}></div>
+                      <span className={styles.radioLabelSub}>sector 21</span>
+                    </div>
+                    <div className={styles.radioItem}>
+                      <div className={styles.radioIcon}></div>
+                      <span className={styles.radioLabelSub}>Sector 29</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.radioGroup}>
+                  <div className={styles.radioItem}>
+                    <div className={styles.radioIcon}></div>
+                    <span className={styles.radioLabel}>Jalandhar</span>
+                  </div>
+                </div>
+
+                <div className={styles.radioGroup}>
+                  <div className={styles.radioItem}>
+                    <div className={styles.radioIcon}></div>
+                    <span className={styles.radioLabel}>Mohali</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : activeTab === "Security" ? (
+            <>
+              <div className={styles.secGroup}>
+                <h3 className={styles.secGroupTitle}>Authentication</h3>
+                
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>OTP Required</span>
+                    <span className={styles.secRowSub}>Require OTP for login</span>
+                  </div>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Biometric Login</span>
+                    <span className={styles.secRowSub}>Allow fingerprint/face ID</span>
+                  </div>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secInputGroup}>
+                  <span className={styles.secRowTitle}>Session Timeout</span>
+                  <input type="text" className={styles.secInput} defaultValue="30" />
+                </div>
+              </div>
+
+              <div className={styles.secGroup}>
+                <h3 className={styles.secGroupTitle}>Device Management</h3>
+                
+                <div className={styles.deviceCard}>
+                  <div className={styles.deviceIcon}>{Icons.phone}</div>
+                  <div className={styles.deviceInfo}>
+                    <span className={styles.deviceTitle}>iPhone 13 Pro</span>
+                    <span className={styles.deviceSub}>Mumbai, India</span>
+                  </div>
+                  <span className={styles.deviceTime}>Active now</span>
+                </div>
+
+                <div className={styles.deviceCard}>
+                  <div className={styles.deviceIcon}>{Icons.laptop}</div>
+                  <div className={styles.deviceInfo}>
+                    <span className={styles.deviceTitle}>MacBook Pro</span>
+                    <span className={styles.deviceSub}>Bangalore, India</span>
+                  </div>
+                  <span className={styles.deviceTime}>2 hours ago</span>
+                </div>
+
+                <button className={styles.logoutAllBtn}>
+                  {Icons.logout} Logout All Devices
+                </button>
+              </div>
+            </>
+          ) : activeTab === "Notifications" ? (
+            <>
+              <div className={styles.secGroup}>
+                <h3 className={styles.secGroupTitle}>Notification Channels</h3>
+                
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>WhatsApp</span>
+                    <span className={styles.secRowSub}>+91 98765 43210</span>
+                  </div>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Email</span>
+                    <span className={styles.secRowSub}>priya.sharma@spacejam.com</span>
+                  </div>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Push Notifications</span>
+                    <span className={styles.secRowSub}>Mobile & web app</span>
+                  </div>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.secGroup}>
+                <h3 className={styles.secGroupTitle}>Notification Preferences</h3>
+                
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Booking alerts</span>
+                  </div>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Payment alerts</span>
+                  </div>
+                  <div className={styles.toggleSwitch}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>Maintenance alerts</span>
+                  </div>
+                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
+                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}>
+              Settings for {activeTab} are coming soon.
             </div>
-          ))}
+          )}
+
         </div>
-      </div>
-    </div>
-  );
 
-  const renderComingSoonSection = (title: string) => (
-    <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#9CA3AF" strokeWidth="1.5">
-          <circle cx="16" cy="16" r="10" />
-          <path d="M16 10V16L20 18" strokeLinecap="round" />
-        </svg>
-      </div>
-      <h3 className="text-lg font-medium text-gray-800 mb-2">{title}</h3>
-      <p className="text-gray-500">This feature is under development.</p>
-    </div>
-  );
+        {/* RIGHT COLUMN: DIRECTORY */}
+        <div className={styles.rightCol}>
+          
+          <div className={styles.listSearch}>
+            <span className="text-gray-400">{Icons.search}</span>
+            <input type="text" placeholder="Search users by name, email" />
+          </div>
+          
+          <div className={styles.listFilters}>
+            <div className={styles.listFilterBtn}>Role {Icons.chevronDown}</div>
+            <div className={styles.listFilterBtn}>Center {Icons.chevronDown}</div>
+          </div>
 
-  return (
-    <div className="flex gap-6">
-      {/* Settings Navigation */}
-      <div className="w-72 bg-white rounded-2xl shadow-sm p-4 h-fit">
-        <h2 className="text-lg font-semibold text-[#101828] mb-4 px-2">Settings</h2>
-        <nav className="space-y-1">
-          {settingSections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeSection === section.id
-                  ? "bg-[#FFF7ED] text-[#FF7847]"
-                  : "text-[#4A5565] hover:bg-gray-100"
-              }`}
-            >
-              {section.title}
-            </button>
-          ))}
-        </nav>
+          <div style={{ overflowY: 'auto', maxHeight: '600px', paddingRight: '4px' }}>
+            {renderUserGroup("FRANCHISE OWNERS")}
+            {renderUserGroup("CENTER MANAGERS")}
+            {renderUserGroup("SUPPORT STAFF")}
+          </div>
+
+        </div>
+
       </div>
 
-      {/* Settings Content */}
-      <div className="flex-1">
-        {activeSection === "profile" && renderProfileSection()}
-        {activeSection === "notifications" && renderNotificationsSection()}
-        {activeSection === "center" && renderComingSoonSection("Center Settings")}
-        {activeSection === "billing" && renderComingSoonSection("Billing & Payments")}
-        {activeSection === "security" && <SecurityPanel />}
-        {activeSection === "integrations" && renderComingSoonSection("Integrations")}
-      </div>
     </div>
   );
 }

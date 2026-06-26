@@ -7,6 +7,7 @@
 }
 
 /* Left Side - Decorative */
+/* Left Side - Decorative */
 .leftSide {
   flex: 1;
   position: relative;
@@ -19,8 +20,11 @@
 
 .logoContainer {
   position: absolute;
-  width: 250px;
+  width: 260px;
   height: 90px;
+  left: 15%;
+  top: 45%;
+  z-index: 10;
 }
 
 .logoImage {
@@ -29,115 +33,118 @@
   object-fit: contain;
 }
 
-/* Abstract Orange Shapes */
+/* Abstract Orthogonal Shapes */
 .shape1 {
   position: absolute;
-  width: 156px;
-  height: 157px;
-  left: 10%;
-  top: 15%;
-  background: rgba(255, 120, 71, 0.6);
-  border-radius: 8px;
-  transform: rotate(-15deg);
+  width: 80px;
+  height: 65px;
+  left: 0;
+  top: 0;
+  background: #FFC4A6;
 }
 
 .shape2 {
   position: absolute;
-  width: 116px;
-  height: 94px;
-  left: 20%;
-  top: 35%;
-  background: rgba(255, 120, 71, 0.7);
-  border-radius: 8px;
-  transform: rotate(10deg);
+  width: 120px;
+  height: 130px;
+  left: 0;
+  top: 8%;
+  background: #FFA782;
 }
 
 .shape3 {
   position: absolute;
-  width: 48px;
-  height: 36px;
-  left: 15%;
-  top: 55%;
-  background: rgba(255, 120, 71, 0.7);
-  border-radius: 6px;
-  transform: rotate(-5deg);
+  width: 120px;
+  height: 110px;
+  left: 5%;
+  top: 15%;
+  border: 1px solid #FFA782;
+  background: transparent;
 }
 
 .shape4 {
   position: absolute;
-  width: 116px;
-  height: 117px;
-  left: -5%;
-  top: 60%;
-  background: rgba(255, 120, 71, 0.8);
-  border-radius: 8px;
-  transform: rotate(20deg);
+  width: 90px;
+  height: 80px;
+  left: 7%;
+  top: 26%;
+  background: #FFA782;
 }
 
 .shape5 {
   position: absolute;
-  width: 116px;
-  height: 117px;
-  left: 60%;
-  top: 20%;
-  background: rgba(255, 120, 71, 0.9);
-  border-radius: 8px;
-  transform: rotate(-10deg);
+  width: 75px;
+  height: 95px;
+  left: 0;
+  top: 38%;
+  background: #FF946B;
 }
 
 .shape6 {
   position: absolute;
-  width: 181px;
-  height: 135px;
-  left: 55%;
+  width: 20px;
+  height: 100px;
+  left: 0;
   top: 50%;
-  background: rgba(255, 120, 71, 0.6);
-  border-radius: 8px;
-  transform: rotate(15deg);
+  background: #FF946B;
 }
 
 .shape7 {
   position: absolute;
-  width: 85px;
-  height: 117px;
-  left: 70%;
-  top: 35%;
-  background: rgba(255, 120, 71, 0.7);
-  border-radius: 8px;
-  transform: rotate(-8deg);
+  width: 105px;
+  height: 140px;
+  left: 0;
+  top: 50%;
+  border: 1px solid #FF946B;
+  background: transparent;
 }
 
 .shape8 {
   position: absolute;
-  width: 116px;
-  height: 117px;
-  left: 50%;
-  top: 45%;
-  background: rgba(255, 120, 71, 0.8);
-  border-radius: 8px;
-  transform: rotate(12deg);
+  width: 90px;
+  height: 100px;
+  left: 55%;
+  top: 55%;
+  background: #FF946B;
 }
 
 .shape9 {
   position: absolute;
-  width: 116px;
-  height: 117px;
-  left: 65%;
+  width: 120px;
+  height: 120px;
+  left: 38%;
   top: 65%;
-  background: rgba(255, 120, 71, 0.7);
-  border-radius: 8px;
-  transform: rotate(-20deg);
+  border: 1px solid #FF946B;
+  background: transparent;
 }
 
 .shape10 {
   position: absolute;
-  width: 116px;
-  height: 117px;
-  left: 75%;
-  top: 80%;
-  background: rgba(255, 120, 71, 0.4);
-  border-radius: 8px;
-  transform: rotate(5deg);
+  width: 90px;
+  height: 100px;
+  left: 45%;
+  top: 72%;
+  background: #FFA782;
+}
+
+.shape10::before {
+  content: '';
+  position: absolute;
+  width: 90px;
+  height: 100px;
+  left: -20px;
+  top: 105%;
+  background: #FFA782;
+}
+
+.shape10::after {
+  content: '';
+  position: absolute;
+  width: 140px;
+  height: 110px;
+  left: 20px;
+  top: 205%;
+  background: #FFC4A6;
 }
 
 /* Right Side - Form */

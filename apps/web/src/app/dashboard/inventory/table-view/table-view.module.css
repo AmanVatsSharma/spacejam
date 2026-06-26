@@ -1,0 +1,231 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ---------------- Top Cards ---------------- */
+
+.headerCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px 32px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+.headerTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.headerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.headerSubtitle {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  color: #4B5563;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.exportBtn:hover {
+  background: #F9FAFB;
+}
+.addSpaceBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF7847;
+  border: 1px solid #FF7847;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.addSpaceBtn:hover {
+  background: #E66A3D;
+}
+
+/* ---------------- Filter Bar ---------------- */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px 24px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  flex: 1;
+  min-width: 200px;
+}
+.searchBoxIcon {
+  color: #9CA3AF;
+}
+.searchBox input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  width: 100%;
+}
+.searchBox input::placeholder {
+  color: #9CA3AF;
+}
+
+.filterSelect {
+  appearance: none;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  font-size: 13px;
+  color: #4B5563;
+  outline: none;
+  background-image: url('data:image/svg+xml;utf8,<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%236B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  min-width: 130px;
+}
+.clearBtn {
+  background: #FEF2F2;
+  color: #EF4444;
+  border: 1px solid #FECACA;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.clearBtn:hover {
+  background: #FEE2E2;
+}
+
+/* ---------------- Table Area ---------------- */
+.tableContainer {
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+.table th {
+  text-align: left;
+  padding: 16px 24px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  background: #F9FAFB;
+  border-bottom: 1px solid #F3F4F6;
+}
+.table td {
+  padding: 16px 24px;
+  font-size: 13px;
+  color: #1F2937;
+  border-bottom: 1px solid #F3F4F6;
+  vertical-align: middle;
+}
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.colSpaceName {
+  font-weight: 500;
+  color: #111827;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badgeOccupied {
+  background: #FFF3ED;
+  color: #FF7847;
+}
+.badgeAvailable {
+  background: #ECFDF5;
+  color: #10B981;
+}
+.badgeMaintenance {
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.actionCell {
+  position: relative;
+}
+.actionBtn {
+  color: #6B7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+.actionBtn:hover {
+  background: #F3F4F6;
+  color: #1F2937;
+}
+
+/* Dropdown Menu */
+.actionDropdown {
+  position: absolute;
+  top: 100%;
+  right: 24px;
+  background: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  padding: 8px 0;
+  z-index: 10;
+  width: 140px;
+}
+.dropdownItem {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: #4B5563;
+  cursor: pointer;
+}
+.dropdownItem:hover {
+  background: #F9FAFB;
+  color: #111827;
+}

@@ -34,10 +34,10 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: "deposits", label: "Deposit", href: "/dashboard/revenue/deposits" },
     { id: "contracts", label: "Contracts", href: "/dashboard/revenue/contracts" },
   ],
-  floors: [
-    { id: "location", label: "Location", href: "/dashboard/floors" },
-    { id: "floor-map", label: "Floor map", href: "/dashboard/floors/floor-map" },
-    { id: "table-view", label: "Table view", href: "/dashboard/floors/table-view" },
+  inventory: [
+    { id: "location", label: "Location", href: "/dashboard/inventory" },
+    { id: "floor-map", label: "Floor map", href: "/dashboard/inventory/floor-map" },
+    { id: "table-view", label: "Table view", href: "/dashboard/inventory/table-view" },
   ],
   crm: [
     { id: "customers", label: "Customers", href: "/dashboard/crm/customers" },
@@ -54,6 +54,13 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: "overview", label: "Overview", href: "/dashboard/report" },
     { id: "revenue", label: "Revenue", href: "/dashboard/report/revenue" },
     { id: "occupancy", label: "Occupancy", href: "/dashboard/report/occupancy" },
+  ],
+  settings: [
+    { id: "teams", label: "Teams", href: "/dashboard/settings" },
+    { id: "finance", label: "Finance", href: "/dashboard/settings/finance" },
+    { id: "notification", label: "Notification", href: "/dashboard/settings/notification" },
+    { id: "center", label: "Center", href: "/dashboard/settings/center" },
+    { id: "security", label: "Security", href: "/dashboard/settings/security" },
   ],
 };
 
@@ -93,18 +100,16 @@ export default function DashboardLayout({
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
         hideSetUpButton={user?.role === 'MEMBER' || !pathname?.startsWith('/dashboard/inventory')}
-        user={
-          user
-            ? {
-                name: user.name ?? user.email,
-                email: user.email,
-                role: user.role,
-                onLogout: () => {
-                  void logout().then(() => router.push('/signin'));
-                },
-              }
-            : undefined
-        }
+        user={{
+          name: user?.name ?? user?.email ?? 'Guest',
+          email: user?.email,
+          role: user?.role ?? 'Member',
+          onLogout: () => {
+            void logout()
+              .catch(console.error)
+              .finally(() => router.push('/signin'));
+          },
+        }}
       />
 
       <div className="flex compact:gap-2">

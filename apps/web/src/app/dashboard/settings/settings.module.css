@@ -1,0 +1,621 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  padding-bottom: 24px;
+}
+
+/* ---------------- Top Header ---------------- */
+.headerCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
+}
+.headerTitleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.headerTitle {
+  font-size: 21px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+.headerSubtitle {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+}
+.addUserBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF7847;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.addUserBtn:hover {
+  opacity: 0.9;
+}
+
+/* ---------------- Sub Pills ---------------- */
+.subTabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.subTab {
+  padding: 10px 20px;
+  border-radius: 66px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  color: #4B5563;
+  transition: all 0.2s;
+}
+.subTabActive {
+  background: #FF7847;
+  color: #FFFFFF;
+  border-color: #FF7847;
+}
+
+/* ---------------- Two Column Layout ---------------- */
+.splitLayout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.leftCol {
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.rightCol {
+  width: 380px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---------------- Left Col: Form ---------------- */
+.formHeader {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.avatarWrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  background: #FF7847;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 32px;
+  font-weight: 600;
+}
+.cameraIcon {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.formUserInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.formUserName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FF7847;
+  margin: 0;
+}
+.formUserRole {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.formGroupFull {
+  grid-column: span 2;
+}
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF7847;
+}
+.formInput {
+  width: 100%;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #FF7847; /* To match placeholder/value styling in mockup */
+  outline: none;
+  transition: border-color 0.2s;
+}
+.formInput:focus {
+  border-color: #FF7847;
+}
+.formInput::placeholder {
+  color: #FCA5A5; /* Lighter orange for placeholder */
+}
+.formInput[disabled] {
+  background: #F9FAFB;
+  color: #9CA3AF;
+  border-color: #E5E7EB;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+.statusInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.statusLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF7847;
+}
+.statusDesc {
+  font-size: 13px;
+  color: #9CA3AF;
+}
+.toggleSwitch {
+  width: 48px;
+  height: 24px;
+  background: #FF7847;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+}
+.toggleKnob {
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  right: 2px; /* Active state */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.formActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+.saveBtn {
+  background: #FF7847;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.saveBtn:hover { opacity: 0.9; }
+
+.dangerActions {
+  display: flex;
+  gap: 16px;
+}
+.suspendBtn, .deleteBtn {
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.suspendBtn {
+  border: 1px solid #FCA5A5;
+  color: #FF7847;
+}
+.deleteBtn {
+  border: 1px solid #FECACA;
+  color: #EF4444;
+}
+
+/* ---------------- Right Col: List ---------------- */
+.listSearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 4px;
+}
+.listSearch input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #101828;
+  width: 100%;
+}
+.listSearch input::placeholder { color: #9CA3AF; }
+
+.listFilters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.listFilterBtn {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4B5563;
+  cursor: pointer;
+}
+
+.directoryGroup {
+  margin-top: 16px;
+}
+.groupLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9CA3AF;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.userItem {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  margin-bottom: 8px;
+  position: relative;
+}
+.userItemActive {
+  border-color: #FF7847;
+  background: rgba(255, 120, 71, 0.02);
+}
+.userItem:hover:not(.userItemActive) {
+  background: #F9FAFB;
+}
+.listAvatar {
+  width: 40px;
+  height: 40px;
+  background: #FF7847;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  margin-right: 12px;
+}
+.listUserInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.listUserName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.listUserSub {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+.listUserStatus {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.statusTxtActive { color: #FF7847; }
+.statusTxtSuspended { color: #9CA3AF; }
+.editIcon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #D1D5DB;
+}
+
+/* ---------------- Permissions Tab ---------------- */
+.permSearchBox {
+  width: 100%;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #101828;
+  outline: none;
+  margin-bottom: 8px;
+}
+.permSearchBox::placeholder {
+  color: #9CA3AF;
+}
+
+.permGroup {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.permGroupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 12px 0;
+}
+.permGroupTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.permEnableAll {
+  font-size: 12px;
+  font-weight: 600;
+  color: #FF7847;
+  cursor: pointer;
+}
+.permRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid #F3F4F6;
+}
+.permLabel {
+  font-size: 13px;
+  color: #4B5563;
+}
+
+.toggleSwitchOff {
+  background: #D1D5DB;
+}
+
+/* ---------------- Centers Tab ---------------- */
+.centersSubtitle {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin-bottom: 24px;
+}
+.radioList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.radioIcon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #D1D5DB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.radioIconActive {
+  border-color: #FF7847;
+}
+.radioDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #FF7847;
+}
+.radioLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.radioLabelSub {
+  font-size: 13px;
+  color: #9CA3AF;
+}
+.radioChildren {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-left: 30px;
+}
+
+/* ---------------- Security Tab ---------------- */
+.secGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 32px;
+}
+.secGroupTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 8px;
+}
+.secRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+.secRowInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.secRowTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.secRowSub {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+.secInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+.secInput {
+  width: 100%;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #4B5563;
+  outline: none;
+}
+.deviceCard {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  background: #FFFFFF;
+}
+.deviceIcon {
+  width: 40px;
+  height: 40px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  margin-right: 16px;
+}
+.deviceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.deviceTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.deviceSub {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+.deviceTime {
+  font-size: 12px;
+  color: #9CA3AF;
+}
+.logoutAllBtn {
+  width: 100%;
+  padding: 14px;
+  background: #FFFFFF;
+  border: 1px solid #FEE2E2;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #EF4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.logoutAllBtn:hover {
+  background: #FEF2F2;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1024px) {
+  .splitLayout { flex-direction: column; }
+  .rightCol { width: 100%; order: -1; } /* move list to top on smaller screens */
+  .formGrid { grid-template-columns: 1fr; }
+  .formGroupFull { grid-column: 1; }
+  .formActions { flex-direction: column; gap: 16px; align-items: stretch; }
+  .saveBtn { width: 100%; }
+  .dangerActions { display: grid; grid-template-columns: 1fr 1fr; }
+}
