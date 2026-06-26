@@ -4,7 +4,8 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #FBF6F4;
+  background: linear-gradient(135deg, #FBF6F4 0%, #FFF8F5 100%);
+  position: relative;
 }
 
 /* Left Side - Decorative */
@@ -12,27 +13,72 @@
 .leftSide {
   flex: 1;
   position: relative;
-  background: linear-gradient(135deg, rgba(255, 120, 71, 0.1) 0%, rgba(255, 120, 71, 0.05) 100%);
+  background: linear-gradient(180deg,
+    rgba(255, 106, 47, 0.03) 0%,
+    rgba(255, 106, 47, 0.08) 25%,
+    rgba(255, 120, 71, 0.12) 50%,
+    rgba(255, 106, 47, 0.08) 75%,
+    rgba(255, 106, 47, 0.03) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+}
+
+/* Animated gradient background */
+.leftSide::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 120, 71, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(255, 106, 47, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 40% 20%, rgba(255, 150, 90, 0.06) 0%, transparent 50%);
+  animation: gradientShift 15s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    transform: rotate(120deg) scale(1.1);
+  }
+  66% {
+    transform: rotate(240deg) scale(0.9);
+  }
 }
 
 .logoContainer {
   position: absolute;
-  width: 260px;
-  height: 90px;
+  width: 320px;
+  height: 110px;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 50;
+  z-index: 60;
+  animation: logoFloat 6s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0px);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
 }
 
 .logoImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(255, 106, 47, 0.2));
 }
 
 /* Abstract Orthogonal Shapes */

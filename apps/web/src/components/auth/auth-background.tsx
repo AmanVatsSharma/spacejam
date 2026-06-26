@@ -82,7 +82,7 @@ export function AuthBackground() {
           } as React.CSSProperties}
         />
       ))}
-      <div className={styles.logoContainer} style={{ zIndex: 50, position: 'relative' }}>
+      <div className={styles.logoContainer}>
         <Image src={Logo} alt="SpaceJam" className={styles.logoImage} priority />
       </div>
     </div>

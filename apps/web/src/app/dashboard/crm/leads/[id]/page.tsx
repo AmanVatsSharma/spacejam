@@ -99,8 +99,24 @@ const Icons = {
   ),
 };
 
+import { 
+  EditLeadDialog, ConvertClientDialog, UpdateStatusDialog, ScheduleVisitDialog,
+  SendProposalDialog, AttachDocsDialog, CallLeadDialog, WhatsappDialog, EmailDialog, AddNoteDialog 
+} from './LeadDialogs';
+
 export default function LeadDetailsPage() {
   const router = useRouter();
+  
+  const [showEditLead, setShowEditLead] = useState(false);
+  const [showConvertClient, setShowConvertClient] = useState(false);
+  const [showUpdateStatus, setShowUpdateStatus] = useState(false);
+  const [showScheduleVisit, setShowScheduleVisit] = useState(false);
+  const [showSendProposal, setShowSendProposal] = useState(false);
+  const [showAttachDocs, setShowAttachDocs] = useState(false);
+  const [showCallLead, setShowCallLead] = useState(false);
+  const [showWhatsapp, setShowWhatsapp] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
   
   return (
     <div className="flex flex-col xl:flex-row gap-6 w-full max-w-[1400px] mx-auto pb-10 px-4 sm:px-0">
@@ -125,10 +141,10 @@ export default function LeadDetailsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto pl-14 sm:pl-0">
-            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+            <button onClick={() => setShowEditLead(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
               {Icons.edit} Edit Lead
             </button>
-            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">
+            <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">
               {Icons.userConvert} Convert to Client
             </button>
           </div>
@@ -208,8 +224,8 @@ export default function LeadDetailsPage() {
             </div>
 
             <div className="mt-auto">
-              <button className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              <button onClick={() => setShowUpdateStatus(true)} className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm flex items-center justify-center gap-2">
+                {Icons.clock}
                 Update Status
               </button>
             </div>
@@ -237,11 +253,11 @@ export default function LeadDetailsPage() {
             </div>
 
             <div className="mt-auto flex gap-3">
-              <button className="flex-1 py-2.5 bg-[#FBBF24] text-white rounded-lg text-sm font-semibold hover:bg-[#F59E0B] transition-colors shadow-sm flex items-center justify-center gap-2">
-                {Icons.calendar} Schedule Visit
+              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-[#FBBF24] text-white rounded-lg text-sm font-semibold hover:bg-[#F59E0B] transition-colors shadow-sm flex items-center justify-center gap-2">
+                {Icons.calendar} Reschedule
               </button>
-              <button className="flex-1 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
-                {Icons.clock} Reschedule
+              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+                {Icons.clock} Cancel Visit
               </button>
             </div>
           </div>
@@ -274,11 +290,11 @@ export default function LeadDetailsPage() {
           </div>
 
           <div className="flex gap-3">
-            <button className="py-2.5 px-5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm flex items-center justify-center gap-2">
+            <button onClick={() => setShowSendProposal(true)} className="py-2.5 px-5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm flex items-center justify-center gap-2">
               {Icons.send} Send Proposal
             </button>
-            <button className="py-2.5 px-5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
-              {Icons.paperclip} Attach Documents
+            <button onClick={() => setShowAttachDocs(true)} className="py-2.5 px-5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+              {Icons.paperclip} Attach Files
             </button>
           </div>
         </div>
@@ -353,17 +369,17 @@ export default function LeadDetailsPage() {
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
           <h3 className="text-[16px] font-bold text-gray-900 mb-4">Quick Actions</h3>
           <div className="flex flex-col gap-2.5">
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500">{Icons.phone}</span> Call Lead
+            <button onClick={() => setShowCallLead(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-[#FF6A2F] bg-[#FFF2EA] p-1.5 rounded-lg">{Icons.phone}</span> Call Lead
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500">{Icons.whatsapp}</span> Send WhatsApp
+            <button onClick={() => setShowWhatsapp(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-[#25D366] bg-[#DCF8C6] p-1.5 rounded-lg">{Icons.whatsapp}</span> Send WhatsApp
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500">{Icons.mail}</span> Send Email
+            <button onClick={() => setShowEmail(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-gray-600 bg-gray-100 p-1.5 rounded-lg">{Icons.mail}</span> Send Email
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500">{Icons.plus}</span> Add Note
+            <button onClick={() => setShowAddNote(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-gray-600 bg-gray-100 p-1.5 rounded-lg">{Icons.box}</span> Add Note
             </button>
           </div>
         </div>
@@ -411,6 +427,17 @@ export default function LeadDetailsPage() {
 
       </div>
 
+      {/* Render All Dialogs */}
+      <EditLeadDialog open={showEditLead} onClose={() => setShowEditLead(false)} />
+      <ConvertClientDialog open={showConvertClient} onClose={() => setShowConvertClient(false)} />
+      <UpdateStatusDialog open={showUpdateStatus} onClose={() => setShowUpdateStatus(false)} />
+      <ScheduleVisitDialog open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
+      <SendProposalDialog open={showSendProposal} onClose={() => setShowSendProposal(false)} />
+      <AttachDocsDialog open={showAttachDocs} onClose={() => setShowAttachDocs(false)} />
+      <CallLeadDialog open={showCallLead} onClose={() => setShowCallLead(false)} />
+      <WhatsappDialog open={showWhatsapp} onClose={() => setShowWhatsapp(false)} />
+      <EmailDialog open={showEmail} onClose={() => setShowEmail(false)} />
+      <AddNoteDialog open={showAddNote} onClose={() => setShowAddNote(false)} />
     </div>
   );
 }

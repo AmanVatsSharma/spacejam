@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 // Icons
@@ -110,6 +111,7 @@ const recentActivities = [
 ];
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -247,7 +249,8 @@ export default function CustomersPage() {
               {filteredCustomers.map((customer) => (
                 <tr
                   key={customer.id}
-                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                  onClick={() => router.push('/dashboard/crm/customers/' + customer.id)}
+                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <td className="px-6 py-4">
                     <Link href={`/dashboard/crm/customers/${customer.id}`} className="font-bold text-[#101828] hover:text-[#FF6A2F] transition-colors">

@@ -406,7 +406,7 @@ export default function LeadsPage() {
                 {filtered.map((l) => (
                   <tr
                     key={l.id}
-                    onClick={() => router.push('/dashboard/crm/leads/' + l.id)}
+                    onClick={() => setSelectedId(l.id)}
                     className={l.id === selectedId ? styles.selectedRow : undefined}
                     style={{ cursor: 'pointer' }}
                   >
@@ -435,7 +435,85 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* ------------------------- Right sidebar removed --------------------------- */}
+      {/* ------------------------- Right sidebar --------------------------- */}
+      <aside className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0 mt-[160px] xl:mt-0">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
+          <h3 className="text-[18px] font-bold text-gray-900 mb-6">Lead Details</h3>
+          
+          <div className="flex flex-col gap-5 mb-8">
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">LEAD NAME</span>
+              <span className="text-[14px] font-semibold text-gray-900">{selected.name}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PHONE</span>
+              <span className="text-[14px] font-semibold text-gray-900">{selected.phone}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">EMAIL</span>
+              <span className="text-[14px] font-semibold text-gray-900">{selected.email}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">COMPANY</span>
+              <span className="text-[14px] font-semibold text-gray-900">{selected.company}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">INTERESTED PLAN</span>
+              <span className="text-[14px] font-semibold text-gray-900">{selected.requirement.split('·')[0].trim()}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">TEAM SIZE</span>
+              <span className="text-[14px] font-semibold text-gray-900">1 Person</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PREFERRED MOVE-IN DATE</span>
+              <span className="text-[14px] font-semibold text-gray-900">15 Mar 2026</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => router.push('/dashboard/crm/leads/' + selected.id)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              Lead Details
+            </button>
+            <button 
+              onClick={() => setShowSendProposal(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Send Proposal
+            </button>
+            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm">
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              Convert to Client
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6">
+          <h3 className="text-[18px] font-bold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="flex flex-col gap-3">
+            <button 
+              onClick={() => setShowAddLead(true)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="1.8"/></svg></span> 
+              Add Lead
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span> 
+              Import Leads
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" /></svg></span> 
+              Manage Sources
+            </button>
+          </div>
+        </div>
+      </aside>
 
       {/* Add New Lead Dialog */}
       <AddNewLeadDialog open={showAddLead} onClose={() => setShowAddLead(false)} />
