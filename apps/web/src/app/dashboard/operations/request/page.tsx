@@ -239,7 +239,16 @@ export default function MeetingRoomRequestPage() {
             <span className={styles.statCardSub}>Pending Approvals</span>
             <span className={styles.statCardCount}>{pendingCount}</span>
           </div>
-          <button type="button" className={styles.viewPendingButton}>
+          <button
+            type="button"
+            className={styles.viewPendingButton}
+            onClick={() => {
+              setShowOnlyPending(true);
+              setStatusFilter("All Statuses");
+              setCategoryFilter("All Categories");
+              setSearchQuery("");
+            }}
+          >
             View Pending
           </button>
         </div>
