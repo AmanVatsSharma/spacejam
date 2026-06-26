@@ -16,23 +16,20 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px;
-  background: #FBF6F4;
+  background: transparent;
   min-height: 100%;
   box-sizing: border-box;
 }
 
 @media (max-width: 1023.98px) {
   .shell {
-    padding: 16px;
-    gap: 14px;
+    gap: 16px;
   }
 }
 
 @media (max-width: 640px) {
   .shell {
-    padding: 12px;
-    gap: 12px;
+    gap: 16px;
   }
 }
 
@@ -42,35 +39,32 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;                  /* ~3.552px in Figma — rounded to a clean token */
+  gap: 4px;
   background: #FFFFFF;
-  border-radius: 14px;       /* Figma: 14.208px */
+  border-radius: 16px;
   box-shadow:
-    0 0.888px 1.332px rgba(0, 0, 0, 0.10),
-    0 0.888px 0.888px rgba(0, 0, 0, 0.10);
-  padding: 21px 21px;        /* Figma: 21.312px all sides */
+    0 1px 2px rgba(0, 0, 0, 0.10),
+    0 1px 1px rgba(0, 0, 0, 0.10);
+  padding: 24px;
   width: 100%;
-  max-width: 1206px;         /* Figma card width inside the page */
   box-sizing: border-box;
 }
 
 .headerTitle {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 21px;           /* Figma: 21.312px */
-  line-height: 28px;         /* Figma: 28.417px */
-  font-weight: 600;          /* Inter Semi Bold */
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
   color: #101828;
-  letter-spacing: 0.0624px;
   margin: 0;
 }
 
 .headerSub {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 12.4px;         /* Figma: 12.432px */
-  line-height: 18px;         /* Figma: 17.76px */
-  font-weight: 400;          /* Inter Regular */
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
   color: #4A5565;
-  letter-spacing: -0.1335px;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -80,26 +74,29 @@
 
 @media (max-width: 1023.98px) {
   .headerCard {
-    padding: 18px 20px;
-    border-radius: 14px;
+    padding: 20px;
   }
   .headerTitle {
     font-size: 20px;
+    line-height: 28px;
   }
   .headerSub {
-    font-size: 12.5px;
+    font-size: 13px;
+    line-height: 18px;
   }
 }
 
 @media (max-width: 640px) {
   .headerCard {
-    padding: 16px 18px;
+    padding: 16px;
   }
   .headerTitle {
     font-size: 18px;
+    line-height: 28px;
   }
   .headerSub {
     font-size: 12px;
+    line-height: 18px;
     white-space: normal;
   }
 }

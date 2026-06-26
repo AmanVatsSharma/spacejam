@@ -23,8 +23,6 @@ import {
   clearTokens,
 } from './token-storage';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 let memoryAccessToken: string | null | undefined;
 let isRefreshing = false;
@@ -56,7 +54,7 @@ async function refreshTokensOnce(): Promise<string | null> {
     return null;
   }
   try {
-    const res = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/graphql`, {
+    const res = await fetch('/api/graphql', {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
@@ -134,7 +132,7 @@ const refreshLink = onError(({ graphQLErrors, operation, forward }) => {
 });
 
 const httpLink = new HttpLink({
-  uri: `${API_BASE_URL.replace(/\/$/, '')}/graphql`,
+  uri: '/api/graphql',
   credentials: 'include',
 });
 

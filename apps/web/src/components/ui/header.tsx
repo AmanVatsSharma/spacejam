@@ -105,7 +105,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
 
       {/* Center Navigation - Pill style from Figma */}
       {tabs.length > 0 && (
-        <nav className="flex items-center gap-1 bg-white shadow-[0px_1px_1.5px_rgba(0,0,0,0.1),0px_1px_1px_rgba(0,0,0,0.1)] rounded-full px-2 py-1.5">
+        <nav className="flex items-center gap-1 bg-white border border-[#E5E7EB] rounded-full px-2 py-1.5">
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (
@@ -118,7 +118,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
                 className={`
                   px-4 py-1.5 compact:px-3 compact:py-1 rounded-full text-sm compact:text-xs font-medium transition-all duration-200
                   ${isActive
-                    ? "bg-[#FFF7ED] text-[#FF7847] underline underline-offset-4"
+                    ? "bg-[#FFF5F1] text-[#FF6A2F]"
                     : "text-[#4A5565] hover:bg-gray-50"
                   }
                 `}
