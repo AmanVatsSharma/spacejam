@@ -378,17 +378,18 @@ export default function CustomerDetailPage() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [showFreezeDialog, setShowFreezeDialog] = useState(false);
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
 
   // Lock body scroll while dialog is open
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (!showUpgradeDialog) return;
+    if (!(showUpgradeDialog || showRenewDialog)) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [showUpgradeDialog]);
+  }, [showUpgradeDialog, showRenewDialog]);
 
   return (
     <div className={styles.shell}>
@@ -531,7 +532,7 @@ export default function CustomerDetailPage() {
             <h2 className={styles.cardTitle}>Quick Actions</h2>
             <div className={styles.quickActionsList}>
               <ActionButton icon={Icons.arrowUp} label="Upgrade Plan" onClick={() => setShowUpgradeDialog(true)} />
-              <ActionButton icon={Icons.refresh} label="Renew Membership" />
+              <ActionButton icon={Icons.refresh} label="Renew Membership" onClick={() => setShowRenewDialog(true)} />
               <ActionButton icon={Icons.snowflake} label="Freeze Account" onClick={() => setShowFreezeDialog(true)} />
               <ActionButton icon={Icons.logOut} label="Initiate Exit" />
             </div>
@@ -583,6 +584,12 @@ export default function CustomerDetailPage() {
         open={showFreezeDialog}
         customerName="TechNova Solutions"
         onClose={() => setShowFreezeDialog(false)}
+      />
+
+      <RenewMembershipDialog
+        open={showRenewDialog}
+        customerName="TechNova Solutions"
+        onClose={() => setShowRenewDialog(false)}
       />
     </div>
   );
@@ -1347,6 +1354,120 @@ function FreezeAccountDialog({
               {Icons.send}
             </span>
             <span>Freeze Account</span>
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ----- Renew Membership Dialog ----- */
+function RenewMembershipDialog({
+  open,
+  customerName,
+  onClose,
+}: {
+  open: boolean;
+  customerName: string;
+  onClose: () => void;
+}) {
+  const [duration, setDuration] = useState(6);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-[480px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="renew-membership-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <header className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
+          <div>
+            <h2 id="renew-membership-title" className="text-[20px] font-bold text-gray-900 leading-tight">
+              Renew Membership
+            </h2>
+            <p className="text-[13px] text-gray-500 mt-0.5">{customerName}</p>
+          </div>
+          <button
+            type="button"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className="p-6 flex flex-col gap-6">
+          {/* Current Plan */}
+          <div className="bg-[#FFF8F3] border border-[#FFE1CD] rounded-xl p-5 flex flex-col gap-1.5">
+            <span className="text-[13px] font-semibold text-gray-900">Current Plan</span>
+            <span className="text-[18px] font-bold text-[#FF6A2F]">Private Office</span>
+          </div>
+
+          {/* Renewal Duration */}
+          <div className="flex flex-col gap-3">
+            <span className="text-[13px] font-semibold text-gray-900">Renewal Duration</span>
+            <div className="grid grid-cols-3 gap-3">
+              {[3, 6, 12].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setDuration(m)}
+                  className={`flex flex-col items-center justify-center py-3 rounded-xl border ${
+                    duration === m
+                      ? "border-[#FF6A2F] bg-[#FFF2EA] text-[#FF6A2F]"
+                      : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                  } transition-colors`}
+                >
+                  <span className="text-[18px] font-bold leading-none mb-1">{m}</span>
+                  <span className={`text-[12px] ${duration === m ? "text-gray-600" : "text-gray-500"}`}>months</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary Box */}
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex justify-between items-center px-4 py-3.5 bg-[#F9FAFB] rounded-lg">
+              <span className="text-[14px] text-gray-600">Duration</span>
+              <span className="text-[14px] font-bold text-gray-900">{duration} months</span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-3.5 bg-[#F9FAFB] rounded-lg">
+              <span className="text-[14px] text-gray-600">Amount</span>
+              <span className="text-[14px] font-bold text-gray-900">
+                ₹ {(20000 * duration).toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="px-6 py-5 border-t border-gray-100 bg-[#F9FAFB]">
+          <button
+            type="button"
+            className="w-full py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors shadow-sm"
+          >
+            Generate Renewal Invoice
           </button>
         </footer>
       </div>

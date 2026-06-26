@@ -2,7 +2,8 @@
 
 .container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #FBF6F4;
 }
 
@@ -22,9 +23,10 @@
   position: absolute;
   width: 260px;
   height: 90px;
-  left: 15%;
-  top: 45%;
-  z-index: 10;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
 }
 
 .logoImage {
@@ -34,117 +36,76 @@
 }
 
 /* Abstract Orthogonal Shapes */
-.shape1 {
+.shape1, .shape2, .shape3, .shape4, .shape5,
+.shape6, .shape7, .shape8, .shape9, .shape10 {
   position: absolute;
-  width: 80px;
-  height: 65px;
-  left: 0;
-  top: 0;
-  background: #FFC4A6;
+  transition: filter 0.3s ease;
 }
 
-.shape2 {
-  position: absolute;
-  width: 120px;
-  height: 130px;
-  left: 0;
-  top: 8%;
-  background: #FFA782;
+.shape1:hover, .shape2:hover, .shape3:hover, .shape4:hover, .shape5:hover,
+.shape6:hover, .shape7:hover, .shape8:hover, .shape9:hover, .shape10:hover {
+  filter: brightness(1.1) drop-shadow(0px 8px 24px rgba(255, 120, 71, 0.3));
+  cursor: pointer;
+  z-index: 15;
 }
 
-.shape3 {
-  position: absolute;
-  width: 120px;
-  height: 110px;
-  left: 5%;
-  top: 15%;
-  border: 1px solid #FFA782;
-  background: transparent;
+@keyframes asteroid1 {
+  0% { transform: translate(0px, 0px) rotate(0deg); }
+  33% { transform: translate(50px, -70px) rotate(120deg); }
+  66% { transform: translate(-40px, -50px) rotate(240deg); }
+  100% { transform: translate(0px, 0px) rotate(360deg); }
 }
 
-.shape4 {
-  position: absolute;
-  width: 90px;
-  height: 80px;
-  left: 7%;
-  top: 26%;
-  background: #FFA782;
+@keyframes asteroid2 {
+  0% { transform: translate(0px, 0px) rotate(0deg); }
+  33% { transform: translate(-60px, 50px) rotate(-120deg); }
+  66% { transform: translate(40px, 80px) rotate(-240deg); }
+  100% { transform: translate(0px, 0px) rotate(-360deg); }
 }
 
-.shape5 {
-  position: absolute;
-  width: 75px;
-  height: 95px;
-  left: 0;
-  top: 38%;
-  background: #FF946B;
+@keyframes asteroid3 {
+  0% { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+  33% { transform: translate(-30px, -60px) rotate(90deg) scale(1.1); }
+  66% { transform: translate(50px, 30px) rotate(180deg) scale(0.9); }
+  100% { transform: translate(0px, 0px) rotate(360deg) scale(1); }
 }
 
-.shape6 {
+@keyframes asteroid4 {
+  0% { transform: translate(0px, 0px) rotate(0deg) scale(1); }
+  33% { transform: translate(60px, 40px) rotate(-90deg) scale(0.9); }
+  66% { transform: translate(-50px, -30px) rotate(-180deg) scale(1.1); }
+  100% { transform: translate(0px, 0px) rotate(-360deg) scale(1); }
+}
+
+/* Abstract Orthogonal Shapes (Dynamic via React Component) */
+.baseShape {
   position: absolute;
-  width: 20px;
-  height: 100px;
-  left: 0;
+  left: 50%;
   top: 50%;
-  background: #FF946B;
+  transition: filter 0.3s ease;
 }
 
-.shape7 {
-  position: absolute;
-  width: 105px;
-  height: 140px;
-  left: 0;
-  top: 50%;
-  border: 1px solid #FF946B;
-  background: transparent;
+.baseShape:hover {
+  filter: brightness(1.2) drop-shadow(0px 8px 24px rgba(255, 120, 71, 0.6));
+  opacity: 1 !important;
+  cursor: pointer;
+  z-index: 20;
 }
 
-.shape8 {
-  position: absolute;
-  width: 90px;
-  height: 100px;
-  left: 55%;
-  top: 55%;
-  background: #FF946B;
+.asteroid1 {
+  animation: asteroid1 linear infinite;
 }
 
-.shape9 {
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  left: 38%;
-  top: 65%;
-  border: 1px solid #FF946B;
-  background: transparent;
+.asteroid2 {
+  animation: asteroid2 linear infinite;
 }
 
-.shape10 {
-  position: absolute;
-  width: 90px;
-  height: 100px;
-  left: 45%;
-  top: 72%;
-  background: #FFA782;
+.asteroid3 {
+  animation: asteroid3 linear infinite;
 }
 
-.shape10::before {
-  content: '';
-  position: absolute;
-  width: 90px;
-  height: 100px;
-  left: -20px;
-  top: 105%;
-  background: #FFA782;
-}
-
-.shape10::after {
-  content: '';
-  position: absolute;
-  width: 140px;
-  height: 110px;
-  left: 20px;
-  top: 205%;
-  background: #FFC4A6;
+.asteroid4 {
+  animation: asteroid4 linear infinite;
 }
 
 /* Right Side - Form */

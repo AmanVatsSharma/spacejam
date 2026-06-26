@@ -15,30 +15,13 @@ import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/assets/logo.png";
 import styles from "../auth.module.css";
+import { AuthBackground } from "@/components/auth/auth-background";
 import { SignupForm } from "@/components/auth/signup-form";
 
 export default function SignUpPage() {
   return (
     <div className={styles.container}>
-      {/* Left Side - Decorative */}
-      <div className={styles.leftSide}>
-        {/* Abstract Orange Shapes */}
-        <div className={styles.shape1} />
-        <div className={styles.shape2} />
-        <div className={styles.shape3} />
-        <div className={styles.shape4} />
-        <div className={styles.shape5} />
-        <div className={styles.shape6} />
-        <div className={styles.shape7} />
-        <div className={styles.shape8} />
-        <div className={styles.shape9} />
-        <div className={styles.shape10} />
-
-        {/* Logo */}
-        <div className={styles.logoContainer}>
-          <Image src={Logo} alt="SpaceJam" className={styles.logoImage} />
-        </div>
-      </div>
+      <AuthBackground />
 
       {/* Right Side - Form */}
       <div className={styles.rightSide}>
