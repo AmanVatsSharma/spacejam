@@ -44,6 +44,10 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: "leads", label: "Leads", href: "/dashboard/crm/leads" },
     { id: "onboarding", label: "Onboarding", href: "/dashboard/crm/onboarding" },
   ],
+  operations: [
+    { id: "operations", label: "Operations", href: "/dashboard/operations" },
+    { id: "meeting-room", label: "Meeting Room", href: "/dashboard/operations/meeting-room" },
+  ],
 };
 
 function getTabsForPath(pathname: string | null): { tabs: HeaderTab[]; activeId: string | undefined } {
@@ -81,7 +85,7 @@ export default function DashboardLayout({
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
-        hideSetUpButton={user?.role === 'MEMBER'}
+        hideSetUpButton={user?.role === 'MEMBER' || !pathname?.startsWith('/dashboard/inventory')}
         user={
           user
             ? {

@@ -1,5 +1,5 @@
 /**
- * File:        apps/web/src/app/dashboard/meeting-room/page.tsx
+ * File:        apps/web/src/app/dashboard/operations/meeting-room/page.tsx
  * Module:      Web · Dashboard · Meeting Room
  * Purpose:     Meeting Room status dashboard with Layout (cards) and
  *              Table (rows) view modes. Pixel-perfect match to

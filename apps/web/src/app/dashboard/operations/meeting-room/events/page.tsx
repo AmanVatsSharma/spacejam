@@ -1,5 +1,5 @@
 /**
- * File:        apps/web/src/app/dashboard/meeting-room/events/page.tsx
+ * File:        apps/web/src/app/dashboard/operations/meeting-room/events/page.tsx
  * Module:      Web · Dashboard · Meeting Room · Events
  * Purpose:     Events tab — manage booking and workspace events.
  *              Pixel-perfect match to Figma SpaceJam-VB node 0-10554.
