@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 
 export default function ContractsPage() {
-  const [activeTab, setActiveTab] = useState("Contracts");
   
   return (
     <div className="flex gap-6 h-[calc(100vh-80px)] font-sans">

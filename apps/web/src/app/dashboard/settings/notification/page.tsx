@@ -107,7 +107,6 @@ export default function NotificationSettingsPage() {
   };
 
   // Automations State
-  const [activeAutomation, setActiveAutomation] = useState('request_rejection');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const renderConfigRightPanel = () => {
@@ -362,7 +361,7 @@ export default function NotificationSettingsPage() {
                   <div className={styles.formGroup} style={{ marginBottom: 0, position: 'relative' }}>
                     <label className={styles.formLabel}>Template</label>
                     <div onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                      <select className={`${styles.formInput} ${styles.selectBox}`} readOnly>
+                      <select className={`${styles.formInput} ${styles.selectBox}`}>
                         <option></option>
                       </select>
                     </div>
