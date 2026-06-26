@@ -83,6 +83,15 @@ export default function OnboardingWizardPage() {
     accountNumber: "532888499456",
     autoRecharge: true,
   });
+  // Form State - Step 6
+  const [termsAgreed, setTermsAgreed] = useState(false);
+
+  // Form State - Step 7
+  const [communicationChannel, setCommunicationChannel] = useState<"Email" | "WhatsApp" | "In-App">("WhatsApp");
+  const [whatsappCommunity, setWhatsappCommunity] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [emailIds, setEmailIds] = useState([""]);
+  const [phoneNumbers, setPhoneNumbers] = useState([""]);
 
   const handleNext = () => {
     if (currentStep === 2 && employeeMode === "bulk" && !uploadSuccess) {
@@ -90,7 +99,7 @@ export default function OnboardingWizardPage() {
       return;
     }
     if (uploadSuccess) setUploadSuccess(false);
-    if (currentStep < 7) setCurrentStep((p) => p + 1);
+    if (currentStep < 8) setCurrentStep((p) => p + 1);
   };
 
   const handlePrev = () => {
@@ -1176,12 +1185,635 @@ export default function OnboardingWizardPage() {
                   </div>
                 )}
 
-                {currentStep > 5 && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4 min-h-[400px]">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-16 h-16 text-gray-200">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <p>Step {currentStep} Content (To be implemented)</p>
+                {currentStep === 6 && (
+                  <div className="flex-1 p-8 overflow-y-auto">
+                    <p className="text-[#FF6A2F] text-[13px] font-semibold tracking-wide uppercase mb-1">Step 6 of 7</p>
+                    <h2 className="text-[28px] font-bold text-gray-900 mb-2">Legal & Compliance</h2>
+                    <p className="text-[14px] text-gray-500 mb-8 max-w-2xl leading-relaxed">
+                      Upload your identity documents and accept our terms to complete verification. This ensures secure and compliant operations.
+                    </p>
+
+                    <h3 className="text-[16px] font-bold text-gray-900 mb-4">Identity Verification (KYC)</h3>
+
+                    <div className="flex flex-col gap-4 mb-8">
+                      {/* PAN Card */}
+                      <div className="border border-gray-200 bg-white rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-bold text-gray-900">PAN Card<span className="text-red-500">*</span></p>
+                              <p className="text-[12px] text-gray-500">Required</p>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                        </div>
+                        <div className="p-6">
+                          <div className="border border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center bg-gray-50/50">
+                            <div className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-4 text-gray-400">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            </div>
+                            <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop your document or choose an option</p>
+                            <p className="text-[12px] text-gray-500 mb-6">Supported formats: JPG, PNG, PDF (max 10MB)</p>
+                            <div className="flex gap-3">
+                              <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                Take Photo
+                              </button>
+                              <button className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Upload File
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Aadhaar Card */}
+                      <div className="border border-gray-200 bg-white rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-bold text-gray-900">Aadhaar Card<span className="text-red-500">*</span></p>
+                              <p className="text-[12px] text-gray-500">Upload both sides - Required</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-[12px] text-gray-500 font-medium">Progress: 0/2</span>
+                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Front Side */}
+                            <div>
+                              <p className="text-[13px] font-medium text-gray-900 mb-2">Aadhaar Front Side<span className="text-red-500">*</span></p>
+                              <div className="border border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50/50">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-3 text-gray-400">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                </div>
+                                <p className="text-[13px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
+                                <p className="text-[11px] text-gray-500 mb-4">JPG, PNG, PDF (max 10MB)</p>
+                                <div className="flex gap-2">
+                                  <button className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Photo
+                                  </button>
+                                  <button className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                    Upload
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Back Side */}
+                            <div>
+                              <p className="text-[13px] font-medium text-gray-900 mb-2">Aadhaar Back Side<span className="text-red-500">*</span></p>
+                              <div className="border border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center bg-gray-50/50">
+                                <div className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-3 text-gray-400">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                </div>
+                                <p className="text-[13px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
+                                <p className="text-[11px] text-gray-500 mb-4">JPG, PNG, PDF (max 10MB)</p>
+                                <div className="flex gap-2">
+                                  <button className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    Photo
+                                  </button>
+                                  <button className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                    Upload
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* GST Certificate */}
+                      <div className="border border-gray-200 bg-white rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-bold text-gray-900">GST Certificate</p>
+                              <p className="text-[12px] text-gray-500">Optional</p>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                        </div>
+                        <div className="p-6">
+                          <div className="border border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center bg-gray-50/50">
+                            <div className="w-12 h-12 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center mb-4 text-gray-400">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            </div>
+                            <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop your document or choose an option</p>
+                            <p className="text-[12px] text-gray-500 mb-6">Supported formats: JPG, PNG, PDF (max 10MB)</p>
+                            <div className="flex gap-3">
+                              <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                Take Photo
+                              </button>
+                              <button className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                Upload File
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="text-[16px] font-bold text-gray-900 mb-4">Terms & Conditions</h3>
+                    <div className="border border-gray-200 bg-white rounded-xl overflow-hidden mb-8">
+                      <div className="p-6 bg-gray-50/50">
+                        <h4 className="text-[14px] font-bold text-gray-900 mb-2">Spacejam Center Manager Agreement</h4>
+                        <p className="text-[13px] text-gray-500 mb-3 leading-relaxed">
+                          By proceeding, you agree to comply with all platform policies, maintain service quality standards, and ensure secure handling of client data.
+                        </p>
+                        <p className="text-[13px] text-gray-500 leading-relaxed">
+                          This agreement governs your use of the Spacejam platform and establishes the terms for center operations, client management, and revenue sharing.
+                        </p>
+                      </div>
+                      <div className="p-5 border-t border-gray-200">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={termsAgreed}
+                            onChange={(e) => setTermsAgreed(e.target.checked)}
+                            className="w-5 h-5 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300" 
+                          />
+                          <span className="text-[13px] text-gray-800 font-medium">
+                            I have read and agree to the <span className="text-[#FF6A2F] cursor-pointer">Terms & Conditions</span> and <span className="text-[#FF6A2F] cursor-pointer">Privacy Policy</span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 7 && (
+                  <div className="flex-1 p-8 overflow-y-auto">
+                    <p className="text-[#FF6A2F] text-[13px] font-semibold tracking-wide uppercase mb-1">Step 7 of 7</p>
+                    <h2 className="text-[28px] font-bold text-gray-900 mb-2">Personalization</h2>
+                    <p className="text-[14px] text-gray-500 mb-8 max-w-2xl leading-relaxed">
+                      Customize how you'd like to communicate with this client and add any referral information. These preferences help us tailor the experience.
+                    </p>
+
+                    <div className="border border-gray-200 bg-white rounded-xl p-6 mb-8">
+                      <h3 className="text-[16px] font-bold text-gray-900 mb-1">Identity Verification (KYC)</h3>
+                      <p className="text-[13px] text-gray-500 mb-6">Choose how you'd like to receive updates and notifications about this client.</p>
+
+                      <div className="grid grid-cols-3 gap-4 mb-8">
+                        <div 
+                          onClick={() => setCommunicationChannel("Email")}
+                          className={`p-4 rounded-xl border ${communicationChannel === "Email" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${communicationChannel === "Email" ? "bg-[#FFEBEE] text-[#FF6A2F]" : "bg-gray-100 text-gray-500"}`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-bold text-gray-900">Email</p>
+                            <p className="text-[12px] text-gray-500">Traditional & reliable</p>
+                          </div>
+                        </div>
+
+                        <div 
+                          onClick={() => setCommunicationChannel("WhatsApp")}
+                          className={`p-4 rounded-xl border ${communicationChannel === "WhatsApp" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${communicationChannel === "WhatsApp" ? "bg-[#FFEBEE] text-[#FF6A2F]" : "bg-gray-100 text-gray-500"}`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-bold text-gray-900">WhatsApp</p>
+                            <p className="text-[12px] text-gray-500">Quick & instant</p>
+                          </div>
+                        </div>
+
+                        <div 
+                          onClick={() => setCommunicationChannel("In-App")}
+                          className={`p-4 rounded-xl border ${communicationChannel === "In-App" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${communicationChannel === "In-App" ? "bg-[#FFEBEE] text-[#FF6A2F]" : "bg-gray-100 text-gray-500"}`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-bold text-gray-900">In-App</p>
+                            <p className="text-[12px] text-gray-500">Centralized updates</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {communicationChannel === "Email" && (
+                        <div className="mb-8">
+                          {emailIds.map((email, idx) => (
+                            <div key={idx} className="mb-3">
+                              <input 
+                                type="text" 
+                                placeholder="Add mail Id" 
+                                value={email}
+                                onChange={(e) => {
+                                  const newEmails = [...emailIds];
+                                  newEmails[idx] = e.target.value;
+                                  setEmailIds(newEmails);
+                                }}
+                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white" 
+                              />
+                            </div>
+                          ))}
+                          <button 
+                            onClick={() => setEmailIds([...emailIds, ""])}
+                            className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-medium mt-1"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Add Another mail ID
+                          </button>
+                        </div>
+                      )}
+
+                      {communicationChannel === "WhatsApp" && (
+                        <div className="mb-8">
+                          <h4 className="text-[15px] font-bold text-gray-900 mb-4">WhatsApp Notifications</h4>
+                          
+                          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl mb-6">
+                            <div>
+                              <p className="text-[14px] font-bold text-gray-900">Join WhatsApp Community</p>
+                              <p className="text-[12px] text-gray-500">Automatically add client to Spacejam community for updates and announcements.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" checked={whatsappCommunity} onChange={(e) => setWhatsappCommunity(e.target.checked)} className="sr-only peer" />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6A2F]"></div>
+                            </label>
+                          </div>
+
+                          {phoneNumbers.map((phone, idx) => (
+                            <div key={idx} className="mb-3">
+                              <input 
+                                type="text" 
+                                placeholder="+91 phone number" 
+                                value={phone}
+                                onChange={(e) => {
+                                  const newPhones = [...phoneNumbers];
+                                  newPhones[idx] = e.target.value;
+                                  setPhoneNumbers(newPhones);
+                                }}
+                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white" 
+                              />
+                            </div>
+                          ))}
+                          <button 
+                            onClick={() => setPhoneNumbers([...phoneNumbers, ""])}
+                            className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-medium mt-1"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Add another number
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="pt-6 border-t border-gray-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-[14px] font-bold text-gray-900">Referral Code</h4>
+                          <span className="text-[13px] text-gray-400">(Optional)</span>
+                        </div>
+                        <p className="text-[13px] text-gray-500 mb-3 flex items-center justify-between">
+                          If this client was referred by someone, enter the referral code here to track the source.
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+                        </p>
+                        <input 
+                          type="text" 
+                          placeholder="e.g., REF2024XYZ" 
+                          value={referralCode}
+                          onChange={(e) => setReferralCode(e.target.value)}
+                          className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] mb-4 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" 
+                        />
+                        <div className="bg-[#FFF8F6] p-4 rounded-lg flex items-start gap-3 border border-[#FFE7DE] mb-6">
+                          <div className="mt-0.5 shrink-0 text-[#FF6A2F]">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </div>
+                          <p className="text-[13px] text-[#FF6A2F] leading-relaxed">
+                            Both you and the referrer may be eligible for rewards when this client completes their first month.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[#0066FF] bg-[#F5F9FF] p-3 rounded-lg border border-[#E5EFFF]">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+                          <span className="text-[13px] font-medium">Auto-save enabled – Your changes are saved automatically</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 8 && (
+                  <div className="flex-1 p-8 overflow-y-auto">
+                    <div className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-semibold mb-2">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      7/7 steps completed
+                    </div>
+                    <h2 className="text-[28px] font-bold text-gray-900 mb-2">Review & Confirm</h2>
+                    <p className="text-[14px] text-gray-500 mb-6 max-w-2xl leading-relaxed">
+                      Please review all details before activating the client. You can edit any section by clicking the Edit button.
+                    </p>
+
+                    <div className="bg-[#FFF6F3] border border-[#FFE7DE] text-[#FF6A2F] p-4 rounded-xl flex items-center gap-3 mb-8">
+                      <div className="w-5 h-5 rounded-full border border-[#FF6A2F] flex items-center justify-center shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      <span className="text-[13px] font-medium">All sections completed successfully. Ready to activate client.</span>
+                    </div>
+
+                    <div className="flex flex-col gap-4 mb-8">
+                      {/* Basic Info */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Basic Info</p>
+                              <p className="text-[12px] text-gray-500">Personal and company details</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(1)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Name</p>
+                            <p className="text-[14px] font-medium text-gray-900">John Doe</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Phone</p>
+                            <p className="text-[14px] font-medium text-gray-900">+91 9876543210</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Email</p>
+                            <p className="text-[14px] font-medium text-gray-900">john.doe@gmail.com</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Date of Birth</p>
+                            <p className="text-[14px] font-medium text-gray-900">15 Jan 1990</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Company Name</p>
+                            <p className="text-[14px] font-medium text-gray-900">Tech Solutions Inc.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Membership & Space Allocation */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Membership & Space Allocation</p>
+                              <p className="text-[12px] text-gray-500">Plan and space details</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(3)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Plan Type</p>
+                            <p className="text-[14px] font-medium text-gray-900">Premium - Hot Desk</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Seats and Cabins</p>
+                            <p className="text-[14px] font-medium text-gray-900">5 Hot Desks, 2 Cabins</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Seat Assignment Method</p>
+                            <p className="text-[14px] font-medium text-gray-900">Fixed Allocation</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Start Date</p>
+                            <p className="text-[14px] font-medium text-gray-900">1 April 2026</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Finance & Deposits */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <span className="text-[16px] font-bold">₹</span>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Finance & Deposits</p>
+                              <p className="text-[12px] text-gray-500">Payment and billing information</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(4)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Billing Cycle</p>
+                            <p className="text-[14px] font-medium text-gray-900">{billingCycle}</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Deposit Amount</p>
+                            <p className="text-[14px] font-medium text-gray-900">{securityDepositAmount}</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Payment Mode</p>
+                            <p className="text-[14px] font-medium text-gray-900">{paymentMode}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Services */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Additional Services</p>
+                              <p className="text-[12px] text-gray-500">Enabled services and amenities</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(5)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div>
+                          <p className="text-[12px] text-gray-500 mb-2">Enabled Services</p>
+                          <div className="flex flex-wrap gap-2">
+                            {additionalServices.meetingRoom && (
+                              <div className="px-3 py-1.5 bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F] rounded-lg flex items-center gap-2 text-[13px] font-medium">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                Meeting Room
+                              </div>
+                            )}
+                            {additionalServices.printing && (
+                              <div className="px-3 py-1.5 bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F] rounded-lg flex items-center gap-2 text-[13px] font-medium">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2-2v4h10z" /></svg>
+                                Printing
+                              </div>
+                            )}
+                            {additionalServices.valetParking && (
+                              <div className="px-3 py-1.5 bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F] rounded-lg flex items-center gap-2 text-[13px] font-medium">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+                                Valet Parking
+                              </div>
+                            )}
+                            {additionalServices.tokenWallet && (
+                              <div className="px-3 py-1.5 bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F] rounded-lg flex items-center gap-2 text-[13px] font-medium">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                Token Wallet
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Legal & Compliance */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Legal & Compliance</p>
+                              <p className="text-[12px] text-gray-500">Documents and verification</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(6)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-bold text-gray-900">Aadhaar Card</p>
+                                <p className="text-[11px] text-gray-500">aadhaar_john_doe.pdf</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
+                              <span className="text-gray-300">|</span>
+                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-bold text-gray-900">PAN Card</p>
+                                <p className="text-[11px] text-gray-500">pan_john_doe.pdf</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
+                              <span className="text-gray-300">|</span>
+                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                              <div>
+                                <p className="text-[13px] font-bold text-gray-900">GST Certificate</p>
+                                <p className="text-[11px] text-gray-500">gst_tech_solutions.pdf</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
+                              <span className="text-gray-300">|</span>
+                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Personalisation */}
+                      <div className="border border-gray-200 bg-white rounded-xl p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#FFF8F6] text-[#FF6A2F] flex items-center justify-center">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                            </div>
+                            <div>
+                              <p className="text-[15px] font-bold text-gray-900">Personalisation</p>
+                              <p className="text-[12px] text-gray-500">Communication preferences</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setCurrentStep(7)} className="px-4 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Edit
+                          </button>
+                        </div>
+                        <div className="mb-4">
+                          <p className="text-[12px] text-gray-500 mb-2">Communication Channels</p>
+                          <div className="flex flex-wrap gap-2">
+                            <div className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-[13px] font-medium ${communicationChannel === "Email" ? "bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F]" : "bg-gray-50 border border-gray-200 text-gray-600"}`}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                              Email
+                            </div>
+                            <div className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-[13px] font-medium ${communicationChannel === "WhatsApp" ? "bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F]" : "bg-gray-50 border border-gray-200 text-gray-600"}`}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                              WhatsApp
+                            </div>
+                            <div className={`px-3 py-1.5 rounded-lg flex items-center gap-2 text-[13px] font-medium ${communicationChannel === "In-App" ? "bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F]" : "bg-gray-50 border border-gray-200 text-gray-600"}`}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                              In-App
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Primary Email</p>
+                            <p className="text-[14px] font-medium text-gray-900">john.doe@gmail.com</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Phone Number</p>
+                            <p className="text-[14px] font-medium text-gray-900">+91 9876543210</p>
+                          </div>
+                          {referralCode && (
+                            <div>
+                              <p className="text-[12px] text-gray-500 mb-0.5">Referral Code</p>
+                              <p className="text-[14px] font-medium text-gray-900 uppercase">{referralCode}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

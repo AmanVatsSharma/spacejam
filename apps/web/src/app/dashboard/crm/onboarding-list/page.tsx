@@ -167,14 +167,6 @@ const STATUS_PILL_CLASS: Record<OnboardingStatus, string> = {
   'Agreement Sent': styles.pillAgreement,
 };
 
-const STAT_PILL_COLOR: Record<OnboardingStatus, string> = {
-  New: 'bg-orange-50 text-orange-500',
-  'Visit Scheduled': 'bg-blue-50 text-blue-500',
-  'Visit Complete': 'bg-emerald-50 text-emerald-500',
-  Negotiation: 'bg-amber-50 text-amber-500',
-  'Agreement Sent': 'bg-purple-50 text-purple-500',
-};
-
 /* ----------------------------- Icons ----------------------------- */
 
 const Icon = {
