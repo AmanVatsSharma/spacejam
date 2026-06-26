@@ -11,6 +11,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './leads.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -235,11 +236,15 @@ const Icon = {
 /* --------------------------- Component --------------------------- */
 
 export default function LeadsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | LeadStatus>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
   const [sort, setSort] = useState<'Recent' | 'Name' | 'Budget'>('Recent');
   const [selectedId, setSelectedId] = useState<string>('l3');
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [showScheduleVisit, setShowScheduleVisit] = useState(false);
+  const [showSendProposal, setShowSendProposal] = useState(false);
 
   const filtered = useMemo(() => {
     return LEADS.filter((l) => {
@@ -347,9 +352,12 @@ export default function LeadsPage() {
             >
               Clear Filters
             </button>
-            <button type="button" className={styles.addLeadBtn}>
-              {Icon.Plus}
-              Add Lead
+            <button 
+              type="button" 
+              className={styles.addLeadBtn}
+              onClick={() => setShowAddLead(true)}
+            >
+              {Icon.Plus} Add Lead
             </button>
           </div>
         </div>
@@ -398,8 +406,9 @@ export default function LeadsPage() {
                 {filtered.map((l) => (
                   <tr
                     key={l.id}
-                    onClick={() => setSelectedId(l.id)}
+                    onClick={() => router.push('/dashboard/crm/leads/' + l.id)}
                     className={l.id === selectedId ? styles.selectedRow : undefined}
+                    style={{ cursor: 'pointer' }}
                   >
                     <td className={styles.leadNameCell}>{l.name}</td>
                     <td>{l.company}</td>
@@ -426,67 +435,327 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* ------------------------- Right sidebar --------------------------- */}
-      <aside className={styles.sidebar}>
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>Lead Details</h3>
-          <div className={styles.leadDetailsList}>
-            <div className={styles.detailRow}>
-              <p className={styles.detailLabel}>Name</p>
-              <p className={styles.detailValue}>{selected.name}</p>
+      {/* ------------------------- Right sidebar removed --------------------------- */}
+
+      {/* Add New Lead Dialog */}
+      <AddNewLeadDialog open={showAddLead} onClose={() => setShowAddLead(false)} />
+
+      {/* Schedule Visit Dialog */}
+      <ScheduleVisitDialog open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
+
+      {/* Send Proposal Dialog */}
+      <SendProposalDialog open={showSendProposal} onClose={() => setShowSendProposal(false)} />
+
+    </div>
+  );
+}
+
+/* --------------------------- Add New Lead Dialog --------------------------- */
+// ... existing AddNewLeadDialog ...
+function AddNewLeadDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
+      <div 
+        className="w-full max-w-[800px] max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100 flex justify-between items-start">
+          <div>
+            <h2 className="text-[20px] font-bold text-gray-900">Add New Lead</h2>
+            <p className="text-[14px] text-gray-500 mt-1">Enter client details to create a new lead.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors mt-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 overflow-y-auto flex flex-col gap-8">
+          
+          {/* Basic Information */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-gray-900">Basic Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Full Name</label>
+                <input type="text" placeholder="Enter full name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Phone Number</label>
+                <input type="text" placeholder="Enter phone number" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Email Address</label>
+                <input type="email" placeholder="Enter email address" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Company Name</label>
+                <input type="text" placeholder="Enter company name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
             </div>
-            <div className={styles.detailRow}>
-              <p className={styles.detailLabel}>Email</p>
-              <p className={styles.detailValue}>{selected.email}</p>
+          </section>
+
+          {/* Lead Details */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-gray-900">Lead Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Lead Source</label>
+                <div className="relative">
+                  <select className="w-full px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors appearance-none pr-10">
+                    <option value="">Select lead source</option>
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Interested Plan</label>
+                <div className="relative">
+                  <select className="w-full px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors appearance-none pr-10">
+                    <option value="">Select plan</option>
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Team Size</label>
+                <input type="text" placeholder="Enter team size" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Preferred Move-in Date</label>
+                <input type="date" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+              </div>
             </div>
-            <div className={styles.detailRow}>
-              <p className={styles.detailLabel}>Phone</p>
-              <p className={styles.detailValue}>{selected.phone}</p>
+          </section>
+
+          {/* Assignment */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-gray-900">Assignment</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Assigned Center Manager</label>
+                <div className="relative">
+                  <select className="w-full px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors appearance-none pr-10">
+                    <option value="">Select manager</option>
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">Preferred Center</label>
+                <div className="relative">
+                  <select className="w-full px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors appearance-none pr-10">
+                    <option value="">Select center</option>
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className={styles.detailRow}>
-              <p className={styles.detailLabel}>Location</p>
-              <p className={styles.detailValue}>{selected.location}</p>
+          </section>
+
+          {/* Notes */}
+          <section className="flex flex-col gap-4">
+            <h3 className="text-[16px] font-semibold text-gray-900">Notes</h3>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-gray-700">Additional Information</label>
+              <textarea 
+                placeholder="Enter any additional notes or requirements..." 
+                rows={4}
+                className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors resize-none" 
+              />
             </div>
+          </section>
+
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-100 flex justify-end items-center gap-3 bg-gray-50/50">
+          <button 
+            onClick={onClose}
+            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors">
+            Save as Draft
+          </button>
+          <button className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+            Create Lead
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- Schedule Visit Dialog --------------------------- */
+
+function ScheduleVisitDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
+      <div 
+        className="w-full max-w-[500px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-[20px] font-bold text-gray-900">Schedule Visit</h2>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex flex-col gap-5 max-h-[70vh]">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Lead Name</label>
+            <input type="text" defaultValue="StartupX" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
           </div>
 
-          <div className={styles.detailActions}>
-            <button type="button" className={styles.btnPrimary}>
-              {Icon.Check}
-              Convert to Customer
-            </button>
-            <button type="button" className={styles.btnOutline}>
-              {Icon.Calendar}
-              Schedule Visit
-            </button>
-            <button type="button" className={styles.btnTeal}>
-              {Icon.Download}
-              Export Details
-            </button>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Date</label>
+            <input type="text" placeholder="dd/mm/yyyy" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Time Slot</label>
+            <input type="text" defaultValue="11:00 AM-12:00 PM" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Center</label>
+            <input type="text" defaultValue="Mumbai" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Assigned Staff</label>
+            <input type="text" defaultValue="CM Rahul" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Notes</label>
+            <textarea 
+              placeholder="Add any special notes..." 
+              rows={3}
+              className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors resize-none" 
+            />
+          </div>
+
+          <div className="flex items-center gap-2 p-4 bg-[#FFF6F5] border border-[#FFD9D4] rounded-lg text-[#FF4D4F] text-[13px] font-medium mt-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Conflict detected: Another visit is scheduled at this time.
           </div>
         </div>
 
-        <div className={styles.panel}>
-          <h3 className={styles.panelTitle}>Quick Actions</h3>
-          <div className={styles.quickActions}>
-            <button type="button" className={styles.quickBtn}>
-              {Icon.Phone}
-              Call Lead
+        <div className="p-6 border-t border-gray-100 flex gap-4">
+          <button 
+            onClick={onClose}
+            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+            Confirm Visit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- Send Proposal Dialog --------------------------- */
+
+function SendProposalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
+      <div 
+        className="w-full max-w-[600px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-[20px] font-bold text-gray-900">Send Proposal</h2>
+        </div>
+
+        <div className="p-6 overflow-y-auto flex flex-col gap-6 max-h-[70vh]">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[14px] font-medium text-gray-700">Template Selection</label>
+            <input type="text" className="px-4 py-3 bg-white border border-gray-200 rounded-lg text-[14px] text-gray-900 outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] transition-all" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[14px] font-medium text-gray-700">Pricing (₹/month)</label>
+              <input type="text" defaultValue="5000" className="px-4 py-3 bg-white border border-gray-200 rounded-lg text-[14px] text-gray-900 outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[14px] font-medium text-gray-700">Duration (months)</label>
+              <input type="text" defaultValue="6" className="px-4 py-3 bg-white border border-gray-200 rounded-lg text-[14px] text-gray-900 outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] transition-all" />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[14px] font-medium text-gray-700">Proposal Notes</label>
+            <textarea 
+              placeholder="Add any custom notes for this proposal..." 
+              rows={4}
+              className="px-4 py-3 bg-white border border-gray-200 rounded-lg text-[14px] text-gray-900 outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] transition-all resize-none" 
+            />
+          </div>
+
+          <div className="bg-[#F8FAFC] border border-gray-100 rounded-xl p-5 flex flex-col gap-2">
+            <span className="text-[12px] font-bold text-gray-500 tracking-wide uppercase">PREVIEW</span>
+            <div className="text-[14px] text-gray-600 flex flex-col gap-1 mt-1">
+              <p><strong className="font-semibold text-gray-700">Package:</strong> Hot Desk Package</p>
+              <p><strong className="font-semibold text-gray-700">Price:</strong> ₹5,000/month</p>
+              <p><strong className="font-semibold text-gray-700">Duration:</strong> 6 months</p>
+              <p><strong className="font-semibold text-gray-700">Includes:</strong> High-speed WiFi, Meeting room access, Printing credits</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
+          <button className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+            Preview PDF
+          </button>
+          <div className="flex flex-1 gap-3">
+            <button 
+              onClick={onClose}
+              className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
             </button>
-            <button type="button" className={styles.quickBtn}>
-              {Icon.Mail}
-              Send Email
-            </button>
-            <button type="button" className={styles.quickBtn}>
-              {Icon.Note}
-              Add Note
-            </button>
-            <button type="button" className={styles.quickBtn}>
-              {Icon.Edit}
-              Edit Details
+            <button className="flex-1 py-3 px-4 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9 6 9-6" />
+              </svg>
+              Send Proposal
             </button>
           </div>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }
