@@ -268,84 +268,217 @@ export default function RevenueOverviewPage() {
           <span style={{textAlign: 'right'}}>ACTIONS</span>
         </div>
 
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Rahul<br/>Verma
-          </div>
-          <span className={styles.cellAmount}>₹5,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Chandigarh<br/>Hub</span>
-          <span className={styles.cellText}>Cash</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusPaid}`}>Paid</span>
-          </div>
-          <span className={styles.cellText}>Apr 15</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 1 ? null : 1)}>
-            {Icons.moreVertical}
-            {openMenuId === 1 && (
-              <div className={styles.actionMenu}>
-                <div className={styles.actionMenuItem}>View Details</div>
-                <div className={styles.actionMenuItem}>Edit</div>
-                <div className={styles.actionMenuItem}>Delete</div>
+        {activeTab === 'Invoices' ? (
+          <>
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Rahul<br/>Verma
               </div>
-            )}
+              <span className={styles.cellAmount}>₹5,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Cash</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusPaid}`}>Paid</span>
+              </div>
+              <span className={styles.cellText}>Apr 15</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 1 ? null : 1)}>
+                {Icons.moreVertical}
+                {openMenuId === 1 && (
+                  <div className={styles.actionMenu}>
+                    <div className={styles.actionMenuItem}>View Details</div>
+                    <div className={styles.actionMenuItem}>Edit</div>
+                    <div className={styles.actionMenuItem}>Delete</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Priya<br/>Sharma
+              </div>
+              <span className={styles.cellAmount}>₹10,000</span>
+              <span className={styles.cellText}>Quarterly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>UPI</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusDue}`}>Due Soon</span>
+              </div>
+              <span className={styles.cellText}>Apr 20</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 2 ? null : 2)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Amit<br/>Singh
+              </div>
+              <span className={styles.cellAmount}>₹3,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>Card</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusPaid}`}>Paid</span>
+              </div>
+              <span className={styles.cellText}>Mar 28</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 3 ? null : 3)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Amit<br/>Singh
+              </div>
+              <span className={styles.cellAmount}>₹3,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>Card</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusDue}`}>Due Soon</span>
+              </div>
+              <span className={styles.cellText}>Mar 28</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 4 ? null : 4)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+          </>
+        ) : activeTab === 'Deposits' ? (
+          <>
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Rahul<br/>Verma
+              </div>
+              <span className={styles.cellAmount}>₹5,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Cash</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
+              </div>
+              <span className={styles.cellText}>Apr 15</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 5 ? null : 5)}>
+                {Icons.moreVertical}
+                {openMenuId === 5 && (
+                  <div className={styles.actionMenu}>
+                    <div className={styles.actionMenuItem}>Release</div>
+                    <div className={styles.actionMenuItem}>Freeze</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Priya<br/>Sharma
+              </div>
+              <span className={styles.cellAmount}>₹10,000</span>
+              <span className={styles.cellText}>Quarterly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>UPI</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusFrozen}`}>Frozen</span>
+              </div>
+              <span className={styles.cellText}>Apr 20</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 6 ? null : 6)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Amit<br/>Singh
+              </div>
+              <span className={styles.cellAmount}>₹3,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>Card</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusPending}`}>Pending</span>
+              </div>
+              <span className={styles.cellText}>Mar 28</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 7 ? null : 7)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+            
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Amit<br/>Singh
+              </div>
+              <span className={styles.cellAmount}>₹3,000</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Jalandhar</span>
+              <span className={styles.cellText}>Card</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusRelease}`}>Release</span>
+              </div>
+              <span className={styles.cellText}>Mar 28</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 8 ? null : 8)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+          </>
+        ) : activeTab === 'Overdues' ? (
+          <>
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Vikas<br/>Mehta
+              </div>
+              <span className={styles.cellAmount}>₹12,000</span>
+              <span className={styles.cellText}>Quarterly</span>
+              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Bank Transfer</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusOverdue}`}>Overdue</span>
+              </div>
+              <span className={styles.cellText}>Mar 10</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 9 ? null : 9)}>
+                {Icons.moreVertical}
+                {openMenuId === 9 && (
+                  <div className={styles.actionMenu}>
+                    <div className={styles.actionMenuItem}>Send Email</div>
+                    <div className={styles.actionMenuItem}>Send SMS</div>
+                    <div className={styles.actionMenuItem}>Mark Paid</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>
+                Anita<br/>Desai
+              </div>
+              <span className={styles.cellAmount}>₹8,500</span>
+              <span className={styles.cellText}>Monthly</span>
+              <span className={styles.cellText}>Mohali</span>
+              <span className={styles.cellText}>Credit Card</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${styles.statusOverdue}`}>Overdue</span>
+              </div>
+              <span className={styles.cellText}>Feb 28</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 10 ? null : 10)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#6B7280' }}>
+            No data available for {activeTab}
           </div>
-        </div>
-        
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Priya<br/>Sharma
-          </div>
-          <span className={styles.cellAmount}>₹10,000</span>
-          <span className={styles.cellText}>Quarterly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>UPI</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusDue}`}>Due Soon</span>
-          </div>
-          <span className={styles.cellText}>Apr 20</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 2 ? null : 2)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
-        
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Amit<br/>Singh
-          </div>
-          <span className={styles.cellAmount}>₹3,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>Card</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusPaid}`}>Paid</span>
-          </div>
-          <span className={styles.cellText}>Mar 28</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 3 ? null : 3)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
-        
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Amit<br/>Singh
-          </div>
-          <span className={styles.cellAmount}>₹3,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>Card</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusDue}`}>Due Soon</span>
-          </div>
-          <span className={styles.cellText}>Mar 28</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 4 ? null : 4)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
+        )}
 
       </div>
 

@@ -294,67 +294,40 @@
   text-align: center;
 }
 
-/* ---------------- Bottom Tabs & Table ---------------- */
+/* ---------------- Directory Header & Table ---------------- */
 
-.tabsRow {
+.directoryHeaderCard {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 8px;
-}
-.tabsContainer {
-  display: inline-flex;
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 4px;
-}
-.tabItem {
-  padding: 8px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6A7282;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.tabActive {
-  background: #FFFFFF;
-  color: #FF7847;
-  box-shadow: 0px 1px 2px rgba(0,0,0,0.05);
-}
-.tabLine {
-  position: relative;
-  border-bottom: none;
-}
-.tabLine::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  background: transparent;
-}
-.tabLineActive {
-  color: #FF7847;
-}
-.tabLineActive::after {
-  background: #FF7847;
+  border-radius: 14px;
+  padding: 16px 24px;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.05);
 }
 
-.sendReminderBtn {
-  background: #FF7847;
-  color: #FFFFFF;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 24px;
+.directorySearchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
   border-radius: 10px;
-  border: none;
-  cursor: pointer;
+  padding: 8px 14px;
+  width: 100%;
+  max-width: 250px;
 }
+.directorySearchBox input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: #101828;
+  width: 100%;
+}
+.directorySearchBox input::placeholder { color: #9CA3AF; }
 
-/* Table */
 .listCard {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
@@ -365,18 +338,18 @@
 }
 .tableHeader {
   display: grid;
-  grid-template-columns: 40px 1.5fr 1fr 1fr 1.5fr 1fr 1fr 1fr 40px;
+  grid-template-columns: 40px 1.2fr 1fr 1fr 1fr 1fr 1fr 1.2fr 1.2fr 40px;
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #E5E7EB;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #6B7280;
   letter-spacing: 0.05em;
 }
 .listRow {
   display: grid;
-  grid-template-columns: 40px 1.5fr 1fr 1fr 1.5fr 1fr 1fr 1fr 40px;
+  grid-template-columns: 40px 1.2fr 1fr 1fr 1fr 1fr 1fr 1.2fr 1.2fr 40px;
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid #E5E7EB;
@@ -392,17 +365,17 @@
   cursor: pointer;
 }
 .cellUser {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1F2937;
 }
 .cellAmount {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #FF7847;
 }
 .cellText {
-  font-size: 14px;
+  font-size: 13px;
   color: #4B5563;
 }
 .cellStatus {
@@ -414,13 +387,9 @@
   font-size: 11px;
   font-weight: 500;
 }
-.statusPaid { background: #D0F1ED; color: #4A5565; }
-.statusDue { background: #FDE6B8; color: #92400E; }
-.statusActive { background: #D1FADF; color: #4B5563; }
-.statusFrozen { background: #D0F1ED; color: #4B5563; }
-.statusPending { background: #FCE8E8; color: #4B5563; }
-.statusRelease { background: #D1FADF; color: #4B5563; }
-.statusOverdue { background: #FEE2E2; color: #EF4444; }
+.statusActive { background: #D1FADF; color: #027A48; }
+.statusHold { background: #D0F1ED; color: #4B5563; }
+.statusExited { background: #FEE2E2; color: #EF4444; }
 
 .cellAction {
   display: flex;
@@ -468,17 +437,13 @@
   }
   .cellAmount, .cellText { grid-column: span 3; margin-left: 40px; }
   .cellAction { position: absolute; top: 20px; right: 24px; }
+  .directoryHeaderCard { flex-direction: column; align-items: flex-start; gap: 16px; }
 }
 
 @media (max-width: 640px) {
-  .headerCard {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .headerCard { flex-direction: column; align-items: flex-start; }
   .exportBtn { width: 100%; justify-content: center; }
   .filterCard { flex-direction: column; align-items: stretch; }
   .dropdowns { flex-direction: column; align-items: stretch; }
-  .tabsRow { flex-direction: column; align-items: stretch; gap: 16px; }
-  .tabsContainer { width: 100%; overflow-x: auto; }
   .metricsRow { grid-template-columns: 1fr; }
 }
