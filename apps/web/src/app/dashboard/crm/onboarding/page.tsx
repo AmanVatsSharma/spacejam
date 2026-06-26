@@ -17,17 +17,6 @@ export default function OnboardingWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // Form State - Step 1
-  const [basicInfo, setBasicInfo] = useState({
-    superUser: "",
-    phone: "",
-    email: "",
-    altContact: "",
-    dob: "",
-    companyName: "",
-    gst: "",
-  });
-
   const [userRoles, setUserRoles] = useState([
     { id: 1, role: "Head User/HR", name: "", phone: "" },
   ]);
@@ -93,13 +82,18 @@ export default function OnboardingWizardPage() {
   const [emailIds, setEmailIds] = useState([""]);
   const [phoneNumbers, setPhoneNumbers] = useState([""]);
 
+  // Form State - Agreement
+  const [signatureSaved, setSignatureSaved] = useState(false);
+  const [showSignatureModal, setShowSignatureModal] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<"Draw" | "Upload">("Draw");
+
   const handleNext = () => {
     if (currentStep === 2 && employeeMode === "bulk" && !uploadSuccess) {
       setUploadSuccess(true);
       return;
     }
     if (uploadSuccess) setUploadSuccess(false);
-    if (currentStep < 8) setCurrentStep((p) => p + 1);
+    if (currentStep < 10) setCurrentStep((p) => p + 1);
   };
 
   const handlePrev = () => {
@@ -1816,11 +1810,150 @@ export default function OnboardingWizardPage() {
                     </div>
                   </div>
                 )}
+
+                {currentStep === 9 && (
+                  <div className="flex-1 p-8 overflow-y-auto">
+                    <div className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-semibold mb-2">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      7/7 steps completed
+                    </div>
+                    <h2 className="text-[28px] font-bold text-gray-900 mb-2">Agreement & Signing</h2>
+                    <p className="text-[14px] text-gray-500 mb-6 max-w-2xl leading-relaxed">
+                      Review and sign the agreement to activate the client account.
+                    </p>
+
+                    <div className="border border-gray-200 bg-white rounded-xl overflow-hidden mb-8">
+                      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                        <h3 className="text-[15px] font-bold text-gray-900">Membership Agreement</h3>
+                        <div className="flex items-center gap-2">
+                          <button className="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2-2v4h10z" /></svg>
+                            Print
+                          </button>
+                          <button className="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            Download PDF
+                          </button>
+                          <button className="px-3 py-1.5 border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            Share
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-6 h-[400px] overflow-y-auto custom-scrollbar">
+                        <h4 className="text-[14px] font-bold text-gray-900 mb-4">Terms & Conditions</h4>
+                        <div className="text-[13px] text-gray-500 space-y-4 leading-relaxed">
+                          <p>1. This Agreement</p>
+                          <p>1.1 Nature of this agreement: This agreement is commercial equivalent of an agreement for accommodation(s) in a hotel; usage of space and internet in a cyber cafe. The whole of the Centre remains in the provider's possession and control. THE CLIENT ACCEPTS THAT THIS AGREEMENT CREATES NO TENANCY INTEREST, LEASEHOLD ESTATE OR OTHER REAL PROPERTY INTEREST IN THE CLIENT'S FAVOR WITH RESPECT TO THE ACCOMMODATION(S)/ space / any moveable or immovable property owned and possessed by Spacejam. The provider is giving the Client the right to share with the Provider the use of the Centre on these terms and conditions, as supplemented by the House Rules, so that the Provider can provide service to the Client. This Agreement is personal to the Client and cannot be transferred to anyone else without prior consent from the Provider unless, such transfer is required by law. The Provider will not unreasonably withhold its consent to assignment to a parent, subsidiary or affiliate of Client, provided that Client and assignee execute the Provider's form of Assignment of License Agreement, which will require assignee to assume all Client obligations and will not release the Client. This agreement is composed of the front page describing the accommodation(s)/ space for utilization for restricted time period, the present terms and conditions, the House Rules and the Service Price Guide (where available).</p>
+                          <p>1.2 Comply with House Rules: The Client must comply with any House Rules which the Provider imposes generally on the users of the Centre and the Client shall not have any objection towards the framing and implementation of the House rules as have been decided by the owners of spaceJAM.</p>
+                          <p>1.3 AUTOMATIC RENEWAL: THIS AGREEMENT LASTS FOR THE PERIOD STATED IN IT AND THEN WILL NOT BE EXTENDED AUTOMATICALLY FOR SUCCESSIVE PERIODS AND IN CASE THE CLIENT WANTS TO EXTEND THE PERIOD THEN THE CLIENT SHALL EXECUTE FRESH AGREEMENT AND DEPOSIT MONEY IN ADVANCE FOR THE AGREEMENT PERIOD. (No need deposit again only difference amount you have to deposit at the time of renewal)</p>
+                          <p>1.4. ALL PERIODS SHALL RUN TO W.E.F. the date of execution of agreement and shall operate in a batch of 30 days periodically. THE FEES ON ANY RENEWAL WILL BE AT THE THEN PREVAILING MARKET RATE.</p>
+                          <p>1.4 CANCELLATION: THE PROVIDER CAN TERMINATE THIS AGREEMENT AT THE END DATE STATED IN IT, OR AT THE END OF ANY EXTENSION OR RENEWAL PERIOD, BY GIVING AT LEAST 7 DAYS TO THE CLIENT. HOWEVER, THE PROVIDER SHALL REFUND TO THE CLIENT PRO-RATA AMOUNT FOR THE PERIOD FOR WHICH THE CLIENT HAS ALREADY PAID AND WILL NOT BE ABLE TO CONTINUE TO WORK AFTER THE EXPIRY OF PERIOD OF 7 DAYS, WITHIN A PERIOD OF 4 WEEKS THEREAFTER.</p>
+                        </div>
+                      </div>
+                      <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                        <div>
+                          <p className="text-[14px] font-bold text-gray-900">Client Signature Required</p>
+                          {signatureSaved ? (
+                            <p className="text-[12px] text-[#21A366] flex items-center gap-1.5 mt-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#21A366]"></span>
+                              Signed successfully
+                            </p>
+                          ) : (
+                            <p className="text-[12px] text-[#FF6A2F] flex items-center gap-1.5 mt-0.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#FF6A2F]"></span>
+                              Not signed yet
+                            </p>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => setShowSignatureModal(true)}
+                          className="px-6 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-medium hover:bg-[#E55A20] transition-colors"
+                        >
+                          {signatureSaved ? "View Signature" : "Sign Agreement"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 10 && (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative z-10 overflow-y-auto">
+                    <div className="max-w-md w-full flex flex-col items-center text-center">
+                      <div className="relative mb-6 mt-12">
+                        <div className="w-24 h-24 bg-[#E5F7ED] rounded-full flex items-center justify-center relative z-10 mx-auto">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-10 h-10 text-[#21A366]"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 opacity-70 pointer-events-none">
+                          <div className="absolute top-2 left-4 w-2 h-2 rounded-full bg-[#FFD166]"></div>
+                          <div className="absolute top-8 right-6 w-3 h-3 rounded-full bg-[#118AB2]"></div>
+                          <div className="absolute bottom-6 left-8 w-2.5 h-2.5 rounded-sm bg-[#EF476F] rotate-45"></div>
+                          <div className="absolute bottom-10 right-4 w-2 h-2 rounded-full bg-[#06D6A0]"></div>
+                        </div>
+                      </div>
+
+                      <h2 className="text-[24px] font-bold text-gray-900 mb-2">Onboarding Completed Successfully 🎉</h2>
+                      <p className="text-[14px] text-gray-500 mb-8 leading-relaxed">
+                        The client account is now active and ready to use workspace.
+                      </p>
+
+                      <button className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm">
+                        Go to client Dashboard
+                      </button>
+
+                      <div className="flex items-center gap-3 w-full mb-8">
+                        <button className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                          View Client Profile
+                        </button>
+                        <button className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                          Add Another Client
+                        </button>
+                      </div>
+
+                      <div className="w-full text-left bg-gray-50/50 border border-gray-100 rounded-xl overflow-hidden">
+                        <div className="p-4 bg-[#F2FAF5] flex items-center gap-3 border-b border-gray-100">
+                          <div className="w-6 h-6 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          </div>
+                          <h3 className="text-[14px] font-bold text-gray-900">Client Setup Summary</h3>
+                        </div>
+                        <div className="p-5 flex flex-col gap-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <span className="text-[14px] text-gray-700 font-medium">Membership Assigned</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <span className="text-[14px] text-gray-700 font-medium">Seats Allocated</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <span className="text-[14px] text-gray-700 font-medium">Billing Configured</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <span className="text-[14px] text-gray-700 font-medium">Services Enabled</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Footer */}
-            {!uploadSuccess && (
+            {!uploadSuccess && currentStep < 10 && (
               <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
                 <button 
                   onClick={handlePrev}
@@ -1845,7 +1978,7 @@ export default function OnboardingWizardPage() {
                     onClick={handleNext}
                     className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
                   >
-                    Continue
+                    {currentStep === 9 ? "Next" : "Continue"}
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
@@ -1856,6 +1989,95 @@ export default function OnboardingWizardPage() {
           </div>
         </div>
       </div>
+
+      {/* Signature Modal */}
+      {showSignatureModal && (
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-[18px] font-bold text-gray-900">Add Digital Signature</h2>
+              <button 
+                onClick={() => setShowSignatureModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <button 
+                  onClick={() => setSignatureMode("Draw")}
+                  className={`px-5 py-2 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors ${signatureMode === "Draw" ? "bg-[#FF6A2F] text-white shadow-sm" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  Draw
+                </button>
+                <button 
+                  onClick={() => setSignatureMode("Upload")}
+                  className={`px-5 py-2 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors ${signatureMode === "Upload" ? "bg-[#FF6A2F] text-white shadow-sm" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  Upload
+                </button>
+              </div>
+
+              {signatureMode === "Draw" ? (
+                <div>
+                  <p className="text-[13px] text-gray-500 mb-3">Draw your signature in the box below</p>
+                  <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-white flex flex-col relative overflow-hidden mb-3 group">
+                    {/* Simulated drawing canvas */}
+                    {signatureSaved ? (
+                      <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
+                        <svg viewBox="0 0 200 100" className="w-full h-full opacity-80" style={{stroke: '#1f2937', strokeWidth: 2, fill: 'none'}}>
+                          <path d="M40 50 C 40 20, 60 20, 60 50 C 60 80, 80 80, 80 50 C 80 20, 100 20, 100 50" strokeLinecap="round"/>
+                          <path d="M100 50 C 100 20, 120 20, 120 50 C 120 80, 140 80, 140 50 C 140 20, 160 20, 160 50" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="w-full h-full cursor-crosshair"></div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setSignatureSaved(false)}
+                    className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 font-medium"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Clear
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-[13px] text-gray-500 mb-3">Upload an image of your signature</p>
+                  <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-gray-50/50 flex flex-col items-center justify-center relative overflow-hidden mb-3">
+                    <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    </div>
+                    <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
+                    <p className="text-[12px] text-gray-500">JPG, PNG (max 5MB)</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
+              <button 
+                onClick={() => setShowSignatureModal(false)}
+                className="px-5 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setSignatureSaved(true);
+                  setShowSignatureModal(false);
+                }}
+                className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold hover:bg-[#E55A20] shadow-sm"
+              >
+                Save Signature
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
