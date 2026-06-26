@@ -185,10 +185,12 @@ export default function MeetingRoomRequestPage() {
   const [statusFilter, setStatusFilter] = useState<"All Statuses" | RequestStatus>(
     "All Statuses"
   );
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return REQUESTS.filter((r) => {
+      if (showOnlyPending && r.status !== "Pending") return false;
       if (categoryFilter !== "All Categories" && r.requestType !== categoryFilter) {
         return false;
       }
@@ -207,7 +209,7 @@ export default function MeetingRoomRequestPage() {
       }
       return true;
     });
-  }, [searchQuery, categoryFilter, statusFilter]);
+  }, [searchQuery, categoryFilter, statusFilter, showOnlyPending]);
 
   const pendingCount = REQUESTS.filter((r) => r.status === "Pending").length;
   const totalCount = REQUESTS.length;
