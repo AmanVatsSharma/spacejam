@@ -255,7 +255,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
           {showUserMenu && (
             <div
               role="menu"
-              className="absolute right-0 top-12 w-56 rounded-2xl border border-[#E5E7EB] bg-white py-1 shadow-lg"
+              className="absolute right-0 top-12 w-56 rounded-2xl border border-[#E5E7EB] bg-white py-1 shadow-lg z-50"
             >
               <div className="border-b border-[#F3F4F6] px-4 py-3">
                 <p className="text-sm font-semibold text-[#1F2937]">{displayName}</p>

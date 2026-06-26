@@ -3,6 +3,11 @@ set -e
 source ~/.nvm/nvm.sh
 
 echo "=== [1/6] Extracting latest code ==="
+# Kill any processes locking the directory
+pm2 delete all || true
+if [ -d "/home/ubuntu/spacejam" ]; then
+  cd /home/ubuntu/spacejam && npx nx daemon --stop || true
+fi
 sudo rm -rf /home/ubuntu/spacejam
 mkdir -p /home/ubuntu/spacejam
 tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam

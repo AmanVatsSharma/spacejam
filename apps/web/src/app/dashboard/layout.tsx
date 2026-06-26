@@ -100,7 +100,7 @@ export default function DashboardLayout({
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
-        hideSetUpButton={user?.role === 'MEMBER' || !pathname?.startsWith('/dashboard/inventory')}
+        hideSetUpButton={user?.role === 'MEMBER' || pathname !== '/dashboard/inventory'}
         user={{
           name: user?.name ?? user?.email ?? 'Guest',
           email: user?.email,
