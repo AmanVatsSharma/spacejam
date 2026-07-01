@@ -161,6 +161,9 @@ export default function TableViewPage() {
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
           <h1 className={styles.headerTitle}>Inventory Overview</h1>
+          <p className={styles.headerSubtitle}>Manage all spaces, pricing, and occupancy</p>
+        </div>
+        <div className={styles.headerActions}>
           <div className={styles.searchBox}>
             <span className={styles.searchIcon}>{Icons.search}</span>
             <input type="text" placeholder="Search spaces..." />
@@ -171,7 +174,7 @@ export default function TableViewPage() {
           >
             {Icons.export} Export CSV
           </button>
-          <button className={styles.addBtn}>
+          <button className={styles.addSpaceBtn}>
             {Icons.plus} Add Space
           </button>
         </div>
