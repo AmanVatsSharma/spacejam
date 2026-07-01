@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import styles from "./page.module.css";
+import { GenerateInvoiceModal } from "@/components/ui/dashboard/generate-invoice-modal";
+import { InvoiceDetailsModal } from "@/components/ui/dashboard/invoice-details-modal";
+import { RenewMembershipModal } from "@/components/ui/dashboard/renew-membership-modal";
+import { PlanUpgradeModal } from "@/components/ui/dashboard/plan-upgrade-modal";
 
 type InvoiceStatus = "paid" | "overdue" | "due_soon" | "occupied";
 
@@ -75,6 +79,15 @@ export default function RevenuePage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | InvoiceStatus>("all");
   const [timeFilter, setTimeFilter] = useState("Last 30 Days");
+  
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedRenewClient, setSelectedRenewClient] = useState<{name: string, date: string, left: string} | null>(null);
+  const [selectedUpgradeClient, setSelectedUpgradeClient] = useState<{name: string, plan: string, upsell: string} | null>(null);
 
   const filteredInvoices = useMemo(() => {
     return mockInvoices.filter((inv) => {
@@ -105,7 +118,7 @@ export default function RevenuePage() {
             </svg>
             <span>Export Excel</span>
           </button>
-          <button type="button" className={styles.createBtn}>
+          <button type="button" className={styles.createBtn} onClick={() => setIsGenerateModalOpen(true)}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M7 2V12M2 7H12" strokeLinecap="round" />
             </svg>
@@ -258,7 +271,10 @@ export default function RevenuePage() {
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button className={styles.actionMenuBtn}>
+                          <button className={styles.actionMenuBtn} onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setIsDetailsModalOpen(true);
+                          }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <circle cx="12" cy="5" r="1" />
                               <circle cx="12" cy="12" r="1" />
@@ -360,7 +376,10 @@ export default function RevenuePage() {
                     </svg>
                     {item.date}
                   </div>
-                  <button className={styles.renewBtn}>Renew</button>
+                  <button className={styles.renewBtn} onClick={() => {
+                    setSelectedRenewClient(item);
+                    setIsRenewModalOpen(true);
+                  }}>Renew</button>
                 </div>
               ))}
             </div>
@@ -383,7 +402,10 @@ export default function RevenuePage() {
                   </div>
                   <div className={styles.upgradeRow}>
                     <span className={styles.upgradeCurrent}>Current: <strong>{item.plan}</strong></span>
-                    <button className={styles.upgradeBtn}>Upgrade</button>
+                    <button className={styles.upgradeBtn} onClick={() => {
+                      setSelectedUpgradeClient(item);
+                      setIsUpgradeModalOpen(true);
+                    }}>Upgrade</button>
                   </div>
                   <div className={styles.upsellAmount}>{item.upsell}</div>
                 </div>
@@ -438,6 +460,32 @@ export default function RevenuePage() {
           </div>
         </aside>
       </div>
+
+      {/* Modals */}
+      <GenerateInvoiceModal 
+        isOpen={isGenerateModalOpen} 
+        onClose={() => setIsGenerateModalOpen(false)} 
+      />
+      
+      <InvoiceDetailsModal 
+        isOpen={isDetailsModalOpen} 
+        onClose={() => setIsDetailsModalOpen(false)}
+        invoiceId={selectedInvoice?.id}
+        clientName={selectedInvoice?.clientName}
+        amount={selectedInvoice?.amount}
+      />
+      
+      <RenewMembershipModal 
+        isOpen={isRenewModalOpen} 
+        onClose={() => setIsRenewModalOpen(false)}
+        clientName={selectedRenewClient?.name}
+      />
+      
+      <PlanUpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)}
+        clientName={selectedUpgradeClient?.name}
+      />
     </div>
   );
 }

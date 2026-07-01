@@ -1,0 +1,277 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #6A7282;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeBtn:hover {
+  color: #101828;
+}
+
+.body {
+  padding: 32px;
+  flex: 1;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.currentPlanBox {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.planLabel {
+  font-size: 13px;
+  color: #6A7282;
+  margin-bottom: 8px;
+}
+
+.planName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #101828;
+  margin-bottom: 4px;
+}
+
+.planPrice {
+  font-size: 24px;
+  font-weight: 700;
+  color: #4A5565;
+  margin-bottom: 20px;
+}
+
+.amenitiesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.amenitiesList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4A5565;
+}
+
+.amenitiesList li svg {
+  color: #9CA3AF;
+}
+
+.upgradeFormBox {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.selectWrapper {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  appearance: none;
+  background: #F3F4F6
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'><path d='M2 3.5L5 6.5L8 3.5' stroke='%236A7282' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    no-repeat right 12px center;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 32px 10px 14px;
+  font-size: 14px;
+  color: #101828;
+  cursor: pointer;
+}
+
+.checkboxGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #101828;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #D1D5DB;
+  cursor: pointer;
+}
+
+.summaryBox {
+  background: #FFF7EB;
+  border: 1px solid #FFE4C4;
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.summaryLabel {
+  font-size: 15px;
+  color: #374151;
+}
+
+.summaryPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FF6A2F;
+}
+
+.benefitsBox {
+  background: #F0F9FF;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.benefitsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101828;
+  margin-bottom: 12px;
+}
+
+.benefitsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.benefitsList li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 13px;
+  color: #4A5565;
+}
+
+.benefitsList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #6A7282;
+}
+
+.footer {
+  padding: 24px 32px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+}
+
+.generateBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #06B6D4;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.generateBtn:hover {
+  background: #0891B2;
+}
