@@ -1,0 +1,246 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #6A7282;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeBtn:hover {
+  color: #101828;
+}
+
+.body {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.selectWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select {
+  width: 100%;
+  appearance: none;
+  background: #F3F4F6
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'><path d='M2 3.5L5 6.5L8 3.5' stroke='%236A7282' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    no-repeat right 12px center;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px 12px 14px;
+  font-size: 14px;
+  color: #101828;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  background: #FFFFFF;
+  border: 1px solid #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+  padding: 11px 31px 11px 13px;
+}
+
+.inputPrefix {
+  position: absolute;
+  left: 14px;
+  color: #6A7282;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.selectWithPrefix {
+  width: 100%;
+  appearance: none;
+  background: #F3F4F6
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'><path d='M2 3.5L5 6.5L8 3.5' stroke='%236A7282' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    no-repeat right 12px center;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px 12px 40px;
+  font-size: 14px;
+  color: #101828;
+  cursor: pointer;
+}
+
+.selectWithPrefix:focus {
+  outline: none;
+  background: #FFFFFF;
+  border: 1px solid #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+  padding: 11px 31px 11px 39px;
+}
+
+.textarea {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #101828;
+  background: #F3F4F6;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  background: #FFFFFF;
+  border: 1px solid #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+  padding: 11px 13px;
+}
+
+.helpText {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.infoBox {
+  background: #FFFBF9;
+  border: 1px solid #FFEBE0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.infoIcon {
+  color: #FF6A2F;
+  display: flex;
+  margin-top: 2px;
+}
+
+.infoContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+
+.infoText {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.footer {
+  padding: 24px 32px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.cancelBtn {
+  padding: 10px 24px;
+  background: #FFFFFF;
+  color: #101828;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #F9FAFB;
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitBtn:hover {
+  background: #E55A25;
+}
