@@ -73,8 +73,14 @@ function getTabsForPath(pathname: string | null): { tabs: HeaderTab[]; activeId:
   if (!section || !SECTION_TABS[section]) return { tabs: [], activeId: undefined };
 
   const tabs = SECTION_TABS[section];
-  // Active = first tab whose href is a prefix of the current path.
-  const active = tabs.find((t) => pathname === t.href || pathname.startsWith(`${t.href}/`));
+  // Find exact match first
+  let active = tabs.find((t) => pathname === t.href);
+  if (!active) {
+    // If no exact match, find the longest prefix match
+    const sortedTabs = [...tabs].sort((a, b) => b.href.length - a.href.length);
+    active = sortedTabs.find((t) => pathname.startsWith(`${t.href}/`));
+  }
+  
   return { tabs, activeId: active?.id };
 }
 
