@@ -1,20 +1,7 @@
-/**
- * File:        apps/web/src/app/dashboard/operations/request/page.tsx
- * Module:      Web · Dashboard · Meeting Room · Request & Registration
- * Purpose:     Manage all types of requests (events, printers, upgrades, services).
- *              Pixel-perfect match to Figma SpaceJam-VB node 0-12998.
- *              Layout: two stat cards (Total Requests + Recent Activities),
- *              search bar + filter dropdowns, followed by a full-width table
- *              with Request Type | Requested By | Details | Date | Status | Action.
- *
- * Author:      AmanVatsSharma
- * Last-updated: 2026-06-26
- */
-
 "use client";
 
-import { useMemo, useState } from "react";
-import styles from "./request.module.css";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { PendingApprovalsModal } from "@/components/ui/dashboard";
 
 type RequestStatus = "Pending" | "Approved" | "Rejected";
 type RequestType = "Events" | "Printer" | "Upgrade" | "Services";
@@ -88,7 +75,7 @@ const REQUESTS: RoomRequest[] = [
     requestType: "Upgrade",
     requestedBy: "Anna Martinez",
     details: "Additional storage locker request",
-    date: "19-04-2026",
+    date: "2026-04-19",
     status: "Approved",
   },
   {
@@ -104,99 +91,86 @@ const REQUESTS: RoomRequest[] = [
 const ACTIVITIES: ActivityItem[] = [
   {
     icon: "payment",
-    title: "Payment Failed",
+    title: "Payment Faild",
     description: "Invoice #INV-1021 (₹4,200)",
   },
   {
     icon: "printer",
     title: "Printer Booked Today",
-    description: "Patel Enterprises printer bo...",
+    description: "Patel Enterprises printer bo.....",
   },
   {
     icon: "printer",
     title: "Printer Booked Today",
-    description: "Patel Enterprises printer bo...",
+    description: "Patel Enterprises printer bo.....",
   },
 ];
 
-function ActivityIcon({ type }: { type: ActivityItem["icon"] }) {
-  if (type === "payment") {
-    return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-        <rect width="20" height="20" rx="4" fill="rgba(255,120,71,0.1)" />
-        <path
-          d="M10 4C7.24 4 5 6.24 5 9s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8.5c-1.93 0-3.5-1.57-3.5-3.5S8.07 5.5 10 5.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
-          fill="#FF7847"
-        />
-      </svg>
-    );
-  }
-  if (type === "printer") {
-    return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-        <rect width="20" height="20" rx="4" fill="rgba(255,120,71,0.1)" />
-        <path
-          d="M14 5h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v2H5a1 1 0 00-1 1v7a1 1 0 001 1h1v1a1 1 0 001 1h6a1 1 0 001-1v-1h1a1 1 0 001-1V6a1 1 0 00-1-1zm-7 6H7V8h5v3zm2-5H7V4h2v2zm4 5h-2v-3h2v3z"
-          fill="#FF7847"
-        />
-      </svg>
-    );
-  }
-  return (
+const Icons = {
+  search: (
+    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  ),
+  chevronDown: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  ),
+  moreVertical: (
+    <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
+    </svg>
+  ),
+  payment: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
       <rect width="20" height="20" rx="4" fill="rgba(255,120,71,0.1)" />
       <path
-        d="M10 4a6 6 0 100 12 6 6 0 000-12zm0 10a4 4 0 110-8 4 4 0 010 8z"
+        d="M10 4C7.24 4 5 6.24 5 9s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8.5c-1.93 0-3.5-1.57-3.5-3.5S8.07 5.5 10 5.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"
         fill="#FF7847"
       />
     </svg>
-  );
-}
-
-function StatusBadge({ status }: { status: RequestStatus }) {
-  return (
-    <span className={`${styles.statusBadge} ${styles[`status${status}`]}`}>
-      {status}
-      <svg
-        className={styles.statusIcon}
-        width="12"
-        height="12"
-        viewBox="0 0 12 12"
-        fill="none"
-        aria-hidden
-      >
-        <path
-          d="M4.5 7L6 8.5L8.5 5.5"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
-}
+  ),
+  printer: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <rect width="20" height="20" rx="4" fill="rgba(255,120,71,0.1)" />
+      <path
+        d="M14 5h-1V3a1 1 0 00-1-1H7a1 1 0 00-1 1v2H5a1 1 0 00-1 1v7a1 1 0 001 1h1v1a1 1 0 001 1h6a1 1 0 001-1v-1h1a1 1 0 001-1V6a1 1 0 00-1-1zm-7 6H7V8h5v3zm2-5H7V4h2v2zm4 5h-2v-3h2v3z"
+        fill="#FF7847"
+      />
+    </svg>
+  )
+};
 
 export default function MeetingRoomRequestPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"All Categories" | RequestType>(
-    "All Categories"
-  );
-  const [statusFilter, setStatusFilter] = useState<"All Statuses" | RequestStatus>(
-    "All Statuses"
-  );
-  const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<"All Categories" | RequestType>("All Categories");
+  const [statusFilter, setStatusFilter] = useState<"All Statues" | RequestStatus>("All Statues");
+  const [typeFilter, setTypeFilter] = useState<"Request Type" | string>("Request Type");
+  
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenActionMenu(null);
+        setOpenStatusMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filtered = useMemo(() => {
     return REQUESTS.filter((r) => {
-      if (showOnlyPending && r.status !== "Pending") return false;
-      if (categoryFilter !== "All Categories" && r.requestType !== categoryFilter) {
-        return false;
-      }
-      if (statusFilter !== "All Statuses" && r.status !== statusFilter) {
-        return false;
-      }
+      if (categoryFilter !== "All Categories" && r.requestType !== categoryFilter) return false;
+      if (statusFilter !== "All Statues" && r.status !== statusFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
@@ -209,7 +183,7 @@ export default function MeetingRoomRequestPage() {
       }
       return true;
     });
-  }, [searchQuery, categoryFilter, statusFilter, showOnlyPending]);
+  }, [searchQuery, categoryFilter, statusFilter]);
 
   const pendingCount = REQUESTS.filter((r) => r.status === "Pending").length;
   const totalCount = REQUESTS.length;
@@ -217,250 +191,239 @@ export default function MeetingRoomRequestPage() {
   const handleClearAll = () => {
     setSearchQuery("");
     setCategoryFilter("All Categories");
-    setStatusFilter("All Statuses");
-    setShowOnlyPending(false);
+    setStatusFilter("All Statues");
+    setTypeFilter("Request Type");
   };
 
-  const handleAction = (requestId: string, action: "Approve" | "Reject" | "Delete") => {
-    console.log(`${action} ${requestId}`);
-    setOpenActionMenu(null);
+  const getStatusStyle = (status: RequestStatus) => {
+    switch (status) {
+      case "Pending": return "bg-[#FFF0E6] text-[#FF7847]";
+      case "Approved": return "bg-[#E6F4EA] text-[#1E8E3E]";
+      case "Rejected": return "bg-[#FCE8E6] text-[#D93025]";
+      default: return "bg-gray-100 text-gray-700";
+    }
   };
 
   return (
-    <div className={styles.page}>
-      {/* Two stat cards row */}
-      <div className={styles.statCardsRow}>
-        {/* Total Requests card */}
-        <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <span className={styles.statCardLabel}>Total Requests</span>
-            <span className={styles.statCardCount}>{totalCount}</span>
-          </div>
-          <div className={styles.statCardRow}>
-            <span className={styles.statCardSub}>Pending Approvals</span>
-            <span className={styles.statCardCount}>{pendingCount}</span>
-          </div>
-          <button
-            type="button"
-            className={styles.viewPendingButton}
-            onClick={() => {
-              setShowOnlyPending(true);
-              setStatusFilter("All Statuses");
-              setCategoryFilter("All Categories");
-              setSearchQuery("");
-            }}
-          >
-            View Pending
-          </button>
-        </div>
-
-        {/* Recent Activities card */}
-        <div className={styles.statCard}>
-          <div className={styles.statCardHeader}>
-            <span className={styles.statCardLabel}>Recent Activities</span>
-          </div>
-          <div className={styles.activityList}>
-            {ACTIVITIES.map((activity, idx) => (
-              <div key={idx} className={styles.activityItem}>
-                <ActivityIcon type={activity.icon} />
-                <div className={styles.activityText}>
-                  <span className={styles.activityTitle}>{activity.title}</span>
-                  <span className={styles.activityDesc}>{activity.description}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10" ref={dropdownRef}>
+      
+      {/* Header Card */}
+      <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">
+        <h1 className="text-[28px] font-bold text-[#101828]">Request & Registration</h1>
+        <p className="text-[15px] text-[#667085] mt-1">Manage requests for events, printers and account upgrades</p>
       </div>
 
-      {/* Search bar */}
-      <div className={styles.searchBar}>
-        <svg
-          className={styles.searchIcon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder="Search Requests.."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Search requests"
-        />
-      </div>
+      <div className="flex gap-6 items-start">
+        
+        {/* Left Column - Main Content */}
+        <div className="flex-1 flex flex-col gap-5 min-w-0">
+          
+          {/* Filters Row */}
+          <div className="flex items-center gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-[280px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2">{Icons.search}</span>
+              <input
+                type="text"
+                placeholder="Search Requests.."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] bg-white text-gray-700 shadow-sm"
+              />
+            </div>
+            
+            {/* Category Dropdown */}
+            <div className="relative">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as any)}
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[150px] shadow-sm"
+              >
+                <option>All Categories</option>
+                <option>Events</option>
+                <option>Printer</option>
+                <option>Upgrade</option>
+                <option>Services</option>
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
+            </div>
 
-      {/* Filter dropdowns */}
-      <div className={styles.filterRow}>
-        <div className={styles.selectWrap}>
-          <select
-            className={styles.select}
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as any)}
-            aria-label="Filter by category"
-          >
-            <option>All Categories</option>
-            <option>Events</option>
-            <option>Printer</option>
-            <option>Upgrade</option>
-            <option>Services</option>
-          </select>
-          <svg
-            className={styles.selectIcon}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </div>
+            {/* Status Dropdown */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[140px] shadow-sm"
+              >
+                <option>All Statues</option>
+                <option>Pending</option>
+                <option>Approved</option>
+                <option>Rejected</option>
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
+            </div>
 
-        <div className={styles.selectWrap}>
-          <select
-            className={styles.select}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            aria-label="Filter by status"
-          >
-            <option>All Statuses</option>
-            <option>Pending</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-          </select>
-          <svg
-            className={styles.selectIcon}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </div>
+            {/* Request Type Dropdown */}
+            <div className="relative">
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[150px] shadow-sm"
+              >
+                <option>Request Type</option>
+                <option>Type A</option>
+                <option>Type B</option>
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
+            </div>
 
-        <button
-          type="button"
-          className={styles.clearButton}
-          onClick={handleClearAll}
-          aria-label="Clear all filters"
-        >
-          Clear All
-        </button>
-      </div>
+            {/* Clear All Button */}
+            <button
+              onClick={handleClearAll}
+              className="px-5 py-2.5 bg-[#FFECE5] text-[#FF6A2F] rounded-lg text-[14px] font-medium hover:bg-[#FFD9CC] transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
 
-      {/* Main table card */}
-      <div className={styles.tableCard}>
-        <div className={styles.tableScroll}>
-          <table className={styles.table}>
-            <thead className={styles.thead}>
-              <tr>
-                <th>Request Type</th>
-                <th>Requested By</th>
-                <th>Details</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Action</th>
-                <th>
-                  <input type="checkbox" className={styles.checkbox} aria-label="Select all" />
-                </th>
-              </tr>
-            </thead>
-            <tbody className={styles.tbody}>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className={styles.emptyState}>
-                    No requests match the current filters.
-                  </td>
+          {/* Table Card */}
+          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-visible relative">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Request Type</th>
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Requested By</th>
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Details</th>
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-5 text-[12px] font-bold text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
-              )}
-              {filtered.map((request) => (
-                <tr key={request.id} className={styles.tableRow}>
-                  <td className={styles.cellType}>{request.requestType}</td>
-                  <td className={styles.cellRequestedBy}>{request.requestedBy}</td>
-                  <td className={styles.cellDetails}>{request.details}</td>
-                  <td className={styles.cellDate}>{request.date}</td>
-                  <td>
-                    <StatusBadge status={request.status} />
-                  </td>
-                  <td className={styles.actionCell}>
-                    <button
-                      type="button"
-                      className={styles.actionButton}
-                      onClick={() =>
-                        setOpenActionMenu(openActionMenu === request.id ? null : request.id)
-                      }
-                      aria-label={`Actions for ${request.id}`}
-                      aria-expanded={openActionMenu === request.id}
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        aria-hidden
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((request) => (
+                  <tr key={request.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-5 text-[14px] font-medium text-gray-900">{request.requestType}</td>
+                    <td className="px-6 py-5 text-[14px] font-bold text-gray-900">{request.requestedBy}</td>
+                    <td className="px-6 py-5 text-[14px] text-gray-500 max-w-[200px] leading-relaxed">{request.details}</td>
+                    <td className="px-6 py-5 text-[14px] text-gray-500">{request.date}</td>
+                    
+                    {/* Status Cell with Dropdown */}
+                    <td className="px-6 py-5 relative">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenStatusMenu(openStatusMenu === request.id ? null : request.id);
+                          setOpenActionMenu(null);
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium ${getStatusStyle(request.status)}`}
                       >
-                        <circle cx="10" cy="3.5" r="1.5" fill="currentColor" />
-                        <circle cx="10" cy="10" r="1.5" fill="currentColor" />
-                        <circle cx="10" cy="16.5" r="1.5" fill="currentColor" />
-                      </svg>
-                    </button>
+                        {request.status}
+                        <svg className="w-3 h-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {openStatusMenu === request.id && (
+                        <div className="absolute left-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden">
+                          {["Pending", "Approved", "Rejected"].map((opt) => (
+                            <button
+                              key={opt}
+                              className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                              onClick={() => {
+                                console.log(`Set status ${opt} for ${request.id}`);
+                                setOpenStatusMenu(null);
+                              }}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    
+                    {/* Action Cell with Dropdown */}
+                    <td className="px-6 py-5 relative">
+                      <button 
+                        className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenActionMenu(openActionMenu === request.id ? null : request.id);
+                          setOpenStatusMenu(null);
+                        }}
+                      >
+                        {Icons.moreVertical}
+                      </button>
+                      
+                      {openActionMenu === request.id && (
+                        <div className="absolute right-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden">
+                          <button
+                            className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => setOpenActionMenu(null)}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={() => setOpenActionMenu(null)}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-                    {openActionMenu === request.id && (
-                      <div className={styles.actionMenu}>
-                        <button
-                          type="button"
-                          className={styles.actionMenuItem}
-                          onClick={() => handleAction(request.id, "Approve")}
-                        >
-                          Approve
-                        </button>
-                        <div className={styles.actionMenuDivider} />
-                        <button
-                          type="button"
-                          className={styles.actionMenuItem}
-                          onClick={() => handleAction(request.id, "Reject")}
-                        >
-                          Reject
-                        </button>
-                        <div className={styles.actionMenuDivider} />
-                        <button
-                          type="button"
-                          className={styles.actionMenuItem}
-                          onClick={() => handleAction(request.id, "Delete")}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      className={styles.checkbox}
-                      aria-label={`Select ${request.id}`}
-                    />
-                  </td>
-                </tr>
+        {/* Right Column - Sidebar Widgets */}
+        <div className="w-[320px] flex flex-col gap-5 shrink-0">
+          
+          {/* Total Requests Card */}
+          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[16px] font-bold text-gray-900">Total Requests</span>
+              <span className="text-[18px] font-semibold text-gray-900">{totalCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-gray-500">Pending Approvals</span>
+              <span className="text-[16px] font-semibold text-gray-900">{pendingCount}</span>
+            </div>
+            <button 
+              onClick={() => setShowPendingModal(true)}
+              className="w-full mt-2 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+            >
+              View Pending
+            </button>
+          </div>
+
+          {/* Recent Activities Card */}
+          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">
+            <h3 className="text-[16px] font-bold text-gray-900 mb-5">Recent Activities</h3>
+            <div className="flex flex-col gap-6">
+              {ACTIVITIES.map((activity, idx) => (
+                <div key={idx} className="flex gap-4 items-start">
+                  <div className="shrink-0 mt-0.5">
+                    {activity.icon === "payment" ? Icons.payment : Icons.printer}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[14px] font-bold text-gray-900">{activity.title}</span>
+                    <span className="text-[13px] text-gray-500">{activity.description}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
+
         </div>
       </div>
+      
+      <PendingApprovalsModal 
+        isOpen={showPendingModal}
+        onClose={() => setShowPendingModal(false)}
+      />
     </div>
   );
 }
