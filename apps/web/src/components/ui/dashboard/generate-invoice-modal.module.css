@@ -1,0 +1,158 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.body {
+  padding: 32px;
+  flex: 1;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #101828;
+  margin: 0;
+}
+
+.changeClientBtn {
+  font-size: 13px;
+  font-weight: 500;
+  color: #FF6A2F;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.changeClientBtn:hover {
+  text-decoration: underline;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  color: #4A5565;
+}
+
+.input, .textarea {
+  width: 100%;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: #101828;
+  background: #FAFAFA;
+}
+
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+  background: #FFFFFF;
+}
+
+.divider {
+  height: 1px;
+  background: #E5E7EB;
+  margin-top: 16px;
+}
+
+.footer {
+  padding: 20px 32px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerRight {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.textBtn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+}
+
+.textBtn:hover {
+  color: #101828;
+}
+
+.primaryBtn {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: #E55A25;
+}
