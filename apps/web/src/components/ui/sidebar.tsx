@@ -72,12 +72,14 @@ const InventoryIcon = ({ active }: IconProps) => (
   </svg>
 );
 
+/*
 const LocationIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M9 2C6.79 2 5 3.79 5 6C5 9 9 14 9 14C9 14 13 9 13 6C13 3.79 11.21 2 9 2Z" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
     <circle cx="9" cy="6" r="2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
   </svg>
 );
+*/
 
 const SettingsIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,6 +88,7 @@ const SettingsIcon = ({ active }: IconProps) => (
   </svg>
 );
 
+/*
 const FloorIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="2" width="12" height="14" rx="2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
@@ -93,7 +96,9 @@ const FloorIcon = ({ active }: IconProps) => (
     <path d="M7 2V6M11 2V6" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
   </svg>
 );
+*/
 
+/*
 const BookingsIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="4" width="12" height="11" rx="2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
@@ -111,6 +116,7 @@ const ChangelogIcon = ({ active }: IconProps) => (
     <circle cx="11" cy="10" r="0.9" fill={active ? "#FFFFFF" : "#4B5563"}/>
   </svg>
 );
+*/
 
 const icons: Record<string, (props: IconProps) => ReactNode> = {
   dashboard: DashboardIcon,

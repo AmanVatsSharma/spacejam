@@ -488,7 +488,7 @@ export default function RevenueOverviewPage() {
       </div>
 
       
-      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
+      <ExportExcelModal isOpen={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

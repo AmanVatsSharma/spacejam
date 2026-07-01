@@ -296,7 +296,7 @@ export default function TableViewPage() {
         </table>
       </div>
 
-      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
+      <ExportExcelModal isOpen={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

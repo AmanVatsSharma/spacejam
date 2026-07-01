@@ -91,7 +91,6 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
         {steps.map((step, idx) => {
           const isCompleted = currentStep > step.num;
           const isActive = currentStep === step.num;
-          const isFuture = currentStep < step.num;
 
           return (
             <React.Fragment key={step.num}>

@@ -344,7 +344,7 @@ export default function OccupancyOverviewPage() {
 
       </div>
 
-      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
+      <ExportExcelModal isOpen={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

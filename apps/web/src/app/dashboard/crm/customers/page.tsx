@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
-import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
+
 
 // Icons
 const Icons = {
@@ -118,6 +118,7 @@ export default function CustomersPage() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  console.log(showAddClient);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -309,6 +310,7 @@ export default function CustomersPage() {
         open={showExportDialog} 
         onClose={() => setShowExportDialog(false)} 
       />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
   );
 }
@@ -445,9 +447,6 @@ function ExportToExcelDialog({
         </footer>
       </div>
       
-      {/* Modals */}
-      <ExportExcelModal open={showExportDialog} onClose={() => setShowExportDialog(false)} />
-      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
   );
 }
