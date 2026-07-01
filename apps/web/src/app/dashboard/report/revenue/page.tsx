@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./revenue.module.css";
 
 const Icons = {
@@ -71,6 +72,7 @@ const Icons = {
 export default function RevenueOverviewPage() {
   const [activeTab, setActiveTab] = useState("Invoices");
   const [openMenuId, setOpenMenuId] = useState<number | null>(1); // 1 is default open for demo
+  const [showExport, setShowExport] = useState(false);
 
   return (
     <div className={styles.page}>
@@ -81,7 +83,10 @@ export default function RevenueOverviewPage() {
           <h1 className={styles.headerTitle}>Revenue Overview</h1>
           <p className={styles.headerSubtitle}>Monitor meeting room usage , availability and booking status</p>
         </div>
-        <button className={styles.exportBtn}>
+        <button 
+          onClick={() => setShowExport(true)}
+          className={styles.exportBtn}
+        >
           {Icons.download} Export Excel
         </button>
       </div>
@@ -482,6 +487,8 @@ export default function RevenueOverviewPage() {
 
       </div>
 
+      
+      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

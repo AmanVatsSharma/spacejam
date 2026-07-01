@@ -54,3 +54,8 @@ export { MetricCard, DepositHeldCardDemo, EventTodayCardDemo } from "./metric-ca
 
 // KPI Card with sparklines
 export { KPICard } from "./kpi-card";
+export * from './add-lead-modal';
+export * from './schedule-visit-modal';
+export * from './send-proposal-modal';
+export * from './add-client-modal';
+export * from './book-room-modal';

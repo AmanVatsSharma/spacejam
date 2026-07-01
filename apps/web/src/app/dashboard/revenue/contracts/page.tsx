@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { AddLeadModal } from "@/components/ui/dashboard";
 
 export default function ContractsPage() {
+  const [showAddLead, setShowAddLead] = useState(false);
   
   return (
     <div className="flex gap-6 h-[calc(100vh-80px)] font-sans">
@@ -44,7 +46,10 @@ export default function ContractsPage() {
             Clear Filters
           </button>
           
-          <button className="ml-auto px-5 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold flex items-center gap-2 hover:bg-[#E55A20] transition-colors shadow-sm">
+          <button 
+            onClick={() => setShowAddLead(true)}
+            className="ml-auto px-5 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold flex items-center gap-2 hover:bg-[#E55A20] transition-colors shadow-sm"
+          >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
             Add Lead
           </button>
@@ -295,6 +300,9 @@ export default function ContractsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Modals */}
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
     </div>
   );
 }

@@ -18,6 +18,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { StatCards } from "@/components/ui/stat-card";
 import { TotalLeadCardDemo } from "@/components/ui/dashboard/total-lead-card";
 import { PaymentHealthCardDemo } from "@/components/ui/dashboard/payment-health-card";
@@ -26,8 +27,12 @@ import { TasksComplianceCardDemo } from "@/components/ui/dashboard/tasks-complia
 import { ApprovalQueueCardDemo } from "@/components/ui/dashboard/approval-queue-card";
 import { RoomAvailabilityCircleCardDemo } from "@/components/ui/dashboard/room-availability-circle-card";
 import { MeetingRoomBookingGridDemo } from "@/components/ui/dashboard/meeting-room-booking-grid";
+import { AddLeadModal, AddClientModal } from "@/components/ui/dashboard";
 
 export default function DashboardPage() {
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
+
   return (
     <div className="flex flex-col gap-6 p-2">
       {/* Welcome Header */}
@@ -41,11 +46,17 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]">
+          <button 
+            onClick={() => setShowAddLead(true)}
+            className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
             Add Lead
           </button>
-          <button className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]">
+          <button 
+            onClick={() => setShowAddClient(true)}
+            className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
             Add Client
           </button>
@@ -94,6 +105,10 @@ export default function DashboardPage() {
           <ApprovalQueueCardDemo />
         </div>
       </div>
+      
+      {/* Modals */}
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
   );
 }

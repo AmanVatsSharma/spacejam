@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
+import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 
 // Icons
 const Icons = {
@@ -115,6 +117,7 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -148,7 +151,10 @@ export default function CustomersPage() {
           >
             {Icons.download} Export Excel
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">
+          <button 
+            onClick={() => setShowAddClient(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+          >
             {Icons.userPlus} Add Client
           </button>
         </div>
@@ -438,6 +444,10 @@ function ExportToExcelDialog({
           </button>
         </footer>
       </div>
+      
+      {/* Modals */}
+      <ExportExcelModal open={showExportDialog} onClose={() => setShowExportDialog(false)} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
   );
 }

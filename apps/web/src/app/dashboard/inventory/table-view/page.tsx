@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./table-view.module.css";
 
 const Icons = {
@@ -32,6 +33,7 @@ const Icons = {
 
 export default function TableViewPage() {
   const [activeDropdown, setActiveDropdown] = useState<number | null>(0);
+  const [showExport, setShowExport] = useState(false);
 
   const inventoryData = [
     {
@@ -159,13 +161,17 @@ export default function TableViewPage() {
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
           <h1 className={styles.headerTitle}>Inventory Overview</h1>
-          <p className={styles.headerSubtitle}>Manage all spaces, pricing, and occupancy</p>
-        </div>
-        <div className={styles.headerActions}>
-          <button className={styles.exportBtn}>
-            {Icons.export} Export Excel
+          <div className={styles.searchBox}>
+            <span className={styles.searchIcon}>{Icons.search}</span>
+            <input type="text" placeholder="Search spaces..." />
+          </div>
+          <button 
+            onClick={() => setShowExport(true)}
+            className={styles.exportBtn}
+          >
+            {Icons.export} Export CSV
           </button>
-          <button className={styles.addSpaceBtn}>
+          <button className={styles.addBtn}>
             {Icons.plus} Add Space
           </button>
         </div>
@@ -287,6 +293,7 @@ export default function TableViewPage() {
         </table>
       </div>
 
+      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

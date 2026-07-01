@@ -11,7 +11,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import {
   StatCard,
@@ -29,11 +29,16 @@ import {
   MeetingRoomBookingGridDemo,
   DepositHeldCardDemo,
   EventTodayCardDemo,
+  AddLeadModal,
+  AddClientModal,
 } from "@/components/ui/dashboard";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const greetingName = user?.name?.split(/\s+/)[0] ?? user?.email?.split("@")[0] ?? "Jhon Doe";
+
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const stats = [
     {
@@ -81,13 +86,19 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2">
+          <button 
+            onClick={() => setShowAddLead(true)}
+            className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2"
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7 0v4m2-2h-4M2 14v-1.5a3.5 3.5 0 0 1 3.5-3.5h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Add Lead
           </button>
-          <button className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2">
+          <button 
+            onClick={() => setShowAddClient(true)}
+            className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2"
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7 0v4m2-2h-4M2 14v-1.5a3.5 3.5 0 0 1 3.5-3.5h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -142,6 +153,10 @@ export default function DashboardPage() {
           <ApprovalQueueCardDemo />
         </div>
       </div>
+
+      {/* Modals */}
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
   );
 }

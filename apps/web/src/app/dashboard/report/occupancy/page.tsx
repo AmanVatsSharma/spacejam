@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./occupancy.module.css";
 
 const Icons = {
@@ -75,6 +76,7 @@ const Icons = {
 
 export default function OccupancyOverviewPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [showExport, setShowExport] = useState(false);
 
   return (
     <div className={styles.page}>
@@ -85,7 +87,10 @@ export default function OccupancyOverviewPage() {
           <h1 className={styles.headerTitle}>Occupancy Overview</h1>
           <p className={styles.headerSubtitle}>Track occupancy trends, client movement, exits, and active utilization across all centers.</p>
         </div>
-        <button className={styles.exportBtn}>
+        <button 
+          onClick={() => setShowExport(true)}
+          className={styles.exportBtn}
+        >
           {Icons.download} Export Excel
         </button>
       </div>
@@ -339,6 +344,7 @@ export default function OccupancyOverviewPage() {
 
       </div>
 
+      <ExportExcelModal open={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
 }

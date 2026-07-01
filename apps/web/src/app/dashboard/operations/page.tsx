@@ -13,6 +13,7 @@
 "use client";
 
 import { useState } from "react";
+import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";
 
 interface Booking {
   id: string;
@@ -41,6 +42,7 @@ type TabType = "bookings" | "check-in" | "spaces" | "meeting-rooms";
 
 export default function OperationsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("meeting-rooms");
+  const [showBookRoom, setShowBookRoom] = useState(false);
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "bookings", label: "All Bookings" },
@@ -67,7 +69,10 @@ export default function OperationsPage() {
             </svg>
             <span>Schedule</span>
           </button>
-          <button className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm">
+          <button 
+            onClick={() => setShowBookRoom(true)}
+            className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm"
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V13M3 8H13" />
             </svg>
@@ -405,7 +410,12 @@ export default function OperationsPage() {
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Available</span>
               </div>
               <p className="text-sm text-[#4A5565] mb-4">Next booking: 4:00 PM</p>
-              <button className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]">Book Now</button>
+              <button 
+                onClick={() => setShowBookRoom(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+              >
+                Book Now
+              </button>
             </div>
 
             {/* Boardroom B */}
@@ -432,7 +442,12 @@ export default function OperationsPage() {
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Available</span>
               </div>
-              <button className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]">Book Now</button>
+              <button 
+                onClick={() => setShowBookRoom(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+              >
+                Book Now
+              </button>
             </div>
 
             {/* Conference 2 */}
@@ -457,7 +472,12 @@ export default function OperationsPage() {
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Available</span>
               </div>
               <p className="text-sm text-[#4A5565] mb-4">Next booking: 5:00 PM</p>
-              <button className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]">Book Now</button>
+              <button 
+                onClick={() => setShowBookRoom(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+              >
+                Book Now
+              </button>
             </div>
 
             {/* Meeting Room 5 */}
@@ -485,7 +505,12 @@ export default function OperationsPage() {
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Available</span>
               </div>
               <p className="text-sm text-[#4A5565] mb-4">Next booking: 2:30 PM</p>
-              <button className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]">Book Now</button>
+              <button 
+                onClick={() => setShowBookRoom(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+              >
+                Book Now
+              </button>
             </div>
 
             {/* Meeting Room 6 */}
@@ -509,7 +534,12 @@ export default function OperationsPage() {
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">Available</span>
               </div>
-              <button className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]">Book Now</button>
+              <button 
+                onClick={() => setShowBookRoom(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+              >
+                Book Now
+              </button>
             </div>
           </div>
 
@@ -562,6 +592,9 @@ export default function OperationsPage() {
           </div>
         </div>
       )}
+      
+      {/* Modals */}
+      <BookRoomModal open={showBookRoom} onClose={() => setShowBookRoom(false)} />
     </div>
   );
 }
