@@ -16,7 +16,7 @@ import { useState } from "react";
 import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
-import { SetUpCenterModal } from "@/components/ui/dashboard";
+import { SetUpCenterModal, FloorSetupModal } from "@/components/ui/dashboard";
 
 const mockLocations = [
   {
@@ -79,6 +79,7 @@ const mockFloors = [
 export default function InventoryPage() {
   const [locations, setLocations] = useState(mockLocations);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showFloorModal, setShowFloorModal] = useState(false);
 
   const handleLocationSelect = (locationId: string, centerId?: string) => {
     setLocations((prev) =>
@@ -126,7 +127,10 @@ export default function InventoryPage() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-[#101828]">Floor Overview</h2>
-            <button className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm">
+            <button 
+              onClick={() => setShowFloorModal(true)}
+              className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M8 3V13M3 8H13" />
               </svg>
@@ -143,6 +147,11 @@ export default function InventoryPage() {
       <SetUpCenterModal 
         isOpen={showSetupModal} 
         onClose={() => setShowSetupModal(false)} 
+      />
+
+      <FloorSetupModal 
+        isOpen={showFloorModal}
+        onClose={() => setShowFloorModal(false)}
       />
     </div>
   );
