@@ -1,16 +1,14 @@
-/* Room Availability Circle Card - Figma node 0:32796 */
+/* Room Availability Circle Card - Figma Exact Match */
 
 .card {
   width: 100%;
-  min-width: 347px;
-  min-height: 388px;
   background: #FFFFFF;
-  border-radius: 14px;
-  box-shadow: 0px 1px 2px -1px rgba(0, 0, 0, 0.10), 0px 1px 3px rgba(0, 0, 0, 0.10);
-  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid #F3F4F6;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   box-sizing: border-box;
 }
 
@@ -25,49 +23,45 @@
 .titleSection {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   flex: 1;
   min-width: 0;
 }
 
 .title {
   font-family: 'Inter', sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #1F2937;
-  line-height: 28px;
-  letter-spacing: -0.3125px;
+  color: #111827;
   margin: 0;
 }
 
 .subtitle {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
   color: #6B7280;
-  line-height: 16px;
   margin: 0;
 }
 
 .viewPlanBtn {
-  background: #FF6A2F;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
+  background: #FFFFFF;
+  color: #FF7A49;
+  border: 1px solid #F3F4F6;
+  border-radius: 20px;
+  padding: 8px 16px;
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s ease;
-  height: 28px;
-  display: flex;
-  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: all 0.15s ease;
 }
 
 .viewPlanBtn:hover {
-  background: #E55A1F;
+  background: #FFF5F2;
+  border-color: #FFD8CC;
 }
 
 /* Chart section */
@@ -75,139 +69,158 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
 .circleWrap {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 240px;
+  height: 130px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
 }
 
 .svg {
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .circleCenter {
   position: absolute;
-  inset: 0;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  pointer-events: none;
+  width: 100%;
 }
 
 .centerRatio {
   font-family: 'Inter', sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  color: #1F2937;
-  line-height: 22px;
-  letter-spacing: -0.2px;
+}
+
+.ratioTeal {
+  color: #00D1C6;
+}
+
+.ratioOrange {
+  color: #FF7A49;
 }
 
 .centerChange {
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.changeOrange {
+  color: #FF7A49;
   font-weight: 500;
-  color: #10B981;
-  line-height: 14px;
+}
+
+.changeGray {
+  color: #6B7280;
+  font-weight: 400;
 }
 
 /* Legend */
 .legend {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
   justify-content: center;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .legendDot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .legendDotOrange {
-  background: #FF7847;
+  background: #FF7A49;
 }
 
-.legendDotGray {
-  background: #9CA3AF;
+.legendDotTeal {
+  background: #00D1C6;
 }
 
 .legendLabel {
   font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   color: #6B7280;
-  line-height: 14px;
 }
 
 /* Sub stats grid */
 .subStatsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 16px;
 }
 
 .subStat {
+  background: #FFFFFF;
+  border: 1px solid #FFD8CC;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .subStatHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
 }
 
 .subStatLabel {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
-  color: #1F2937;
-  line-height: 14px;
+  color: #6B7280;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .subStatValue {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
-  font-weight: 600;
-  color: #6B7280;
-  line-height: 16px;
-  white-space: nowrap;
+}
+
+.valueNumber {
+  color: #111827;
+  font-weight: 700;
+}
+
+.valueTotal {
+  color: #111827;
+  font-weight: 500;
 }
 
 .progressTrack {
   width: 100%;
-  height: 5px;
-  background: #F3F4F6;
-  border-radius: 3px;
+  height: 6px;
+  background: #FF7A49;
+  border-radius: 4px;
   overflow: hidden;
 }
 
-.progressFill {
+.progressFillLeft {
   height: 100%;
-  background: linear-gradient(90deg, #FF7847 0%, #FF6A2F 100%);
-  border-radius: 3px;
-  transition: width 0.3s ease;
+  background: #00D1C6;
+  border-radius: 0;
 }

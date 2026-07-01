@@ -29,68 +29,40 @@ interface TotalLeadCardProps {
   className?: string;
 }
 
-// Mini bar chart component
-const BarChart = ({
-  color,
-  fadedColor,
-}: {
-  color: string;
-  fadedColor: string;
-}) => {
-  // Bar heights for visual representation
-  const coloredHeights = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
-  const fadedHeights = [22, 24, 26, 28, 30, 32, 34, 36, 38, 40];
-
-  return (
-    <div className={styles.barChartContainer}>
-      {/* Colored bars */}
-      <div className={styles.coloredBars}>
-        {coloredHeights.map((h, i) => (
-          <div
-            key={`colored-${i}`}
-            className={styles.bar}
-            style={{
-              height: `${h}px`,
-              backgroundColor: color,
-            }}
-          />
-        ))}
-      </div>
-      {/* Faded bars */}
-      <div className={styles.fadedBars}>
-        {fadedHeights.map((h, i) => (
-          <div
-            key={`faded-${i}`}
-            className={styles.bar}
-            style={{
-              height: `${h}px`,
-              backgroundColor: fadedColor,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Mini KPI section
 const MiniKPI = ({
   label,
   value,
   color,
   fadedColor,
+  percentage,
 }: {
   label: string;
   value: number;
   color: string;
   fadedColor: string;
-}) => (
-  <div className={styles.miniKPI}>
-    <span className={styles.miniLabel}>{label}</span>
-    <BarChart color={color} fadedColor={fadedColor} />
-    <span className={styles.miniValue}>{value}</span>
-  </div>
-);
+  percentage: number;
+}) => {
+  const totalTicks = 35;
+  const coloredCount = Math.floor((percentage / 100) * totalTicks);
+  const fadedCount = totalTicks - coloredCount;
+
+  return (
+    <div className={styles.miniKPI}>
+      <div className={styles.kpiTop} style={{ borderLeftColor: color }}>
+        <span className={styles.miniLabel}>{label}</span>
+        <div className={styles.barChartContainer}>
+          {Array.from({ length: coloredCount }).map((_, i) => (
+            <div key={`c-${i}`} className={styles.tick} style={{ backgroundColor: color }} />
+          ))}
+          {Array.from({ length: fadedCount }).map((_, i) => (
+            <div key={`f-${i}`} className={styles.tick} style={{ backgroundColor: fadedColor }} />
+          ))}
+        </div>
+      </div>
+      <span className={styles.miniValue}>{value}</span>
+    </div>
+  );
+};
 
 export function TotalLeadCard({
   totalLeads = 1349,
@@ -102,16 +74,10 @@ export function TotalLeadCard({
 }: TotalLeadCardProps) {
   return (
     <div className={`${styles.card} ${className}`}>
-      {/* Header row */}
-      <div className={styles.headerRow}>
-        {/* Left: Title and subtitle */}
-        <div className={styles.titleSection}>
-          <h3 className={styles.title}>Total Lead</h3>
-          <p className={styles.subtitle}>Total available room and seat</p>
-        </div>
-
-        {/* Right: Value and trend */}
-        <div className={styles.valueSection}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>Total Lead</h3>
+        <p className={styles.subtitle}>Total available room and seat</p>
+        <div className={styles.valueRow}>
           <span className={styles.mainValue}>{totalLeads}</span>
           <span className={styles.trend}>
             <span className={styles.trendPercent}>+{changePercent}%</span>
@@ -120,27 +86,17 @@ export function TotalLeadCard({
         </div>
       </div>
 
-      {/* Orange separator line */}
       <div className={styles.separator} />
 
-      {/* Mini KPI sections */}
       <div className={styles.kpiSection}>
-        <MiniKPI label="Visited" value={visited} color="#FE7A49" fadedColor="rgba(254, 122, 73, 0.30)" />
-        <MiniKPI label="Inquiry" value={inquiry} color="#4ECDC3" fadedColor="rgba(113, 214, 206, 0.30)" />
-        <MiniKPI label="Converted" value={converted} color="#FFD167" fadedColor="rgba(255, 209, 103, 0.30)" />
-      </div>
-
-      {/* Bottom values row */}
-      <div className={styles.bottomValues}>
-        <span className={styles.bottomValue}>{visited}</span>
-        <span className={styles.bottomValue}>{inquiry}</span>
-        <span className={styles.bottomValue}>{converted}</span>
+        <MiniKPI label="Visited" value={visited} color="#FE7A49" fadedColor="rgba(254, 122, 73, 0.30)" percentage={55} />
+        <MiniKPI label="Inquiry" value={inquiry} color="#4ECDC3" fadedColor="rgba(78, 205, 195, 0.30)" percentage={45} />
+        <MiniKPI label="Converted" value={converted} color="#FFD167" fadedColor="rgba(255, 209, 103, 0.30)" percentage={35} />
       </div>
     </div>
   );
 }
 
-// Demo export
 export function TotalLeadCardDemo() {
   return <TotalLeadCard className={styles.demo} />;
 }

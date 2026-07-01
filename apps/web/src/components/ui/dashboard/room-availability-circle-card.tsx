@@ -54,13 +54,34 @@ export function RoomAvailabilityCircleCard({
   totalSeats = 500,
   changePercent = 3.4,
   subStats = defaultSubStats,
-  onViewFloorPlan,
+  onViewFloorPlan = () => {},
   className = "",
 }: RoomAvailabilityCircleCardProps) {
-  const ratio = totalSeats > 0 ? totalAvailable / totalSeats : 0;
-  // 71% — based on 355/500
-  const dashArray = 2 * Math.PI * 56; // circumference for r=56
-  const dashOffset = dashArray * (1 - ratio);
+  
+  const renderTicks = () => {
+    const ticks = [];
+    const totalTicks = 30;
+    const ratio = totalSeats > 0 ? totalAvailable / totalSeats : 0;
+    const availableTicks = Math.round(ratio * totalTicks);
+    
+    for (let i = 0; i <= totalTicks; i++) {
+      const angle = -90 + (i * (180 / totalTicks));
+      const isAvailable = i < availableTicks;
+      const color = isAvailable ? "#00D1C6" : "#FF7A49";
+      
+      ticks.push(
+        <line
+          key={i}
+          x1="120" y1="20" x2="120" y2="40"
+          stroke={color}
+          strokeWidth="4"
+          strokeLinecap="round"
+          transform={`rotate(${angle} 120 120)`}
+        />
+      );
+    }
+    return ticks;
+  };
 
   return (
     <div className={`${styles.card} ${className}`}>
@@ -83,50 +104,18 @@ export function RoomAvailabilityCircleCard({
       {/* Circular chart */}
       <div className={styles.chartSection}>
         <div className={styles.circleWrap}>
-          <svg width="160" height="160" viewBox="0 0 160 160" className={styles.svg}>
-            {/* Background ring */}
-            <circle
-              cx="80"
-              cy="80"
-              r="56"
-              fill="none"
-              stroke="#F3F4F6"
-              strokeWidth="14"
-            />
-            {/* Progress ring (available - orange) */}
-            <circle
-              cx="80"
-              cy="80"
-              r="56"
-              fill="none"
-              stroke="#FF7847"
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeDasharray={dashArray}
-              strokeDashoffset={dashOffset}
-              transform="rotate(-90 80 80)"
-            />
-            {/* Booked segment overlay (gray) */}
-            <circle
-              cx="80"
-              cy="80"
-              r="56"
-              fill="none"
-              stroke="#D1D5DB"
-              strokeWidth="14"
-              strokeLinecap="round"
-              strokeDasharray={`${dashArray * (1 - ratio)} ${dashArray}`}
-              transform="rotate(-90 80 80)"
-              opacity="0.4"
-            />
+          <svg width="240" height="130" viewBox="0 0 240 130" className={styles.svg}>
+            {renderTicks()}
           </svg>
           <div className={styles.circleCenter}>
-            <span className={styles.centerRatio}>
-              {totalAvailable}/{totalSeats}
-            </span>
-            <span className={styles.centerChange}>
-              +{changePercent}% vs Last week
-            </span>
+            <div className={styles.centerRatio}>
+              <span className={styles.ratioTeal}>{totalAvailable}</span>
+              <span className={styles.ratioOrange}>/{totalSeats}</span>
+            </div>
+            <div className={styles.centerChange}>
+              <span className={styles.changeOrange}>+{changePercent}%</span>
+              <span className={styles.changeGray}> vs Last week</span>
+            </div>
           </div>
         </div>
 
@@ -137,7 +126,7 @@ export function RoomAvailabilityCircleCard({
             <span className={styles.legendLabel}>Available</span>
           </div>
           <div className={styles.legendItem}>
-            <span className={`${styles.legendDot} ${styles.legendDotGray}`} />
+            <span className={`${styles.legendDot} ${styles.legendDotTeal}`} />
             <span className={styles.legendLabel}>Booked</span>
           </div>
         </div>
@@ -152,12 +141,13 @@ export function RoomAvailabilityCircleCard({
               <div className={styles.subStatHeader}>
                 <span className={styles.subStatLabel}>{stat.label}</span>
                 <span className={styles.subStatValue}>
-                  {stat.available}/{stat.total}
+                  <span className={styles.valueNumber}>{stat.available}</span>
+                  <span className={styles.valueTotal}>/{stat.total}</span>
                 </span>
               </div>
               <div className={styles.progressTrack}>
                 <div
-                  className={styles.progressFill}
+                  className={styles.progressFillLeft}
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -170,5 +160,5 @@ export function RoomAvailabilityCircleCard({
 }
 
 export function RoomAvailabilityCircleCardDemo() {
-  return <RoomAvailabilityCircleCard onViewFloorPlan={() => {}} />;
+  return <RoomAvailabilityCircleCard />;
 }
