@@ -16,6 +16,7 @@ import { useState } from "react";
 import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
+import { SetUpCenterModal } from "@/components/ui/dashboard";
 
 const mockLocations = [
   {
@@ -77,6 +78,7 @@ const mockFloors = [
 
 export default function InventoryPage() {
   const [locations, setLocations] = useState(mockLocations);
+  const [showSetupModal, setShowSetupModal] = useState(false);
 
   const handleLocationSelect = (locationId: string, centerId?: string) => {
     setLocations((prev) =>
@@ -106,7 +108,10 @@ export default function InventoryPage() {
               Manage coworking spaces, track capacity, and optimize utilization
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm">
+          <button 
+            onClick={() => setShowSetupModal(true)}
+            className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V13M3 8H13" />
             </svg>
@@ -134,6 +139,11 @@ export default function InventoryPage() {
 
       {/* Right Sidebar - Location Tree */}
       <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
+      
+      <SetUpCenterModal 
+        isOpen={showSetupModal} 
+        onClose={() => setShowSetupModal(false)} 
+      />
     </div>
   );
 }

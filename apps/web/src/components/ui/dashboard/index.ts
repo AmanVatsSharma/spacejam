@@ -62,3 +62,4 @@ export * from './send-proposal-modal';
 export * from './add-client-modal';
 export * from './book-room-modal';
 export * from './pending-approvals-modal';
+export * from './set-up-center-modal';
