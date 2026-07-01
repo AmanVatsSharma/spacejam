@@ -6,6 +6,8 @@ import { GenerateInvoiceModal } from "@/components/ui/dashboard/generate-invoice
 import { InvoiceDetailsModal } from "@/components/ui/dashboard/invoice-details-modal";
 import { RenewMembershipModal } from "@/components/ui/dashboard/renew-membership-modal";
 import { PlanUpgradeModal } from "@/components/ui/dashboard/plan-upgrade-modal";
+import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
+import { EditInvoiceModal } from "@/components/ui/dashboard/edit-invoice-modal";
 
 type InvoiceStatus = "paid" | "overdue" | "due_soon" | "occupied";
 
@@ -84,6 +86,8 @@ export default function RevenuePage() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [selectedRenewClient, setSelectedRenewClient] = useState<{name: string, date: string, left: string} | null>(null);
@@ -111,7 +115,7 @@ export default function RevenuePage() {
           <p className={styles.pageSubtitle}>Manage and track all coworking invoices</p>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.exportBtn}>
+          <button type="button" className={styles.exportBtn} onClick={() => setIsExportModalOpen(true)}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M7 1.5V9.5M7 9.5L4 6.5M7 9.5L10 6.5" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M2 11V12.5H12V11" strokeLinecap="round" strokeLinejoin="round" />
@@ -271,16 +275,27 @@ export default function RevenuePage() {
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button className={styles.actionMenuBtn} onClick={() => {
-                            setSelectedInvoice(invoice);
-                            setIsDetailsModalOpen(true);
-                          }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="5" r="1" />
-                              <circle cx="12" cy="12" r="1" />
-                              <circle cx="12" cy="19" r="1" />
-                            </svg>
-                          </button>
+                          <div style={{ display: 'inline-flex', gap: '8px' }}>
+                            <button className={styles.actionMenuBtn} onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setIsEditModalOpen(true);
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </button>
+                            <button className={styles.actionMenuBtn} onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setIsDetailsModalOpen(true);
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="5" r="1" />
+                                <circle cx="12" cy="12" r="1" />
+                                <circle cx="12" cy="19" r="1" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -485,6 +500,17 @@ export default function RevenuePage() {
         isOpen={isUpgradeModalOpen} 
         onClose={() => setIsUpgradeModalOpen(false)}
         clientName={selectedUpgradeClient?.name}
+      />
+      
+      <ExportExcelModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+      />
+
+      <EditInvoiceModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)}
+        invoiceId={selectedInvoice?.id}
       />
     </div>
   );

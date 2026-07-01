@@ -1,0 +1,345 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6A7282;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #6A7282;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeBtn:hover {
+  color: #101828;
+}
+
+.body {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+.sectionBox {
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101828;
+  margin: 0 0 4px 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #101828;
+  background: #FFFFFF;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+}
+
+.amountDivider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 8px 0;
+}
+
+.amountWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.amountLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6A7282;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.amountValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #FF6A2F;
+}
+
+.lineItemBox {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rowGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.itemAmountWrap {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.itemAmountLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6A7282;
+  text-transform: uppercase;
+}
+
+.itemAmountValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: #101828;
+}
+
+.addServiceBtn {
+  background: #FFFFFF;
+  color: #FF6A2F;
+  border: 1px solid #FFD9C9;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.addServiceBtn:hover {
+  background: #FFF2EA;
+}
+
+.pricingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pricingLabel {
+  font-size: 14px;
+  color: #4A5565;
+}
+
+.pricingValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #101828;
+}
+
+.taxInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.taxInputInner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smallInput {
+  width: 48px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #101828;
+}
+
+.percentSign {
+  font-size: 14px;
+  color: #6A7282;
+}
+
+.taxToggleWrap {
+  display: flex;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 4px;
+  margin-top: 8px;
+}
+
+.taxToggleBtn {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4A5565;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.taxToggleActive {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.pricingDivider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 4px 0;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.totalLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: #101828;
+}
+
+.totalValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FF6A2F;
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #101828;
+  background: #FFFFFF;
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #FF6A2F;
+  box-shadow: 0 0 0 2px rgba(255, 106, 47, 0.1);
+}
+
+.footer {
+  padding: 24px 32px;
+  border-top: 1px solid #E5E7EB;
+  display: flex;
+  gap: 16px;
+}
+
+.cancelBtn {
+  flex: 1;
+  padding: 12px;
+  background: #FFFFFF;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #F9FAFB;
+}
+
+.saveBtn {
+  flex: 1;
+  padding: 12px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  background: #E55A25;
+}
