@@ -29,6 +29,9 @@ import { useAuth } from "@/contexts/auth-context";
  * `/dashboard/revenue/invoices` keeps the `revenue` section's tabs active.
  */
 const SECTION_TABS: Record<string, HeaderTab[]> = {
+  dashboard: [
+    { id: "changelog", label: "What's new", href: "/changelog" }
+  ],
   revenue: [
     { id: "invoices", label: "Invoices", href: "/dashboard/revenue" },
     { id: "deposits", label: "Deposit", href: "/dashboard/revenue/deposits" },
@@ -69,7 +72,7 @@ function getTabsForPath(pathname: string | null): { tabs: HeaderTab[]; activeId:
   if (!pathname) return { tabs: [], activeId: undefined };
   // `/dashboard/<section>/...` — pick the section segment.
   const match = pathname.match(/^\/dashboard\/([^/]+)/);
-  const section = match?.[1];
+  const section = match?.[1] || (pathname === '/dashboard' ? 'dashboard' : undefined);
   if (!section || !SECTION_TABS[section]) return { tabs: [], activeId: undefined };
 
   const tabs = SECTION_TABS[section];

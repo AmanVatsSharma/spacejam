@@ -119,11 +119,6 @@ const icons: Record<string, (props: IconProps) => ReactNode> = {
   operations: OperationsIcon,
   report: ReportIcon,
   inventory: InventoryIcon,
-  location: LocationIcon,
-  floors: FloorIcon,
-  bookings: BookingsIcon,
-  invoices: BookingsIcon,
-  changelog: ChangelogIcon,
   settings: SettingsIcon,
 };
 
@@ -139,14 +134,9 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
     { id: "dashboard", label: "Dashboard", icon: DashboardIcon, href: "/dashboard" },
     { id: "crm", label: "CRM", icon: CRMIcon, href: "/dashboard/crm" },
     { id: "revenue", label: "Revenue", icon: RevenueIcon, href: "/dashboard/revenue" },
-    { id: "invoices", label: "Invoices", icon: BookingsIcon, href: "/dashboard/invoices" },
     { id: "operations", label: "Operations", icon: OperationsIcon, href: "/dashboard/operations" },
-    { id: "bookings", label: "Bookings", icon: BookingsIcon, href: "/dashboard/bookings" },
-    { id: "floors", label: "Floors", icon: FloorIcon, href: "/dashboard/floors" },
     { id: "report", label: "Report", icon: ReportIcon, href: "/dashboard/report" },
     { id: "inventory", label: "Inventory", icon: InventoryIcon, href: "/dashboard/inventory" },
-    { id: "location", label: "Location", icon: LocationIcon, href: "/dashboard/location" },
-    { id: "changelog", label: "What's new", icon: ChangelogIcon, href: "/changelog" },
     { id: "settings", label: "Settings", icon: SettingsIcon, href: "/dashboard/settings" },
   ];
 
