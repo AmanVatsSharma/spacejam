@@ -9,8 +9,8 @@
 import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Lead } from '../types/user.type';
-import { Lead as LeadEntity, LeadStatus } from '../../typeorm/entities/lead.entity';
+import { Lead, LeadStatus } from '../types/user.type';
+import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
 

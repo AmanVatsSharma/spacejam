@@ -1,11 +1,12 @@
 /**
- * File:        typeorm/entities/meeting-room.entity.ts
- * Module:      API · TypeORM · MeetingRoom
- * Purpose:     TypeORM entity for the meeting_rooms table.
+ * File:        apps/api/src/typeorm/entities/meeting-room.entity.ts
+ * Module:      API · TypeORM Entities
+ * Purpose:     Meeting room entity for TypeORM
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-02
  */
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -13,70 +14,69 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Center } from './center.entity';
-import { Floor } from './floor.entity';
-
-export enum RoomType {
-  BOARDROOM = 'boardroom',
-  CONFERENCE = 'conference',
-  MEETING_ROOM = 'meeting_room',
-  WORKSHOP = 'workshop',
-  TRAINING = 'training',
-}
-
-export enum RoomStatus {
-  AVAILABLE = 'available',
-  OCCUPIED = 'occupied',
-  BOOKED = 'booked',
-  MAINTENANCE = 'maintenance',
-}
 
 @Entity('meeting_rooms')
 export class MeetingRoom {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
-  name!: string;
-
-  @Column()
+  @Column({ name: 'centerId' })
   centerId!: string;
 
-  @Column({ nullable: true })
-  floorId?: string;
+  @Column({ name: 'floorId', type: 'varchar' })
+  floorId!: string;
 
-  @Column({
-    type: 'enum',
-    enum: RoomType,
-    default: RoomType.MEETING_ROOM,
-  })
-  type!: RoomType;
+  @Column({ type: 'varchar' })
+  name!: string;
+
+  @Column({ type: 'varchar' })
+  type!: string;
 
   @Column({ type: 'int' })
   capacity!: number;
 
-  @Column({ type: 'enum', enum: RoomStatus, default: RoomStatus.AVAILABLE })
-  status!: RoomStatus;
+  @Column({
+    type: 'enum',
+    enum: ['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'BOOKED'],
+    default: 'AVAILABLE',
+  })
+  status!: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'BOOKED';
 
-  @Column({ type: 'json', nullable: true })
-  amenities?: string[];
+  @Column({ name: 'locationName', type: 'varchar', nullable: true })
+  locationName!: string | null;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  pricePerHour?: number;
+  @Column({ name: 'locationFullAddress', type: 'text', nullable: true })
+  locationFullAddress!: string | null;
 
-  @ManyToOne(() => Center, { eager: false })
-  @JoinColumn({ name: 'centerId' })
-  center?: Center;
+  @Column({ name: 'minBookingDuration', type: 'int', default: 30 })
+  minBookingDuration!: number;
 
-  @ManyToOne(() => Floor, { eager: false })
-  @JoinColumn({ name: 'floorId' })
-  floor?: Floor;
+  @Column({ name: 'maxBookingDuration', type: 'int', default: 480 })
+  maxBookingDuration!: number;
+
+  @Column({ name: 'amenities', type: 'json', nullable: true })
+  amenities!: string[] | null;
+
+  @Column({ name: 'hourlyRate', type: 'float', default: 0 })
+  hourlyRate!: number;
+
+  @Column({ name: 'active', type: 'boolean', default: true })
+  active!: boolean;
 
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
+
+  @ManyToOne(() => Center, (center) => center.meetingRooms)
+  @JoinColumn({ name: 'centerId' })
+  center!: Center;
+
+  @OneToMany(() => Booking, (booking) => booking.meetingRoom)
+  bookings!: Booking[];
 }
