@@ -41,6 +41,7 @@ import { RevenueAnalytics } from '../typeorm/entities/revenue-analytics.entity';
 import { UserSession } from '../typeorm/entities/user-session.entity';
 import { AuditLog } from '../typeorm/entities/audit-log.entity';
 import { Invitation } from '../typeorm/entities/invitation.entity';
+import { Lead } from '../typeorm/entities/lead.entity';
 import { RecoveryCode } from '../typeorm/entities/recovery-code.entity';
 import { MagicLinkToken } from '../typeorm/entities/magic-link-token.entity';
 
@@ -48,6 +49,7 @@ import { UserRepository } from '../typeorm/repositories/user.repository';
 import { CenterRepository } from '../typeorm/repositories/center.repository';
 import { SeatRepository } from '../typeorm/repositories/seat.repository';
 import { BookingRepository } from '../typeorm/repositories/booking.repository';
+import { CrmResolver } from '../graphql/resolvers/crm.resolver';
 
 @Module({
   imports: [
@@ -113,6 +115,7 @@ import { BookingRepository } from '../typeorm/repositories/booking.repository';
       Invitation,
       RecoveryCode,
       MagicLinkToken,
+      Lead,
     ]),
 
     // Caching
@@ -144,6 +147,7 @@ import { BookingRepository } from '../typeorm/repositories/booking.repository';
     CenterRepository,
     SeatRepository,
     BookingRepository,
+    CrmResolver,
   ],
 })
 export class AppModule {}

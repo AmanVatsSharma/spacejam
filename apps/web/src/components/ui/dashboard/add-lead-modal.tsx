@@ -1,14 +1,29 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 interface AddLeadModalProps {
   open: boolean;
   onClose: () => void;
+  onAdd?: (data: Record<string, string>) => void;
 }
 
-export function AddLeadModal({ open, onClose }: AddLeadModalProps) {
+export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [company, setCompany] = useState('');
+
   if (!open) return null;
+
+  const handleSubmit = () => {
+    if (onAdd) {
+      onAdd({ name, phone, email, company });
+    }
+    onClose();
+    // Reset form on close
+    setName(''); setPhone(''); setEmail(''); setCompany('');
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
@@ -38,19 +53,19 @@ export function AddLeadModal({ open, onClose }: AddLeadModalProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Full Name</label>
-                <input type="text" placeholder="Enter full name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter full name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Phone Number</label>
-                <input type="text" placeholder="Enter phone number" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter phone number" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Email Address</label>
-                <input type="email" placeholder="Enter email address" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="email" placeholder="Enter email address" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Company Name</label>
-                <input type="text" placeholder="Enter company name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter company name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={company} onChange={(e) => setCompany(e.target.value)} />
               </div>
             </div>
           </section>
@@ -155,7 +170,10 @@ export function AddLeadModal({ open, onClose }: AddLeadModalProps) {
           <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors">
             Save as Draft
           </button>
-          <button className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+          <button
+            onClick={handleSubmit}
+            className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors"
+          >
             Create Lead
           </button>
         </div>

@@ -4,18 +4,26 @@
  * Purpose:     Lead management page (Figma: 0-6606). Implements
  *              header card, filters bar, 4 stat cards, lead pipeline,
  *              leads table, and a right-side lead-detail panel.
+ *              Apollo-first with mock-data fallback + Demo badge.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-21
+ * Last-updated: 2026-07-01
  */
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  AddLeadModal, 
-  ScheduleVisitModal, 
-  SendProposalModal 
+import { useQuery, useMutation } from '@apollo/client';
+import {
+  GET_LEADS,
+  CREATE_LEAD,
+  CONVERT_LEAD,
+} from '@/lib/apollo/operations';
+import { MOCK_LEADS, MOCK_LEAD_STATS, DEMO_BADGE, type MockLead } from '@/lib/mock-data/crm-mock-data';
+import {
+  AddLeadModal,
+  ScheduleVisitModal,
+  SendProposalModal,
 } from '@/components/ui/dashboard';
 import styles from './leads.module.css';
 
@@ -23,115 +31,33 @@ import styles from './leads.module.css';
 
 type LeadStatus = 'New' | 'Visited' | 'Negotiation' | 'Converted' | 'Cold';
 
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  source: string;
-  requirement: string;
-  budget: string;
-  location: string;
-  status: LeadStatus;
-  lastContact: string;
+interface Lead extends MockLead {}
+
+/* --------------------------- GraphQL Data --------------------------- */
+
+interface GetLeadsData {
+  leads: Lead[];
 }
 
-/* ----------------------------- Data ------------------------------ */
+interface GetLeadsVars {
+  filters?: {
+    status?: LeadStatus;
+    source?: string;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  };
+}
 
-const LEADS: Lead[] = [
-  {
-    id: 'l1',
-    name: 'Aarav Mehta',
-    email: 'aarav.m@nova.in',
-    phone: '+91 98200 11233',
-    company: 'Nova Studio',
-    source: 'Website',
-    requirement: 'Hot Desk · 6 seats',
-    budget: '₹85,000 / month',
-    location: 'Bandra Kurla Complex',
-    status: 'New',
-    lastContact: '2 days ago',
-  },
-  {
-    id: 'l2',
-    name: 'Priya Shah',
-    email: 'priya@brightloop.io',
-    phone: '+91 99675 44321',
-    company: 'Brightloop Tech',
-    source: 'Referral',
-    requirement: 'Private Office · 12 seats',
-    budget: '₹2,40,000 / month',
-    location: 'Andheri East',
-    status: 'Visited',
-    lastContact: '1 day ago',
-  },
-  {
-    id: 'l3',
-    name: 'Rohan Kapoor',
-    email: 'rohan.k@quanta.dev',
-    phone: '+91 90040 56789',
-    company: 'Quanta Labs',
-    source: 'Walk-in',
-    requirement: 'Dedicated Desk · 4 seats',
-    budget: '₹48,000 / month',
-    location: 'Powai',
-    status: 'Negotiation',
-    lastContact: '5 hours ago',
-  },
-  {
-    id: 'l4',
-    name: 'Anjali Verma',
-    email: 'anjali.v@pixel8.co',
-    phone: '+91 99209 87412',
-    company: 'Pixel8 Agency',
-    source: 'Social',
-    requirement: 'Meeting Room · 1 day pass',
-    budget: '₹8,500 / day',
-    location: 'Lower Parel',
-    status: 'Converted',
-    lastContact: '3 days ago',
-  },
-  {
-    id: 'l5',
-    name: 'Karan Bhatia',
-    email: 'karan@orbitalhq.in',
-    phone: '+91 98921 23498',
-    company: 'Orbital HQ',
-    source: 'Website',
-    requirement: 'Enterprise Floor · 30 seats',
-    budget: '₹6,50,000 / month',
-    location: 'Worli',
-    status: 'Cold',
-    lastContact: '12 days ago',
-  },
-  {
-    id: 'l6',
-    name: 'Neha Iyer',
-    email: 'neha.iyer@cumulus.app',
-    phone: '+91 97730 55664',
-    company: 'Cumulus App',
-    source: 'Email',
-    requirement: 'Hot Desk · 3 seats',
-    budget: '₹42,000 / month',
-    location: 'Malad',
-    status: 'New',
-    lastContact: 'Today',
-  },
-  {
-    id: 'l7',
-    name: 'Vikram Joshi',
-    email: 'vikram@northgate.in',
-    phone: '+91 98330 77821',
-    company: 'Northgate Capital',
-    source: 'Referral',
-    requirement: 'Private Office · 8 seats',
-    budget: '₹1,60,000 / month',
-    location: 'Goregaon',
-    status: 'Visited',
-    lastContact: 'Yesterday',
-  },
-];
+/* ──────────────────────────────────────────────────
+ * Helper: resolve leads — Apollo data with mock fallback
+ * ────────────────────────────────────────────────── */
+function useLeads() {
+  const { data, loading, error } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
+  const leads = data?.leads?.length ? data.leads : MOCK_LEADS;
+  const isDemo = !data?.leads?.length;
+  return { leads, loading, error, isDemo };
+}
 
 /* --------------------------- Helpers ----------------------------- */
 
@@ -251,8 +177,57 @@ export default function LeadsPage() {
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
   const [showSendProposal, setShowSendProposal] = useState(false);
 
+  /* ── Apollo data ── */
+  const { leads, loading, isDemo } = useLeads();
+
+  /* ── Mutations ── */
+  const [createLead] = useMutation(CREATE_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
+  /* TODO: re-enable when edit/delete UI is added to leads page
+   * const [updateLead] = useMutation(UPDATE_LEAD, { refetchQueries: [{ query: GET_LEADS }] });
+   * const [deleteLead]  = useMutation(DELETE_LEAD,  { refetchQueries: [{ query: GET_LEADS }] });
+   */
+  const [convertLead] = useMutation(CONVERT_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
+
+  /* ── Handlers ── */
+  const handleConvertToClient = useCallback(
+    async (leadId: string) => {
+      if (isDemo) {
+        alert('Convert to Client is disabled in demo mode. Connect the backend first.');
+        return;
+      }
+      try {
+        await convertLead({ variables: { id: leadId } });
+      } catch {
+        // error handled by Apollo
+      }
+    },
+    [convertLead, isDemo],
+  );
+
+  const handleAddLead = useCallback(
+    async (input: Record<string, string>) => {
+      if (isDemo) {
+        alert('Add Lead is disabled in demo mode. Connect the backend first.');
+        setShowAddLead(false);
+        return;
+      }
+      try {
+        await createLead({ variables: { input } });
+        setShowAddLead(false);
+      } catch {
+        // error handled by Apollo
+      }
+    },
+    [createLead, isDemo],
+  );
+
+  /* ── Filtered leads ── */
   const filtered = useMemo(() => {
-    return LEADS.filter((l) => {
+    return leads.filter((l) => {
       const q = search.trim().toLowerCase();
       const matchesQuery =
         q.length === 0 ||
@@ -263,24 +238,27 @@ export default function LeadsPage() {
       const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
       return matchesQuery && matchesStatus && matchesSource;
     });
-  }, [search, statusFilter, sourceFilter]);
+  }, [leads, search, statusFilter, sourceFilter]);
 
+  /* ── Selected lead ── */
   const selected = useMemo(
-    () => LEADS.find((l) => l.id === selectedId) ?? LEADS[0],
-    [selectedId],
+    () => filtered.find((l) => l.id === selectedId) ?? filtered[0],
+    [filtered, selectedId],
   );
 
+  /* ── Stats ── */
   const stats = useMemo(() => {
-    const total = LEADS.length;
-    const converted = LEADS.filter((l) => l.status === 'Converted').length;
-    const conversionRate = total ? Math.round((converted / total) * 100) : 0;
+    const converted = leads.filter((l) => l.status === 'Converted').length;
+    const conversionRate = leads.length
+      ? Math.round((converted / leads.length) * 100)
+      : MOCK_LEAD_STATS.conversionRate;
     return [
-      { label: 'Total Leads',     value: '128', trend: '+12% this month', icon: Icon.Users },
-      { label: 'Active Pipeline', value: '46',  trend: '+8% this week',   icon: Icon.IndRupee },
-      { label: 'Conversion Rate', value: `${conversionRate || 28}%`, trend: '+5% vs last month', icon: Icon.Target },
-      { label: 'Avg Response',    value: '2.4h', trend: '−18% vs last month', icon: Icon.Clock },
+      { label: 'Total Leads',      value: String(leads.length || MOCK_LEAD_STATS.total),  trend: '+12% this month',         icon: Icon.Users },
+      { label: 'Active Pipeline',  value: String(MOCK_LEAD_STATS.activePipeline),       trend: '+8% this week',           icon: Icon.IndRupee },
+      { label: 'Conversion Rate',   value: `${conversionRate}%`,                        trend: '+5% vs last month',       icon: Icon.Target },
+      { label: 'Avg Response',     value: `${MOCK_LEAD_STATS.avgResponseHours}h`,       trend: '−18% vs last month',     icon: Icon.Clock },
     ];
-  }, []);
+  }, [leads]);
 
   const pipeline = [
     { name: 'Inquiry',    count: 32, cls: styles.tileInquiry },
@@ -296,7 +274,13 @@ export default function LeadsPage() {
       <div className={styles.main}>
         {/* Header card */}
         <div className={styles.headerCard}>
-          <h1 className={styles.headerTitle}>Lead Management</h1>
+          <div className="flex items-center gap-2">
+            <h1 className={styles.headerTitle}>Lead Management</h1>
+            {isDemo && DEMO_BADGE}
+            {loading && (
+              <span className="ml-2 inline-block h-4 w-4 rounded-full border-2 border-[#FF6A2F] border-t-transparent animate-spin" />
+            )}
+          </div>
           <p className={styles.headerSub}>
             Manage your leads, track their progress and convert them into customers.
           </p>
@@ -328,7 +312,17 @@ export default function LeadsPage() {
                 className={styles.selectBtn}
                 onClick={() =>
                   setSourceFilter((p) =>
-                    p === 'all' ? 'Website' : p === 'Website' ? 'Referral' : p === 'Referral' ? 'Walk-in' : p === 'Walk-in' ? 'Social' : p === 'Social' ? 'Email' : 'all',
+                    p === 'all'
+                      ? 'Website'
+                      : p === 'Website'
+                        ? 'Referral'
+                        : p === 'Referral'
+                          ? 'Walk-in'
+                          : p === 'Walk-in'
+                            ? 'Social'
+                            : p === 'Social'
+                              ? 'Email'
+                              : 'all',
                   )
                 }
               >
@@ -340,7 +334,11 @@ export default function LeadsPage() {
               <button
                 type="button"
                 className={styles.selectBtn}
-                onClick={() => setSort((p) => (p === 'Recent' ? 'Name' : p === 'Name' ? 'Budget' : 'Recent'))}
+                onClick={() =>
+                  setSort((p) =>
+                    p === 'Recent' ? 'Name' : p === 'Name' ? 'Budget' : 'Recent',
+                  )
+                }
               >
                 Sort: {sort}
                 {Icon.Caret}
@@ -357,8 +355,8 @@ export default function LeadsPage() {
             >
               Clear Filters
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className={styles.addLeadBtn}
               onClick={() => setShowAddLead(true)}
             >
@@ -408,32 +406,43 @@ export default function LeadsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((l) => (
-                  <tr
-                    key={l.id}
-                    onClick={() => setSelectedId(l.id)}
-                    className={l.id === selectedId ? styles.selectedRow : undefined}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td className={styles.leadNameCell}>{l.name}</td>
-                    <td>{l.company}</td>
-                    <td>{l.requirement}</td>
-                    <td>{l.budget}</td>
-                    <td>{l.source}</td>
-                    <td>
-                      <span
-                        className={`${styles.statusPill} ${STATUS_PILL_CLASS[l.status]}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        {l.status}
-                        {Icon.PillCaret}
-                      </span>
+                {loading && filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                      Loading leads…
                     </td>
-                    <td>{l.lastContact}</td>
                   </tr>
-                ))}
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                      No leads found.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((l) => (
+                    <tr
+                      key={l.id}
+                      onClick={() => setSelectedId(l.id)}
+                      className={l.id === selectedId ? styles.selectedRow : undefined}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td className={styles.leadNameCell}>{l.name}</td>
+                      <td>{l.company}</td>
+                      <td>{l.requirement}</td>
+                      <td>{l.budget}</td>
+                      <td>{l.source}</td>
+                      <td>
+                        <span
+                          className={`${styles.statusPill} ${STATUS_PILL_CLASS[l.status as LeadStatus] ?? ''}`}
+                        >
+                          {l.status}
+                          {Icon.PillCaret}
+                        </span>
+                      </td>
+                      <td>{l.lastContact}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -441,94 +450,137 @@ export default function LeadsPage() {
       </div>
 
       {/* ------------------------- Right sidebar --------------------------- */}
-      <aside className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0 mt-[160px] xl:mt-0">
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
-          <h3 className="text-[18px] font-bold text-gray-900 mb-6">Lead Details</h3>
-          
-          <div className="flex flex-col gap-5 mb-8">
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">LEAD NAME</span>
-              <span className="text-[14px] font-semibold text-gray-900">{selected.name}</span>
+      {selected && (
+        <aside className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0 mt-[160px] xl:mt-0">
+          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
+            <div className="flex items-start justify-between mb-6">
+              <h3 className="text-[18px] font-bold text-gray-900">Lead Details</h3>
+              {selected.__isDemo && (
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                  Demo
+                </span>
+              )}
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PHONE</span>
-              <span className="text-[14px] font-semibold text-gray-900">{selected.phone}</span>
+
+            <div className="flex flex-col gap-5 mb-8">
+              {[
+                { label: 'LEAD NAME', value: selected.name },
+                { label: 'PHONE', value: selected.phone },
+                { label: 'EMAIL', value: selected.email },
+                { label: 'COMPANY', value: selected.company },
+                {
+                  label: 'INTERESTED PLAN',
+                  value: selected.requirement.split('·')[0].trim(),
+                },
+                { label: 'TEAM SIZE', value: '1 Person' },
+                { label: 'PREFERRED MOVE-IN DATE', value: '15 Mar 2026' },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex flex-col gap-1">
+                  <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                    {label}
+                  </span>
+                  <span className="text-[14px] font-semibold text-gray-900">{value}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">EMAIL</span>
-              <span className="text-[14px] font-semibold text-gray-900">{selected.email}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">COMPANY</span>
-              <span className="text-[14px] font-semibold text-gray-900">{selected.company}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">INTERESTED PLAN</span>
-              <span className="text-[14px] font-semibold text-gray-900">{selected.requirement.split('·')[0].trim()}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">TEAM SIZE</span>
-              <span className="text-[14px] font-semibold text-gray-900">1 Person</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PREFERRED MOVE-IN DATE</span>
-              <span className="text-[14px] font-semibold text-gray-900">15 Mar 2026</span>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => router.push('/dashboard/crm/leads/' + selected.id)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                Lead Details
+              </button>
+              <button
+                onClick={() => setShowSendProposal(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                  <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Send Proposal
+              </button>
+              <button
+                onClick={() => handleConvertToClient(selected.id)}
+                disabled={isDemo}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                  <path
+                    d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Convert to Client
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <button 
-              onClick={() => router.push('/dashboard/crm/leads/' + selected.id)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
-            >
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-              Lead Details
-            </button>
-            <button 
-              onClick={() => setShowSendProposal(true)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" /><path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              Send Proposal
-            </button>
-            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm">
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              Convert to Client
-            </button>
+          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6">
+            <h3 className="text-[18px] font-bold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="flex flex-col gap-3">
+              {[
+                {
+                  label: 'Add Lead',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                  ),
+                  onClick: () => setShowAddLead(true),
+                },
+                {
+                  label: 'Import Leads',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ),
+                  onClick: () => {},
+                },
+                {
+                  label: 'Manage Sources',
+                  icon: (
+                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                  ),
+                  onClick: () => {},
+                },
+              ].map(({ label, icon, onClick }) => (
+                <button
+                  key={label}
+                  onClick={onClick}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="text-gray-500">{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </aside>
+      )}
 
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6">
-          <h3 className="text-[18px] font-bold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="flex flex-col gap-3">
-            <button 
-              onClick={() => setShowAddLead(true)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="1.8"/></svg></span> 
-              Add Lead
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span> 
-              Import Leads
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <span className="text-gray-500"><svg viewBox="0 0 24 24" fill="none" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" /></svg></span> 
-              Manage Sources
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Add New Lead Dialog */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
-
-      {/* Schedule Visit Dialog */}
+      {/* Dialogs */}
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
       <ScheduleVisitModal open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
-
-      {/* Send Proposal Dialog */}
       <SendProposalModal open={showSendProposal} onClose={() => setShowSendProposal(false)} />
-
     </div>
   );
 }

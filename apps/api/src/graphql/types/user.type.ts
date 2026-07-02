@@ -56,6 +56,25 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
+export enum LeadStatus {
+  NEW = 'New',
+  VISITED = 'Visited',
+  NEGOTIATION = 'Negotiation',
+  CONVERTED = 'Converted',
+  COLD = 'Cold',
+}
+
+export enum LeadSource {
+  WEBSITE = 'Website',
+  REFERRAL = 'Referral',
+  WALK_IN = 'Walk-in',
+  SOCIAL = 'Social',
+  EMAIL = 'Email',
+}
+
+registerEnumType(LeadStatus, { name: 'LeadStatus' });
+registerEnumType(LeadSource, { name: 'LeadSource' });
+
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(CenterStatus, { name: 'CenterStatus' });
 registerEnumType(SeatType, { name: 'SeatType' });
@@ -456,4 +475,58 @@ export class GenericActionResult {
 
   @Field()
   message!: string;
+}
+
+@ObjectType()
+export class Lead {
+  @Field(() => ID)
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field()
+  email!: string;
+
+  @Field({ nullable: true })
+  phone?: string;
+
+  @Field({ nullable: true })
+  company?: string;
+
+  @Field(() => LeadStatus)
+  status!: LeadStatus;
+
+  @Field(() => LeadSource, { nullable: true })
+  source?: LeadSource;
+
+  @Field({ nullable: true })
+  requirement?: string;
+
+  @Field({ nullable: true })
+  budget?: string;
+
+  @Field({ nullable: true })
+  location?: string;
+
+  @Field({ nullable: true })
+  notes?: string;
+
+  @Field(() => String, { nullable: true })
+  lastContact?: string;
+
+  @Field(() => ID, { nullable: true })
+  assignedToId?: string;
+
+  @Field(() => ID, { nullable: true })
+  centerId?: string;
+
+  @Field(() => User, { nullable: true })
+  assignedTo?: User;
+
+  @Field()
+  createdAt!: Date;
+
+  @Field()
+  updatedAt!: Date;
 }

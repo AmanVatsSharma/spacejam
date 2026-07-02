@@ -198,3 +198,85 @@ export const REGENERATE_RECOVERY_CODES = gql`
     regenerateRecoveryCodes
   }
 `;
+
+/* ========================= CRM — Leads ========================= */
+
+export const GET_LEADS = gql`
+  query GetLeads($filters: LeadFiltersInput) {
+    leads(filters: $filters) {
+      id
+      name
+      email
+      phone
+      company
+      source
+      requirement
+      budget
+      location
+      status
+      lastContact
+      assignedTo {
+        id
+        name
+        email
+      }
+    }
+  }
+`;
+
+export const CREATE_LEAD = gql`
+  mutation CreateLead($input: CreateLeadInput!) {
+    createLead(input: $input) {
+      id
+      name
+      email
+      phone
+      company
+      source
+      requirement
+      budget
+      location
+      status
+      lastContact
+    }
+  }
+`;
+
+export const UPDATE_LEAD = gql`
+  mutation UpdateLead($id: ID!, $input: UpdateLeadInput!) {
+    updateLead(id: $id, input: $input) {
+      id
+      name
+      email
+      phone
+      company
+      source
+      requirement
+      budget
+      location
+      status
+      lastContact
+    }
+  }
+`;
+
+export const CONVERT_LEAD = gql`
+  mutation ConvertLead($id: ID!) {
+    convertLead(id: $id) {
+      id
+      status
+    }
+  }
+`;
+
+export const DELETE_LEAD = gql`
+  mutation DeleteLead($id: ID!) {
+    deleteLead(id: $id)
+  }
+`;
+
+export const LEAD_COUNT = gql`
+  query LeadCount($status: LeadStatus) {
+    leadCount(status: $status)
+  }
+`;
