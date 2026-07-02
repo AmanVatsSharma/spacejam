@@ -1,25 +1,21 @@
 /**
  * File:        apps/web/src/app/dashboard/operations/events/page.tsx
- * Module:      Web · Dashboard · Meeting Room · Events
- * Purpose:     Events tab — manage booking and workspace events.
- *              Pixel-perfect match to Figma SpaceJam-VB node 0-10554.
- *              Hero card, filter bar (search + All/Today/Upcoming/Past +
- *              type/status dropdowns + Clear All), three section cards
- *              (Today's Events / Upcoming Events / Past Events) that
- *              scroll independently, and a sticky side panel that shows
- *              the selected event details (Figma node 0-11282) or an
- *              "Select an event to view details" prompt.
+ * Module:      Web · Dashboard · Operations · Events
+ * Purpose:     Events page — Apollo-wired with mock fallback.
+ *              Three-section view (Today / Upcoming / Past) + side detail panel.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-24
+ * Last-updated: 2026-07-02
  */
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useEvents, useEvent, useEventStats, useCreateEvent, useUpdateEvent, useUpdateEventStatus, useCancelEvent } from "@/hooks/use-operations";
 import styles from "./events.module.css";
 
 type EventStatus = "confirmed" | "pending" | "completed";
+type FilterKey = "all" | "today" | "upcoming" | "past";
 
 interface EventRow {
   id: string;
@@ -35,178 +31,90 @@ interface EventRow {
   status: EventStatus;
 }
 
-const TODAY_EVENTS: EventRow[] = [
-  {
-    id: "ev-t1",
-    title: "Product Strategy Meeting",
-    company: "TechCorp Inc.",
-    date: "April 25, 2026",
-    time: "09:00 AM",
-    duration: "2 hours",
-    room: "Room A",
-    seats: 8,
-    addons: ["Projector", "Whiteboard"],
-    notes: "Quarterly planning session",
-    status: "confirmed",
-  },
-  {
-    id: "ev-t2",
-    title: "Client Onboarding Session",
-    company: "StartupXYZ",
-    date: "April 25, 2026",
-    time: "11:30 AM",
-    duration: "1 hour",
-    room: "Room B",
-    seats: 6,
-    addons: ["TV Display"],
-    notes: "Welcome walkthrough for the new cohort.",
-    status: "confirmed",
-  },
-  {
-    id: "ev-t3",
-    title: "Design Workshop",
-    company: "Creative Studios",
-    date: "April 25, 2026",
-    time: "02:00 PM",
-    duration: "3 hours",
-    room: "Conference Hall",
-    seats: 12,
-    addons: ["Whiteboard", "Markers"],
-    notes: "Hands-on UI exploration — bring laptops.",
-    status: "pending",
-  },
-  {
-    id: "ev-t4",
-    title: "Investment Pitch",
-    company: "VentureCap Partners",
-    date: "April 25, 2026",
-    time: "04:30 PM",
-    duration: "1.5 hours",
-    room: "Room C",
-    seats: 5,
-    addons: ["Projector"],
-    notes: "Series A deck rehearsal.",
-    status: "confirmed",
-  },
+/* --------------- Mock fallback data --------------- */
+
+const FALLBACK_TODAY: EventRow[] = [
+  { id: "ev-t1", title: "Product Strategy Meeting", company: "TechCorp Inc.", date: "April 25, 2026", time: "09:00 AM", duration: "2 hours", room: "Room A", seats: 8, addons: ["Projector", "Whiteboard"], notes: "Quarterly planning session", status: "confirmed" },
+  { id: "ev-t2", title: "Client Onboarding Session", company: "StartupXYZ", date: "April 25, 2026", time: "11:30 AM", duration: "1 hour", room: "Room B", seats: 6, addons: ["TV Display"], notes: "Welcome walkthrough for the new cohort.", status: "confirmed" },
+  { id: "ev-t3", title: "Design Workshop", company: "Creative Studios", date: "April 25, 2026", time: "02:00 PM", duration: "3 hours", room: "Conference Hall", seats: 12, addons: ["Whiteboard", "Markers"], notes: "Hands-on UI exploration — bring laptops.", status: "pending" },
+  { id: "ev-t4", title: "Investment Pitch", company: "VentureCap Partners", date: "April 25, 2026", time: "04:30 PM", duration: "1.5 hours", room: "Room C", seats: 5, addons: ["Projector"], notes: "Series A deck rehearsal.", status: "confirmed" },
 ];
 
-const UPCOMING_EVENTS: EventRow[] = [
-  {
-    id: "ev-u1",
-    title: "Team Building Event",
-    company: "InnovateCo",
-    date: "April 28, 2026",
-    time: "10:00 AM",
-    duration: "4 hours",
-    room: "Conference Hall",
-    seats: 25,
-    addons: ["Catering", "Whiteboard"],
-    notes: "Off-site team building — RSVP required.",
-    status: "confirmed",
-  },
-  {
-    id: "ev-u2",
-    title: "Board Meeting",
-    company: "FinTech Solutions",
-    date: "May 02, 2026",
-    time: "02:00 PM",
-    duration: "2 hours",
-    room: "Room A",
-    seats: 10,
-    addons: ["Projector", "Conference Phone"],
-    notes: "Quarterly board review.",
-    status: "pending",
-  },
-  {
-    id: "ev-u3",
-    title: "Training Workshop",
-    company: "EduTech Labs",
-    date: "May 06, 2026",
-    time: "09:30 AM",
-    duration: "3 hours",
-    room: "Room B",
-    seats: 15,
-    addons: ["Whiteboard", "Markers", "Projector"],
-    notes: "Train-the-trainer session.",
-    status: "confirmed",
-  },
+const FALLBACK_UPCOMING: EventRow[] = [
+  { id: "ev-u1", title: "Team Building Event", company: "InnovateCo", date: "April 28, 2026", time: "10:00 AM", duration: "4 hours", room: "Conference Hall", seats: 25, addons: ["Catering", "Whiteboard"], notes: "Off-site team building — RSVP required.", status: "confirmed" },
+  { id: "ev-u2", title: "Board Meeting", company: "FinTech Solutions", date: "May 02, 2026", time: "02:00 PM", duration: "2 hours", room: "Room A", seats: 10, addons: ["Projector", "Conference Phone"], notes: "Quarterly board review.", status: "pending" },
+  { id: "ev-u3", title: "Training Workshop", company: "EduTech Labs", date: "May 06, 2026", time: "09:30 AM", duration: "3 hours", room: "Room B", seats: 15, addons: ["Whiteboard", "Markers", "Projector"], notes: "Train-the-trainer session.", status: "confirmed" },
 ];
 
-const PAST_EVENTS: EventRow[] = [
-  {
-    id: "ev-p1",
-    title: "Annual General Meeting",
-    company: "SpaceJam Co.",
-    date: "April 10, 2026",
-    time: "10:00 AM",
-    duration: "2 hours",
-    room: "Conference Hall",
-    seats: 40,
-    addons: ["Projector", "Catering"],
-    notes: "Annual general meeting for stakeholders.",
-    status: "completed",
-  },
+const FALLBACK_PAST: EventRow[] = [
+  { id: "ev-p1", title: "Annual General Meeting", company: "SpaceJam Co.", date: "April 10, 2026", time: "10:00 AM", duration: "2 hours", room: "Conference Hall", seats: 40, addons: ["Projector", "Catering"], notes: "Annual general meeting for stakeholders.", status: "completed" },
 ];
 
-type FilterKey = "all" | "today" | "upcoming" | "past";
-
-const FILTER_TABS: { key: FilterKey; label: string }[] = [
-  { key: "all",      label: "All" },
-  { key: "today",    label: "Today" },
-  { key: "upcoming", label: "Upcoming" },
-  { key: "past",     label: "Past" },
+const todayStr = new Date().toISOString().split('T')[0];
+const FALLBACK_EVENTS: EventRow[] = [
+  ...FALLBACK_TODAY.map(e => ({ ...e, id: `fb-t-${e.id}` })),
+  ...FALLBACK_UPCOMING,
+  ...FALLBACK_PAST,
 ];
 
-const ALL_EVENTS: EventRow[] = [
-  ...TODAY_EVENTS,
-  ...UPCOMING_EVENTS,
-  ...PAST_EVENTS,
-];
+/* --------------- Mapping helpers --------------- */
+
+const toEventRow = (e: any): EventRow => ({
+  id: e.id,
+  title: e.title,
+  company: e.company ?? (e.requestedBy?.name ?? "Unknown"),
+  date: e.eventDate,
+  time: e.startTime,
+  duration: `${e.durationMinutes} min`,
+  room: e.meetingRoom?.name ?? "—",
+  seats: e.attendeesCount ?? 0,
+  addons: e.addons ?? [],
+  notes: e.notes ?? "",
+  status: e.status?.toLowerCase() as EventStatus,
+});
+
+function classifyByDate(events: EventRow[], date: string) {
+  const d = new Date(date).setHours(0, 0, 0, 0);
+  const today = new Date(date).setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return {
+    today: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate >= today && evDate < tomorrow;
+    }),
+    upcoming: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate >= tomorrow;
+    }),
+    past: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate < today;
+    }),
+  };
+}
+
+/* --------------- Icons --------------- */
 
 const ClockIcon = () => (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
     <circle cx="11" cy="11" r="8.5" stroke="#FFFFFF" strokeWidth="1.7" />
-    <path
-      d="M11 6.5V11L14 12.5"
-      stroke="#FFFFFF"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d="M11 6.5V11L14 12.5" stroke="#FFFFFF" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
-const CalendarGlyph = () => (
-  <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-    <rect x="6" y="9" width="28" height="24" rx="3" stroke="#9CA3AF" strokeWidth="1.6" />
-    <path d="M6 16H34" stroke="#9CA3AF" strokeWidth="1.6" />
-    <path d="M13 5V11M27 5V11" stroke="#9CA3AF" strokeWidth="1.6" strokeLinecap="round" />
-    <rect x="13" y="20" width="5" height="4" rx="1" fill="#FFEBE0" />
-    <rect x="22" y="20" width="5" height="4" rx="1" fill="#FFEBE0" />
-    <rect x="13" y="26" width="5" height="4" rx="1" fill="#FFEBE0" />
-  </svg>
-);
-
-const SearchIcon = ({ stroke = "#9CA3AF" }: { stroke?: string }) => (
+const SearchIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-    <circle cx="6" cy="6" r="4.5" stroke={stroke} strokeWidth="1.3" />
-    <path d="M9.5 9.5L12 12" stroke={stroke} strokeWidth="1.3" strokeLinecap="round" />
+    <circle cx="6" cy="6" r="4.5" stroke="#9CA3AF" strokeWidth="1.3" />
+    <path d="M9.5 9.5L12 12" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round" />
   </svg>
 );
 
 const CheckIcon = ({ color = "#FFFFFF" }: { color?: string }) => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-    <path
-      d="M2 6.5L4.7 9L10 3.5"
-      stroke={color}
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d="M2 6.5L4.7 9L10 3.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-
-// ----------------- Detail-panel glyphs (Figma node 0-11282) -----------------
 
 const CalendarIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -222,24 +130,13 @@ const CalendarIcon = () => (
 const ClockSmallIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
     <circle cx="9" cy="9" r="6.5" stroke="#9CA3AF" strokeWidth="1.4" />
-    <path
-      d="M9 5V9L11.5 10.5"
-      stroke="#9CA3AF"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <path d="M9 5V9L11.5 10.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const PinIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-    <path
-      d="M9 1.5C6.2 1.5 4 3.7 4 6.5C4 10.5 9 16.5 9 16.5C9 16.5 14 10.5 14 6.5C14 3.7 11.8 1.5 9 1.5Z"
-      stroke="#9CA3AF"
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-    />
+    <path d="M9 1.5C6.2 1.5 4 3.7 4 6.5C4 10.5 9 16.5 9 16.5C9 16.5 14 10.5 14 6.5C14 3.7 11.8 1.5 9 1.5Z" stroke="#9CA3AF" strokeWidth="1.4" strokeLinejoin="round" />
     <circle cx="9" cy="6.5" r="2" stroke="#9CA3AF" strokeWidth="1.4" />
   </svg>
 );
@@ -247,31 +144,9 @@ const PinIcon = () => (
 const PeopleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
     <circle cx="6" cy="6" r="2.5" stroke="#9CA3AF" strokeWidth="1.4" />
-    <path
-      d="M1.5 15.5C1.8 12.7 3.7 11 6 11C8.3 11 10.2 12.7 10.5 15.5"
-      stroke="#9CA3AF"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-    />
+    <path d="M1.5 15.5C1.8 12.7 3.7 11 6 11C8.3 11 10.2 12.7 10.5 15.5" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
     <circle cx="12" cy="7" r="2" stroke="#9CA3AF" strokeWidth="1.4" />
-    <path
-      d="M11 11C13.3 11 15.2 12.4 15.7 14.7"
-      stroke="#9CA3AF"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
-const CubeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-    <path
-      d="M9 1.5L15.5 5V13L9 16.5L2.5 13V5L9 1.5Z"
-      stroke="#9CA3AF"
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-    />
-    <path d="M9 1.5V9M9 9L2.5 5M9 9L15.5 5M9 9V16.5" stroke="#9CA3AF" strokeWidth="1.4" />
+    <path d="M11 11C13.3 11 15.2 12.4 15.7 14.7" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round" />
   </svg>
 );
 
@@ -282,46 +157,20 @@ const NoteIcon = () => (
   </svg>
 );
 
-// ----------------- Status pill -----------------
+/* --------------- Sub-components --------------- */
 
 function StatusPill({ status }: { status: EventStatus }) {
-  if (status === "confirmed") {
-    return <span className={`${styles.statusPill} ${styles.statusConfirmed}`}>Confirmed</span>;
-  }
-  if (status === "completed") {
-    return <span className={`${styles.statusPill} ${styles.statusCompleted}`}>Completed</span>;
-  }
+  if (status === "confirmed") return <span className={`${styles.statusPill} ${styles.statusConfirmed}`}>Confirmed</span>;
+  if (status === "completed") return <span className={`${styles.statusPill} ${styles.statusCompleted}`}>Completed</span>;
   return <span className={`${styles.statusPill} ${styles.statusPending}`}>Pending</span>;
 }
 
-// ----------------- Event row (left column) -----------------
-
-function EventRowItem({
-  event,
-  selected,
-  onSelect,
-}: {
-  event: EventRow;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function EventRowItem({ event, selected, onSelect }: { event: EventRow; selected: boolean; onSelect: () => void }) {
   return (
-    <div
-      className={`${styles.eventRow} ${selected ? styles.eventRowSelected : ""}`}
-      onClick={onSelect}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
+    <div className={`${styles.eventRow} ${selected ? styles.eventRowSelected : ""}`} onClick={onSelect} role="button" tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
-      <div className={styles.eventIcon} aria-hidden="true">
-        <ClockIcon />
-      </div>
-
+      <div className={styles.eventIcon}><ClockIcon /></div>
       <div className={styles.eventBody}>
         <div className={styles.eventTitle}>{event.title}</div>
         <div className={styles.eventCompany}>{event.company}</div>
@@ -333,76 +182,35 @@ function EventRowItem({
           <span>{event.room}</span>
         </div>
       </div>
-
       <div className={styles.eventRight}>
         <StatusPill status={event.status} />
         <div className={styles.eventActions}>
           {event.status === "pending" && (
-            <button
-              type="button"
-              className={styles.btnPrimary}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <CheckIcon />
-              Confirm Booking
+            <button type="button" className={styles.btnPrimary} onClick={(e) => e.stopPropagation()}>
+              <CheckIcon /> Confirm Booking
             </button>
           )}
-          <button
-            type="button"
-            className={styles.btnOutline}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            className={styles.btnDanger}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Cancel
-          </button>
+          <button type="button" className={styles.btnOutline} onClick={(e) => e.stopPropagation()}>Edit</button>
+          <button type="button" className={styles.btnDanger} onClick={(e) => e.stopPropagation()}>Cancel</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ----------------- Section card -----------------
-
-function SectionCard({
-  title,
-  count,
-  events,
-  selectedId,
-  onSelect,
-  emptyLabel,
-}: {
-  title: string;
-  count: number;
-  events: EventRow[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  emptyLabel: string;
-}) {
+function SectionCard({ title, count, events, selectedId, onSelect, emptyLabel }: { title: string; count: number; events: EventRow[]; selectedId: string | null; onSelect: (id: string) => void; emptyLabel: string }) {
   return (
     <section className={styles.sectionCard}>
       <div className={styles.sectionHeader}>
         <span className={styles.sectionDot} aria-hidden="true" />
-        <h3 className={styles.sectionTitle}>
-          {title} <span className={styles.sectionCount}>({count})</span>
-        </h3>
+        <h3 className={styles.sectionTitle}>{title} <span className={styles.sectionCount}>({count})</span></h3>
       </div>
       {events.length === 0 ? (
         <div className={styles.emptySection}>{emptyLabel}</div>
       ) : (
         <div className={styles.eventList}>
           {events.map((ev) => (
-            <EventRowItem
-              key={ev.id}
-              event={ev}
-              selected={selectedId === ev.id}
-              onSelect={() => onSelect(ev.id)}
-            />
+            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} />
           ))}
         </div>
       )}
@@ -410,22 +218,10 @@ function SectionCard({
   );
 }
 
-// ----------------- Detail panel (Figma node 0-11282) -----------------
-
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className={styles.detailRow}>
-      <span className={styles.detailIcon} aria-hidden="true">
-        {icon}
-      </span>
+      <span className={styles.detailIcon} aria-hidden="true">{icon}</span>
       <div className={styles.detailText}>
         <div className={styles.detailLabel}>{label}</div>
         <div className={styles.detailValue}>{value}</div>
@@ -434,7 +230,7 @@ function DetailRow({
   );
 }
 
-function EventDetailPanel({ event }: { event: EventRow }) {
+function EventDetailPanel({ event, onUpdateStatus, onCancel }: { event: EventRow; onUpdateStatus?: (id: string, status: string) => void; onCancel?: (id: string) => void }) {
   return (
     <aside className={styles.detailPanel} aria-label="Event details panel">
       <div className={styles.detailHead}>
@@ -444,90 +240,111 @@ function EventDetailPanel({ event }: { event: EventRow }) {
         </div>
         <StatusPill status={event.status} />
       </div>
-
       <div className={styles.detailBody}>
-        <DetailRow
-          icon={<CalendarIcon />}
-          label="Date & Time"
-          value={`${event.date} at ${event.time}`}
-        />
+        <DetailRow icon={<CalendarIcon />} label="Date & Time" value={`${event.date} at ${event.time}`} />
         <DetailRow icon={<ClockSmallIcon />} label="Duration" value={event.duration} />
         <DetailRow icon={<PinIcon />} label="Room" value={event.room} />
         <DetailRow icon={<PeopleIcon />} label="Seats" value={`${event.seats} people`} />
-        <DetailRow
-          icon={<CubeIcon />}
-          label="Add-ons"
-          value={event.addons.length > 0 ? event.addons.join(", ") : "None"}
-        />
-        <DetailRow icon={<NoteIcon />} label="Notes" value={event.notes} />
+        <DetailRow icon={<NoteIcon />} label="Notes" value={event.notes || "None"} />
       </div>
-
       <div className={styles.detailDivider} />
-
       <div className={styles.detailActions}>
-        <button type="button" className={styles.btnEdit}>
-          Edit Event
-        </button>
-        <button type="button" className={styles.btnComplete}>
-          <CheckIcon color="#10B981" />
-          Mark as Completed
-        </button>
-        <button type="button" className={styles.btnCancelEvent}>
-          Cancel Event
-        </button>
+        <button type="button" className={styles.btnEdit}>Edit Event</button>
+        {event.status !== "completed" && (
+          <button type="button" className={styles.btnComplete}>
+            <CheckIcon color="#10B981" /> Mark as Completed
+          </button>
+        )}
+        {event.status !== "cancelled" && event.status !== "completed" && (
+          <button type="button" className={styles.btnCancelEvent} onClick={() => onCancel?.(event.id)}>Cancel Event</button>
+        )}
       </div>
     </aside>
   );
 }
 
-// ----------------- Empty side panel (default state) -----------------
-
 function EmptySidePanel() {
   return (
     <aside className={styles.sidePanel} aria-label="Event details panel">
       <div className={styles.sidePanelIcon}>
-        <CalendarGlyph />
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="6" y="9" width="28" height="24" rx="3" stroke="#9CA3AF" strokeWidth="1.6" />
+          <path d="M6 16H34" stroke="#9CA3AF" strokeWidth="1.6" />
+          <path d="M13 5V11M27 5V11" stroke="#9CA3AF" strokeWidth="1.6" strokeLinecap="round" />
+          <rect x="13" y="20" width="5" height="4" rx="1" fill="#FFEBE0" />
+          <rect x="22" y="20" width="5" height="4" rx="1" fill="#FFEBE0" />
+          <rect x="13" y="26" width="5" height="4" rx="1" fill="#FFEBE0" />
+        </svg>
       </div>
       <p className={styles.sidePanelText}>Select an event to view details</p>
     </aside>
   );
 }
 
-// ----------------- Page -----------------
+/* --------------- Page --------------- */
 
 export default function EventsPage() {
+  const [isFallback, setIsFallback] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  // Search match across title / company / room
+  const { events, loading, error, refetch } = useEvents();
+  const { event: selectedEventDetail } = useEvent(selectedId ?? "");
+  const { updateStatus } = useUpdateEventStatus();
+  const { cancel, cancelling } = useCancelEvent();
+
+  // Fallback detection: timeout → fallback, or backend returns 0 results with no error
+  useEffect(() => {
+    if (!loading && !error && events.length === 0 && !isFallback) {
+      // Could be legitimately empty, but start fallback timer
+      const timer = setTimeout(() => setIsFallback(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, error, events.length, isFallback]);
+
+  useEffect(() => {
+    if (loading && events.length === 0) {
+      const timer = setTimeout(() => setIsFallback(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, events.length]);
+
+  // Build event list: backend data mapped, or fallback mock
+  const allEvents: EventRow[] = useMemo(() => {
+    if (isFallback) return FALLBACK_EVENTS;
+    return events.map(toEventRow);
+  }, [isFallback, events]);
+
   const matchesSearch = (ev: EventRow) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return (
-      ev.title.toLowerCase().includes(q) ||
-      ev.company.toLowerCase().includes(q) ||
-      ev.room.toLowerCase().includes(q)
-    );
+    return ev.title.toLowerCase().includes(q) || ev.company.toLowerCase().includes(q) || ev.room.toLowerCase().includes(q);
   };
 
-  const todayEvents = TODAY_EVENTS.filter(matchesSearch);
-  const upcomingEvents = UPCOMING_EVENTS.filter(matchesSearch);
-  const pastEvents = PAST_EVENTS.filter(matchesSearch);
-
-  // Decide which sections to show based on filter tab
+  const filtered = allEvents.filter(matchesSearch);
+  const { today: todayEvts, upcoming: upcomingEvts, past: pastEvts } = classifyByDate(filtered, todayStr);
   const showToday = filter === "all" || filter === "today";
   const showUpcoming = filter === "all" || filter === "upcoming";
   const showPast = filter === "all" || filter === "past";
 
-  const selectedEvent = useMemo(
-    () => ALL_EVENTS.find((ev) => ev.id === selectedId) ?? null,
-    [selectedId]
-  );
+  const selectedEvent = useMemo(() => {
+    if (selectedId) return allEvents.find((ev) => ev.id === selectedId) ?? null;
+    return null;
+  }, [selectedId, allEvents]);
 
   return (
     <div className={styles.page}>
-      {/* Hero card */}
+      {isFallback && (
+        <div className="bg-[#FFF3CD] border border-[#FFC107] text-[#856404] px-4 py-2 rounded-xl text-sm font-medium mb-4 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M8 1V9M8 11V13M2 8H14" strokeLinecap="round" />
+          </svg>
+          <span>FALLBACK MODE — Showing cached mock data. Backend unavailable.</span>
+        </div>
+      )}
+
+      {/* Hero */}
       <section className={styles.heroCard}>
         <div className={styles.heroLeft}>
           <h1 className={styles.heroTitle}>Events</h1>
@@ -543,81 +360,42 @@ export default function EventsPage() {
       <section className={styles.filterBar}>
         <div className={styles.searchInput}>
           <SearchIcon />
-          <input
-            type="text"
-            placeholder="Search Events..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search events"
-          />
+          <input type="text" placeholder="Search Events..." value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search events" />
         </div>
-
         <div className={styles.filterTabs} role="tablist" aria-label="Filter by time">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={filter === tab.key}
-              className={`${styles.filterTab} ${filter === tab.key ? styles.filterTabActive : ""}`}
-              onClick={() => setFilter(tab.key)}
-            >
-              {tab.label}
-            </button>
+          {(["all", "today", "upcoming", "past"] as FilterKey[]).map((tab) => (
+            <button key={tab} type="button" role="tab" aria-selected={filter === tab}
+              className={`${styles.filterTab} ${filter === tab ? styles.filterTabActive : ""}`}
+              onClick={() => setFilter(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
           ))}
         </div>
-
-        <button type="button" className={styles.dropdown} aria-label="Filter by type">
-          <span>All types</span>
-          <span className={styles.dropdownCaret} aria-hidden="true" />
-        </button>
-        <button type="button" className={styles.dropdown} aria-label="Filter by status">
-          <span>All Status</span>
-          <span className={styles.dropdownCaret} aria-hidden="true" />
-        </button>
-
-        <button type="button" className={styles.clearAll}>
-          Clear All
-        </button>
+        <button type="button" className={styles.dropdown}><span>All types</span><span className={styles.dropdownCaret} /></button>
+        <button type="button" className={styles.dropdown}><span>All Status</span><span className={styles.dropdownCaret} /></button>
+        <button type="button" className={styles.clearAll} onClick={() => { setSearch(""); setFilter("all"); }}>Clear All</button>
       </section>
 
-      {/* Body grid */}
+      {/* Body */}
       <div className={styles.bodyGrid}>
         <div className={styles.eventsColumn}>
           {showToday && (
-            <SectionCard
-              title="Today's Events"
-              count={todayEvents.length}
-              events={todayEvents}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              emptyLabel="No events scheduled for today."
-            />
+            <SectionCard title="Today's Events" count={todayEvts.length} events={todayEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No events scheduled for today." />
           )}
           {showUpcoming && (
-            <SectionCard
-              title="Upcoming Events"
-              count={upcomingEvents.length}
-              events={upcomingEvents}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              emptyLabel="No upcoming events."
-            />
+            <SectionCard title="Upcoming Events" count={upcomingEvts.length} events={upcomingEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No upcoming events." />
           )}
           {showPast && (
-            <SectionCard
-              title="Past Events"
-              count={pastEvents.length}
-              events={pastEvents}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              emptyLabel="No past events."
-            />
+            <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No past events." />
           )}
+          {loading && !isFallback && <div className="text-center py-8 text-[#6A7282]">Loading events...</div>}
+          {error && !isFallback && <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading events. Check connection.</div>}
         </div>
 
         {selectedEvent ? (
-          <EventDetailPanel event={selectedEvent} />
+          <EventDetailPanel
+            event={selectedEvent}
+            onUpdateStatus={(id, status) => updateStatus(id, status as any)}
+            onCancel={(id) => cancel(id)}
+          />
         ) : (
           <EmptySidePanel />
         )}

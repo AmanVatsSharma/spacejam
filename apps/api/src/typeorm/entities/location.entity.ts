@@ -25,13 +25,13 @@ export class Location {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 120 })
   city!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 120 })
   state!: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 120 })
   country!: string;
 
   @Column({ name: 'fullAddress' })
