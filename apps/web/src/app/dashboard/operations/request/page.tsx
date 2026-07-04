@@ -73,7 +73,7 @@ export default function RequestsPage() {
   const { requests, loading, error } = useRequests();
   const { assign } = useAssignRequest();
   const { update } = useUpdateRequest();
-  const { complete } = useCompleteRequest();
+  const { complete: _complete } = useCompleteRequest();
   const { reject } = useRejectRequest();
 
   // Detect demo fallback: Apollo returns null/empty (backend unavailable or missing)
