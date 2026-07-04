@@ -7,14 +7,13 @@
  *              AppModule doesn't grow into a 200-line file.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-21
+ * Last-updated: 2026-07-02
  */
 import { ApolloDriverConfig } from '@nestjs/apollo';
 import { GraphQLError, BuildSchemaOptions } from 'graphql';
 import { DataSource } from 'typeorm';
 
 import { GqlDataLoaders } from './dataloaders';
-import { MetricsService } from '../observability/metrics.service';
 import { createGraphqlMetricsPlugin } from '../observability/graphql-metrics.plugin';
 
 const MAX_COMPLEXITY = parseInt(process.env.GRAPHQL_MAX_COMPLEXITY ?? '1000', 10);
@@ -26,6 +25,7 @@ const SAFE_CODES = new Set([
   'UNAUTHENTICATED',
   'FORBIDDEN',
   'BAD_USER_INPUT',
+  'NOT_FOUND',
   'GRAPHQL_VALIDATION_FAILED',
   'PERSISTED_QUERY_NOT_FOUND',
   'PERSISTED_QUERY_NOT_SUPPORTED',
@@ -42,7 +42,6 @@ const SAFE_CODES = new Set([
  */
 export async function buildSchemaOptions(
   dataSource: DataSource,
-  metrics: MetricsService,
 ): Promise<ApolloDriverConfig> {
   let schema: ReturnType<typeof import('graphql').buildSchema> | null = null;
   try {
@@ -68,7 +67,7 @@ export async function buildSchemaOptions(
     playground: process.env.NODE_ENV !== 'production',
     introspection: process.env.NODE_ENV !== 'production',
     validationRules,
-    plugins: [createGraphqlMetricsPlugin(metrics)],
+    plugins: [], // Metrics plugin removed to avoid circular dependency
     context: async ({ req, res, connectionParams, extra }: any) => {
       const loaders = buildRequestLoaders(dataSource);
       return { req, res, connectionParams, extra, loaders };
@@ -85,7 +84,42 @@ export async function buildSchemaOptions(
         },
       },
     },
-    formatError: (formatted) => {
+    formatError: (formatted, error: any) => {
+      const originalError = error?.originalError || formatted?.extensions?.originalError;
+      if (originalError) {
+        const status = typeof originalError.getStatus === 'function' ? originalError.getStatus() : originalError.status;
+        const response = originalError.response;
+
+        if (status) {
+          let code = 'INTERNAL_SERVER_ERROR';
+          let message = formatted.message;
+
+          if (status === 400) {
+            code = 'BAD_USER_INPUT';
+            if (response && response.message) {
+              message = Array.isArray(response.message) ? response.message.join(', ') : response.message;
+            }
+          } else if (status === 401) {
+            code = 'UNAUTHENTICATED';
+          } else if (status === 403) {
+            code = 'FORBIDDEN';
+          } else if (status === 404) {
+            code = 'NOT_FOUND';
+          }
+
+          return {
+            message,
+            path: formatted.path,
+            locations: formatted.locations,
+            extensions: {
+              ...formatted.extensions,
+              code,
+              ...(response && typeof response === 'object' ? { response } : {}),
+            },
+          };
+        }
+      }
+
       if (!MASK_ERRORS) return formatted;
       const code = (formatted.extensions?.code as string) || 'INTERNAL_SERVER_ERROR';
       if (SAFE_CODES.has(code)) return formatted;
@@ -130,17 +164,34 @@ function buildRequestLoaders(dataSource: DataSource): GqlDataLoaders {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
     );
   }
   const { User } = require('../typeorm/entities/user.entity') as typeof import('../typeorm/entities/user.entity');
   const { Center } = require('../typeorm/entities/center.entity') as typeof import('../typeorm/entities/center.entity');
   const { Seat } = require('../typeorm/entities/seat.entity') as typeof import('../typeorm/entities/seat.entity');
   const { Booking } = require('../typeorm/entities/booking.entity') as typeof import('../typeorm/entities/booking.entity');
+  const { Lead } = require('../typeorm/entities/lead.entity') as typeof import('../typeorm/entities/lead.entity');
+  const { Invoice } = require('../typeorm/entities/invoice.entity') as typeof import('../typeorm/entities/invoice.entity');
+  const { Deposit } = require('../typeorm/entities/deposit.entity') as typeof import('../typeorm/entities/deposit.entity');
+  const { Contract } = require('../typeorm/entities/contract.entity') as typeof import('../typeorm/entities/contract.entity');
   return new GqlDataLoaders(
     dataSource.getRepository(User),
     dataSource.getRepository(Center),
     dataSource.getRepository(Seat),
     dataSource.getRepository(Booking),
+    dataSource.getRepository(Lead),
+    dataSource.getRepository(Invoice),
+    dataSource.getRepository(Deposit),
+    dataSource.getRepository(Contract),
   );
 }
 

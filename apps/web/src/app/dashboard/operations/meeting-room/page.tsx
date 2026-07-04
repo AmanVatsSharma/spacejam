@@ -10,110 +10,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMeetingRooms, useCreateMeetingRoom, useUpdateMeetingRoom, useUpdateRoomStatus, useDeleteMeetingRoom } from "@/hooks/use-operations";
+import { useMeetingRooms } from "@/hooks/use-operations";
+import { DEMO_BADGE, FALLBACK_ROOMS, type RoomCard, type RoomStatus, mapStatus } from "@/lib/mock-data/operations-mock-data";
 import styles from "./meeting-room.module.css";
-
-type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
-
-interface BookingInfo {
-  label: string;
-  title: string;
-  time: string;
-}
-
-interface RoomCard {
-  id: string;
-  name: string;
-  capacity: number;
-  status: RoomStatus;
-  booking?: BookingInfo;
-}
-
-const FALLBACK_ROOMS: RoomCard[] = [
-  {
-    id: "boardroom-a", name: "Boardroom A", capacity: 12, status: "occupied",
-    booking: { label: "Current Booking", title: "Oracle ltd.", time: "10:00 AM - 11:30 AM" },
-  },
-  {
-    id: "meeting-room-1", name: "Meeting Room 1", capacity: 6, status: "available",
-    booking: { label: "Next booking", title: "", time: "3:00 PM" },
-  },
-  {
-    id: "conference-1", name: "Conference 1", capacity: 20, status: "booked",
-  },
-  {
-    id: "meeting-room-2", name: "Meeting Room 2", capacity: 4, status: "available",
-    booking: { label: "Next booking", title: "", time: "4:00 PM" },
-  },
-  {
-    id: "boardroom-b", name: "Boardroom B", capacity: 10, status: "occupied",
-    booking: { label: "Current Booking", title: "Satyam Tech.", time: "9:30 AM - 12:00 PM" },
-  },
-  {
-    id: "meeting-room-3", name: "Meeting Room 3", capacity: 8, status: "available",
-  },
-  {
-    id: "conference-2", name: "Conference 2", capacity: 15, status: "maintenance",
-  },
-  {
-    id: "meeting-room-4", name: "Meeting Room 4", capacity: 6, status: "available",
-    booking: { label: "Next booking", title: "", time: "5:00 PM" },
-  },
-  {
-    id: "meeting-room-5", name: "Meeting Room 5", capacity: 4, status: "occupied",
-    booking: { label: "Current Booking", title: "Sahu Enterprise.", time: "11:00 AM - 12:30 PM" },
-  },
-  {
-    id: "boardroom-c", name: "Boardroom C", capacity: 12, status: "available",
-    booking: { label: "Next booking", title: "", time: "2:30 PM" },
-  },
-  {
-    id: "meeting-room-6", name: "Meeting Room 6", capacity: 8, status: "booked",
-  },
-  {
-    id: "conference-3", name: "Conference 3", capacity: 18, status: "available",
-  },
-];
-
-// Map backend status → frontend status
-const mapStatus = (s: string): RoomStatus => {
-  const normalized = s.toLowerCase();
-  if (normalized === "available") return "available";
-  if (normalized === "booked" || normalized === "occupied") return "booked";
-  if (normalized === "maintenance") return "maintenance";
-  return "available";
-};
-
-const AddOnIcon = ({ type }: { type: "projector" | "catering" | "wifi" }) => {
-  const stroke = "#FF6A2F";
-  if (type === "projector") {
-    return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="6" width="13" height="8" rx="1.5" stroke={stroke} strokeWidth="1.4" />
-        <path d="M15 9L18 7V13L15 11" stroke={stroke} strokeWidth="1.4" strokeLinejoin="round" />
-        <circle cx="6" cy="10" r="1.5" fill={stroke} />
-      </svg>
-    );
-  }
-  if (type === "catering") {
-    return (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M4 8H16L15 14H5L4 8Z" stroke={stroke} strokeWidth="1.4" strokeLinejoin="round" />
-        <path d="M7 8V6C7 4.5 8.5 3 10 3C11.5 3 13 4.5 13 6V8" stroke={stroke} strokeWidth="1.4" />
-        <path d="M10 11V17" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-        <path d="M7 17H13" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M2.5 7.5C4.7 5.3 7.3 4 10 4C12.7 4 15.3 5.3 17.5 7.5" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M5 10C6.5 8.5 8.2 7.7 10 7.7C11.8 7.7 13.5 8.5 15 10" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M7.5 12.5C8.2 11.8 9.1 11.4 10 11.4C10.9 11.4 11.8 11.8 12.5 12.5" stroke={stroke} strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="10" cy="15.5" r="1" fill={stroke} />
-    </svg>
-  );
-};
 
 const STATUS_PILL: Record<RoomStatus, { label: string; color: string; bg: string }> = {
   occupied:    { label: "Occupied",   color: "#FF6A2F", bg: "#FFEBE0" },
@@ -178,32 +77,31 @@ function RoomCard({ room, onBook, onExtend }: { room: RoomCard; onBook?: (room: 
 /* ---------------- Page ---------------- */
 
 export default function MeetingRoomsPage() {
-  const [isFallback, setIsFallback] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [view, setView] = useState<"layout" | "table">("layout");
-  const { rooms, loading, error, refetch } = useMeetingRooms();
-  const { updateStatus, updating } = useUpdateRoomStatus();
-  const { deleteRoom, deleting } = useDeleteMeetingRoom();
+  const { rooms, loading, error } = useMeetingRooms();
 
-  // Detect fallback: if Apollo returns no rooms after a non-loading attempt
+
+  // Detect demo fallback: Apollo returns null/empty (backend unavailable or loading resolved with no data)
   useEffect(() => {
-    if (!loading && !error && rooms.length === 0) {
-      setIsFallback(true);
-    } else if (rooms.length > 0) {
-      setIsFallback(false);
+    if (!loading && !error && !rooms?.length) {
+      setIsDemo(true);
+    } else if (rooms?.length) {
+      setIsDemo(false);
     }
-  }, [loading, error, rooms.length]);
+  }, [loading, error, rooms]);
 
-  // After 3s of loading, fall back to mock
+  // After 3s of loading, fall back to mock data
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (loading && rooms.length === 0) {
-        setIsFallback(true);
+      if (loading && !rooms?.length) {
+        setIsDemo(true);
       }
     }, 3000);
     return () => clearTimeout(timer);
-  }, [loading, rooms.length]);
+  }, [loading, rooms]);
 
-  const displayRooms: RoomCard[] = isFallback
+  const displayRooms: RoomCard[] = isDemo
     ? FALLBACK_ROOMS
     : rooms.map((r: any) => ({
         id: r.id,
@@ -213,22 +111,18 @@ export default function MeetingRoomsPage() {
         booking: undefined,
       }));
 
+  // Stats derived from displayRooms (works for both live and demo data)
+  const availableCount = displayRooms.filter(r => r.status === "available").length;
+
   return (
     <div className={styles.page}>
-      {/* Fallback badge */}
-      {isFallback && (
-        <div className="bg-[#FFF3CD] border border-[#FFC107] text-[#856404] px-4 py-2 rounded-xl text-sm font-medium mb-4 flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M8 1V9M8 11V13M2 8H14" strokeLinecap="round" />
-          </svg>
-          <span>FALLBACK MODE — Showing cached mock data. Backend unavailable.</span>
-        </div>
-      )}
-
       {/* Hero */}
       <section className={styles.heroCard}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>Meeting Room status</h1>
+          <h1 className={styles.heroTitle}>
+            Meeting Room status
+            {isDemo && DEMO_BADGE}
+          </h1>
           <p className={styles.heroSubtitle}>Monitor meeting room usage, availability and booking status</p>
         </div>
         <button type="button" className={styles.heroAction}>
@@ -237,7 +131,7 @@ export default function MeetingRoomsPage() {
         </button>
       </section>
 
-      {/* Stats — real data when available, mock when fallback */}
+      {/* Stats */}
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -249,7 +143,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>No. of Bookings</span>
           </div>
-          <div className={styles.statValue}>{isFallback ? "200" : rooms.length * 16}</div>
+          <div className={styles.statValue}>{displayRooms.length * 16}</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -261,7 +155,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>Total Hours used</span>
           </div>
-          <div className={styles.statValue}>{isFallback ? "260" : `${rooms.length * 22} `}<span className={styles.statUnit}>hrs</span></div>
+          <div className={styles.statValue}>{displayRooms.length * 22} <span className={styles.statUnit}>hrs</span></div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -273,7 +167,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>Vacant Slot</span>
           </div>
-          <div className={styles.statValue}>{isFallback ? "2" : rooms.filter((r: any) => mapStatus(r.status ?? "AVAILABLE") === "available").length}</div>
+          <div className={styles.statValue}>{availableCount}</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -347,10 +241,10 @@ export default function MeetingRoomsPage() {
       )}
 
       {/* Loading / Error states */}
-      {loading && !isFallback && (
+      {loading && !isDemo && (
         <div className="text-center py-8 text-[#6A7282]">Loading meeting rooms...</div>
       )}
-      {error && !isFallback && (
+      {error && !isDemo && (
         <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading rooms. Check connection.</div>
       )}
     </div>

@@ -20,8 +20,15 @@ import { RevenueAnalytics } from './entities/revenue-analytics.entity';
 import { UserSession } from './entities/user-session.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { Invitation } from './entities/invitation.entity';
+import { Lead } from './entities/lead.entity';
+import { Invoice } from './entities/invoice.entity';
+import { Deposit } from './entities/deposit.entity';
+import { Contract } from './entities/contract.entity';
 import { RecoveryCode } from './entities/recovery-code.entity';
 import { MagicLinkToken } from './entities/magic-link-token.entity';
+import { MeetingRoom } from './entities/meeting-room.entity';
+import { Event } from './entities/event.entity';
+import { Request } from './entities/request.entity';
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -42,8 +49,15 @@ export const dataSource = new DataSource({
     UserSession,
     AuditLog,
     Invitation,
+    Lead,
+    Invoice,
+    Deposit,
+    Contract,
     RecoveryCode,
     MagicLinkToken,
+    MeetingRoom,
+    Event,
+    Request,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.NODE_ENV !== 'production',

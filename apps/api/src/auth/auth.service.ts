@@ -10,7 +10,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { TypeormService } from '../typeorm/typeorm.service';
 import { CacheService } from '../cache/cache.service';
 import { User, UserRole } from '../graphql/types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,7 +19,6 @@ import { User as UserEntity } from '../typeorm/entities/user.entity';
 @Injectable()
 export class AuthService {
   constructor(
-    private typeorm: TypeormService,
     private jwtService: JwtService,
     private cache: CacheService,
     @InjectRepository(UserEntity)

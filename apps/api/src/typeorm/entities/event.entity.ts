@@ -17,69 +17,72 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
+import { EventType, EventStatus } from '../../graphql/types/user.type';
 
-export enum EventStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-}
-
-export enum EventType {
-  MEETING_ROOM = 'MEETING_ROOM',
-  CONFERENCE = 'CONFERENCE',
-  WORKSHOP = 'WORKSHOP',
-  PRIVATE_EVENT = 'PRIVATE_EVENT',
-}
-
+@ObjectType()
 @Entity('events')
 export class Event {
+  @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Field(() => ID)
   @Column({ name: 'centerId' })
   centerId!: string;
 
+  @Field(() => ID)
   @Column({ name: 'meetingRoomId', type: 'uuid' })
   meetingRoomId!: string;
 
+  @Field(() => ID)
   @Column({ name: 'requestedById' })
   requestedById!: string;
 
+  @Field()
   @Column({ type: 'varchar' })
   title!: string;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'description', type: 'text', nullable: true })
   description!: string | null;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'company', type: 'varchar', nullable: true })
   company!: string | null;
 
+  @Field()
   @Column({ name: 'eventDate', type: 'date' })
   eventDate!: Date;
 
+  @Field()
   @Column({ name: 'startTime', type: 'time' })
   startTime!: string;
 
+  @Field()
   @Column({ name: 'endTime', type: 'time' })
   endTime!: string;
 
+  @Field(() => Int)
   @Column({ name: 'durationMinutes', type: 'int' })
   durationMinutes!: number;
 
+  @Field(() => Int)
   @Column({ name: 'attendeesCount', type: 'int', default: 1 })
   attendeesCount!: number;
 
+  @Field(() => EventType)
   @Column({
     type: 'enum',
     enum: EventType,
     default: EventType.MEETING_ROOM,
   })
-  type!: EventType;
+  eventType!: EventType;
 
+  @Field(() => EventStatus)
   @Column({
     type: 'enum',
     enum: EventStatus,
@@ -87,33 +90,42 @@ export class Event {
   })
   status!: EventStatus;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'specialRequests', type: 'text', nullable: true })
   specialRequests!: string | null;
 
+  @Field(() => [String], { nullable: true })
   @Column({ name: 'addons', type: 'json', nullable: true })
   addons!: string[] | null;
 
+  @Field(() => Float)
   @Column({ name: 'cost', type: 'float', default: 0 })
   cost!: number;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'notes', type: 'text', nullable: true })
   notes!: string | null;
 
+  @Field(() => Date)
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 
+  @Field(() => Date)
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 
   // Relations
+  @Field(() => Center)
   @ManyToOne(() => Center, (center) => center.events)
   @JoinColumn({ name: 'centerId' })
   center!: Center;
 
+  @Field(() => MeetingRoom)
   @ManyToOne(() => MeetingRoom, (room) => room.events)
   @JoinColumn({ name: 'meetingRoomId' })
   meetingRoom!: MeetingRoom;
 
+  @Field(() => User)
   @ManyToOne(() => User, (user) => user.events)
   @JoinColumn({ name: 'requestedById' })
   requestedBy!: User;

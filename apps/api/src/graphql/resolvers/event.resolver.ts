@@ -10,9 +10,10 @@
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Event, EventStatus, EventType } from '../entities/event.entity';
-import { CreateEventInput, UpdateEventInput, EventFiltersInput } from '../inputs/event.input';
-import { EventStatistics } from '../inputs/event.input';
+import { Event } from '../../typeorm/entities/event.entity';
+import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
+import { EventStatus, EventType } from '../../graphql/types/user.type';
+import { CreateEventInput, UpdateEventInput, EventFiltersInput, EventStatistics, CreateEventPayload } from '../inputs/event.input';
 import { CacheService } from '../../cache/cache.service';
 
 @Resolver(() => Event)
@@ -21,8 +22,8 @@ export class EventResolver {
     private cache: CacheService,
     @InjectRepository(Event)
     private eventRepo: Repository<Event>,
-    @InjectRepository('MeetingRoom')
-    private roomRepo: Repository<any>,
+    @InjectRepository(MeetingRoom)
+    private roomRepo: Repository<MeetingRoom>,
   ) {}
 
   @Query(() => [Event])

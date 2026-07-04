@@ -8,21 +8,22 @@
  */
 
 import { Resolver, Query, Args } from '@nestjs/graphql';
-import { TypeormService } from '../../typeorm/typeorm.service';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import {
+  BookingStatus,
+  PaymentStatus,
+  SeatStatus,
+  SeatType,
+} from '../types/user.type';
 import {
   DashboardMetrics,
   RevenueReport,
   OccupancyReport,
   OccupancyDay,
   SeatTypeOccupancy,
-  BookingStatus,
-  PaymentStatus,
-  SeatStatus,
-  SeatType,
-} from '../types/user.type';
+} from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
@@ -30,7 +31,6 @@ import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity'
 @Resolver(() => DashboardMetrics)
 export class AnalyticsResolver {
   constructor(
-    private typeorm: TypeormService,
     private cache: CacheService,
     @InjectRepository(BookingEntity)
     private bookingRepo: Repository<BookingEntity>,

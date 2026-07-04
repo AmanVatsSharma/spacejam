@@ -4,9 +4,9 @@
  * Purpose:     User queries/mutations with role-based authorization
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-07-04
  */
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Args, Context, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -19,8 +19,7 @@ import { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 
-import { GqlDataLoaders } from '../dataloaders';
-import { User, UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
+import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
 
 /**
  * The entity role taxonomy (5 tiers) is richer than the GraphQL type
@@ -38,72 +37,49 @@ function toEntityRole(role: GraphqlUserRole): EntityUserRole {
   return EntityUserRole.MEMBER;
 }
 
-function toGraphqlUser(user: UserEntity): User {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name ?? '',
-    role: toGraphqlRole(user.role),
-    centerId: undefined,
-    phone: undefined,
-    avatar: undefined,
-    isActive: user.isActive,
-    active: user.isActive,
-    emailVerified: user.emailVerified,
-    twoFactorEnabled: user.twoFactorEnabled,
-    lastLogin: user.lastLogin ?? null,
-    lastLoginAt: user.lastLogin ?? null,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  } as User;
-}
-
-@Resolver(() => User)
+@Resolver(() => UserEntity)
 @UseGuards(GqlAuthGuard, RolesGuard)
 export class UserResolver {
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly loaders: GqlDataLoaders,
   ) {}
 
-  @Query(() => User, { description: 'The currently signed-in user' })
-  async me(@CurrentUser() current: JwtPayload): Promise<User> {
-    // Prefer the DataLoader so this can be batched with sibling `user(id:)`
-    // calls in the same request.
-    const user = await this.loaders.userById.load(current.sub);
-    if (!user) throw new Error('User not found');
-    return toGraphqlUser(user);
+  @Query(() => UserEntity, { description: 'The currently signed-in user' })
+  async me(@CurrentUser() current: JwtPayload): Promise<UserEntity> {
+    const user = await this.userRepo.findById(current.sub);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  @Query(() => [User], { description: 'List all users (admin only)' })
+  @Query(() => [UserEntity], { description: 'List all users (admin only)' })
   @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
   async users(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 50 }) limit: number,
     @Args('offset', { type: () => Number, nullable: true, defaultValue: 0 }) offset: number,
-  ): Promise<User[]> {
+  ): Promise<UserEntity[]> {
     const { users } = await this.userRepo.findAll({ limit, offset });
-    return users.map(toGraphqlUser);
+    return users;
   }
 
-  @Query(() => User, { description: 'Fetch a user by id (admin only)' })
+  @Query(() => UserEntity, { description: 'Fetch a user by id (admin only)' })
   @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
-  async user(@Args('id', { type: () => ID }) id: string): Promise<User> {
+  async user(@Args('id', { type: () => ID }) id: string): Promise<UserEntity> {
     const user = await this.userRepo.findById(id);
-    if (!user) throw new Error('User not found');
-    return toGraphqlUser(user);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  @Mutation(() => User, { description: 'Update the current user profile' })
+  @Mutation(() => UserEntity, { description: 'Update the current user profile' })
   async updateProfile(
     @CurrentUser() current: JwtPayload,
     @Args('name', { nullable: true }) name?: string,
-  ): Promise<User> {
+  ): Promise<UserEntity> {
     const user = await this.userRepo.findById(current.sub);
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('User not found');
     user.name = name ?? user.name;
     const updated = await this.userRepo.update(user.id, { name: user.name });
-    if (!updated) throw new Error('Failed to update profile');
-    return toGraphqlUser(updated);
+    if (!updated) throw new BadRequestException('Failed to update profile');
+    return updated;
   }
 
   @Mutation(() => Boolean, { description: 'Soft-delete a user (admin only)' })

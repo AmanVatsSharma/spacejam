@@ -10,47 +10,10 @@
 
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
-import { useRequests, useRequest, useRequestStats, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";
-import styles from "./request.module.css";
+import { useMemo, useState, useEffect } from "react";
+import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";
+import { DEMO_BADGE, FALLBACK_REQUESTS, FALLBACK_ACTIVITIES, type RoomRequest, type RequestStatus, type RequestType } from "@/lib/mock-data/operations-mock-data";
 import "@/components/ui/dashboard/pending-approvals-modal";
-
-type RequestStatus = "Pending" | "Approved" | "Rejected";
-type RequestType = "Events" | "Printer" | "Upgrade" | "Services";
-
-interface RoomRequest {
-  id: string;
-  requestType: RequestType;
-  requestedBy: string;
-  details: string;
-  date: string;
-  status: RequestStatus;
-}
-
-interface ActivityItem {
-  icon: "payment" | "printer" | "event";
-  title: string;
-  description: string;
-}
-
-/* --------------- Mock fallback --------------- */
-
-const FALLBACK_REQUESTS: RoomRequest[] = [
-  { id: "REQ-001", requestType: "Events", requestedBy: "Sarah Chen", details: "Conference room booking for team meeting", date: "24-04-2026", status: "Pending" },
-  { id: "REQ-002", requestType: "Printer", requestedBy: "Mike Johnson", details: "Color printer access request", date: "21-04-2026", status: "Approved" },
-  { id: "REQ-003", requestType: "Upgrade", requestedBy: "Emily Rodriguez", details: "Upgrade to premium desk space", date: "22-04-2026", status: "Pending" },
-  { id: "REQ-004", requestType: "Services", requestedBy: "David Kim", details: "IT support for network setup", date: "20-04-2026", status: "Approved" },
-  { id: "REQ-005", requestType: "Events", requestedBy: "Lisa Wang", details: "Workshop space for Friday afternoon", date: "23-04-2026", status: "Rejected" },
-  { id: "REQ-006", requestType: "Printer", requestedBy: "James Taylor", details: "Bulk printing for marketing materials", date: "20-04-2026", status: "Pending" },
-  { id: "REQ-007", requestType: "Upgrade", requestedBy: "Anna Martinez", details: "Additional storage locker request", date: "19-04-2026", status: "Approved" },
-  { id: "REQ-008", requestType: "Services", requestedBy: "Tom Anderson", details: "Mail handling service setup", date: "18-04-2026", status: "Pending" },
-];
-
-const FALLBACK_ACTIVITIES: ActivityItem[] = [
-  { icon: "payment", title: "Payment Failed", description: "Invoice #INV-1021 (₹4,200)" },
-  { icon: "printer", title: "Printer Booked Today", description: "Patel Enterprises printer bo....." },
-  { icon: "printer", title: "Printer Booked Today", description: "Patel Enterprises printer bo....." },
-];
 
 /* --------------- Icons --------------- */
 
@@ -98,7 +61,7 @@ function getStatusStyle(status: RequestStatus) {
 /* --------------- Page --------------- */
 
 export default function RequestsPage() {
-  const [isFallback, setIsFallback] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All Categories" | RequestType>("All Categories");
   const [statusFilter, setStatusFilter] = useState<"All Statues" | RequestStatus>("All Statues");
@@ -108,25 +71,29 @@ export default function RequestsPage() {
   const [showPendingModal, setShowPendingModal] = useState(false);
 
   const { requests, loading, error } = useRequests();
-  const { assign, assigning } = useAssignRequest();
-  const { update, saving } = useUpdateRequest();
-  const { complete, saving: completing } = useCompleteRequest();
-  const { reject, saving: rejecting } = useRejectRequest();
+  const { assign } = useAssignRequest();
+  const { update } = useUpdateRequest();
+  const { complete } = useCompleteRequest();
+  const { reject } = useRejectRequest();
 
-  // Fallback detection
+  // Detect demo fallback: Apollo returns null/empty (backend unavailable or missing)
   useEffect(() => {
-    if (loading) {
-      const timer = setTimeout(() => setIsFallback(true), 3000);
+    if (!loading && !error && !requests?.length && !isDemo) {
+      const timer = setTimeout(() => setIsDemo(true), 2000);
       return () => clearTimeout(timer);
     }
-    if (!loading && !error && requests.length === 0 && !isFallback) {
-      const timer = setTimeout(() => setIsFallback(true), 2000);
+  }, [loading, error, requests?.length, isDemo]);
+
+  // After 3s of loading, fall back to mock data
+  useEffect(() => {
+    if (loading && !requests?.length) {
+      const timer = setTimeout(() => setIsDemo(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [loading, error, requests.length, isFallback]);
+  }, [loading, requests?.length]);
 
   const requestList: RoomRequest[] = useMemo(() => {
-    if (isFallback) return FALLBACK_REQUESTS;
+    if (isDemo) return FALLBACK_REQUESTS;
     return requests.map((r: any) => ({
       id: r.id,
       requestType: (r.type ?? "Services") as RequestType,
@@ -135,7 +102,7 @@ export default function RequestsPage() {
       date: r.dueDate ? new Date(r.dueDate).toLocaleDateString("en-GB") : new Date(r.createdAt).toLocaleDateString("en-GB"),
       status: r.status?.replace("_", " ") as RequestStatus,
     }));
-  }, [isFallback, requests]);
+  }, [isDemo, requests]);
 
   const filtered = useMemo(() => {
     return requestList.filter((r) => {
@@ -181,15 +148,8 @@ export default function RequestsPage() {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
-      {/* Fallback badge */}
-      {isFallback && (
-        <div className="bg-[#FFF3CD] border border-[#FFC107] text-[#856404] px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M8 1V9M8 11V13M2 8H14" strokeLinecap="round" />
-          </svg>
-          <span>FALLBACK MODE — Showing cached mock data. Backend unavailable.</span>
-        </div>
-      )}
+      {/* Demo data badge */}
+      {isDemo && DEMO_BADGE}
 
       {/* Header */}
       <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">

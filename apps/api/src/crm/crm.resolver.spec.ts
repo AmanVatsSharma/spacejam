@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CrmResolver } from './crm.resolver';
+import { CrmResolver } from '../graphql/resolvers/crm.resolver';
 import { Lead as LeadEntity, LeadStatus, LeadSource } from '../typeorm/entities/lead.entity';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../graphql/inputs/crm.input';
 
@@ -56,12 +56,14 @@ function buildMockRepo(seeds: LeadEntity[] = []) {
     find: vi.fn(async (opts?: any) => {
       let results = [...data];
       if (opts?.where) {
+        if (opts.where.id) results = results.filter(l => l.id === opts.where.id);
         if (opts.where.status) results = results.filter(l => l.status === opts.where.status);
         if (opts.where.source) results = results.filter(l => l.source === opts.where.source);
         if (opts.where.email) results = results.filter(l => l.email === opts.where.email);
         if (opts.where.name) {
           // Simple LIKE simulation
-          const pattern = opts.where.name.replace(/[%]/g, '').slice(1, -1);
+          const nameVal = typeof opts.where.name === 'string' ? opts.where.name : (opts.where.name._value || opts.where.name.value || '');
+          const pattern = typeof nameVal === 'string' ? nameVal.replace(/[%]/g, '') : '';
           results = results.filter(l => l.name.toLowerCase().includes(pattern.toLowerCase()));
         }
       }

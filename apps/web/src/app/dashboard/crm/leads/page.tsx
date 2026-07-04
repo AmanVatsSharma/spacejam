@@ -55,7 +55,7 @@ interface GetLeadsVars {
 function useLeads() {
   const { data, loading, error } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
   const leads = data?.leads?.length ? data.leads : MOCK_LEADS;
-  const isDemo = !data?.leads?.length;
+  const isDemo = !!error;
   return { leads, loading, error, isDemo };
 }
 

@@ -8,11 +8,19 @@
  * Last-updated: 2026-07-01
  */
 import { defineConfig } from 'vitest/config';
+import swc from 'unplugin-swc';
 
 export default defineConfig({
   test: {
     include: ['src/**/*.spec.ts'],
-    globals: false,
+    globals: true,
     environment: 'node',
+    setupFiles: ['./vitest.setup.ts'],
   },
+  plugins: [
+    swc.vite({
+      tsconfigFile: './tsconfig.app.json',
+    }),
+  ],
 });
+

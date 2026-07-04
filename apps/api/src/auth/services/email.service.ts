@@ -46,6 +46,14 @@ export class EmailService {
     return this.send(args.to, subject, text, html);
   }
 
+  async sendEmailVerification(args: { to: string; name: string; verifyUrl: string }): Promise<void> {
+    return this.sendVerification({
+      to: args.to,
+      verifyUrl: args.verifyUrl,
+      ttlMinutes: 24 * 60,
+    });
+  }
+
   async sendVerification(args: { to: string; verifyUrl: string; ttlMinutes: number }): Promise<void> {
     const subject = 'Verify your SpaceJam email';
     const text =

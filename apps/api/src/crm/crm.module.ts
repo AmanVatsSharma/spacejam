@@ -8,7 +8,6 @@
  */
 
 import { Module } from '@nestjs/common';
-import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { CrmResolver } from '../graphql/resolvers/crm.resolver';
@@ -17,11 +16,11 @@ import { Lead } from '../typeorm/entities/lead.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Lead]),
-    GraphQLModule,
     CacheModule,
   ],
   providers: [
     CrmResolver,
   ],
+  exports: [CrmResolver],
 })
 export class CrmModule {}

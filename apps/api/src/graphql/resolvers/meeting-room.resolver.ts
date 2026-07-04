@@ -9,9 +9,9 @@
 
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { MeetingRoom } from '../entities/meeting-room.entity';
-import { Booking } from '../entities/booking.entity';
+import { Repository, MoreThanOrEqual, Like, Not, In } from 'typeorm';
+import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
+import { Booking } from '../../typeorm/entities/booking.entity';
 import { RoomFiltersInput } from '../inputs/meeting-room.input';
 import { CreateMeetingRoomInput, UpdateMeetingRoomInput } from '../inputs/meeting-room.input';
 import { CacheService } from '../../cache/cache.service';
@@ -37,8 +37,8 @@ export class MeetingRoomResolver {
       if (filters.floorId) where.floorId = filters.floorId;
       if (filters.type) where.type = filters.type;
       if (filters.status) where.status = filters.status;
-      if (filters.minCapacity) where.capacity = (await import('typeorm')).MoreThanOrEqual(filters.minCapacity);
-      if (filters.search) where.name = (await import('typeorm')).Like(`%${filters.search}%`);
+      if (filters.minCapacity) where.capacity = MoreThanOrEqual(filters.minCapacity);
+      if (filters.search) where.name = Like(`%${filters.search}%`);
     }
 
     const rooms = await this.roomRepo.find({
@@ -67,7 +67,7 @@ export class MeetingRoomResolver {
   ): Promise<MeetingRoom[]> {
     const where: any = { status: 'AVAILABLE', active: true };
     if (centerId) where.centerId = centerId;
-    if (minCapacity) where.capacity = (await import('typeorm')).MoreThanOrEqual(minCapacity);
+    if (minCapacity) where.capacity = MoreThanOrEqual(minCapacity);
 
     return this.roomRepo.find({
       where,
@@ -125,7 +125,7 @@ export class MeetingRoomResolver {
     @Args('status') status: string,
   ): Promise<boolean> {
     await this.roomRepo.update(
-      { id: (await import('typeorm')).In(roomIds) as any },
+      { id: In(roomIds) as any },
       { status: status as any },
     );
     await this.cache.invalidatePattern('meeting_rooms:*');
@@ -158,7 +158,7 @@ export class MeetingRoomResolver {
         centerId,
         floorId,
         active: true,
-        ...(bookedIds.length > 0 ? { id: (await import('typeorm')).NotIn(bookedIds) as any } : {}),
+        ...(bookedIds.length > 0 ? { id: NotIn(bookedIds) as any } : {}),
       },
       relations: ['center'],
       order: { name: 'ASC' },

@@ -8,16 +8,9 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, Subscription } from '@nestjs/graphql';
-import { TypeormService } from '../../typeorm/typeorm.service';
+import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
-import {
-  Center,
-  Location,
-  Floor,
-  Seat,
-  UserRole,
-  CenterStatus
-} from '../types/user.type';
+import { UserRole, CenterStatus } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Center as CenterEntity } from '../../typeorm/entities/center.entity';
@@ -41,10 +34,9 @@ export const CENTER_TRIGGERS = {
   floorUpdated: 'floor.updated',
 } as const;
 
-@Resolver(() => Center)
+@Resolver(() => CenterEntity)
 export class CenterResolver {
   constructor(
-    private typeorm: TypeormService,
     private cache: CacheService,
     @InjectRepository(CenterEntity)
     private centerRepo: Repository<CenterEntity>,
@@ -57,31 +49,31 @@ export class CenterResolver {
     private readonly pubSub: PubSubService,
   ) {}
 
-  @Query(() => [Center])
-  async centers(): Promise<Center[]> {
+  @Query(() => [CenterEntity])
+  async centers(): Promise<CenterEntity[]> {
     const centers = await this.centerRepo.find({
       relations: ['location', 'floors'],
     });
-    return centers as unknown as Center[];
+    return centers;
   }
 
-  @Query(() => Center, { nullable: true })
-  async center(@Args('id') id: string): Promise<Center | null> {
-    return this.cache.getOrSet<Center>(
+  @Query(() => CenterEntity, { nullable: true })
+  async center(@Args('id') id: string): Promise<CenterEntity | null> {
+    return this.cache.getOrSet<CenterEntity>(
       `center:${id}`,
       async () => {
         const center = await this.centerRepo.findOne({
           where: { id },
           relations: ['location', 'floors'],
         });
-        return center as unknown as Center | null;
+        return center;
       },
       3600 // Cache for 1 hour
     );
   }
 
-  @Query(() => [Center])
-  async myCenters(@Context() context): Promise<Center[]> {
+  @Query(() => [CenterEntity])
+  async myCenters(@Context() context): Promise<CenterEntity[]> {
     const userId = context.req.user?.id;
     if (!userId) return [];
 
@@ -89,16 +81,16 @@ export class CenterResolver {
       where: { owner: userId } as any,
       relations: ['location', 'floors'],
     });
-    return centers as unknown as Center[];
+    return centers;
   }
 
-  @Mutation(() => Center)
+  @Mutation(() => CenterEntity)
   async createCenter(
     @Args('input') input: CreateCenterInput,
     @Context() context
-  ): Promise<Center> {
+  ): Promise<CenterEntity> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     const newCenter = this.centerRepo.create({
       ...input,
@@ -106,26 +98,27 @@ export class CenterResolver {
     });
     const center = await this.centerRepo.save(newCenter);
     await this.cache.invalidatePattern('centers:*');
-    return center as unknown as Center;
+    return center;
   }
 
-  @Mutation(() => Center)
+  @Mutation(() => CenterEntity)
   async updateCenter(
     @Args('id') id: string,
     @Args('input') input: UpdateCenterInput,
     @Context() context
-  ): Promise<Center> {
+  ): Promise<CenterEntity> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     await this.centerRepo.update(id, input);
     const center = await this.centerRepo.findOne({
       where: { id },
       relations: ['location'],
     });
+    if (!center) throw new NotFoundException('Center not found');
     await this.cache.invalidatePattern(`center:${id}`);
     await this.pubSub.publish(CENTER_TRIGGERS.centerUpdated, { centerUpdated: center });
-    return center as unknown as Center;
+    return center;
   }
 
   @Mutation(() => Boolean)
@@ -134,7 +127,7 @@ export class CenterResolver {
     @Context() context
   ): Promise<boolean> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     await this.centerRepo.update(id, { status: CenterStatus.MAINTENANCE });
     await this.cache.invalidatePattern(`center:${id}`);
@@ -142,131 +135,130 @@ export class CenterResolver {
   }
 }
 
-@Resolver(() => Location)
+@Resolver(() => LocationEntity)
 export class LocationResolver {
   constructor(
-    private typeorm: TypeormService,
     @InjectRepository(LocationEntity)
     private locationRepo: Repository<LocationEntity>,
   ) {}
 
-  @Query(() => [Location])
-  async locations(): Promise<Location[]> {
+  @Query(() => [LocationEntity])
+  async locations(): Promise<LocationEntity[]> {
     const locations = await this.locationRepo.find({
       relations: ['centers'],
     });
-    return locations as unknown as Location[];
+    return locations;
   }
 
-  @Query(() => Location, { nullable: true })
-  async location(@Args('id') id: string): Promise<Location | null> {
+  @Query(() => LocationEntity, { nullable: true })
+  async location(@Args('id') id: string): Promise<LocationEntity | null> {
     const location = await this.locationRepo.findOne({
       where: { id },
       relations: ['centers'],
     });
-    return location as unknown as Location | null;
+    return location;
   }
 
-  @Mutation(() => Location)
+  @Mutation(() => LocationEntity)
   async createLocation(
     @Args('input') input: CreateLocationInput,
     @Context() context
-  ): Promise<Location> {
+  ): Promise<LocationEntity> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     const newLocation = this.locationRepo.create(input);
     const location = await this.locationRepo.save(newLocation);
-    return location as unknown as Location;
+    return location;
   }
 
-  @Mutation(() => Location)
+  @Mutation(() => LocationEntity)
   async updateLocation(
     @Args('id') id: string,
     @Args('input') input: UpdateLocationInput
-  ): Promise<Location> {
+  ): Promise<LocationEntity> {
     await this.locationRepo.update(id, input);
     const location = await this.locationRepo.findOne({ where: { id } });
-    return location as unknown as Location;
+    if (!location) throw new NotFoundException('Location not found');
+    return location;
   }
 }
 
-@Resolver(() => Floor)
+@Resolver(() => FloorEntity)
 export class FloorResolver {
   constructor(
-    private typeorm: TypeormService,
     private cache: CacheService,
     @InjectRepository(FloorEntity)
     private floorRepo: Repository<FloorEntity>,
     private readonly pubSub: PubSubService,
   ) {}
 
-  @Query(() => [Floor])
-  async floors(@Args('centerId', { nullable: true }) centerId?: string): Promise<Floor[]> {
+  @Query(() => [FloorEntity])
+  async floors(@Args('centerId', { nullable: true }) centerId?: string): Promise<FloorEntity[]> {
     const where: any = centerId ? { centerId, active: true } : { active: true };
     const floors = await this.floorRepo.find({
       where,
       relations: ['seats'],
     });
-    return floors as unknown as Floor[];
+    return floors;
   }
 
-  @Mutation(() => Floor)
+  @Mutation(() => FloorEntity)
   async createFloor(
     @Args('input') input: CreateFloorInput
-  ): Promise<Floor> {
+  ): Promise<FloorEntity> {
     const newFloor = this.floorRepo.create(input);
     const floor = await this.floorRepo.save(newFloor);
-    return floor as unknown as Floor;
+    return floor;
   }
 }
 
-@Resolver(() => Seat)
+@Resolver(() => SeatEntity)
 export class SeatResolver {
   constructor(
-    private typeorm: TypeormService,
     private cache: CacheService,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
     private readonly pubSub: PubSubService,
   ) {}
 
-  @Query(() => [Seat])
-  async seats(@Args('floorId', { nullable: true }) floorId?: string): Promise<Seat[]> {
+  @Query(() => [SeatEntity])
+  async seats(@Args('floorId', { nullable: true }) floorId?: string): Promise<SeatEntity[]> {
     const where = floorId ? { floorId } : {};
     const seats = await this.seatRepo.find({
       where,
       relations: ['floor'],
     });
-    return seats as unknown as Seat[];
+    return seats;
   }
 
-  @Query(() => Seat, { nullable: true })
-  async seat(@Args('id') id: string): Promise<Seat | null> {
+  @Query(() => SeatEntity, { nullable: true })
+  async seat(@Args('id') id: string): Promise<SeatEntity | null> {
     const seat = await this.seatRepo.findOne({
       where: { id },
       relations: ['floor'],
     });
-    return seat as unknown as Seat | null;
+    return seat;
   }
 
-  @Mutation(() => Seat)
-  async createSeat(@Args('input') input: CreateSeatInput): Promise<Seat> {
+  @Mutation(() => SeatEntity)
+  async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
-    return seat as unknown as Seat;
+    return seat;
   }
 
-  @Mutation(() => Seat)
+  @Mutation(() => SeatEntity)
   async updateSeat(
     @Args('id') id: string,
     @Args('input') input: UpdateSeatInput
-  ): Promise<Seat> {
+  ): Promise<SeatEntity> {
     await this.seatRepo.update(id, input);
     const seat = await this.seatRepo.findOne({
       where: { id },
       relations: ['floor'],
     });
+    if (!seat) throw new NotFoundException('Seat not found');
 
     await this.cache.invalidatePattern(`floor:*`);
     await this.cache.invalidatePattern(`center:*`);
@@ -274,14 +266,14 @@ export class SeatResolver {
       floorUpdated: seat?.floor,
     });
 
-    return seat as unknown as Seat;
+    return seat;
   }
 
   /**
    * Subscription: fires when any seat in the system updates (status,
    * price, label). The UI listens to keep the floor plan in sync.
    */
-  @Subscription(() => Seat, {
+  @Subscription(() => SeatEntity, {
     name: 'seatUpdated',
     description: 'Seat updated (status, price, label, etc.)',
     filter: (payload: { seatUpdated: SeatEntity | null }, vars: { floorId?: string }) => {
@@ -296,7 +288,7 @@ export class SeatResolver {
   /**
    * Subscription: fires when any center is updated.
    */
-  @Subscription(() => Center, {
+  @Subscription(() => CenterEntity, {
     name: 'centerUpdated',
     description: 'Center updated (name, status, location, etc.)',
   })

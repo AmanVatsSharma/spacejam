@@ -10,7 +10,7 @@
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Request, RequestStatus, RequestType } from '../entities/request.entity';
+import { Request, RequestStatus, RequestType } from '../../typeorm/entities/request.entity';
 import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput } from '../inputs/request.input';
 import { CacheService } from '../../cache/cache.service';
 

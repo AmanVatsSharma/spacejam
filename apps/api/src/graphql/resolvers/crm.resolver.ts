@@ -7,14 +7,15 @@
  * Last-updated: 2026-07-01
  */
 import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Lead, LeadStatus } from '../types/user.type';
+import { LeadStatus } from '../types/user.type';
 import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
 
-@Resolver(() => Lead)
+@Resolver(() => LeadEntity)
 export class CrmResolver {
   constructor(
     private cache: CacheService,
@@ -22,10 +23,10 @@ export class CrmResolver {
     private leadRepo: Repository<LeadEntity>,
   ) {}
 
-  @Query(() => [Lead])
+  @Query(() => [LeadEntity])
   async leads(
     @Args('filters', { nullable: true }) filters?: LeadFiltersInput
-  ): Promise<Lead[]> {
+  ): Promise<LeadEntity[]> {
     const where: any = {};
 
     if (filters) {
@@ -46,23 +47,23 @@ export class CrmResolver {
       skip: filters?.offset ?? 0,
     });
 
-    return leads as unknown as Lead[];
+    return leads;
   }
 
-  @Query(() => Lead, { nullable: true })
-  async lead(@Args('id') id: string): Promise<Lead | null> {
+  @Query(() => LeadEntity, { nullable: true })
+  async lead(@Args('id') id: string): Promise<LeadEntity | null> {
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
-    return lead as unknown as Lead | null;
+    return lead;
   }
 
-  @Mutation(() => Lead)
+  @Mutation(() => LeadEntity)
   async createLead(
     @Args('input') input: CreateLeadInput,
     @Context() context
-  ): Promise<Lead> {
+  ): Promise<LeadEntity> {
     const userId = context.req?.user?.id;
     const newLead = this.leadRepo.create({
       ...input,
@@ -70,35 +71,37 @@ export class CrmResolver {
     });
     const lead = await this.leadRepo.save(newLead);
     await this.cache.invalidatePattern('leads:*');
-    return lead as unknown as Lead;
+    return lead;
   }
 
-  @Mutation(() => Lead)
+  @Mutation(() => LeadEntity)
   async updateLead(
     @Args('id') id: string,
     @Args('input') input: UpdateLeadInput
-  ): Promise<Lead> {
+  ): Promise<LeadEntity> {
     await this.leadRepo.update(id, input);
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
+    if (!lead) throw new NotFoundException('Lead not found');
     await this.cache.invalidatePattern('leads:*');
     await this.cache.invalidate(`lead:${id}`);
-    return lead as unknown as Lead;
+    return lead;
   }
 
-  @Mutation(() => Lead)
+  @Mutation(() => LeadEntity)
   async convertLead(
     @Args('id') id: string
-  ): Promise<Lead> {
+  ): Promise<LeadEntity> {
     await this.leadRepo.update(id, { status: LeadStatus.CONVERTED });
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
+    if (!lead) throw new NotFoundException('Lead not found');
     await this.cache.invalidatePattern('leads:*');
-    return lead as unknown as Lead;
+    return lead;
   }
 
   @Mutation(() => Boolean)
@@ -109,9 +112,9 @@ export class CrmResolver {
     return true;
   }
 
-  @Query(() => Number)
+  @Query(() => Number, { description: 'Get count of leads, optionally filtered by status' })
   async leadCount(
-    @Args('status', { nullable: true }) status?: LeadStatus
+    @Args('status', { nullable: true, type: () => LeadStatus }) status?: LeadStatus
   ): Promise<number> {
     const where = status ? { status } : {};
     return this.leadRepo.count({ where });

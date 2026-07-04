@@ -11,88 +11,13 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { useEvents, useEvent, useEventStats, useCreateEvent, useUpdateEvent, useUpdateEventStatus, useCancelEvent } from "@/hooks/use-operations";
+import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent } from "@/hooks/use-operations";
+import { DEMO_BADGE, FALLBACK_EVENTS, toEventRow, classifyByDate, type EventRow, type EventStatus } from "@/lib/mock-data/operations-mock-data";
 import styles from "./events.module.css";
 
-type EventStatus = "confirmed" | "pending" | "completed";
 type FilterKey = "all" | "today" | "upcoming" | "past";
 
-interface EventRow {
-  id: string;
-  title: string;
-  company: string;
-  date: string;
-  time: string;
-  duration: string;
-  room: string;
-  seats: number;
-  addons: string[];
-  notes: string;
-  status: EventStatus;
-}
-
-/* --------------- Mock fallback data --------------- */
-
-const FALLBACK_TODAY: EventRow[] = [
-  { id: "ev-t1", title: "Product Strategy Meeting", company: "TechCorp Inc.", date: "April 25, 2026", time: "09:00 AM", duration: "2 hours", room: "Room A", seats: 8, addons: ["Projector", "Whiteboard"], notes: "Quarterly planning session", status: "confirmed" },
-  { id: "ev-t2", title: "Client Onboarding Session", company: "StartupXYZ", date: "April 25, 2026", time: "11:30 AM", duration: "1 hour", room: "Room B", seats: 6, addons: ["TV Display"], notes: "Welcome walkthrough for the new cohort.", status: "confirmed" },
-  { id: "ev-t3", title: "Design Workshop", company: "Creative Studios", date: "April 25, 2026", time: "02:00 PM", duration: "3 hours", room: "Conference Hall", seats: 12, addons: ["Whiteboard", "Markers"], notes: "Hands-on UI exploration — bring laptops.", status: "pending" },
-  { id: "ev-t4", title: "Investment Pitch", company: "VentureCap Partners", date: "April 25, 2026", time: "04:30 PM", duration: "1.5 hours", room: "Room C", seats: 5, addons: ["Projector"], notes: "Series A deck rehearsal.", status: "confirmed" },
-];
-
-const FALLBACK_UPCOMING: EventRow[] = [
-  { id: "ev-u1", title: "Team Building Event", company: "InnovateCo", date: "April 28, 2026", time: "10:00 AM", duration: "4 hours", room: "Conference Hall", seats: 25, addons: ["Catering", "Whiteboard"], notes: "Off-site team building — RSVP required.", status: "confirmed" },
-  { id: "ev-u2", title: "Board Meeting", company: "FinTech Solutions", date: "May 02, 2026", time: "02:00 PM", duration: "2 hours", room: "Room A", seats: 10, addons: ["Projector", "Conference Phone"], notes: "Quarterly board review.", status: "pending" },
-  { id: "ev-u3", title: "Training Workshop", company: "EduTech Labs", date: "May 06, 2026", time: "09:30 AM", duration: "3 hours", room: "Room B", seats: 15, addons: ["Whiteboard", "Markers", "Projector"], notes: "Train-the-trainer session.", status: "confirmed" },
-];
-
-const FALLBACK_PAST: EventRow[] = [
-  { id: "ev-p1", title: "Annual General Meeting", company: "SpaceJam Co.", date: "April 10, 2026", time: "10:00 AM", duration: "2 hours", room: "Conference Hall", seats: 40, addons: ["Projector", "Catering"], notes: "Annual general meeting for stakeholders.", status: "completed" },
-];
-
 const todayStr = new Date().toISOString().split('T')[0];
-const FALLBACK_EVENTS: EventRow[] = [
-  ...FALLBACK_TODAY.map(e => ({ ...e, id: `fb-t-${e.id}` })),
-  ...FALLBACK_UPCOMING,
-  ...FALLBACK_PAST,
-];
-
-/* --------------- Mapping helpers --------------- */
-
-const toEventRow = (e: any): EventRow => ({
-  id: e.id,
-  title: e.title,
-  company: e.company ?? (e.requestedBy?.name ?? "Unknown"),
-  date: e.eventDate,
-  time: e.startTime,
-  duration: `${e.durationMinutes} min`,
-  room: e.meetingRoom?.name ?? "—",
-  seats: e.attendeesCount ?? 0,
-  addons: e.addons ?? [],
-  notes: e.notes ?? "",
-  status: e.status?.toLowerCase() as EventStatus,
-});
-
-function classifyByDate(events: EventRow[], date: string) {
-  const d = new Date(date).setHours(0, 0, 0, 0);
-  const today = new Date(date).setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return {
-    today: events.filter((ev) => {
-      const evDate = new Date(ev.date).getTime();
-      return evDate >= today && evDate < tomorrow;
-    }),
-    upcoming: events.filter((ev) => {
-      const evDate = new Date(ev.date).getTime();
-      return evDate >= tomorrow;
-    }),
-    past: events.filter((ev) => {
-      const evDate = new Date(ev.date).getTime();
-      return evDate < today;
-    }),
-  };
-}
 
 /* --------------- Icons --------------- */
 
@@ -255,7 +180,7 @@ function EventDetailPanel({ event, onUpdateStatus, onCancel }: { event: EventRow
             <CheckIcon color="#10B981" /> Mark as Completed
           </button>
         )}
-        {event.status !== "cancelled" && event.status !== "completed" && (
+        {(event.status as string).toLowerCase() !== "cancelled" && (event.status as string).toLowerCase() !== "completed" && (
           <button type="button" className={styles.btnCancelEvent} onClick={() => onCancel?.(event.id)}>Cancel Event</button>
         )}
       </div>
@@ -284,37 +209,39 @@ function EmptySidePanel() {
 /* --------------- Page --------------- */
 
 export default function EventsPage() {
-  const [isFallback, setIsFallback] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const { events, loading, error, refetch } = useEvents();
-  const { event: selectedEventDetail } = useEvent(selectedId ?? "");
+  const { events, loading, error, data } = useEvents();
+  const { event: _selectedEventDetail } = useEvent(selectedId ?? "");
   const { updateStatus } = useUpdateEventStatus();
-  const { cancel, cancelling } = useCancelEvent();
+  const { cancel } = useCancelEvent();
 
-  // Fallback detection: timeout → fallback, or backend returns 0 results with no error
+  // Detect demo fallback: Apollo returns null/empty (backend unavailable)
   useEffect(() => {
-    if (!loading && !error && events.length === 0 && !isFallback) {
-      // Could be legitimately empty, but start fallback timer
-      const timer = setTimeout(() => setIsFallback(true), 2000);
+    if (!loading && !error && !data?.events?.length && !isDemo) {
+      const timer = setTimeout(() => setIsDemo(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [loading, error, events.length, isFallback]);
+    return;
+  }, [loading, error, data?.events?.length, isDemo]);
 
+  // After 3s of loading, fall back to mock data
   useEffect(() => {
-    if (loading && events.length === 0) {
-      const timer = setTimeout(() => setIsFallback(true), 3000);
+    if (loading && !data?.events?.length) {
+      const timer = setTimeout(() => setIsDemo(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [loading, events.length]);
+    return;
+  }, [loading, data?.events?.length]);
 
   // Build event list: backend data mapped, or fallback mock
   const allEvents: EventRow[] = useMemo(() => {
-    if (isFallback) return FALLBACK_EVENTS;
+    if (isDemo) return FALLBACK_EVENTS;
     return events.map(toEventRow);
-  }, [isFallback, events]);
+  }, [isDemo, events]);
 
   const matchesSearch = (ev: EventRow) => {
     if (!search.trim()) return true;
@@ -335,19 +262,13 @@ export default function EventsPage() {
 
   return (
     <div className={styles.page}>
-      {isFallback && (
-        <div className="bg-[#FFF3CD] border border-[#FFC107] text-[#856404] px-4 py-2 rounded-xl text-sm font-medium mb-4 flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M8 1V9M8 11V13M2 8H14" strokeLinecap="round" />
-          </svg>
-          <span>FALLBACK MODE — Showing cached mock data. Backend unavailable.</span>
-        </div>
-      )}
-
       {/* Hero */}
       <section className={styles.heroCard}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>Events</h1>
+          <h1 className={styles.heroTitle}>
+            Events
+            {isDemo && DEMO_BADGE}
+          </h1>
           <p className={styles.heroSubtitle}>Manage Booking and Workspace events</p>
         </div>
         <button type="button" className={styles.heroAction}>
@@ -386,8 +307,8 @@ export default function EventsPage() {
           {showPast && (
             <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No past events." />
           )}
-          {loading && !isFallback && <div className="text-center py-8 text-[#6A7282]">Loading events...</div>}
-          {error && !isFallback && <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading events. Check connection.</div>}
+          {loading && !isDemo && <div className="text-center py-8 text-[#6A7282]">Loading events...</div>}
+          {error && !isDemo && <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading events. Check connection.</div>}
         </div>
 
         {selectedEvent ? (

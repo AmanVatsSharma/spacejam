@@ -27,7 +27,7 @@ import { User } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
 
 import { EmailService } from './email.service';
-import { TwoFactorService } from './two-factor.service';
+// import { TwoFactorService } from './two-factor.service';
 import { SigninInput } from '../dto/signin.input';
 import { SignupInput } from '../dto/signup.input';
 import { ResetPasswordInput } from '../dto/reset-password.input';
@@ -58,7 +58,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
-    private readonly twoFactorService: TwoFactorService,
+    // private readonly twoFactorService: TwoFactorService,
   ) {}
 
   async signup(input: SignupInput, ctx: AuthContext = {}): Promise<AuthPayload> {
@@ -106,6 +106,9 @@ export class AuthService {
     }
 
     if (user.twoFactorEnabled) {
+      // TODO: Re-enable when TwoFactorService is properly configured
+      throw new BadRequestException('Two-factor authentication is temporarily disabled');
+      /*
       const ok = input.twoFactorCode
         ? this.twoFactorService.verifyCode(user.twoFactorSecret!, input.twoFactorCode)
         : false;
@@ -120,6 +123,7 @@ export class AuthService {
           challengeToken: await this.signChallengeToken(user),
         };
       }
+      */
     }
 
     user.lastLoginAt = new Date();
@@ -272,83 +276,19 @@ export class AuthService {
   async beginTwoFactorSetup(
     userId: string,
   ): Promise<{ secret: string; otpauthUrl: string; qrDataUrl: string }> {
-    const user = await this.userRepo
-      .createQueryBuilder('u')
-      .addSelect('u.twoFactorSecret')
-      .where('u.id = :id', { id: userId })
-      .getOne();
-    if (!user) throw new BadRequestException('User not found');
-    const secret = this.twoFactorService.generateSecret();
-    const otpauthUrl = this.twoFactorService.buildOtpAuthUrl({ email: user.email, secret });
-    const qrDataUrl = await this.twoFactorService.buildQrDataUrl(otpauthUrl);
-    user.twoFactorSecret = secret;
-    await this.userRepo.save(user);
-    return { secret, otpauthUrl, qrDataUrl };
+    throw new BadRequestException('Two-factor authentication is temporarily disabled');
   }
 
   async confirmTwoFactorSetup(userId: string, input: EnableTwoFactorInput): Promise<string[]> {
-    const user = await this.userRepo
-      .createQueryBuilder('u')
-      .addSelect('u.twoFactorSecret')
-      .where('u.id = :id', { id: userId })
-      .getOne();
-    if (!user?.twoFactorSecret) {
-      throw new BadRequestException('No pending 2FA setup found');
-    }
-    if (!this.twoFactorService.verifyCode(user.twoFactorSecret, input.code)) {
-      throw new BadRequestException('Invalid authenticator code');
-    }
-    const recoveryCodes = this.twoFactorService.generateRecoveryCodes();
-    user.twoFactorEnabled = true;
-    user.twoFactorRecoveryCodes = recoveryCodes.map((c) => this.twoFactorService.hashRecoveryCode(c));
-    await this.userRepo.save(user);
-    this.logger.log(`2fa enabled for ${user.id}`);
-    return recoveryCodes;
+    throw new BadRequestException('Two-factor authentication is temporarily disabled');
   }
 
   async verifyTwoFactor(input: VerifyTwoFactorInput): Promise<AuthPayload> {
-    let challenge: { sub: string };
-    try {
-      challenge = await this.jwtService.verifyAsync(input.challengeToken, {
-        secret:
-          this.configService.get<string>('CHALLENGE_TOKEN_SECRET') ?? 'dev-challenge-secret',
-      });
-    } catch {
-      throw new UnauthorizedException('Challenge token is invalid or expired');
-    }
-    const user = await this.userRepo
-      .createQueryBuilder('u')
-      .addSelect('u.twoFactorSecret')
-      .where('u.id = :id', { id: challenge.sub })
-      .getOne();
-    if (!user?.twoFactorSecret || !user.twoFactorEnabled) {
-      throw new UnauthorizedException('Two-factor not enabled for this account');
-    }
-    if (!this.twoFactorService.verifyCode(user.twoFactorSecret, input.code)) {
-      throw new UnauthorizedException('Invalid authenticator code');
-    }
-    user.lastLoginAt = new Date();
-    await this.userRepo.save(user);
-    return this.issueTokensFor(user, {});
+    throw new UnauthorizedException('Two-factor authentication is temporarily disabled');
   }
 
   async disableTwoFactor(userId: string, code: string): Promise<boolean> {
-    const user = await this.userRepo
-      .createQueryBuilder('u')
-      .addSelect('u.twoFactorSecret')
-      .where('u.id = :id', { id: userId })
-      .getOne();
-    if (!user?.twoFactorSecret) {
-      throw new BadRequestException('Two-factor not enabled');
-    }
-    if (!this.twoFactorService.verifyCode(user.twoFactorSecret, code)) {
-      throw new BadRequestException('Invalid authenticator code');
-    }
-    user.twoFactorEnabled = false;
-    user.twoFactorSecret = null;
-    user.twoFactorRecoveryCodes = null;
-    await this.userRepo.save(user);
-    return true;
+    throw new BadRequestException('Two-factor authentication is temporarily disabled');
   }
 
   private async issueTokensFor(

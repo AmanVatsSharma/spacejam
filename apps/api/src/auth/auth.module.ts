@@ -1,10 +1,10 @@
 /**
- * File:        auth/auth.module.ts
+ * File:        apps/api/src/auth/auth.module.ts
  * Module:      Api · Auth
  * Purpose:     Wires passport strategies, JWT, GraphQL guards, and providers
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-07-02
  */
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
@@ -14,11 +14,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User } from '../typeorm/entities/user.entity';
 import { UserSession } from '../typeorm/entities/user-session.entity';
-import { UserRepository } from '../typeorm/repositories/user.repository';
+import { UserRepositoryModule } from '../typeorm/repositories/user.repository.module';
 
 import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
-import { TwoFactorService } from './services/two-factor.service';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
@@ -35,16 +34,16 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
         signOptions: { expiresIn: '15m' },
       }),
     }),
-    TypeOrmModule.forFeature([User, UserSession, UserRepository]),
+    TypeOrmModule.forFeature([User, UserSession]),
+    UserRepositoryModule,
   ],
   providers: [
     AuthService,
     EmailService,
-    TwoFactorService,
-    UserRepository,
+    // TwoFactorService,
     JwtStrategy,
     JwtRefreshStrategy,
   ],
-  exports: [AuthService, JwtModule, PassportModule, UserRepository],
+  exports: [AuthService, JwtModule, PassportModule, UserRepositoryModule],
 })
 export class AuthModule {}

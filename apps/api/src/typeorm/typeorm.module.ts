@@ -26,6 +26,8 @@ import { Booking } from './entities/booking.entity';
 import { Payment } from './entities/payment.entity';
 import { RevenueAnalytics } from './entities/revenue-analytics.entity';
 import { Lead } from './entities/lead.entity';
+import { MeetingRoom } from './entities/meeting-room.entity';
+import { Event } from './entities/event.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -42,6 +44,8 @@ const ALL_ENTITIES = [
   Payment,
   RevenueAnalytics,
   Lead,
+  MeetingRoom,
+  Event,
 ];
 
 @Module({
@@ -58,7 +62,7 @@ const ALL_ENTITIES = [
             type: 'postgres',
             url: dbUrl,
             entities: ALL_ENTITIES,
-            synchronize: true,
+            synchronize: false,
             logging: process.env.NODE_ENV === 'development',
             extra: {
               max: parseInt(config.get<string>('DATABASE_POOL_SIZE')) || 10,

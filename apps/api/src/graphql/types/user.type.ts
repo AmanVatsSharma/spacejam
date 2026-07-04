@@ -9,7 +9,71 @@
 
 import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
 
-// Enums
+// ============================================================================
+// ENUMS ONLY - Pure registry for GraphQL enums
+// ============================================================================
+export enum RoomType {
+  BOARDROOM = 'BOARDROOM',
+  CONFERENCE = 'CONFERENCE',
+  MEETING_ROOM = 'MEETING_ROOM',
+  WORKSHOP = 'WORKSHOP',
+  TRAINING = 'TRAINING',
+}
+
+export enum RoomStatus {
+  AVAILABLE = 'AVAILABLE',
+  OCCUPIED = 'OCCUPIED',
+  MAINTENANCE = 'MAINTENANCE',
+  BOOKED = 'BOOKED',
+}
+
+// Event Enums
+export enum EventType {
+  MEETING = 'MEETING',
+  CONFERENCE = 'CONFERENCE',
+  WORKSHOP = 'WORKSHOP',
+  TRAINING = 'TRAINING',
+  SOCIAL = 'SOCIAL',
+  OTHER = 'OTHER',
+}
+
+export enum EventStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
+}
+
+// Request Enums
+export enum RequestType {
+  PRINTER = 'PRINTER',
+  UPGRADE = 'UPGRADE',
+  SERVICES = 'SERVICES',
+  EVENTS = 'EVENTS',
+  MAINTENANCE = 'MAINTENANCE',
+  CLEANING = 'CLEANING',
+  SECURITY = 'SECURITY',
+  OTHER = 'OTHER',
+}
+
+export enum RequestStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
+}
+
+// Register new enums
+registerEnumType(RoomType, { name: 'RoomType' });
+registerEnumType(RoomStatus, { name: 'RoomStatus' });
+registerEnumType(EventType, { name: 'EventType' });
+registerEnumType(EventStatus, { name: 'EventStatus' });
+registerEnumType(RequestType, { name: 'RequestType' });
+registerEnumType(RequestStatus, { name: 'RequestStatus' });
+
+// Object Types
 export enum UserRole {
   ADMIN = 'ADMIN',
   CENTER_MANAGER = 'CENTER_MANAGER',
@@ -75,6 +139,45 @@ export enum LeadSource {
 registerEnumType(LeadStatus, { name: 'LeadStatus' });
 registerEnumType(LeadSource, { name: 'LeadSource' });
 
+export enum InvoiceStatus {
+  DRAFT = 'Draft',
+  SENT = 'Sent',
+  PAID = 'Paid',
+  OVERDUE = 'Overdue',
+  CANCELLED = 'Cancelled',
+}
+
+export enum PaymentFrequency {
+  MONTHLY = 'Monthly',
+  QUARTERLY = 'Quarterly',
+  HALF_YEARLY = 'Half-Yearly',
+  YEARLY = 'Yearly',
+}
+
+export enum ContractStatus {
+  ACTIVE = 'Active',
+  EXPIRING_SOON = 'Expiring Soon',
+  EXPIRED = 'Expired',
+  TERMINATED = 'Terminated',
+}
+
+export enum DepositStatus {
+  HELD = 'Held',
+  RELEASED = 'Released',
+  REFUNDED = 'Refunded',
+}
+
+export enum DepositType {
+  SECURITY = 'Security',
+  ADVANCE = 'Advance',
+  OTHER = 'Other',
+}
+
+registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
+registerEnumType(PaymentFrequency, { name: 'PaymentFrequency' });
+registerEnumType(ContractStatus, { name: 'ContractStatus' });
+registerEnumType(DepositStatus, { name: 'DepositStatus' });
+registerEnumType(DepositType, { name: 'DepositType' });
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(CenterStatus, { name: 'CenterStatus' });
 registerEnumType(SeatType, { name: 'SeatType' });
@@ -83,365 +186,31 @@ registerEnumType(BookingStatus, { name: 'BookingStatus' });
 registerEnumType(PaymentMethod, { name: 'PaymentMethod' });
 registerEnumType(PaymentStatus, { name: 'PaymentStatus' });
 
-// Object Types
+// Re-export analytics DTOs from their dedicated file
+export * from './analytics.type';
+
+// ============================================================================
+// UNIQUE DTOs - Auth result types
+// ============================================================================
+
+/**
+ * Result of an out-of-band action (e.g. verify-email). The frontend can use
+ * `ok` to decide whether to show a success or error banner.
+ */
 @ObjectType()
-export class User {
-  @Field(() => ID)
-  id!: string;
+export class GenericActionResult {
+  @Field()
+  ok!: boolean;
 
   @Field()
-  email!: string;
-
-  @Field()
-  name!: string;
-
-  @Field(() => UserRole)
-  role!: UserRole;
-
-  @Field({ nullable: true })
-  centerId?: string;
-
-  @Field({ nullable: true })
-  phone?: string;
-
-  @Field({ nullable: true })
-  avatar?: string;
-
-  @Field()
-  isActive!: boolean;
-
-  @Field()
-  active!: boolean;
-
-  @Field()
-  emailVerified!: boolean;
-
-  @Field()
-  twoFactorEnabled!: boolean;
-
-  @Field({ nullable: true })
-  lastLogin?: Date;
-
-  @Field({ nullable: true })
-  lastLoginAt?: Date;
-
-  @Field()
-  createdAt!: Date;
-
-  @Field()
-  updatedAt!: Date;
-}
-
-@ObjectType()
-export class Location {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  name!: string;
-
-  @Field()
-  city!: string;
-
-  @Field()
-  state!: string;
-
-  @Field()
-  country!: string;
-
-  @Field()
-  fullAddress!: string;
-
-  @Field({ nullable: true })
-  coordinates?: string;
-
-  @Field()
-  timezone!: string;
-}
-
-@ObjectType()
-export class Center {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  name!: string;
-
-  @Field(() => ID)
-  locationId!: string;
-
-  @Field(() => CenterStatus)
-  status!: CenterStatus;
-
-  @Field(() => String, { nullable: true })
-  settings?: string;
-
-  @Field()
-  owner!: string;
-
-  @Field(() => Location, { nullable: true })
-  location?: Location;
-
-  @Field(() => [Floor])
-  floors?: Floor[];
-
-  @Field()
-  createdAt!: Date;
-}
-
-@ObjectType()
-export class Floor {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ID)
-  centerId!: string;
-
-  @Field()
-  name!: string;
-
-  @Field(() => String, { nullable: true })
-  layout?: string;
-
-  @Field()
-  totalSeats!: number;
-
-  @Field()
-  active!: boolean;
-
-  @Field(() => [Seat])
-  seats?: Seat[];
-}
-
-@ObjectType()
-export class Seat {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ID)
-  floorId!: string;
-
-  @Field()
-  number!: string;
-
-  @Field(() => SeatType)
-  type!: SeatType;
-
-  @Field(() => String, { nullable: true })
-  features?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field()
-  price!: number;
-
-  @Field(() => SeatStatus)
-  status!: SeatStatus;
-}
-
-@ObjectType()
-export class Booking {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ID)
-  userId!: string;
-
-  @Field(() => ID)
-  seatId!: string;
-
-  @Field(() => ID)
-  centerId!: string;
-
-  @Field(() => ID, { nullable: true })
-  planId?: string;
-
-  @Field()
-  startDate!: Date;
-
-  @Field()
-  endDate!: Date;
-
-  @Field(() => BookingStatus)
-  status!: BookingStatus;
-
-  @Field(() => ID, { nullable: true })
-  paymentId?: string;
-
-  @Field()
-  totalPrice!: number;
-
-  @Field()
-  discount!: number;
-
-  @Field({ nullable: true })
-  notes?: string;
-
-  @Field(() => User, { nullable: true })
-  user?: User;
-
-  @Field(() => Seat, { nullable: true })
-  seat?: Seat;
-
-  @Field(() => Payment, { nullable: true })
-  payment?: Payment | null;
-
-  @Field()
-  createdAt!: Date;
-}
-
-@ObjectType()
-export class Payment {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ID)
-  bookingId!: string;
-
-  @Field()
-  amount!: number;
-
-  @Field()
-  currency!: string;
-
-  @Field(() => PaymentMethod)
-  method!: PaymentMethod;
-
-  @Field(() => PaymentStatus)
-  status!: PaymentStatus;
-
-  @Field({ nullable: true })
-  transactionId?: string;
-
-  @Field({ nullable: true })
-  gatewayRef?: string;
-}
-
-@ObjectType()
-export class RevenueAnalytics {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ID)
-  centerId!: string;
-
-  @Field()
-  date!: Date;
-
-  @Field()
-  revenue!: number;
-
-  @Field()
-  occupancyRate!: number;
-
-  @Field()
-  newBookings!: number;
-
-  @Field()
-  cancelledBookings!: number;
-}
-
-@ObjectType()
-export class DashboardMetrics {
-  @Field()
-  totalRevenue!: number;
-
-  @Field()
-  occupancyRate!: number;
-
-  @Field()
-  activeBookings!: number;
-
-  @Field()
-  pendingPayments!: number;
-
-  @Field(() => [Seat])
-  upcomingMaintenance!: Seat[];
-
-  @Field()
-  totalSeats!: number;
-
-  @Field()
-  availableSeats!: number;
-}
-
-@ObjectType()
-export class RevenueMonth {
-  @Field()
-  month!: string;
-
-  @Field()
-  revenue!: number;
-
-  @Field()
-  target!: number;
-}
-
-@ObjectType()
-export class RevenueReport {
-  @Field()
-  total!: number;
-
-  @Field(() => [RevenueMonth])
-  byMonth!: RevenueMonth[];
-
-  @Field()
-  growth!: number;
-}
-
-@ObjectType()
-export class OccupancyDay {
-  @Field()
-  date!: Date;
-
-  @Field(() => Int)
-  totalBookings!: number;
-
-  @Field()
-  occupancyRate!: number;
-
-  @Field()
-  revenue!: number;
-}
-
-@ObjectType()
-export class SeatTypeOccupancy {
-  @Field(() => String)
-  type!: string;
-
-  @Field(() => Int)
-  count!: number;
-
-  @Field()
-  occupancyRate!: number;
-}
-
-@ObjectType()
-export class OccupancyReport {
-  @Field(() => ID)
-  centerId!: string;
-
-  @Field(() => [OccupancyDay])
-  byDay!: OccupancyDay[];
-
-  @Field(() => [SeatTypeOccupancy])
-  bySeatType!: SeatTypeOccupancy[];
-
-  @Field()
-  averageRate!: number;
+  message!: string;
 }
 
 /**
- * Result of a successful authentication. Either tokens are populated OR
- * `twoFactorRequired` is true and `challengeToken` carries a short-lived
- * credential for `verifyTwoFactor`.
+ * Authentication payload with tokens and user info.
  */
 @ObjectType()
 export class AuthPayload {
-  @Field(() => User, { nullable: true })
-  user?: User | null;
-
   @Field(() => String, { nullable: true })
   accessToken?: string | null;
 
@@ -462,71 +231,7 @@ export class AuthPayload {
 
   @Field(() => String, { nullable: true })
   challengeToken?: string | null;
-}
-
-/**
- * Result of an out-of-band action (e.g. verify-email). The frontend can use
- * `ok` to decide whether to show a success or error banner.
- */
-@ObjectType()
-export class GenericActionResult {
-  @Field()
-  ok!: boolean;
-
-  @Field()
-  message!: string;
-}
-
-@ObjectType()
-export class Lead {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  name!: string;
-
-  @Field()
-  email!: string;
-
-  @Field({ nullable: true })
-  phone?: string;
-
-  @Field({ nullable: true })
-  company?: string;
-
-  @Field(() => LeadStatus)
-  status!: LeadStatus;
-
-  @Field(() => LeadSource, { nullable: true })
-  source?: LeadSource;
-
-  @Field({ nullable: true })
-  requirement?: string;
-
-  @Field({ nullable: true })
-  budget?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field({ nullable: true })
-  notes?: string;
 
   @Field(() => String, { nullable: true })
-  lastContact?: string;
-
-  @Field(() => ID, { nullable: true })
-  assignedToId?: string;
-
-  @Field(() => ID, { nullable: true })
-  centerId?: string;
-
-  @Field(() => User, { nullable: true })
-  assignedTo?: User;
-
-  @Field()
-  createdAt!: Date;
-
-  @Field()
-  updatedAt!: Date;
+  userId?: string | null; // String reference to avoid circular import
 }

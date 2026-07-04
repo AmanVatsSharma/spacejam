@@ -34,7 +34,7 @@ vi.stubGlobal('document', {
     return _cookie;
   },
   set cookie(v: string) {
-    _cookie = v;
+    _cookie = _cookie ? _cookie + '; ' + v : v;
   },
 });
 

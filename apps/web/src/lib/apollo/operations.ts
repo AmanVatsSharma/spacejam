@@ -280,3 +280,405 @@ export const LEAD_COUNT = gql`
     leadCount(status: $status)
   }
 `;
+
+/* ========================= Revenue — Invoices ========================= */
+
+export const GET_INVOICES = gql`
+  query GetInvoices($filters: InvoiceFiltersInput) {
+    invoices(filters: $filters) {
+      id
+      invoiceNumber
+      customerId
+      customerName
+      customerEmail
+      centerId
+      planName
+      amount
+      tax
+      totalAmount
+      status
+      issueDate
+      dueDate
+      paidDate
+      paymentMethod
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_INVOICE = gql`
+  query GetInvoice($id: ID!) {
+    invoice(id: $id) {
+      id
+      invoiceNumber
+      customerId
+      customerName
+      customerEmail
+      centerId
+      planName
+      amount
+      tax
+      totalAmount
+      status
+      issueDate
+      dueDate
+      paidDate
+      paymentMethod
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_INVOICE = gql`
+  mutation CreateInvoice($input: CreateInvoiceInput!) {
+    createInvoice(input: $input) {
+      id
+      invoiceNumber
+      customerId
+      customerName
+      customerEmail
+      centerId
+      planName
+      amount
+      tax
+      totalAmount
+      status
+      issueDate
+      dueDate
+      paidDate
+      paymentMethod
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_INVOICE = gql`
+  mutation UpdateInvoice($id: ID!, $input: UpdateInvoiceInput!) {
+    updateInvoice(id: $id, input: $input) {
+      id
+      invoiceNumber
+      customerId
+      customerName
+      customerEmail
+      centerId
+      planName
+      amount
+      tax
+      totalAmount
+      status
+      issueDate
+      dueDate
+      paidDate
+      paymentMethod
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_INVOICE = gql`
+  mutation DeleteInvoice($id: ID!) {
+    deleteInvoice(id: $id)
+  }
+`;
+
+export const MARK_INVOICE_PAID = gql`
+  mutation MarkInvoicePaid($id: ID!, $paymentMethod: String) {
+    markInvoicePaid(id: $id, paymentMethod: $paymentMethod) {
+      id
+      invoiceNumber
+      status
+      paidDate
+      paymentMethod
+      updatedAt
+    }
+  }
+`;
+
+export const INVOICE_COUNT = gql`
+  query InvoiceCount($status: InvoiceStatus) {
+    invoiceCount(status: $status)
+  }
+`;
+
+/* ========================= Revenue — Deposits ========================= */
+
+export const GET_DEPOSITS = gql`
+  query GetDeposits($filters: DepositFiltersInput) {
+    deposits(filters: $filters) {
+      id
+      customerId
+      customerName
+      centerId
+      amount
+      type
+      status
+      referenceNumber
+      receivedDate
+      releasedDate
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_DEPOSIT = gql`
+  query GetDeposit($id: ID!) {
+    deposit(id: $id) {
+      id
+      customerId
+      customerName
+      centerId
+      amount
+      type
+      status
+      referenceNumber
+      receivedDate
+      releasedDate
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_DEPOSIT = gql`
+  mutation CreateDeposit($input: CreateDepositInput!) {
+    createDeposit(input: $input) {
+      id
+      customerId
+      customerName
+      centerId
+      amount
+      type
+      status
+      referenceNumber
+      receivedDate
+      releasedDate
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_DEPOSIT = gql`
+  mutation UpdateDeposit($id: ID!, $input: UpdateDepositInput!) {
+    updateDeposit(id: $id, input: $input) {
+      id
+      customerId
+      customerName
+      centerId
+      amount
+      type
+      status
+      referenceNumber
+      receivedDate
+      releasedDate
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const RELEASE_DEPOSIT = gql`
+  mutation ReleaseDeposit($id: ID!) {
+    releaseDeposit(id: $id) {
+      id
+      status
+      releasedDate
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_DEPOSIT = gql`
+  mutation DeleteDeposit($id: ID!) {
+    deleteDeposit(id: $id)
+  }
+`;
+
+/* ========================= Revenue — Contracts ========================= */
+
+export const GET_CONTRACTS = gql`
+  query GetContracts($filters: ContractFiltersInput) {
+    contracts(filters: $filters) {
+      id
+      contractNumber
+      customerId
+      customerName
+      centerId
+      planName
+      startDate
+      endDate
+      status
+      amount
+      paymentFrequency
+      autoRenew
+      terms
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_CONTRACT = gql`
+  query GetContract($id: ID!) {
+    contract(id: $id) {
+      id
+      contractNumber
+      customerId
+      customerName
+      centerId
+      planName
+      startDate
+      endDate
+      status
+      amount
+      paymentFrequency
+      autoRenew
+      terms
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_CONTRACT = gql`
+  mutation CreateContract($input: CreateContractInput!) {
+    createContract(input: $input) {
+      id
+      contractNumber
+      customerId
+      customerName
+      centerId
+      planName
+      startDate
+      endDate
+      status
+      amount
+      paymentFrequency
+      autoRenew
+      terms
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_CONTRACT = gql`
+  mutation UpdateContract($id: ID!, $input: UpdateContractInput!) {
+    updateContract(id: $id, input: $input) {
+      id
+      contractNumber
+      customerId
+      customerName
+      centerId
+      planName
+      startDate
+      endDate
+      status
+      amount
+      paymentFrequency
+      autoRenew
+      terms
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const TERMINATE_CONTRACT = gql`
+  mutation TerminateContract($id: ID!) {
+    terminateContract(id: $id) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
+/* ========================= CRM — Customers ========================= */
+
+export const GET_CUSTOMERS = gql`
+  query GetCustomers($filters: CustomerFiltersInput) {
+    customers(filters: $filters) {
+      id
+      name
+      email
+      phone
+      company
+      status
+      totalBookings
+      totalSpent
+      lastBooking
+      createdAt
+    }
+  }
+`;
+
+export const GET_CUSTOMER = gql`
+  query GetCustomer($id: ID!) {
+    customer(id: $id) {
+      id
+      name
+      email
+      phone
+      company
+      status
+      totalBookings
+      totalSpent
+      lastBooking
+      createdAt
+    }
+  }
+`;
+
+export const CREATE_CUSTOMER = gql`
+  mutation CreateCustomer($input: CreateCustomerInput!) {
+    createCustomer(input: $input) {
+      id
+      name
+      email
+      phone
+      company
+      status
+      totalBookings
+      totalSpent
+      lastBooking
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_CUSTOMER = gql`
+  mutation UpdateCustomer($id: ID!, $input: UpdateCustomerInput!) {
+    updateCustomer(id: $id, input: $input) {
+      id
+      name
+      email
+      phone
+      company
+      status
+      totalBookings
+      totalSpent
+      lastBooking
+      createdAt
+    }
+  }
+`;
+
+export const DELETE_CUSTOMER = gql`
+  mutation DeleteCustomer($id: ID!) {
+    deleteCustomer(id: $id)
+  }
+`;

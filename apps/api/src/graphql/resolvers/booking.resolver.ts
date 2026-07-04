@@ -7,23 +7,15 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, ResolveField, Parent, Subscription } from '@nestjs/graphql';
-import { TypeormService } from '../../typeorm/typeorm.service';
+import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
-import {
-  Booking,
-  BookingStatus,
-  Payment,
-  SeatStatus,
-  Seat,
-  PaymentStatus,
-} from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BookingStatus, PaymentStatus, SeatStatus } from '../types/user.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
-import { GqlDataLoaders } from '../dataloaders';
 import { PubSubService } from '../pubsub/pubsub.service';
 import { CreateBookingInput, BookingFiltersInput } from '../inputs/booking.input';
 
@@ -34,10 +26,10 @@ export const TRIGGERS = {
   seatStatusChanged: 'seat.statusChanged',
 } as const;
 
-@Resolver(() => Booking)
+@Resolver(() => BookingEntity)
+@Scope(Scope.DEFAULT)
 export class BookingResolver {
   constructor(
-    private typeorm: TypeormService,
     private cache: CacheService,
     @InjectRepository(BookingEntity)
     private bookingRepo: Repository<BookingEntity>,
@@ -45,25 +37,13 @@ export class BookingResolver {
     private seatRepo: Repository<SeatEntity>,
     @InjectRepository(PaymentEntity)
     private paymentRepo: Repository<PaymentEntity>,
-    private readonly loaders: GqlDataLoaders,
     private readonly pubSub: PubSubService,
   ) {}
 
-  /**
-   * Field-level resolver that batches seat lookups via DataLoader so a
-   * list of N bookings results in 1 SQL query for seats, not N.
-   */
-  @ResolveField(() => Seat, { nullable: true })
-  async seat(@Parent() booking: Booking): Promise<Seat | null> {
-    if (!booking.seatId) return null;
-    const seat = await this.loaders.seatById.load(booking.seatId);
-    return (seat as unknown as Seat) ?? null;
-  }
-
-  @Query(() => [Booking])
+  @Query(() => [BookingEntity])
   async bookings(
     @Args('filters', { nullable: true }) filters?: BookingFiltersInput
-  ): Promise<Booking[]> {
+  ): Promise<BookingEntity[]> {
     const where: any = {};
     if (filters) {
       if (filters.centerId) where.centerId = filters.centerId;
@@ -82,8 +62,8 @@ export class BookingResolver {
     return bookings as unknown as Booking[];
   }
 
-  @Query(() => [Booking])
-  async myBookings(@Context() context): Promise<Booking[]> {
+  @Query(() => [BookingEntity])
+  async myBookings(@Context() context): Promise<BookingEntity[]> {
     const userId = context.req.user?.id;
     if (!userId) return [];
 
@@ -96,8 +76,8 @@ export class BookingResolver {
     return bookings as unknown as Booking[];
   }
 
-  @Query(() => Booking, { nullable: true })
-  async booking(@Args('id') id: string): Promise<Booking | null> {
+  @Query(() => BookingEntity, { nullable: true })
+  async booking(@Args('id') id: string): Promise<BookingEntity | null> {
     const booking = await this.bookingRepo.findOne({
       where: { id },
       relations: ['user', 'seat', 'seat.floor', 'payment'],
@@ -106,13 +86,13 @@ export class BookingResolver {
     return booking as unknown as Booking | null;
   }
 
-  @Mutation(() => Booking)
+  @Mutation(() => BookingEntity)
   async createBooking(
     @Args('input') input: CreateBookingInput,
     @Context() context
-  ): Promise<Booking> {
+  ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     // Validate seat availability
     const seat = await this.seatRepo.findOne({
@@ -121,7 +101,7 @@ export class BookingResolver {
     });
 
     if (!seat || seat.status !== SeatStatus.AVAILABLE) {
-      throw new Error('Seat is not available');
+      throw new BadRequestException('Seat is not available');
     }
 
     const newBooking = this.bookingRepo.create({
@@ -146,16 +126,16 @@ export class BookingResolver {
     // Invalidate cache
     await this.cache.invalidatePattern(`center:${booking.centerId}`);
 
-    return booking as unknown as Booking;
+    return booking;
   }
 
-  @Mutation(() => Booking)
+  @Mutation(() => BookingEntity)
   async cancelBooking(
     @Args('id') id: string,
     @Context() context
-  ): Promise<Booking> {
+  ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
-    if (!userId) throw new Error('Unauthorized');
+    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     const booking = await this.bookingRepo.findOne({
       where: { id },
@@ -163,7 +143,7 @@ export class BookingResolver {
     });
 
     if (!booking || booking.userId !== userId) {
-      throw new Error('Unauthorized');
+      throw new UnauthorizedException('Unauthorized');
     }
 
     await this.bookingRepo.update(id, {
@@ -198,14 +178,14 @@ export class BookingResolver {
     }
     await this.cache.invalidatePattern(`center:*`);
 
-    return updatedBooking as unknown as Booking;
+    return updatedBooking;
   }
 
-  @Mutation(() => Payment)
+  @Mutation(() => PaymentEntity)
   async processPayment(
     @Args('paymentId') paymentId: string,
     @Args('method') method: string
-  ): Promise<Payment> {
+  ): Promise<PaymentEntity> {
     // This would integrate with payment gateway (Razorpay/Stripe)
     // For now, simulate payment processing
     const payment = await this.paymentRepo.update(paymentId, {
@@ -233,70 +213,7 @@ export class BookingResolver {
       paymentStatusChanged: updatedPayment,
     });
 
-    return updatedPayment as unknown as Payment;
+    return updatedPayment;
   }
 
-  /**
-   * Subscription: fires every time a booking is created in any center.
-   * Clients (admin dashboards, floor-plan views) subscribe to keep
-   * their UI in sync without polling.
-   *
-   * Optional `centerId` arg filters the stream to a single center.
-   */
-  @Subscription(() => Booking, {
-    name: 'bookingCreated',
-    description: 'New booking created anywhere, or in the specified center',
-    filter: (payload: { bookingCreated: BookingEntity }, vars: { centerId?: string }) => {
-      if (!vars.centerId) return true;
-      return payload.bookingCreated?.centerId === vars.centerId;
-    },
-  })
-  bookingCreatedSubscription(@Args('centerId', { nullable: true }) _centerId?: string) {
-    return this.pubSub.asyncIterator(TRIGGERS.bookingCreated);
-  }
-
-  /**
-   * Subscription: fires every time any booking is updated (status
-   * change, date change, etc.).
-   */
-  @Subscription(() => Booking, {
-    name: 'bookingUpdated',
-    description: 'Booking updated anywhere, or in the specified center',
-    filter: (payload: { bookingUpdated: BookingEntity }, vars: { centerId?: string }) => {
-      if (!vars.centerId) return true;
-      return payload.bookingUpdated?.centerId === vars.centerId;
-    },
-  })
-  bookingUpdatedSubscription(@Args('centerId', { nullable: true }) _centerId?: string) {
-    return this.pubSub.asyncIterator(TRIGGERS.bookingUpdated);
-  }
-
-  /**
-   * Subscription: fires every time a seat's status changes. The UI
-   * uses this to recolor seats in real time as bookings open/close.
-   */
-  @Subscription(() => Seat, {
-    name: 'seatStatusChanged',
-    description: 'Seat status changed (e.g. AVAILABLE -> RESERVED)',
-    filter: (payload: { seatStatusChanged: { seatId: string } }, vars: { centerId?: string }) => {
-      // Without per-seat center info in the payload, fall through and
-      // let the client filter; broadcasting is cheap enough.
-      if (!vars.centerId) return true;
-      return true;
-    },
-  })
-  seatStatusChangedSubscription(@Args('centerId', { nullable: true }) _centerId?: string) {
-    return this.pubSub.asyncIterator(TRIGGERS.seatStatusChanged);
-  }
-
-  /**
-   * Subscription: fires every time a payment status changes.
-   */
-  @Subscription(() => Payment, {
-    name: 'paymentStatusChanged',
-    description: 'Payment status changed for any booking',
-  })
-  paymentStatusChangedSubscription() {
-    return this.pubSub.asyncIterator(TRIGGERS.paymentStatusChanged);
-  }
 }

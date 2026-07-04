@@ -58,11 +58,13 @@ function buildMockRepo(seeds: Lead[] = []) {
     find: vi.fn(async (opts?: any) => {
       let results = [...data];
       if (opts?.where) {
+        if (opts.where.id) results = results.filter((l: Lead) => l.id === opts.where.id);
         if (opts.where.status) results = results.filter((l: Lead) => l.status === opts.where.status);
         if (opts.where.source) results = results.filter((l: Lead) => l.source === opts.where.source);
         if (opts.where.email) results = results.filter((l: Lead) => l.email === opts.where.email);
         if (opts.where.name) {
-          const pattern = opts.where.name.replace(/[%]/g, '').slice(1, -1);
+          const nameVal = typeof opts.where.name === 'string' ? opts.where.name : (opts.where.name._value || opts.where.name.value || '');
+          const pattern = typeof nameVal === 'string' ? nameVal.replace(/[%]/g, '') : '';
           results = results.filter((l: Lead) => l.name?.toLowerCase().includes(pattern.toLowerCase()));
         }
       }

@@ -16,8 +16,8 @@ import {
   BadRequestException,
   ConflictException,
   UnauthorizedException,
-  getRepositoryToken,
-} from '@nestjs/typeorm';
+} from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
@@ -161,6 +161,7 @@ const setupTestModule = async (userRepo: RepoMock, sessionRepo: RepoMock, opts: 
       {
         provide: EmailService,
         useValue: {
+          sendEmailVerification: jest.fn().mockResolvedValue(undefined),
           sendVerification: jest.fn().mockResolvedValue(undefined),
           sendPasswordReset: jest.fn().mockResolvedValue(undefined),
           sendMagicLink: jest.fn().mockResolvedValue(undefined),
@@ -282,6 +283,7 @@ describe('AuthService', () => {
       const chain = qbMock();
       chain.getOne.mockResolvedValue(buildUser());
       userRepo.createQueryBuilder.mockReturnValue(chain);
+      userRepo.findOne.mockResolvedValue(buildUser());
       service = await setupTestModule(userRepo, sessionRepo);
       const result = await service.refreshTokens('refresh-token');
       expect(result.accessToken).toBeDefined();
@@ -302,7 +304,7 @@ describe('AuthService', () => {
           { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: JwtService, useValue: jwt },
           { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('test-secret') } },
-          { provide: EmailService, useValue: { sendVerification: jest.fn(), sendPasswordReset: jest.fn(), sendMagicLink: jest.fn(), sendLoginAlert: jest.fn() } },
+          { provide: EmailService, useValue: { sendEmailVerification: jest.fn(), sendVerification: jest.fn(), sendPasswordReset: jest.fn(), sendMagicLink: jest.fn(), sendLoginAlert: jest.fn() } },
           { provide: TwoFactorService, useValue: { generateSecret: jest.fn(), buildOtpAuthUri: jest.fn(), buildQrCodeDataUrl: jest.fn(), verifyCode: jest.fn(), generateRecoveryCodes: jest.fn(), hashRecoveryCode: jest.fn() } },
         ],
       }).compile();

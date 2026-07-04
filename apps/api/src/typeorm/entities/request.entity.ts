@@ -17,58 +17,50 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
+import { RequestType, RequestStatus } from '../../graphql/types/user.type';
 
-export enum RequestType {
-  EVENT_BOOKING = 'EVENT_BOOKING',
-  PRINTER_ACCESS = 'PRINTER_ACCESS',
-  FURNITURE_UPGRADE = 'FURNITURE_UPGRADE',
-  MAINTENANCE = 'MAINTENANCE',
-  CLEANING = 'CLEANING',
-  SECURITY = 'SECURITY',
-  SUPPLIES = 'SUPPLIES',
-  INTERNET_SUPPORT = 'INTERNET_SUPPORT',
-  OTHER = 'OTHER',
-}
-
-export enum RequestStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  REJECTED = 'REJECTED',
-}
-
+@ObjectType()
 @Entity('requests')
 export class Request {
+  @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Field(() => ID)
   @Column({ name: 'centerId' })
   centerId!: string;
 
+  @Field(() => ID)
   @Column({ name: 'requestedById' })
   requestedById!: string;
 
+  @Field(() => ID, { nullable: true })
   @Column({ name: 'assignedToId', nullable: true })
   assignedToId!: string | null;
 
+  @Field(() => RequestType)
   @Column({
     type: 'enum',
     enum: RequestType,
   })
-  type!: RequestType;
+  requestType!: RequestType;
 
+  @Field()
   @Column({ type: 'varchar' })
   title!: string;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'description', type: 'text' })
   description!: string;
 
+  @Field()
   @Column({ name: 'urgency', type: 'enum', enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' })
   urgency!: 'LOW' | 'MEDIUM' | 'HIGH';
 
+  @Field(() => RequestStatus)
   @Column({
     type: 'enum',
     enum: RequestStatus,
@@ -76,40 +68,51 @@ export class Request {
   })
   status!: RequestStatus;
 
+  @Field(() => Date, { nullable: true })
   @Column({ name: 'dueDate', type: 'date', nullable: true })
   dueDate!: Date | null;
 
+  @Field(() => Date, { nullable: true })
   @Column({ name: 'completedDate', type: 'date', nullable: true })
   completedDate!: Date | null;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'resolution', type: 'text', nullable: true })
   resolution!: string | null;
 
+  @Field(() => Float)
   @Column({ name: 'cost', type: 'float', default: 0 })
   cost!: number;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'attachedFile', type: 'varchar', nullable: true })
   attachedFile!: string | null;
 
+  @Field(() => String, { nullable: true })
   @Column({ name: 'metadata', type: 'json', nullable: true })
   metadata!: any;
 
+  @Field(() => Date)
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 
+  @Field(() => Date)
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 
   // Relations
-  @ManyToOne(() => Center, (center) => center.requests)
+  @Field(() => Center)
+  @ManyToOne(() => Center)
   @JoinColumn({ name: 'centerId' })
   center!: Center;
 
-  @ManyToOne(() => User, (user) => user.requests)
+  @Field(() => User)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'requestedById' })
   requestedBy!: User;
 
-  @ManyToOne(() => User, (user) => user.assignedRequests)
+  @Field(() => User, { nullable: true })
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'assignedToId' })
   assignedTo!: User;
 }

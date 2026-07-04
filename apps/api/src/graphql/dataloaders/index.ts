@@ -20,6 +20,9 @@ import { Center } from '../../typeorm/entities/center.entity';
 import { Seat } from '../../typeorm/entities/seat.entity';
 import { Booking } from '../../typeorm/entities/booking.entity';
 import { Lead } from '../../typeorm/entities/lead.entity';
+import { Invoice } from '../../typeorm/entities/invoice.entity';
+import { Deposit } from '../../typeorm/entities/deposit.entity';
+import { Contract } from '../../typeorm/entities/contract.entity';
 
 @Injectable({ scope: Scope.REQUEST })
 export class GqlDataLoaders {
@@ -30,6 +33,15 @@ export class GqlDataLoaders {
   public readonly bookingsByUser: DataLoader<string, Booking[]>;
   public readonly leadById: DataLoader<string, Lead | null>;
   public readonly leadsByStatus: DataLoader<string, Lead[]>;
+  public readonly invoiceById: DataLoader<string, Invoice | null>;
+  public readonly invoicesByCustomer: DataLoader<string, Invoice[]>;
+  public readonly invoicesByStatus: DataLoader<string, Invoice[]>;
+  public readonly depositById: DataLoader<string, Deposit | null>;
+  public readonly depositsByCustomer: DataLoader<string, Deposit[]>;
+  public readonly depositsByStatus: DataLoader<string, Deposit[]>;
+  public readonly contractById: DataLoader<string, Contract | null>;
+  public readonly contractsByCustomer: DataLoader<string, Contract[]>;
+  public readonly contractsByStatus: DataLoader<string, Contract[]>;
 
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
@@ -37,6 +49,9 @@ export class GqlDataLoaders {
     @InjectRepository(Seat) private readonly seatRepo: Repository<Seat>,
     @InjectRepository(Booking) private readonly bookingRepo: Repository<Booking>,
     @InjectRepository(Lead) private readonly leadRepo: Repository<Lead>,
+    @InjectRepository(Invoice) private readonly invoiceRepo: Repository<Invoice>,
+    @InjectRepository(Deposit) private readonly depositRepo: Repository<Deposit>,
+    @InjectRepository(Contract) private readonly contractRepo: Repository<Contract>,
   ) {
     this.userById = new DataLoader<string, User | null>(async (ids) => {
       const rows = await this.userRepo.find({ where: { id: In([...ids]) } });
@@ -85,14 +100,98 @@ export class GqlDataLoaders {
     });
 
     this.leadsByStatus = new DataLoader<string, Lead[]>(async (statuses) => {
-      const rows = await this.leadRepo.find({ where: { status: In(statuses) } });
+      const rows = await this.leadRepo.find({ where: { status: In(statuses as any) } });
       const byStatus = new Map<string, Lead[]>();
       for (const r of rows) {
         const arr = byStatus.get(r.status) ?? [];
         arr.push(r);
         byStatus.set(r.status, arr);
       }
-      return statuses.map((s) => byStatus.get(s) ?? []);
+      return statuses.map((s) => byStatus.get(s as string) ?? []);
+    });
+
+    this.invoiceById = new DataLoader<string, Invoice | null>(async (ids) => {
+      const rows = await this.invoiceRepo.find({ where: { id: In([...ids]) } });
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      return ids.map((id) => byId.get(id) ?? null);
+    });
+
+    this.invoicesByCustomer = new DataLoader<string, Invoice[]>(async (customerIds) => {
+      const rows = await this.invoiceRepo.find({ where: { customerId: In([...customerIds]) } });
+      const byCustomer = new Map<string, Invoice[]>();
+      for (const r of rows) {
+        const arr = byCustomer.get(r.customerId) ?? [];
+        arr.push(r);
+        byCustomer.set(r.customerId, arr);
+      }
+      return customerIds.map((id) => byCustomer.get(id) ?? []);
+    });
+
+    this.invoicesByStatus = new DataLoader<string, Invoice[]>(async (statuses) => {
+      const rows = await this.invoiceRepo.find({ where: { status: In(statuses as any) } });
+      const byStatus = new Map<string, Invoice[]>();
+      for (const r of rows) {
+        const arr = byStatus.get(r.status) ?? [];
+        arr.push(r);
+        byStatus.set(r.status, arr);
+      }
+      return statuses.map((s) => byStatus.get(s as string) ?? []);
+    });
+
+    this.depositById = new DataLoader<string, Deposit | null>(async (ids) => {
+      const rows = await this.depositRepo.find({ where: { id: In([...ids]) } });
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      return ids.map((id) => byId.get(id) ?? null);
+    });
+
+    this.depositsByCustomer = new DataLoader<string, Deposit[]>(async (customerIds) => {
+      const rows = await this.depositRepo.find({ where: { customerId: In([...customerIds]) } });
+      const byCustomer = new Map<string, Deposit[]>();
+      for (const r of rows) {
+        const arr = byCustomer.get(r.customerId) ?? [];
+        arr.push(r);
+        byCustomer.set(r.customerId, arr);
+      }
+      return customerIds.map((id) => byCustomer.get(id) ?? []);
+    });
+
+    this.depositsByStatus = new DataLoader<string, Deposit[]>(async (statuses) => {
+      const rows = await this.depositRepo.find({ where: { status: In(statuses as any) } });
+      const byStatus = new Map<string, Deposit[]>();
+      for (const r of rows) {
+        const arr = byStatus.get(r.status) ?? [];
+        arr.push(r);
+        byStatus.set(r.status, arr);
+      }
+      return statuses.map((s) => byStatus.get(s as string) ?? []);
+    });
+
+    this.contractById = new DataLoader<string, Contract | null>(async (ids) => {
+      const rows = await this.contractRepo.find({ where: { id: In([...ids]) } });
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      return ids.map((id) => byId.get(id) ?? null);
+    });
+
+    this.contractsByCustomer = new DataLoader<string, Contract[]>(async (customerIds) => {
+      const rows = await this.contractRepo.find({ where: { customerId: In([...customerIds]) } });
+      const byCustomer = new Map<string, Contract[]>();
+      for (const r of rows) {
+        const arr = byCustomer.get(r.customerId) ?? [];
+        arr.push(r);
+        byCustomer.set(r.customerId, arr);
+      }
+      return customerIds.map((id) => byCustomer.get(id) ?? []);
+    });
+
+    this.contractsByStatus = new DataLoader<string, Contract[]>(async (statuses) => {
+      const rows = await this.contractRepo.find({ where: { status: In(statuses as any) } });
+      const byStatus = new Map<string, Contract[]>();
+      for (const r of rows) {
+        const arr = byStatus.get(r.status) ?? [];
+        arr.push(r);
+        byStatus.set(r.status, arr);
+      }
+      return statuses.map((s) => byStatus.get(s as string) ?? []);
     });
   }
 }

@@ -478,6 +478,7 @@ export function useEvents(filters?: EventFilters) {
 
   return {
     events: data?.events ?? [],
+    data,
     loading,
     error,
     refetch,
@@ -608,7 +609,7 @@ export function useCancelEvent() {
     }
   }
 
-  return { cancel: cancelling, cancelling };
+  return { cancel, cancelling };
 }
 
 // ═══════════════════════════════════════════════════════

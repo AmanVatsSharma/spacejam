@@ -17,44 +17,58 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
+import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { CenterStatus } from '../../graphql/types/user.type';
 import { User } from './user.entity';
 import { Location } from './location.entity';
 import { Floor } from './floor.entity';
 import { Booking } from './booking.entity';
 import { RevenueAnalytics } from './revenue-analytics.entity';
+import { Event } from './event.entity';
+import { MeetingRoom } from './meeting-room.entity';
 
+@ObjectType()
 @Entity('centers')
 export class Center {
+  @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Field()
   @Column()
   name!: string;
 
+  @Field(() => ID)
   @Column({ name: 'locationId' })
   locationId!: string;
 
+  @Field(() => CenterStatus)
   @Column({ type: 'enum', enum: CenterStatus, default: CenterStatus.ACTIVE })
   status!: CenterStatus;
 
+  @Field(() => String, { nullable: true })
   @Column({ type: 'jsonb', nullable: true })
   settings!: Record<string, any> | null;
 
+  @Field(() => ID)
   @Column()
   owner!: string;
 
+  @Field(() => Date)
   @CreateDateColumn({ name: 'createdAt' })
   createdAt!: Date;
 
+  @Field(() => Date)
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 
   // Relations
+  @Field(() => User, { nullable: true })
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner' })
   ownerUser!: User;
 
+  @Field(() => Location)
   @ManyToOne(() => Location, (location) => location.centers)
   @JoinColumn({ name: 'locationId' })
   location!: Location;
@@ -67,4 +81,10 @@ export class Center {
 
   @OneToMany(() => RevenueAnalytics, (analytics) => analytics.center)
   analytics!: RevenueAnalytics[];
-}
+
+  @OneToMany(() => Event, (event) => event.center)
+  events!: Event[];
+
+  @OneToMany(() => MeetingRoom, (room) => room.center)
+  meetingRooms!: MeetingRoom[];
+}
