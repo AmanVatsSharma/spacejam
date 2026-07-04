@@ -13,7 +13,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";
 import { DEMO_BADGE, FALLBACK_REQUESTS, FALLBACK_ACTIVITIES, type RoomRequest, type RequestStatus, type RequestType } from "@/lib/mock-data/operations-mock-data";
-import "@/components/ui/dashboard/pending-approvals-modal";
+import { PendingApprovalsModal } from "@/components/ui/dashboard/pending-approvals-modal";
 
 /* --------------- Icons --------------- */
 
