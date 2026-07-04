@@ -82,6 +82,7 @@ export default function RequestsPage() {
       const timer = setTimeout(() => setIsDemo(true), 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, error, requests?.length, isDemo]);
 
   // After 3s of loading, fall back to mock data
@@ -90,6 +91,7 @@ export default function RequestsPage() {
       const timer = setTimeout(() => setIsDemo(true), 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, requests?.length]);
 
   const requestList: RoomRequest[] = useMemo(() => {
