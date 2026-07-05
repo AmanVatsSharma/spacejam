@@ -168,11 +168,6 @@ function buildRequestLoaders(dataSource: DataSource): GqlDataLoaders {
       {} as never,
       {} as never,
       {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
     );
   }
   const { User } = require('../typeorm/entities/user.entity') as typeof import('../typeorm/entities/user.entity');

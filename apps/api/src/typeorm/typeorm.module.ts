@@ -28,6 +28,7 @@ import { RevenueAnalytics } from './entities/revenue-analytics.entity';
 import { Lead } from './entities/lead.entity';
 import { MeetingRoom } from './entities/meeting-room.entity';
 import { Event } from './entities/event.entity';
+import { Request } from './entities/request.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -46,6 +47,7 @@ const ALL_ENTITIES = [
   Lead,
   MeetingRoom,
   Event,
+  Request,
 ];
 
 @Module({

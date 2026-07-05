@@ -398,8 +398,8 @@ export class AuthService {
     try {
       await this.emailService.sendLoginAlert({
         to: user.email,
-        when: new Date(),
-        ip: ctx.ipAddress,
+        occurredAt: new Date(),
+        ipAddress: ctx.ipAddress,
         userAgent: ctx.userAgent,
       });
     } catch (err) {
