@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/revenue/page.tsx
  * Module:      Web · Dashboard · Revenue
@@ -8,7 +10,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-02
  */
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useCallback } from "react";
 import styles from "./page.module.css";
@@ -21,7 +23,6 @@ import { EditInvoiceModal } from "@/components/ui/dashboard/edit-invoice-modal";
 import {
   useQuery,
   useMutation,
-  gql,
 } from "@apollo/client";
 
 import {
@@ -33,12 +34,6 @@ import {
   DELETE_DEPOSIT,
   GET_CONTRACTS,
   TERMINATE_CONTRACT,
-  CREATE_INVOICE,
-  CREATE_DEPOSIT,
-  CREATE_CONTRACT,
-  UPDATE_INVOICE,
-  UPDATE_DEPOSIT,
-  UPDATE_CONTRACT,
   INVOICE_COUNT,
 } from "@/lib/apollo/operations";
 import {
@@ -47,14 +42,13 @@ import {
   MOCK_CONTRACTS,
   MOCK_REVENUE_STATS,
   computeRevenueStats,
-  type MockInvoice,
   type MockDeposit,
   type MockContract,
   InvoiceStatus,
   DepositStatus,
   ContractStatus,
+  type PaymentFrequency,
 } from "@/lib/mock-data/revenue-mock-data";
-import { DEMO_BADGE } from "@/lib/mock-data/crm-mock-data";
 
 /* ──────────────────────────────────────────────────────────
  * GraphQL type-shapes (narrower than the full backend types —
@@ -79,12 +73,14 @@ interface DepositRow {
   type: string;
   status: DepositStatus;
   receivedDate: string;
+  releasedDate: string;
   referenceNumber: string;
 }
 
 interface ContractRow {
   id: string;
   contractNumber: string;
+  customerId: string;
   customerName: string;
   planName?: string;
   startDate: string;
@@ -204,7 +200,7 @@ function useDeposits() {
     GET_DEPOSITS
   );
 
-  const deposits: MockDeposit[] = useMemo(() => {
+  const deposits: MockDeposit[] = useMemo((): MockDeposit[] => {
     if (data?.deposits && data.deposits.length > 0) {
       return data.deposits.map((d) => ({
         id: d.id,
@@ -236,7 +232,7 @@ function useContracts() {
     GET_CONTRACTS
   );
 
-  const contracts: MockContract[] = useMemo(() => {
+  const contracts: MockContract[] = useMemo((): MockContract[] => {
     if (data?.contracts && data.contracts.length > 0) {
       return data.contracts.map((c) => ({
         id: c.id,
@@ -249,7 +245,7 @@ function useContracts() {
         endDate: c.endDate,
         status: c.status as ContractStatus,
         amount: c.amount,
-        paymentFrequency: c.paymentFrequency,
+        paymentFrequency: c.paymentFrequency as PaymentFrequency,
         autoRenew: c.autoRenew,
         terms: undefined,
         createdAt: "",
@@ -288,14 +284,6 @@ function mapInvoiceStatus(backendStatus: InvoiceStatus): InvoiceStatusUI {
       return "occupied";
   }
 }
-
-const formatCurrency = (n: number) => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(n);
-};
 
 const formatINR = (n: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -421,24 +409,21 @@ export default function RevenuePage() {
   const {
     invoices,
     loading: invoicesLoading,
-    error: invoicesError,
     isDemo: invoicesDemo,
   } = useInvoices();
 
   const {
-    deposits,
-    loading: depositsLoading,
+    deposits: _deposits,
     isDemo: depositsDemo,
   } = useDeposits();
 
   const {
-    contracts,
-    loading: contractsLoading,
+    contracts: _contracts,
     isDemo: contractsDemo,
   } = useContracts();
 
   const isDemo = invoicesDemo || depositsDemo || contractsDemo;
-  const overdueCount = useInvoiceCount();
+  const _overdueCount = useInvoiceCount(); // Future: could show overdue count badge
   const {
     handleMarkPaid,
     handleDelete: handleDeleteInvoice,
