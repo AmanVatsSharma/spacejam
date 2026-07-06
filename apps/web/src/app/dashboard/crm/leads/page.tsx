@@ -1,3 +1,4 @@
+"use client";
 /**
  * File:        apps/web/src/app/dashboard/crm/leads/page.tsx
  * Module:      Web · Dashboard · CRM · Lead Management
@@ -9,7 +10,8 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-01
  */
-'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
