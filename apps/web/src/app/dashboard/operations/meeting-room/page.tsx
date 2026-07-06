@@ -3,18 +3,19 @@
 /**
  * File:        apps/web/src/app/dashboard/operations/meeting-room/page.tsx
  * Module:      Web · Dashboard · Meeting Room
- * Purpose:     Meeting Room status dashboard — Apollo-wired with mock fallback
+ * Purpose:     Meeting Room status dashboard — Apollo-wired
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-02
+ * Last-updated: 2026-07-06
  */
 
-
-
-import { useState, useEffect } from "react";
 import { useMeetingRooms } from "@/hooks/use-operations";
-import { DEMO_BADGE, FALLBACK_ROOMS, type RoomCard, type RoomStatus, mapStatus } from "@/lib/mock-data/operations-mock-data";
+import { useState } from "react";
 import styles from "./meeting-room.module.css";
+
+type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
+type BookingInfo = { label: string; title: string; time: string };
+type RoomCard = { id: string; name: string; capacity: number; status: RoomStatus; booking?: BookingInfo; };
 
 const STATUS_PILL: Record<RoomStatus, { label: string; color: string; bg: string }> = {
   occupied:    { label: "Occupied",   color: "#FF6A2F", bg: "#FFEBE0" },
@@ -79,41 +80,17 @@ function RoomCard({ room, onBook, onExtend }: { room: RoomCard; onBook?: (room: 
 /* ---------------- Page ---------------- */
 
 export default function MeetingRoomsPage() {
-  const [isDemo, setIsDemo] = useState(false);
   const [view, setView] = useState<"layout" | "table">("layout");
   const { rooms, loading, error } = useMeetingRooms();
 
+  const displayRooms: RoomCard[] = rooms.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    capacity: r.capacity ?? 4,
+    status: (r.status ?? "AVAILABLE").toLowerCase() as RoomStatus,
+    booking: undefined,
+  }));
 
-  // Detect demo fallback: Apollo returns null/empty (backend unavailable or loading resolved with no data)
-  useEffect(() => {
-    if (!loading && !error && !rooms?.length) {
-      setIsDemo(true);
-    } else if (rooms?.length) {
-      setIsDemo(false);
-    }
-  }, [loading, error, rooms]);
-
-  // After 3s of loading, fall back to mock data
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading && !rooms?.length) {
-        setIsDemo(true);
-      }
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, [loading, rooms]);
-
-  const displayRooms: RoomCard[] = isDemo
-    ? FALLBACK_ROOMS
-    : rooms.map((r: any) => ({
-        id: r.id,
-        name: r.name,
-        capacity: r.capacity ?? 4,
-        status: mapStatus(r.status ?? "AVAILABLE"),
-        booking: undefined,
-      }));
-
-  // Stats derived from displayRooms (works for both live and demo data)
   const availableCount = displayRooms.filter(r => r.status === "available").length;
 
   return (
@@ -123,8 +100,6 @@ export default function MeetingRoomsPage() {
         <div className={styles.heroLeft}>
           <h1 className={styles.heroTitle}>
             Meeting Room status
-            {isDemo && DEMO_BADGE}
-          </h1>
           <p className={styles.heroSubtitle}>Monitor meeting room usage, availability and booking status</p>
         </div>
         <button type="button" className={styles.heroAction}>
@@ -243,10 +218,10 @@ export default function MeetingRoomsPage() {
       )}
 
       {/* Loading / Error states */}
-      {loading && !isDemo && (
+      {loading && (
         <div className="text-center py-8 text-[#6A7282]">Loading meeting rooms...</div>
       )}
-      {error && !isDemo && (
+      {error && (
         <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading rooms. Check connection.</div>
       )}
     </div>

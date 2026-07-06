@@ -1033,6 +1033,78 @@ export const CREATE_BOOKING = gql`
   }
 `;
 
+export const UPDATE_BOOKING = gql`
+  mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
+    updateBooking(id: $id, input: $input) {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      notes
+      updatedAt
+      user {
+        id
+        name
+        email
+      }
+      seat {
+        id
+        number
+        type
+        status
+        price
+        floor {
+          id
+          name
+        }
+      }
+      center {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CHECK_IN_BOOKING = gql`
+  mutation CheckInBooking($id: ID!) {
+    checkInBooking(id: $id) {
+      id
+      status
+      updatedAt
+      user {
+        id
+        name
+        email
+      }
+      seat {
+        id
+        number
+      }
+    }
+  }
+`;
+
+export const CHECK_OUT_BOOKING = gql`
+  mutation CheckOutBooking($id: ID!) {
+    checkOutBooking(id: $id) {
+      id
+      status
+      updatedAt
+      user {
+        id
+        name
+        email
+      }
+      seat {
+        id
+        number
+      }
+    }
+  }
+`;
+
 export const CANCEL_BOOKING = gql`
   mutation CancelBooking($id: ID!) {
     cancelBooking(id: $id) {

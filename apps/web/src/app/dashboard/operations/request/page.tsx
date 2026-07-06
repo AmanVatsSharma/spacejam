@@ -12,9 +12,8 @@
  */
 
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";
-import { DEMO_BADGE, FALLBACK_REQUESTS, FALLBACK_ACTIVITIES, type RoomRequest, type RequestStatus, type RequestType } from "@/lib/mock-data/operations-mock-data";
 import { PendingApprovalsModal } from "@/components/ui/dashboard/pending-approvals-modal";
 
 /* --------------- Icons --------------- */
@@ -63,20 +62,19 @@ function getStatusStyle(status: RequestStatus) {
 /* --------------- Page --------------- */
 
 export default function RequestsPage() {
-  const [isDemo, setIsDemo] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"All Categories" | RequestType>("All Categories");
-  const [statusFilter, setStatusFilter] = useState<"All Statues" | RequestStatus>("All Statues");
-  const [typeFilter, setTypeFilter] = useState<"Request Type" | string>("Request Type");
-  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
-  const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
-  const [showPendingModal, setShowPendingModal] = useState(false);
-
   const { requests, loading, error } = useRequests();
   const { assign } = useAssignRequest();
   const { update } = useUpdateRequest();
   const { complete: _complete } = useCompleteRequest();
   const { reject } = useRejectRequest();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<"All Categories" | "Events" | "Printer" | "Upgrade" | "Services">("All Categories");
+  const [statusFilter, setStatusFilter] = useState<"All Statues" | "Pending" | "Approved" | "Rejected">("All Statues");
+  const [typeFilter, setTypeFilter] = useState<"Request Type" | string>("Request Type");
+  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
+  const [showPendingModal, setShowPendingModal] = useState(false);
 
   // Detect demo fallback: Apollo returns null/empty (backend unavailable or missing)
   useEffect(() => {
@@ -87,26 +85,14 @@ export default function RequestsPage() {
     return undefined;
   }, [loading, error, requests?.length, isDemo]);
 
-  // After 3s of loading, fall back to mock data
-  useEffect(() => {
-    if (loading && !requests?.length) {
-      const timer = setTimeout(() => setIsDemo(true), 3000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [loading, requests?.length]);
-
-  const requestList: RoomRequest[] = useMemo(() => {
-    if (isDemo) return FALLBACK_REQUESTS;
-    return requests.map((r: any) => ({
+  const requestList = requests.map((r: any) => ({
       id: r.id,
-      requestType: (r.type ?? "Services") as RequestType,
+      requestType: (r.type ?? "Services") as "Events" | "Printer" | "Upgrade" | "Services",
       requestedBy: r.requestedBy?.name ?? "Unknown",
       details: r.title,
       date: r.dueDate ? new Date(r.dueDate).toLocaleDateString("en-GB") : new Date(r.createdAt).toLocaleDateString("en-GB"),
-      status: r.status?.replace("_", " ") as RequestStatus,
+      status: (r.status ?? "").replace("_", " ") as "Pending" | "Approved" | "Rejected",
     }));
-  }, [isDemo, requests]);
 
   const filtered = useMemo(() => {
     return requestList.filter((r) => {
@@ -152,9 +138,6 @@ export default function RequestsPage() {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
-      {/* Demo data badge */}
-      {isDemo && DEMO_BADGE}
-
       {/* Header */}
       <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">
         <h1 className="text-[28px] font-bold text-[#101828]">Request & Registration</h1>
@@ -166,6 +149,7 @@ export default function RequestsPage() {
         <div className="flex-1 flex flex-col gap-5 min-w-0">
           {/* Filters */}
           <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-[280px]">
             <div className="relative flex-1 max-w-[280px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">{Icons.search}</span>
               <input

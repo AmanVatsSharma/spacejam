@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";
-import { GET_BOOKINGS, GET_DASHBOARD_METRICS, CANCEL_BOOKING } from "@/lib/apollo/operations";
+import { GET_BOOKINGS, GET_DASHBOARD_METRICS, CREATE_BOOKING, UPDATE_BOOKING, CHECK_IN_BOOKING, CHECK_OUT_BOOKING, CANCEL_BOOKING } from "@/lib/apollo/operations";
 import { useMeetingRooms, useRequests } from "@/hooks/use-operations";
 
 /** Booking statuses as returned by the backend */
@@ -56,8 +56,24 @@ export default function OperationsPage() {
     errorPolicy: "all",
   });
 
+  const [createBooking] = useMutation(CREATE_BOOKING, {
+    refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }],
+  });
+
+  const [updateBooking] = useMutation(UPDATE_BOOKING, {
+    refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }],
+  });
+
+  const [checkInBooking] = useMutation(CHECK_IN_BOOKING, {
+    refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }],
+  });
+
+  const [checkOutBooking] = useMutation(CHECK_OUT_BOOKING, {
+    refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }],
+  });
+
   const [cancelBooking] = useMutation(CANCEL_BOOKING, {
-    refetchQueries: [{ query: GET_BOOKINGS }],
+    refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }],
   });
 
   const bookings = bookingsData?.bookings ?? [];
@@ -67,10 +83,42 @@ export default function OperationsPage() {
     (b: any) => b.status === "CHECKED_IN" || b.status === "CONFIRMED"
   );
 
+  const handleCheckIn = async (id: string) => {
+    try {
+      await checkInBooking({ variables: { id } });
+    } catch (err) {
+      console.error("Failed to check in:", err);
+    }
+  };
+
+  const handleCheckOut = async (id: string) => {
+    try {
+      await checkOutBooking({ variables: { id } });
+    } catch (err) {
+      console.error("Failed to check out:", err);
+    }
+  };
+
+  const handleExtendBooking = async (id: string) => {
+    try {
+      const booking = bookings.find((b: any) => b.id === id);
+      if (!booking) return;
+      const newEndDate = new Date(booking.endDate);
+      newEndDate.setDate(newEndDate.getDate() + 7);
+      await updateBooking({
+        variables: {
+          id,
+          input: { endDate: newEndDate.toISOString() },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to extend booking:", err);
+    }
+  };
+
   const handleCancelBooking = async (id: string) => {
     try {
       await cancelBooking({ variables: { id } });
-      refetchBookings();
     } catch (err) {
       console.error("Failed to cancel booking:", err);
     }
@@ -199,10 +247,13 @@ export default function OperationsPage() {
                       </td>
                       <td className="px-6 py-4 compact:px-3 compact:py-2 flex gap-2">
                         {booking.status === "CONFIRMED" && (
-                          <button className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Check In</button>
+                          <button onClick={() => handleCheckIn(booking.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Check In</button>
                         )}
                         {booking.status === "CHECKED_IN" && (
-                          <button className="text-xs bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Check Out</button>
+                          <>
+                            <button onClick={() => handleExtendBooking(booking.id)} className="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 mr-1">Extend</button>
+                            <button onClick={() => handleCheckOut(booking.id)} className="text-xs bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Check Out</button>
+                          </>
                         )}
                         {(booking.status === "CONFIRMED" || booking.status === "CHECKED_IN") && (
                           <button onClick={() => handleCancelBooking(booking.id)} className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-lg hover:bg-red-200">Cancel</button>
@@ -238,7 +289,7 @@ export default function OperationsPage() {
                           <p className="font-medium text-[#101828]">{booking.user?.name ?? "Unknown"}</p>
                           <p className="text-sm text-[#4A5565]">{booking.seat?.number ?? "—"} &middot; {checkIn.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
-                        <button className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">
+                        <button onClick={() => handleCheckIn(booking.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">
                           Check In
                         </button>
                       </div>
@@ -265,7 +316,7 @@ export default function OperationsPage() {
                           <p className="font-medium text-[#101828]">{booking.user?.name ?? "Unknown"}</p>
                           <p className="text-sm text-[#4A5565]">{booking.seat?.number ?? "—"} &middot; {checkOut.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
-                        <button className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">
+                        <button onClick={() => handleCheckOut(booking.id)} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">
                           Check Out
                         </button>
                       </div>
