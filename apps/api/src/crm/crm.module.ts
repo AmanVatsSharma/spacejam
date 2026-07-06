@@ -11,16 +11,19 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { CrmResolver } from '../graphql/resolvers/crm.resolver';
+import { CustomerResolver } from '../graphql/resolvers/customer.resolver';
 import { Lead } from '../typeorm/entities/lead.entity';
+import { Customer } from '../typeorm/entities/customer.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lead]),
+    TypeOrmModule.forFeature([Lead, Customer]),
     CacheModule,
   ],
   providers: [
     CrmResolver,
+    CustomerResolver,
   ],
-  exports: [CrmResolver],
+  exports: [CrmResolver, CustomerResolver],
 })
-export class CrmModule {}
+export class CrmModule { }
