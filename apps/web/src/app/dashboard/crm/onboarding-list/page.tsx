@@ -1,3 +1,4 @@
+"use client";
 /**
  * File:        apps/web/src/app/dashboard/crm/onboarding/page.tsx
  * Module:      Web · Dashboard · CRM · Onboarding
@@ -11,7 +12,8 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-26
  */
-'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import styles from './onboarding.module.css';

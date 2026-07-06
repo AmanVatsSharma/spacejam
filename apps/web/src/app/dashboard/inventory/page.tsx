@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/inventory/page.tsx
  * Module:      Web · Dashboard · Inventory Page
@@ -10,7 +12,8 @@
  * Last-updated: 2026-05-28
  */
 
-"use client";
+
+export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { StatCards } from "@/components/ui/stat-card";
