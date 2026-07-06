@@ -11,7 +11,7 @@
  * Last-updated: 2026-06-21
  */
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
@@ -24,7 +24,7 @@ import { Invoice } from '../../typeorm/entities/invoice.entity';
 import { Deposit } from '../../typeorm/entities/deposit.entity';
 import { Contract } from '../../typeorm/entities/contract.entity';
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class GqlDataLoaders {
   public readonly userById: DataLoader<string, User | null>;
   public readonly centerById: DataLoader<string, Center | null>;
