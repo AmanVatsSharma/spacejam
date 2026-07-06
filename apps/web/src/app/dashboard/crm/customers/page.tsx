@@ -1,9 +1,14 @@
 "use client";
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_CUSTOMERS,
+  DELETE_CUSTOMER,
+} from "@/lib/apollo/operations";
 import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
 
 
@@ -70,58 +75,68 @@ const Icons = {
 interface Customer {
   id: string;
   name: string;
-  teamSize: string;
-  location: string;
-  joinDate: string;
-  billing: "Paid" | "Pending" | "Overdue";
-  lastInvoice: string;
-  status: "Upgrade" | "Send Notice" | "Send Invoice";
+  email: string;
+  phone?: string;
+  company?: string;
+  status: string;
+  totalBookings: number;
+  totalSpent: number;
+  lastBooking?: string | null;
+  createdAt: string;
+  teamSize?: string;
+  location?: string;
+  joinDate?: string;
 }
 
-const statsData = [
-  { label: "Total Customer", value: 20, icon: "users" },
-  { label: "Active Members", value: 15, icon: "userCheck" },
-  { label: "1 Expiring Soon", value: 3, icon: "calendar" },
-  { label: "", value: 2, icon: "rupee" }, // Represents the rupee icon card without a label
-];
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Number(amount));
+}
 
-const customersData: Customer[] = [
-  { id: "1", name: "Technova solution", teamSize: "25 seats", location: "Ch-Hub", joinDate: "Jan 15, 2025", billing: "Paid", lastInvoice: "12 Mar", status: "Upgrade" },
-  { id: "2", name: "StartupX", teamSize: "8 seats", location: "Jalandhar", joinDate: "Jan 15, 2024", billing: "Paid", lastInvoice: "10 Mar", status: "Send Notice" },
-  { id: "3", name: "Ankit", teamSize: "3 seats", location: "Ch-Hub", joinDate: "Jun 15, 2025", billing: "Paid", lastInvoice: "9 Mar", status: "Send Invoice" },
-  { id: "4", name: "TechCorp", teamSize: "2 seats", location: "Ch-Hub", joinDate: "Jul 15, 2026", billing: "Overdue", lastInvoice: "8 Mar", status: "Send Notice" },
-  { id: "5", name: "Priya Singh", teamSize: "5 seats", location: "Jalandhar", joinDate: "Jan 15, 2026", billing: "Paid", lastInvoice: "7 Mar", status: "Upgrade" },
-  { id: "6", name: "Priya Singh", teamSize: "3 seats", location: "Ch-Hub", joinDate: "Jan 15, 2024", billing: "Paid", lastInvoice: "7 Mar", status: "Upgrade" },
-  { id: "7", name: "Priya Singh", teamSize: "8 seats", location: "Ch-Hub", joinDate: "Aug 15, 2024", billing: "Pending", lastInvoice: "7 Mar", status: "Send Notice" },
-  { id: "8", name: "Priya Singh", teamSize: "9 seats", location: "Ch-Hub", joinDate: "Jan 15, 2024", billing: "Paid", lastInvoice: "7 Mar", status: "Upgrade" },
-];
+function formatDate(dateStr?: string | null): string {
+  if (!dateStr) return "—";
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
-const statusColors: Record<Customer["status"], string> = {
-  Upgrade: "bg-[#FCEAE8] text-[#D95D51]",
-  "Send Notice": "bg-[#FEF5E5] text-[#D99A29]",
-  "Send Invoice": "bg-gray-100 text-gray-600",
+const statusColors: Record<string, string> = {
+  Active: "bg-[#FCEAE8] text-[#D95D51]",
+  Inactive: "bg-gray-100 text-gray-600",
+  "Expiring Soon": "bg-[#FEF5E5] text-[#D99A29]",
+  Upgraded: "bg-green-100 text-green-700",
 };
-
-const billingColors: Record<Customer["billing"], string> = {
-  Paid: "text-gray-600",
-  Pending: "text-[#F59E0B]", // Orange text
-  Overdue: "text-[#EF4444]", // Red text
-};
-
-const recentActivities = [
-  { title: "Payment Faild", subtitle: "Pending Approvals", icon: "wallet" },
-  { title: "Printer Booked Today", subtitle: "Patel Enterprises printer bo.....", icon: "printer" },
-];
 
 export default function CustomersPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
-  console.log(showAddClient);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Apollo query
+  const { data, loading, error } = useQuery<{ customers: Customer[] }>(GET_CUSTOMERS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const [deleteCustomer] = useMutation(DELETE_CUSTOMER, {
+    refetchQueries: [{ query: GET_CUSTOMERS }],
+  });
+
+  const customers = data?.customers ?? [];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -134,9 +149,43 @@ export default function CustomersPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredCustomers = customersData.filter((customer) =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((customer) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesQuery =
+        q.length === 0 ||
+        customer.name?.toLowerCase().includes(q) ||
+        customer.email?.toLowerCase().includes(q) ||
+        customer.company?.toLowerCase().includes(q);
+      const matchesStatus = !statusFilter || customer.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [customers, searchQuery, statusFilter]);
+
+  // Compute stats from live data
+  const stats = useMemo(() => {
+    const active = customers.filter((c) => c.status === "Active").length;
+    const expiring = customers.filter((c) => c.status === "Expiring Soon").length;
+    const totalSpent = customers.reduce((sum, c) => sum + Number(c.totalSpent ?? 0), 0);
+    return { total: customers.length, active, expiring, totalSpent };
+  }, [customers]);
+
+  const statsData = [
+    { label: "Total Customer", value: stats.total, icon: "users" as const },
+    { label: "Active Members", value: stats.active, icon: "userCheck" as const },
+    { label: "Expiring Soon", value: stats.expiring, icon: "calendar" as const },
+    { label: "Total Revenue", value: formatCurrency(stats.totalSpent), icon: "rupee" as const },
+  ];
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this customer?')) return;
+    try {
+      await deleteCustomer({ variables: { id } });
+      setOpenDropdownId(null);
+    } catch {
+      // handled by Apollo
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
@@ -147,13 +196,13 @@ export default function CustomersPage() {
           <p className="text-sm text-[#667085] mt-1">Manage all onboarded clients and organizations</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setShowExportDialog(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
           >
             {Icons.download} Export Excel
           </button>
-          <button 
+          <button
             onClick={() => setShowAddClient(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
           >
@@ -168,48 +217,44 @@ export default function CustomersPage() {
           <span className="absolute left-3 top-1/2 -translate-y-1/2">{Icons.search}</span>
           <input
             type="text"
-            placeholder="Search Invoice.."
+            placeholder="Search customers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent w-64 bg-white shadow-sm"
           />
         </div>
-        
+
         <div className="relative">
-          <select className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm text-[#344054] font-medium bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] min-w-[130px] cursor-pointer">
-            <option>All Types</option>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm text-[#344054] font-medium bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] min-w-[130px] cursor-pointer"
+          >
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Expiring Soon">Expiring Soon</option>
+            <option value="Upgraded">Upgraded</option>
           </select>
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
         </div>
 
-        <div className="relative">
-          <select className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm text-[#344054] font-medium bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] min-w-[130px] cursor-pointer">
-            <option>All Statues</option>
-          </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
-        </div>
-
-        <div className="relative">
-          <select className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm text-[#344054] font-medium bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] min-w-[130px] cursor-pointer">
-            <option>All Plans</option>
-          </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
-        </div>
-
-        <button className="px-5 py-2.5 bg-[#FFF2F0] text-[#D95D51] border border-[#FCEAE8] rounded-lg text-sm font-medium hover:bg-[#FCEAE8] transition-colors ml-2">
+        <button
+          className="px-5 py-2.5 bg-[#FFF2F0] text-[#D95D51] border border-[#FCEAE8] rounded-lg text-sm font-medium hover:bg-[#FCEAE8] transition-colors ml-2"
+          onClick={() => { setSearchQuery(""); setStatusFilter(""); }}
+        >
           Clear All
         </button>
       </div>
 
-      {/* Grid Section: Stats & Recent Activities */}
+      {/* Grid Section: Stats */}
       <div className="flex flex-col lg:flex-row gap-6">
-        
         {/* Left Side: 4 Stat Cards */}
         <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsData.map((stat, index) => (
             <div key={index} className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 flex flex-col justify-between min-h-[140px]">
               <div className="w-10 h-10 rounded-full bg-[#FFF2EA] flex items-center justify-center text-[#FF6A2F] mb-4">
-                {Icons[stat.icon as keyof typeof Icons]}
+                {Icons[stat.icon]}
               </div>
               <div>
                 <p className="text-[28px] font-bold text-[#101828] leading-none mb-1.5">{stat.value}</p>
@@ -217,24 +262,6 @@ export default function CustomersPage() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Right Side: Recent Activities */}
-        <div className="w-full lg:w-[320px] bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-[#101828] mb-5">Recent Activities</h3>
-          <div className="flex flex-col gap-5">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-md bg-[#FFF2EA] flex items-center justify-center text-[#FF6A2F] shrink-0 mt-0.5 border border-[#FFE4D6]">
-                  {Icons[activity.icon as keyof typeof Icons]}
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-[13px] font-bold text-[#101828]">{activity.title}</p>
-                  <p className="text-[13px] text-[#667085] mt-0.5">{activity.subtitle}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -245,71 +272,99 @@ export default function CustomersPage() {
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">CUSTOMER</th>
-                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">TEAM SIZE</th>
+                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">COMPANY</th>
                 <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">LOCATION</th>
                 <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">JOIN DATE</th>
-                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">BILLING</th>
-                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">LAST INVOICE</th>
+                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">BOOKINGS</th>
+                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">TOTAL SPENT</th>
                 <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">STATUS</th>
+                <th className="px-6 py-4 font-semibold text-[#667085] uppercase tracking-wider text-xs">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {filteredCustomers.map((customer) => (
-                <tr
-                  key={customer.id}
-                  onClick={() => router.push('/dashboard/crm/customers/' + customer.id)}
-                  className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-6 py-4">
-                    <Link href={`/dashboard/crm/customers/${customer.id}`} className="font-bold text-[#101828] hover:text-[#FF6A2F] transition-colors">
-                      {customer.name}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 text-[#667085]">{customer.teamSize}</td>
-                  <td className="px-6 py-4 text-[#667085]">{customer.location}</td>
-                  <td className="px-6 py-4 text-[#667085]">{customer.joinDate}</td>
-                  <td className="px-6 py-4">
-                    <span className={`${billingColors[customer.billing]}`}>
-                      {customer.billing}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[#667085]">{customer.lastInvoice}</td>
-                  <td className="px-6 py-4">
-                    <div className="relative inline-block" ref={openDropdownId === customer.id ? dropdownRef : null}>
-                      <button
-                        onClick={() => setOpenDropdownId(openDropdownId === customer.id ? null : customer.id)}
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold ${statusColors[customer.status]}`}
-                      >
-                        {customer.status}
-                        <span className="opacity-70">{Icons.chevronDown}</span>
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {openDropdownId === customer.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1.5">
-                          <button className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                            Upgrade
-                          </button>
-                          <button className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                            Send Notice
-                          </button>
-                          <button className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50">
-                            Send Invoice
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              {loading && filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                    Loading customers…
                   </td>
                 </tr>
-              ))}
+              ) : error && filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                    Unable to load customers. Please try again.
+                  </td>
+                </tr>
+              ) : filteredCustomers.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                    No customers found.
+                  </td>
+                </tr>
+              ) : (
+                filteredCustomers.map((customer) => (
+                  <tr
+                    key={customer.id}
+                    onClick={() => router.push('/dashboard/crm/customers/' + customer.id)}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-6 py-4">
+                      <Link href={`/dashboard/crm/customers/${customer.id}`} className="font-bold text-[#101828] hover:text-[#FF6A2F] transition-colors">
+                        {customer.name}
+                      </Link>
+                      <div className="text-xs text-gray-400">{customer.email}</div>
+                    </td>
+                    <td className="px-6 py-4 text-[#667085]">{customer.company ?? "—"}</td>
+                    <td className="px-6 py-4 text-[#667085]">{customer.location ?? "—"}</td>
+                    <td className="px-6 py-4 text-[#667085]">{formatDate(customer.joinDate ?? customer.createdAt)}</td>
+                    <td className="px-6 py-4 text-[#667085]">{customer.totalBookings ?? 0}</td>
+                    <td className="px-6 py-4 text-[#667085] font-medium">{formatCurrency(Number(customer.totalSpent ?? 0))}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[customer.status] ?? "bg-gray-100 text-gray-600"}`}>
+                        {customer.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="relative inline-block" ref={openDropdownId === customer.id ? dropdownRef : null}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === customer.id ? null : customer.id); }}
+                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                          </svg>
+                        </button>
+
+                        {openDropdownId === customer.id && (
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1.5">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/crm/customers/${customer.id}`); }}
+                              className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(customer.id); }}
+                              className="w-full text-left px-4 py-2 text-xs font-medium text-red-500 hover:bg-gray-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
-      
-      <ExportToExcelDialog 
-        open={showExportDialog} 
-        onClose={() => setShowExportDialog(false)} 
+
+      <ExportToExcelDialog
+        open={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
       />
       <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
     </div>
@@ -371,29 +426,27 @@ function ExportToExcelDialog({
 
         {/* Body */}
         <div className="p-6 flex flex-col gap-6">
-          
+
           {/* Export Type */}
           <div className="flex flex-col gap-3">
             <span className="text-[15px] font-bold text-gray-900">Export Type</span>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => setExportType("all")}
-                className={`flex flex-col items-start px-5 py-4 rounded-xl border ${
-                  exportType === "all"
+                className={`flex flex-col items-start px-5 py-4 rounded-xl border ${exportType === "all"
                     ? "border-[#FF6A2F] bg-[#FFF8F3]"
                     : "border-gray-200 bg-white hover:bg-gray-50"
-                } transition-colors w-full text-left`}
+                  } transition-colors w-full text-left`}
               >
-                <span className="text-[15px] font-medium text-gray-900 mb-1">All Invoices</span>
-                <span className="text-[14px] text-gray-500">Export complete invoice list</span>
+                <span className="text-[15px] font-medium text-gray-900 mb-1">All Customers</span>
+                <span className="text-[14px] text-gray-500">Export complete customer list</span>
               </button>
               <button
                 onClick={() => setExportType("filtered")}
-                className={`flex flex-col items-start px-5 py-4 rounded-xl border ${
-                  exportType === "filtered"
+                className={`flex flex-col items-start px-5 py-4 rounded-xl border ${exportType === "filtered"
                     ? "border-[#FF6A2F] bg-[#FFF8F3]"
                     : "border-gray-200 bg-white hover:bg-gray-50"
-                } transition-colors w-full text-left`}
+                  } transition-colors w-full text-left`}
               >
                 <span className="text-[15px] font-medium text-gray-900 mb-1">Filtered Results</span>
                 <span className="text-[14px] text-gray-500">Export current filtered view</span>
@@ -407,27 +460,25 @@ function ExportToExcelDialog({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setFileFormat("excel")}
-                className={`flex items-center justify-center py-3.5 rounded-xl border ${
-                  fileFormat === "excel"
+                className={`flex items-center justify-center py-3.5 rounded-xl border ${fileFormat === "excel"
                     ? "border-[#FF6A2F] bg-[#FFF8F3] text-[#FF6A2F]"
                     : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                } transition-colors text-[14px] font-medium`}
+                  } transition-colors text-[14px] font-medium`}
               >
                 Excel (.xlsx)
               </button>
               <button
                 onClick={() => setFileFormat("csv")}
-                className={`flex items-center justify-center py-3.5 rounded-xl border ${
-                  fileFormat === "csv"
+                className={`flex items-center justify-center py-3.5 rounded-xl border ${fileFormat === "csv"
                     ? "border-[#FF6A2F] bg-[#FFF8F3] text-[#FF6A2F]"
                     : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                } transition-colors text-[14px] font-medium`}
+                  } transition-colors text-[14px] font-medium`}
               >
                 CSV (.csv)
               </button>
             </div>
           </div>
-          
+
         </div>
 
         {/* Footer */}
@@ -447,7 +498,7 @@ function ExportToExcelDialog({
           </button>
         </footer>
       </div>
-      
+
     </div>
   );
 }
