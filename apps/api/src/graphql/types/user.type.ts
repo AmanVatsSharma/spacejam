@@ -173,11 +173,19 @@ export enum DepositType {
   OTHER = 'Other',
 }
 
+export enum CustomerStatus {
+  ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
+  EXPIRING_SOON = 'Expiring Soon',
+  UPGRADED = 'Upgraded',
+}
+
 registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
 registerEnumType(PaymentFrequency, { name: 'PaymentFrequency' });
 registerEnumType(ContractStatus, { name: 'ContractStatus' });
 registerEnumType(DepositStatus, { name: 'DepositStatus' });
 registerEnumType(DepositType, { name: 'DepositType' });
+registerEnumType(CustomerStatus, { name: 'CustomerStatus' });
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(CenterStatus, { name: 'CenterStatus' });
 registerEnumType(SeatType, { name: 'SeatType' });
