@@ -8,6 +8,7 @@
  */
 
 import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { User } from '../../typeorm/entities/user.entity';
 
 // ============================================================================
 // ENUMS ONLY - Pure registry for GraphQL enums
@@ -240,6 +241,6 @@ export class AuthPayload {
   @Field(() => String, { nullable: true })
   challengeToken?: string | null;
 
-  @Field(() => String, { nullable: true })
-  userId?: string | null; // String reference to avoid circular import
+  @Field(() => User, { nullable: true })
+  user?: User | null;
 }

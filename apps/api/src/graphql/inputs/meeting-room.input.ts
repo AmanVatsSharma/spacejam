@@ -122,7 +122,7 @@ export class UpdateMeetingRoomInput {
   @IsOptional()
   type?: RoomType;
 
-  @Field({ nullable: true, type: () => Int })
+  @Field(() => Int, { nullable: true })
   @IsInt()
   @IsOptional()
   capacity?: number;

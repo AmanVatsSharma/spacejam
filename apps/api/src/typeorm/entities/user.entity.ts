@@ -59,11 +59,33 @@ export class User {
 
   @Field()
   @Column({ name: 'isActive', default: true })
-  isActive!: boolean;
+  active!: boolean;
 
   @Field(() => Date, { nullable: true })
   @Column({ name: 'lastLogin', type: 'timestamp', nullable: true })
-  lastLogin!: Date | null;
+  lastLoginAt!: Date | null;
+
+  @Column({ nullable: true })
+  passwordHash!: string;
+
+  @Field()
+  @Column({ default: false })
+  twoFactorEnabled!: boolean;
+
+  @Column({ nullable: true })
+  twoFactorSecret?: string;
+
+  @Column({ nullable: true })
+  passwordResetToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  passwordResetExpiresAt?: Date;
+
+  @Column({ nullable: true })
+  emailVerifyToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  emailVerifyExpiresAt?: Date;
 
   @Field()
   @Column({ name: 'emailVerified', default: false })
