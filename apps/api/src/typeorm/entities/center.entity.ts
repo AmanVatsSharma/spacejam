@@ -73,6 +73,7 @@ export class Center {
   @JoinColumn({ name: 'locationId' })
   location!: Location;
 
+  @Field(() => [Floor])
   @OneToMany(() => Floor, (floor) => floor.center)
   floors!: Floor[];
 

@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-01
  */
-import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -51,7 +51,7 @@ export class CrmResolver {
   }
 
   @Query(() => LeadEntity, { nullable: true })
-  async lead(@Args('id') id: string): Promise<LeadEntity | null> {
+  async lead(@Args('id', { type: () => ID }) id: string): Promise<LeadEntity | null> {
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
@@ -76,7 +76,7 @@ export class CrmResolver {
 
   @Mutation(() => LeadEntity)
   async updateLead(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateLeadInput
   ): Promise<LeadEntity> {
     await this.leadRepo.update(id, input);
@@ -92,7 +92,7 @@ export class CrmResolver {
 
   @Mutation(() => LeadEntity)
   async convertLead(
-    @Args('id') id: string
+    @Args('id', { type: () => ID }) id: string
   ): Promise<LeadEntity> {
     await this.leadRepo.update(id, { status: LeadStatus.CONVERTED });
     const lead = await this.leadRepo.findOne({
@@ -105,7 +105,7 @@ export class CrmResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteLead(@Args('id') id: string): Promise<boolean> {
+  async deleteLead(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.leadRepo.delete(id);
     await this.cache.invalidatePattern('leads:*');
     await this.cache.invalidate(`lead:${id}`);

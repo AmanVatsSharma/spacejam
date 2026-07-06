@@ -1,3 +1,4 @@
+"use client";
 /**
  * File:        apps/web/src/lib/apollo/client.ts
  * Module:      Web · Apollo Client
@@ -159,3 +160,4 @@ const createServerClient = () =>
     link: from([authLink, httpLink]),
     cache: new InMemoryCache(),
   });
+

@@ -23,6 +23,7 @@ import {
   OccupancyReport,
   OccupancyDay,
   SeatTypeOccupancy,
+  TimePeriod,
 } from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
@@ -120,7 +121,7 @@ export class AnalyticsResolver {
   @Query(() => RevenueReport)
   async revenueReport(
     @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
-    @Args('period', { nullable: true }) period?: 'month' | 'quarter' | 'year'
+    @Args('period', { type: () => TimePeriod, nullable: true }) period?: TimePeriod
   ): Promise<RevenueReport> {
     const cacheKey = centerId ? `revenue:report:${centerId}` : 'revenue:report:global';
 
@@ -223,7 +224,7 @@ export class AnalyticsResolver {
   @Query(() => OccupancyReport)
   async occupancyReport(
     @Args('centerId', { type: () => ID }) centerId: string,
-    @Args('period', { nullable: true }) period: 'week' | 'month' = 'month'
+    @Args('period', { type: () => TimePeriod, nullable: true }) period: TimePeriod = TimePeriod.MONTH
   ): Promise<OccupancyReport> {
     const now = new Date();
     let dateRange = { since: new Date(), until: now };

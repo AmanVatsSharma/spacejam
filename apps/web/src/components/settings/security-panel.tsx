@@ -1,3 +1,4 @@
+"use client";
 /**
  * File:        apps/web/src/components/settings/security-panel.tsx
  * Module:      Web · Settings · Security
@@ -11,7 +12,6 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-21
  */
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';

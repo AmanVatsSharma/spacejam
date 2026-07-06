@@ -8,15 +8,7 @@
  */
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { createContext, useContext, useState, useMemo, useEffect, useCallback, ReactNode } from 'react';
 
 import {
   getApolloClient,
@@ -211,7 +203,7 @@ function MeQueryClient({ client, hasToken, isDevLoginAvailable }: {
   return null;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hasToken, setHasToken] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -260,7 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('auth-error', handleAuthError as EventListener);
   }, [isDevLoginAvailable]);
 
-  // Read token on mount (client only)
+  // Fetch me query on mount if token exists
   useEffect(() => {
     setIsLoading(true);
     let timer: ReturnType<typeof setTimeout> | undefined;

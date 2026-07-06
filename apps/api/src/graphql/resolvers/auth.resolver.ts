@@ -179,6 +179,13 @@ export class AuthResolver {
     return this.authService.recoveryCodesRemaining(user.sub);
   }
 
+  @UseGuards(GqlAuthGuard)
+  @Mutation(() => [String], { description: 'Regenerate 2FA recovery codes' })
+  async regenerateRecoveryCodes(@CurrentUser() user: JwtPayload): Promise<string[]> {
+    // Mock implementation for now
+    return ['RC-1234', 'RC-5678', 'RC-9012'];
+  }
+
   @Public()
   @Mutation(() => GenericActionResult, {
     description: 'Verify an email-address using the ?token=… from the verification email',

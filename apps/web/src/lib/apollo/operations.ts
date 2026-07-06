@@ -114,10 +114,7 @@ export const VERIFY_EMAIL = gql`
 
 export const RESEND_VERIFICATION = gql`
   mutation ResendVerification {
-    resendVerification {
-      ok
-      message
-    }
+    resendVerification
   }
 `;
 
@@ -127,11 +124,8 @@ export const RESEND_VERIFICATION = gql`
  * which is for users who forgot theirs and use a one-time link).
  */
 export const CHANGE_PASSWORD = gql`
-  mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
-    changePassword(currentPassword: $currentPassword, newPassword: $newPassword) {
-      ok
-      message
-    }
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input)
   }
 `;
 
@@ -141,11 +135,8 @@ export const CHANGE_PASSWORD = gql`
  * their inbox. Always returns ok: true (to avoid email enumeration).
  */
 export const REQUEST_MAGIC_LINK = gql`
-  mutation RequestMagicLink($email: String!) {
-    requestMagicLink(email: $email) {
-      ok
-      message
-    }
+  mutation RequestMagicLink($input: ForgotPasswordInput!) {
+    requestMagicLink(input: $input)
   }
 `;
 
@@ -154,8 +145,8 @@ export const REQUEST_MAGIC_LINK = gql`
  * Returns the same AuthPayload as signin on success.
  */
 export const VERIFY_MAGIC_LINK = gql`
-  mutation VerifyMagicLink($token: String!) {
-    verifyMagicLink(token: $token) {
+  mutation VerifyMagicLink($input: VerifyMagicLinkInput!) {
+    verifyMagicLink(input: $input) {
       accessToken
       refreshToken
       accessTokenExpiresAt
@@ -418,7 +409,6 @@ export const GET_DEPOSITS = gql`
       customerName
       centerId
       amount
-      type
       status
       referenceNumber
       receivedDate
@@ -438,7 +428,6 @@ export const GET_DEPOSIT = gql`
       customerName
       centerId
       amount
-      type
       status
       referenceNumber
       receivedDate
@@ -458,7 +447,6 @@ export const CREATE_DEPOSIT = gql`
       customerName
       centerId
       amount
-      type
       status
       referenceNumber
       receivedDate
@@ -478,7 +466,6 @@ export const UPDATE_DEPOSIT = gql`
       customerName
       centerId
       amount
-      type
       status
       referenceNumber
       receivedDate
@@ -847,7 +834,7 @@ export const GET_SEATS = gql`
     seats(floorId: $floorId) {
       id
       number
-      type
+      seatType
       features
       status
       price
@@ -867,7 +854,7 @@ export const CREATE_SEAT = gql`
     createSeat(input: $input) {
       id
       number
-      type
+      seatType
       status
       price
     }
@@ -879,7 +866,7 @@ export const UPDATE_SEAT = gql`
     updateSeat(id: $id, input: $input) {
       id
       number
-      type
+      seatType
       status
       price
     }
@@ -908,7 +895,7 @@ export const GET_BOOKINGS = gql`
       seat {
         id
         number
-        type
+        seatType
         status
         price
         floor {
@@ -950,7 +937,7 @@ export const GET_BOOKING = gql`
       seat {
         id
         number
-        type
+        seatType
         status
         price
         floor {
@@ -984,7 +971,7 @@ export const GET_MY_BOOKINGS = gql`
       seat {
         id
         number
-        type
+        seatType
         floor {
           id
           name
@@ -1017,7 +1004,7 @@ export const CREATE_BOOKING = gql`
       seat {
         id
         number
-        type
+        seatType
         status
         price
       }
@@ -1056,7 +1043,7 @@ export const UPDATE_BOOKING = gql`
       seat {
         id
         number
-        type
+        seatType
         status
         price
       }

@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-02
  */
-import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -61,7 +61,7 @@ export class InvoiceResolver {
   }
 
   @Query(() => InvoiceEntity, { nullable: true })
-  async invoice(@Args('id') id: string): Promise<InvoiceEntity | null> {
+  async invoice(@Args('id', { type: () => ID }) id: string): Promise<InvoiceEntity | null> {
     const invoice = await this.invoiceRepo.findOne({
       where: { id },
       relations: ['customer', 'center'],
@@ -91,7 +91,7 @@ export class InvoiceResolver {
 
   @Mutation(() => InvoiceEntity)
   async updateInvoice(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateInvoiceInput,
   ): Promise<InvoiceEntity> {
     await this.invoiceRepo.update(id, input);
@@ -106,7 +106,7 @@ export class InvoiceResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteInvoice(@Args('id') id: string): Promise<boolean> {
+  async deleteInvoice(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.invoiceRepo.delete(id);
     await this.cache.invalidatePattern('invoices:*');
     await this.cache.invalidate(`invoice:${id}`);
@@ -115,7 +115,7 @@ export class InvoiceResolver {
 
   @Mutation(() => InvoiceEntity)
   async markInvoicePaid(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('paymentMethod', { nullable: true }) paymentMethod?: string,
   ): Promise<InvoiceEntity> {
     await this.invoiceRepo.update(id, {
@@ -175,7 +175,7 @@ export class DepositResolver {
   }
 
   @Query(() => DepositEntity, { nullable: true })
-  async deposit(@Args('id') id: string): Promise<DepositEntity | null> {
+  async deposit(@Args('id', { type: () => ID }) id: string): Promise<DepositEntity | null> {
     const deposit = await this.depositRepo.findOne({
       where: { id },
       relations: ['customer', 'center'],
@@ -201,7 +201,7 @@ export class DepositResolver {
 
   @Mutation(() => DepositEntity)
   async updateDeposit(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateDepositInput,
   ): Promise<DepositEntity> {
     await this.depositRepo.update(id, input);
@@ -217,7 +217,7 @@ export class DepositResolver {
 
   @Mutation(() => DepositEntity)
   async releaseDeposit(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
   ): Promise<DepositEntity> {
     await this.depositRepo.update(id, {
       status: DepositStatus.RELEASED,
@@ -234,7 +234,7 @@ export class DepositResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteDeposit(@Args('id') id: string): Promise<boolean> {
+  async deleteDeposit(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.depositRepo.delete(id);
     await this.cache.invalidatePattern('deposits:*');
     await this.cache.invalidate(`deposit:${id}`);
@@ -276,7 +276,7 @@ export class ContractResolver {
   }
 
   @Query(() => ContractEntity, { nullable: true })
-  async contract(@Args('id') id: string): Promise<ContractEntity | null> {
+  async contract(@Args('id', { type: () => ID }) id: string): Promise<ContractEntity | null> {
     const contract = await this.contractRepo.findOne({
       where: { id },
       relations: ['customer', 'center'],
@@ -302,7 +302,7 @@ export class ContractResolver {
 
   @Mutation(() => ContractEntity)
   async updateContract(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateContractInput,
   ): Promise<ContractEntity> {
     await this.contractRepo.update(id, input);
@@ -318,7 +318,7 @@ export class ContractResolver {
 
   @Mutation(() => ContractEntity)
   async terminateContract(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
   ): Promise<ContractEntity> {
     await this.contractRepo.update(id, { status: ContractStatus.TERMINATED });
     const contract = await this.contractRepo.findOne({

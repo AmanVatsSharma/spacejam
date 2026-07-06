@@ -9,7 +9,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
-import { CenterResolver } from '../graphql/resolvers/center.resolver';
+import { CenterResolver, LocationResolver, FloorResolver, SeatResolver } from '../graphql/resolvers/center.resolver';
 import { Center } from '../typeorm/entities/center.entity';
 import { Location } from '../typeorm/entities/location.entity';
 import { Floor } from '../typeorm/entities/floor.entity';
@@ -24,6 +24,9 @@ import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
   ],
   providers: [
     CenterResolver,
+    LocationResolver,
+    FloorResolver,
+    SeatResolver,
   ],
   exports: [CenterResolver],
 })

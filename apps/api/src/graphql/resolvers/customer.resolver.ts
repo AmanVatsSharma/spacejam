@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-06
  */
-import { Resolver, Query, Args, Mutation, Int } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Int, ID } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
@@ -51,7 +51,7 @@ export class CustomerResolver {
     }
 
     @Query(() => CustomerEntity, { nullable: true })
-    async customer(@Args('id') id: string): Promise<CustomerEntity | null> {
+    async customer(@Args('id', { type: () => ID }) id: string): Promise<CustomerEntity | null> {
         return this.customerRepo.findOne({
             where: { id },
             relations: ['center'],
@@ -74,7 +74,7 @@ export class CustomerResolver {
 
     @Mutation(() => CustomerEntity)
     async updateCustomer(
-        @Args('id') id: string,
+        @Args('id', { type: () => ID }) id: string,
         @Args('input') input: UpdateCustomerInput,
     ): Promise<CustomerEntity> {
         await this.customerRepo.update(id, input);
@@ -89,7 +89,7 @@ export class CustomerResolver {
     }
 
     @Mutation(() => Boolean)
-    async deleteCustomer(@Args('id') id: string): Promise<boolean> {
+    async deleteCustomer(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
         await this.customerRepo.delete(id);
         await this.cache.invalidatePattern('customers:*');
         await this.cache.del(`customer:${id}`);

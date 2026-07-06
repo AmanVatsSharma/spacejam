@@ -64,7 +64,7 @@ const ALL_ENTITIES = [
             type: 'postgres',
             url: dbUrl,
             entities: ALL_ENTITIES,
-            synchronize: false,
+            synchronize: process.env.NODE_ENV !== 'production',
             logging: process.env.NODE_ENV === 'development',
             extra: {
               max: parseInt(config.get<string>('DATABASE_POOL_SIZE')) || 10,

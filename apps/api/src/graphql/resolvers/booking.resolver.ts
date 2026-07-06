@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { UnauthorizedException, BadRequestException, NotFoundException, Scope } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,7 +17,7 @@ import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity'
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
-import { CreateBookingInput, BookingFiltersInput } from '../inputs/booking.input';
+import { CreateBookingInput, BookingFiltersInput, UpdateBookingInput } from '../inputs/booking.input';
 
 export const TRIGGERS = {
   bookingUpdated: 'booking.updated',
@@ -76,7 +76,7 @@ export class BookingResolver {
   }
 
   @Query(() => BookingEntity, { nullable: true })
-  async booking(@Args('id') id: string): Promise<BookingEntity | null> {
+  async booking(@Args('id', { type: () => ID }) id: string): Promise<BookingEntity | null> {
     const booking = await this.bookingRepo.findOne({
       where: { id },
       relations: ['user', 'seat', 'seat.floor', 'payment'],
@@ -130,7 +130,7 @@ export class BookingResolver {
 
   @Mutation(() => BookingEntity)
   async cancelBooking(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Context() context
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
@@ -182,8 +182,8 @@ export class BookingResolver {
 
   @Mutation(() => BookingEntity)
   async updateBooking(
-    @Args('id') id: string,
-    @Args('input') input: any,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: UpdateBookingInput,
     @Context() context
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
@@ -213,7 +213,7 @@ export class BookingResolver {
 
   @Mutation(() => BookingEntity)
   async checkInBooking(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Context() context
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
@@ -260,7 +260,7 @@ export class BookingResolver {
 
   @Mutation(() => BookingEntity)
   async checkOutBooking(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Context() context
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
@@ -307,7 +307,7 @@ export class BookingResolver {
 
   @Mutation(() => PaymentEntity)
   async processPayment(
-    @Args('paymentId') paymentId: string,
+    @Args('paymentId', { type: () => ID }) paymentId: string,
     @Args('method') method: string
   ): Promise<PaymentEntity> {
     // This would integrate with payment gateway (Razorpay/Stripe)

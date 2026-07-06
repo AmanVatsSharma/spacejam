@@ -192,8 +192,8 @@ export class MeetingRoomResolver {
     return this.roomRepo.findOne({ where: { id: roomId }, relations: ['center'] }) as Promise<MeetingRoom>;
   }
 
-  @Mutation(() => Boolean)
-  async cancelBooking(
+  @Mutation(() => Boolean, { name: 'cancelRoomBooking' })
+  async cancelRoomBooking(
     @Args('bookingId') bookingId: string,
     @Args('roomId') roomId: string,
   ): Promise<boolean> {

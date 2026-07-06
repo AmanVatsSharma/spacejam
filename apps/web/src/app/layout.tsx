@@ -2,13 +2,16 @@
  * File:        apps/web/src/app/layout.tsx
  * Module:      Web · Root Layout
  * Purpose:     Root layout — wires Apollo + Auth providers around the tree
+/**
+ * File:        apps/web/src/app/layout.tsx
+ * Module:      Web · Root Layout
+ * Purpose:     Root layout — wires Apollo + Auth providers around the tree
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-20
  */
 
 import './globals.css';
-import { Toaster } from 'sonner';
 import { Providers } from '@/components/Providers';
 
 export const metadata = {
@@ -26,7 +29,6 @@ export default function RootLayout({
       <body>
         <Providers>
           {children}
-          <Toaster richColors position="top-center" />
         </Providers>
       </body>
     </html>

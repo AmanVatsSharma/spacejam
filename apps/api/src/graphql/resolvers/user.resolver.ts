@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-04
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Args, Context, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -54,8 +54,8 @@ export class UserResolver {
   @Query(() => [UserEntity], { description: 'List all users (admin only)' })
   @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
   async users(
-    @Args('limit', { type: () => Number, nullable: true, defaultValue: 50 }) limit: number,
-    @Args('offset', { type: () => Number, nullable: true, defaultValue: 0 }) offset: number,
+    @Args('limit', { type: () => Int, nullable: true, defaultValue: 50 }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 }) offset: number,
   ): Promise<UserEntity[]> {
     const { users } = await this.userRepo.findAll({ limit, offset });
     return users;

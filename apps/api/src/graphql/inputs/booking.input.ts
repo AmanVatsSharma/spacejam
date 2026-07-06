@@ -69,3 +69,26 @@ export class BookingFiltersInput {
   @IsOptional()
   offset?: number;
 }
+
+@InputType()
+export class UpdateBookingInput {
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
+  @Field({ nullable: true })
+  @IsDate()
+  @IsOptional()
+  startDate?: Date;
+
+  @Field({ nullable: true })
+  @IsDate()
+  @IsOptional()
+  endDate?: Date;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}

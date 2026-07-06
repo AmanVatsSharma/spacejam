@@ -6,7 +6,19 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-04
  */
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
+
+export enum TimePeriod {
+  WEEK = 'week',
+  MONTH = 'month',
+  QUARTER = 'quarter',
+  YEAR = 'year',
+}
+
+registerEnumType(TimePeriod, {
+  name: 'TimePeriod',
+  description: 'Predefined time periods for analytics reports',
+});
 
 @ObjectType()
 export class DashboardMetrics {

@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, Subscription } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
 import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { UserRole, CenterStatus } from '../types/user.type';
@@ -58,7 +58,7 @@ export class CenterResolver {
   }
 
   @Query(() => CenterEntity, { nullable: true })
-  async center(@Args('id') id: string): Promise<CenterEntity | null> {
+  async center(@Args('id', { type: () => ID }) id: string): Promise<CenterEntity | null> {
     return this.cache.getOrSet<CenterEntity>(
       `center:${id}`,
       async () => {
@@ -103,7 +103,7 @@ export class CenterResolver {
 
   @Mutation(() => CenterEntity)
   async updateCenter(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateCenterInput,
     @Context() context
   ): Promise<CenterEntity> {
@@ -123,7 +123,7 @@ export class CenterResolver {
 
   @Mutation(() => Boolean)
   async deleteCenter(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Context() context
   ): Promise<boolean> {
     const userId = context.req.user?.id;
@@ -151,7 +151,7 @@ export class LocationResolver {
   }
 
   @Query(() => LocationEntity, { nullable: true })
-  async location(@Args('id') id: string): Promise<LocationEntity | null> {
+  async location(@Args('id', { type: () => ID }) id: string): Promise<LocationEntity | null> {
     const location = await this.locationRepo.findOne({
       where: { id },
       relations: ['centers'],
@@ -174,7 +174,7 @@ export class LocationResolver {
 
   @Mutation(() => LocationEntity)
   async updateLocation(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateLocationInput
   ): Promise<LocationEntity> {
     await this.locationRepo.update(id, input);
@@ -194,7 +194,7 @@ export class FloorResolver {
   ) {}
 
   @Query(() => [FloorEntity])
-  async floors(@Args('centerId', { nullable: true }) centerId?: string): Promise<FloorEntity[]> {
+  async floors(@Args('centerId', { type: () => ID, nullable: true }) centerId?: string): Promise<FloorEntity[]> {
     const where: any = centerId ? { centerId, active: true } : { active: true };
     const floors = await this.floorRepo.find({
       where,
@@ -223,7 +223,7 @@ export class SeatResolver {
   ) {}
 
   @Query(() => [SeatEntity])
-  async seats(@Args('floorId', { nullable: true }) floorId?: string): Promise<SeatEntity[]> {
+  async seats(@Args('floorId', { type: () => ID, nullable: true }) floorId?: string): Promise<SeatEntity[]> {
     const where = floorId ? { floorId } : {};
     const seats = await this.seatRepo.find({
       where,
@@ -233,7 +233,7 @@ export class SeatResolver {
   }
 
   @Query(() => SeatEntity, { nullable: true })
-  async seat(@Args('id') id: string): Promise<SeatEntity | null> {
+  async seat(@Args('id', { type: () => ID }) id: string): Promise<SeatEntity | null> {
     const seat = await this.seatRepo.findOne({
       where: { id },
       relations: ['floor'],
@@ -250,7 +250,7 @@ export class SeatResolver {
 
   @Mutation(() => SeatEntity)
   async updateSeat(
-    @Args('id') id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateSeatInput
   ): Promise<SeatEntity> {
     await this.seatRepo.update(id, input);

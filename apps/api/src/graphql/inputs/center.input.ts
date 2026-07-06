@@ -7,7 +7,8 @@
  * Last-updated: 2026-07-02
  */
 import { Field, Float, ID, InputType, Int } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsInt, IsEnum } from 'class-validator';
+import { SeatType, SeatStatus } from '../types/user.type';
 
 @InputType()
 export class CreateCenterInput {
@@ -247,37 +248,31 @@ export class CreateSeatInput {
   @Field()
   @IsString()
   @IsNotEmpty()
-  label!: string;
+  number!: string;
 
   @Field(() => ID)
   @IsString()
   @IsNotEmpty()
   floorId!: string;
 
-  @Field(() => String, { nullable: true })
-  @IsString()
-  @IsOptional()
-  description?: string;
+  @Field(() => SeatType)
+  @IsEnum(SeatType)
+  seatType!: SeatType;
 
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  type?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsString()
-  @IsOptional()
-  status?: string;
+  location?: string;
 
   @Field(() => Float, { nullable: true })
   @IsNumber()
   @IsOptional()
-  x?: number;
+  price?: number;
 
-  @Field(() => Float, { nullable: true })
-  @IsNumber()
+  @Field(() => SeatStatus, { nullable: true })
+  @IsEnum(SeatStatus)
   @IsOptional()
-  y?: number;
+  status?: SeatStatus;
 }
 
 @InputType()
@@ -285,30 +280,25 @@ export class UpdateSeatInput {
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  label?: string;
+  number?: string;
+
+  @Field(() => SeatType, { nullable: true })
+  @IsEnum(SeatType)
+  @IsOptional()
+  seatType?: SeatType;
 
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  description?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsString()
-  @IsOptional()
-  type?: string;
-
-  @Field(() => String, { nullable: true })
-  @IsString()
-  @IsOptional()
-  status?: string;
+  location?: string;
 
   @Field(() => Float, { nullable: true })
   @IsNumber()
   @IsOptional()
-  x?: number;
+  price?: number;
 
-  @Field(() => Float, { nullable: true })
-  @IsNumber()
+  @Field(() => SeatStatus, { nullable: true })
+  @IsEnum(SeatStatus)
   @IsOptional()
-  y?: number;
+  status?: SeatStatus;
 }
