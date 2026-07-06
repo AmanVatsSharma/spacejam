@@ -1,3 +1,6 @@
+"use client";
+
+
 /**
  * File:        apps/web/src/app/dashboard/operations/request/page.tsx
  * Module:      Web · Dashboard · Operations · Requests
@@ -8,7 +11,7 @@
  * Last-updated: 2026-07-02
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useEffect } from "react";
 import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";

@@ -1,5 +1,8 @@
 "use client";
 
+
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./occupancy.module.css";

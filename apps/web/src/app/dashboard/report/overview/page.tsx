@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/report/overview/page.tsx
  * Module:      Web · Dashboard · Report · Overview
@@ -10,7 +12,8 @@
  * Last-updated: 2026-06-07
  */
 
-"use client";
+
+export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 
