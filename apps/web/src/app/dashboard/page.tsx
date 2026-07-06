@@ -1,3 +1,6 @@
+"use client";
+
+
 /**
  * File:        apps/web/src/app/dashboard/page.tsx
  * Module:      Web · Dashboard · Home Screen
@@ -9,7 +12,7 @@
  * Last-updated: 2026-06-26
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";

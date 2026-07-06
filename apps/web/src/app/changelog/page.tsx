@@ -1,3 +1,4 @@
+"use client";
 /**
  * File:        apps/web/src/app/changelog/page.tsx
  * Module:      Web · Changelog · Page
@@ -7,7 +8,7 @@
  * Last-updated: 2026-06-04
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 
