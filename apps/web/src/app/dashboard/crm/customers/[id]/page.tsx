@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/crm/customers/[id]/page.tsx
  * Module:      Web · Dashboard · CRM · Customers · Customer Detail (360°)
@@ -7,7 +9,7 @@
  * Last-updated: 2026-06-24
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";

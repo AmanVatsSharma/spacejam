@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/crm/[id]/page.tsx
  * Module:      Web · Dashboard · CRM · Lead Detail
@@ -7,7 +9,7 @@
  * Last-updated: 2026-05-31
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
