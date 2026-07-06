@@ -1,5 +1,8 @@
 "use client";
 
+
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { ApproveReleaseModal } from "@/components/ui/dashboard/approve-release-modal";
 import { AddDepositModal } from "@/components/ui/dashboard/add-deposit-modal";
