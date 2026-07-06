@@ -63,3 +63,6 @@ test-output
 .beads-credential-key
 .beads/proxieddb/
 *.tar.gz
+.aider*
+.env
+.env
