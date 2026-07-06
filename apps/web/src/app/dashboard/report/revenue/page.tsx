@@ -3,7 +3,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@apollo/client";
+import {
+  GET_REVENUE_REPORT,
+  GET_INVOICES,
+  GET_DEPOSITS,
+} from "@/lib/apollo/operations";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./revenue.module.css";
 
@@ -23,7 +29,7 @@ const Icons = {
   ),
   rupee: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 3h12M6 8h12M6 13h8.5l-5 8h5l5-8H6z"/>
+      <path d="M6 3h12M6 8h12M6 13h8.5l-5 8h5l5-8H6z" />
     </svg>
   ),
   document: (
@@ -72,28 +78,73 @@ const Icons = {
   )
 };
 
+function formatCurrency(amount: number): string {
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+  return `₹${Math.round(amount)}`;
+}
+
 export default function RevenueOverviewPage() {
   const [activeTab, setActiveTab] = useState("Invoices");
   const [openMenuId, setOpenMenuId] = useState<number | null>(1); // 1 is default open for demo
   const [showExport, setShowExport] = useState(false);
 
+  // Live revenue report
+  const { data: revenueData } = useQuery(GET_REVENUE_REPORT, {
+    variables: { period: 'month' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live invoices for "Invoices Collected" metric
+  const { data: invoicesData } = useQuery(GET_INVOICES, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live deposits for "Deposit Held" metric
+  const { data: depositsData } = useQuery(GET_DEPOSITS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const revenueReport = revenueData?.revenueReport;
+  const invoices = invoicesData?.invoices ?? [];
+  const deposits = depositsData?.deposits ?? [];
+
+  // Compute metrics from live data
+  const metrics = useMemo(() => {
+    const invoicesCollected = invoices
+      .filter((i: any) => i.status === "Paid")
+      .reduce((sum: number, i: any) => sum + Number(i.totalAmount ?? 0), 0);
+    const depositHeld = deposits
+      .filter((d: any) => d.status === "Held" || d.status === "Active")
+      .reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0);
+    const outstandingDues = invoices
+      .filter((i: any) => i.status === "Overdue" || i.status === "Sent")
+      .reduce((sum: number, i: any) => sum + Number(i.totalAmount ?? 0), 0);
+    const newSignups = invoices.length;
+    return { invoicesCollected, depositHeld, outstandingDues, newSignups };
+  }, [invoices, deposits]);
+
   return (
     <div className={styles.page}>
-      
+
       {/* HEADER CARD */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
           <h1 className={styles.headerTitle}>Revenue Overview</h1>
           <p className={styles.headerSubtitle}>Monitor meeting room usage , availability and booking status</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowExport(true)}
           className={styles.exportBtn}
         >
           {Icons.download} Export Excel
         </button>
       </div>
-      
+
       {/* FILTER CARD */}
       <div className={styles.filterCard}>
         <div className={styles.searchBox}>
@@ -110,51 +161,51 @@ export default function RevenueOverviewPage() {
 
       {/* METRICS ROW */}
       <div className={styles.metricsRow}>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.rupee}
           </div>
           <span className={styles.metricLabel}>Invoices Collected</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>₹9.8L</span>
+            <span className={styles.metricValue}>{formatCurrency(metrics.invoicesCollected)}</span>
             <span className={styles.metricTrend}>{Icons.trendingDown} 12%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.document}
           </div>
           <span className={styles.metricLabel}>Deposit Held</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>₹3.8L</span>
+            <span className={styles.metricValue}>{formatCurrency(metrics.depositHeld)}</span>
             <span className={styles.metricTrend}>{Icons.trendingDown} 5%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.signIn}
           </div>
           <span className={styles.metricLabel}>New sign ups</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>25</span>
+            <span className={styles.metricValue}>{metrics.newSignups}</span>
             <span className={styles.metricTrend}>{Icons.trendingDown} 8%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.alertCircle}
           </div>
           <span className={styles.metricLabel}>Outstanding Dues</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>₹6.2L</span>
+            <span className={styles.metricValue}>{formatCurrency(metrics.outstandingDues)}</span>
             <span className={styles.metricTrend}>{Icons.trendingDown} 5%</span>
           </div>
         </div>
-        
+
       </div>
 
       {/* AREA CHART */}
@@ -177,7 +228,7 @@ export default function RevenueOverviewPage() {
             <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>25%</span><div className={styles.chartGridDash}></div></div>
             <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>0%</span><div className={styles.chartGridDash}></div></div>
           </div>
-          
+
           <div className={styles.chartGridVerts}>
             <div className={styles.chartGridVertLine}></div>
             <div className={styles.chartGridVertLine}></div>
@@ -186,29 +237,29 @@ export default function RevenueOverviewPage() {
             <div className={styles.chartGridVertLine}></div>
             <div className={styles.chartGridVertLine}></div>
           </div>
-          
+
           <svg className={styles.chartSvg} viewBox="0 0 1000 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4ECDC3" stopOpacity="0.4"/>
-                <stop offset="100%" stopColor="#4ECDC3" stopOpacity="0"/>
+                <stop offset="0%" stopColor="#4ECDC3" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#4ECDC3" stopOpacity="0" />
               </linearGradient>
             </defs>
-            
+
             {/* Area path */}
-            <path 
-              d="M 0 160 L 100 150 L 200 160 L 300 70 L 400 130 L 500 100 L 600 135 L 700 130 L 800 145 L 900 30 L 1000 80 L 1000 200 L 0 200 Z" 
-              fill="url(#areaGradient)" 
+            <path
+              d="M 0 160 L 100 150 L 200 160 L 300 70 L 400 130 L 500 100 L 600 135 L 700 130 L 800 145 L 900 30 L 1000 80 L 1000 200 L 0 200 Z"
+              fill="url(#areaGradient)"
             />
-            
+
             {/* Stroke path */}
-            <path 
-              d="M 0 160 L 100 150 L 200 160 L 300 70 L 400 130 L 500 100 L 600 135 L 700 130 L 800 145 L 900 30 L 1000 80" 
-              fill="none" 
-              stroke="#4ECDC3" 
-              strokeWidth="2.5" 
+            <path
+              d="M 0 160 L 100 150 L 200 160 L 300 70 L 400 130 L 500 100 L 600 135 L 700 130 L 800 145 L 900 30 L 1000 80"
+              fill="none"
+              stroke="#4ECDC3"
+              strokeWidth="2.5"
             />
-            
+
             {/* Data points */}
             <circle cx="300" cy="70" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
             <circle cx="400" cy="130" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
@@ -223,7 +274,7 @@ export default function RevenueOverviewPage() {
             <text x="500" y="96" fill="#FFFFFF" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">2,678</text>
             <polygon points="496,104 504,104 500,108" fill="#4ECDC3" />
           </svg>
-          
+
           <div className={styles.chartXAxis}>
             <span className={styles.chartXLabel}>CH-S21</span>
             <span className={styles.chartXLabel}>CH-S34</span>
@@ -239,19 +290,19 @@ export default function RevenueOverviewPage() {
       {/* BOTTOM SECTION */}
       <div className={styles.tabsRow}>
         <div className={styles.tabsContainer}>
-          <div 
+          <div
             className={`${styles.tabItem} ${activeTab === 'Invoices' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Invoices' ? styles.tabLineActive : ''}`}
             onClick={() => setActiveTab('Invoices')}
           >
             Invoices
           </div>
-          <div 
+          <div
             className={`${styles.tabItem} ${activeTab === 'Deposits' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Deposits' ? styles.tabLineActive : ''}`}
             onClick={() => setActiveTab('Deposits')}
           >
             Deposits
           </div>
-          <div 
+          <div
             className={`${styles.tabItem} ${activeTab === 'Overdues' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Overdues' ? styles.tabLineActive : ''}`}
             onClick={() => setActiveTab('Overdues')}
           >
@@ -263,7 +314,7 @@ export default function RevenueOverviewPage() {
 
       {/* LIST TABLE */}
       <div className={styles.listCard}>
-        
+
         <div className={styles.tableHeader}>
           <div className={styles.checkbox}></div>
           <span>NAME</span>
@@ -273,7 +324,7 @@ export default function RevenueOverviewPage() {
           <span>PAY-MODE</span>
           <span>STATUS</span>
           <span>DATE</span>
-          <span style={{textAlign: 'right'}}>ACTIONS</span>
+          <span style={{ textAlign: 'right' }}>ACTIONS</span>
         </div>
 
         {activeTab === 'Invoices' ? (
@@ -281,11 +332,11 @@ export default function RevenueOverviewPage() {
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Rahul<br/>Verma
+                Rahul<br />Verma
               </div>
               <span className={styles.cellAmount}>₹5,000</span>
               <span className={styles.cellText}>Monthly</span>
-              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Chandigarh<br />Hub</span>
               <span className={styles.cellText}>Cash</span>
               <div className={styles.cellStatus}>
                 <span className={`${styles.statusBadge} ${styles.statusPaid}`}>Paid</span>
@@ -302,11 +353,11 @@ export default function RevenueOverviewPage() {
                 )}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Priya<br/>Sharma
+                Priya<br />Sharma
               </div>
               <span className={styles.cellAmount}>₹10,000</span>
               <span className={styles.cellText}>Quarterly</span>
@@ -320,11 +371,11 @@ export default function RevenueOverviewPage() {
                 {Icons.moreVertical}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Amit<br/>Singh
+                Amit<br />Singh
               </div>
               <span className={styles.cellAmount}>₹3,000</span>
               <span className={styles.cellText}>Monthly</span>
@@ -338,11 +389,11 @@ export default function RevenueOverviewPage() {
                 {Icons.moreVertical}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Amit<br/>Singh
+                Amit<br />Singh
               </div>
               <span className={styles.cellAmount}>₹3,000</span>
               <span className={styles.cellText}>Monthly</span>
@@ -362,11 +413,11 @@ export default function RevenueOverviewPage() {
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Rahul<br/>Verma
+                Rahul<br />Verma
               </div>
               <span className={styles.cellAmount}>₹5,000</span>
               <span className={styles.cellText}>Monthly</span>
-              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Chandigarh<br />Hub</span>
               <span className={styles.cellText}>Cash</span>
               <div className={styles.cellStatus}>
                 <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
@@ -382,11 +433,11 @@ export default function RevenueOverviewPage() {
                 )}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Priya<br/>Sharma
+                Priya<br />Sharma
               </div>
               <span className={styles.cellAmount}>₹10,000</span>
               <span className={styles.cellText}>Quarterly</span>
@@ -400,11 +451,11 @@ export default function RevenueOverviewPage() {
                 {Icons.moreVertical}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Amit<br/>Singh
+                Amit<br />Singh
               </div>
               <span className={styles.cellAmount}>₹3,000</span>
               <span className={styles.cellText}>Monthly</span>
@@ -418,11 +469,11 @@ export default function RevenueOverviewPage() {
                 {Icons.moreVertical}
               </div>
             </div>
-            
+
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Amit<br/>Singh
+                Amit<br />Singh
               </div>
               <span className={styles.cellAmount}>₹3,000</span>
               <span className={styles.cellText}>Monthly</span>
@@ -442,11 +493,11 @@ export default function RevenueOverviewPage() {
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Vikas<br/>Mehta
+                Vikas<br />Mehta
               </div>
               <span className={styles.cellAmount}>₹12,000</span>
               <span className={styles.cellText}>Quarterly</span>
-              <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+              <span className={styles.cellText}>Chandigarh<br />Hub</span>
               <span className={styles.cellText}>Bank Transfer</span>
               <div className={styles.cellStatus}>
                 <span className={`${styles.statusBadge} ${styles.statusOverdue}`}>Overdue</span>
@@ -467,7 +518,7 @@ export default function RevenueOverviewPage() {
             <div className={styles.listRow}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>
-                Anita<br/>Desai
+                Anita<br />Desai
               </div>
               <span className={styles.cellAmount}>₹8,500</span>
               <span className={styles.cellText}>Monthly</span>
@@ -490,7 +541,7 @@ export default function RevenueOverviewPage() {
 
       </div>
 
-      
+
       <ExportExcelModal isOpen={showExport} onClose={() => setShowExport(false)} />
     </div>
   );
