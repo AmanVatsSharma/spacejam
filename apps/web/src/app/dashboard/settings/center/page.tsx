@@ -2,6 +2,8 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_MY_CENTERS, UPDATE_CENTER } from "@/lib/apollo/operations";
 import styles from "./center.module.css";
 
 const Icons = {
@@ -86,7 +88,19 @@ const Icons = {
 
 export default function CenterSettingsPage() {
   const [activeTab, setActiveTab] = useState("Booking Defaults");
-  
+  const [saving, setSaving] = useState(false);
+
+  // Load center data
+  const { data: centersData } = useQuery(GET_MY_CENTERS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const [updateCenter] = useMutation(UPDATE_CENTER);
+
+  const centers = centersData?.myCenters ?? [];
+  const primaryCenter = centers[0];
+
   // Booking Defaults State
   const [lastMinuteBooking, setLastMinuteBooking] = useState(true);
   const [overbooking, setOverbooking] = useState(false);
@@ -99,9 +113,35 @@ export default function CenterSettingsPage() {
   // Operational Defaults State
   const [emergencyOverride, setEmergencyOverride] = useState(false);
 
+  const handleSave = async () => {
+    if (!primaryCenter) return;
+    setSaving(true);
+    try {
+      await updateCenter({
+        variables: {
+          id: primaryCenter.id,
+          input: {
+            settings: {
+              lastMinuteBooking,
+              overbooking,
+              autoAssign,
+              seatSwitching,
+              realTimeOccupancy,
+              emergencyOverride,
+            },
+          },
+        },
+      });
+    } catch {
+      // handled by Apollo
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className={styles.page}>
-      
+
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
@@ -112,8 +152,8 @@ export default function CenterSettingsPage() {
           <button className={styles.resetBtn}>
             {Icons.reset} Reset Default
           </button>
-          <button className={styles.saveBtn}>
-            {Icons.save} Save Rules
+          <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !primaryCenter}>
+            {Icons.save} {saving ? 'Saving…' : 'Save Rules'}
           </button>
         </div>
       </div>
@@ -121,8 +161,8 @@ export default function CenterSettingsPage() {
       {/* Sub Tabs */}
       <div className={styles.subTabs}>
         {["Booking Defaults", "Workspace Defaults", "Operational Defaults"].map(tab => (
-          <div 
-            key={tab} 
+          <div
+            key={tab}
             className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -133,10 +173,10 @@ export default function CenterSettingsPage() {
 
       {/* Split Layout */}
       <div className={styles.splitLayout}>
-        
+
         {/* LEFT COLUMN */}
         <div className={styles.leftCol}>
-          
+
           {activeTab === "Booking Defaults" && (
             <>
               <div className={styles.contentCard}>
@@ -396,7 +436,7 @@ export default function CenterSettingsPage() {
 
         {/* RIGHT COLUMN */}
         <div className={styles.rightCol}>
-          
+
           {activeTab === "Booking Defaults" && (
             <div className={styles.contentCardSmallPadding}>
               <div className={styles.rightPanelTitleWrap}>
@@ -539,7 +579,7 @@ export default function CenterSettingsPage() {
                   <div className={styles.infoBoxIcon}>{Icons.calendar}</div>
                   <div className={styles.infoBoxContent}>
                     <span className={styles.infoBoxTitle}>Usage Limits</span>
-                    <span className={styles.infoBoxText}>Meeting rooms: <b>3 bookings/week</b><br/>Maximum event duration: <b>2 hours</b></span>
+                    <span className={styles.infoBoxText}>Meeting rooms: <b>3 bookings/week</b><br />Maximum event duration: <b>2 hours</b></span>
                   </div>
                 </div>
 
@@ -547,7 +587,7 @@ export default function CenterSettingsPage() {
                   <div className={styles.infoBoxIcon}>{Icons.settings}</div>
                   <div className={styles.infoBoxContent}>
                     <span className={styles.infoBoxTitle}>Maintenance Window</span>
-                    <span className={styles.infoBoxText}><b>10:00 PM - 6:00 AM</b><br/>System unavailable during maintenance</span>
+                    <span className={styles.infoBoxText}><b>10:00 PM - 6:00 AM</b><br />System unavailable during maintenance</span>
                   </div>
                 </div>
 

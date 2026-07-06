@@ -682,3 +682,206 @@ export const DELETE_CUSTOMER = gql`
     deleteCustomer(id: $id)
   }
 `;
+
+/* ========================= Analytics — Dashboard ========================= */
+
+export const GET_DASHBOARD_METRICS = gql`
+  query GetDashboardMetrics($centerId: ID) {
+    dashboardMetrics(centerId: $centerId) {
+      totalRevenue
+      occupancyRate
+      activeBookings
+      pendingPayments
+      totalSeats
+      availableSeats
+    }
+  }
+`;
+
+export const GET_REVENUE_REPORT = gql`
+  query GetRevenueReport($centerId: ID, $period: TimePeriod) {
+    revenueReport(centerId: $centerId, period: $period) {
+      total
+      byMonth {
+        month
+        revenue
+        target
+      }
+      growth
+    }
+  }
+`;
+
+export const GET_OCCUPANCY_REPORT = gql`
+  query GetOccupancyReport($centerId: ID!, $period: TimePeriod) {
+    occupancyReport(centerId: $centerId, period: $period) {
+      centerId
+      byDay {
+        date
+        totalBookings
+        occupancyRate
+        revenue
+      }
+      bySeatType {
+        type
+        count
+        occupancyRate
+      }
+      averageRate
+    }
+  }
+`;
+
+/* ========================= Centers / Floors / Seats ========================= */
+
+export const GET_CENTERS = gql`
+  query GetCenters {
+    centers {
+      id
+      name
+      status
+      settings
+      createdAt
+      updatedAt
+      location {
+        id
+        name
+        city
+        state
+        country
+        fullAddress
+      }
+      floors {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const GET_CENTER = gql`
+  query GetCenter($id: ID!) {
+    center(id: $id) {
+      id
+      name
+      status
+      settings
+      createdAt
+      updatedAt
+      location {
+        id
+        name
+        city
+        state
+        country
+        fullAddress
+      }
+      floors {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const GET_MY_CENTERS = gql`
+  query GetMyCenters {
+    myCenters {
+      id
+      name
+      status
+      settings
+      createdAt
+      updatedAt
+      location {
+        id
+        name
+        city
+      }
+      floors {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CREATE_CENTER = gql`
+  mutation CreateCenter($input: CreateCenterInput!) {
+    createCenter(input: $input) {
+      id
+      name
+      status
+      settings
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_CENTER = gql`
+  mutation UpdateCenter($id: ID!, $input: UpdateCenterInput!) {
+    updateCenter(id: $id, input: $input) {
+      id
+      name
+      status
+      settings
+      updatedAt
+    }
+  }
+`;
+
+export const GET_FLOORS = gql`
+  query GetFloors($centerId: ID) {
+    floors(centerId: $centerId) {
+      id
+      name
+      layout
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_SEATS = gql`
+  query GetSeats($floorId: ID) {
+    seats(floorId: $floorId) {
+      id
+      number
+      type
+      features
+      status
+      price
+      location
+      createdAt
+      updatedAt
+      floor {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CREATE_SEAT = gql`
+  mutation CreateSeat($input: CreateSeatInput!) {
+    createSeat(input: $input) {
+      id
+      number
+      type
+      status
+      price
+    }
+  }
+`;
+
+export const UPDATE_SEAT = gql`
+  mutation UpdateSeat($id: ID!, $input: UpdateSeatInput!) {
+    updateSeat(id: $id, input: $input) {
+      id
+      number
+      type
+      status
+      price
+    }
+  }
+`;
