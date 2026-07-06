@@ -15,8 +15,11 @@ tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam
 echo ""
 echo "=== [2/6] Writing production .env files ==="
 cat > /home/ubuntu/spacejam/apps/web/.env << 'EOF'
-NEXT_PUBLIC_GRAPHQL_HTTP_URL=http://localhost:3001/api/graphql
-NEXT_PUBLIC_GRAPHQL_WS_URL=ws://localhost:3001/api/graphql
+# Internal URL used by Next.js API route handler to reach NestJS backend
+INTERNAL_API_URL=http://localhost:3001
+# Public GraphQL URLs (used by Apollo client in browser)
+NEXT_PUBLIC_GRAPHQL_HTTP_URL=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com/api/graphql
+NEXT_PUBLIC_GRAPHQL_WS_URL=ws://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com/api/graphql
 NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 EOF
 echo "Frontend .env written"
@@ -27,9 +30,11 @@ PORT=3001
 DATABASE_URL=postgresql://spacejam:spacejam@localhost:5432/spacejam
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=super-secret-production-jwt-key-change-me
-JWT_EXPIRES_IN=7d
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
 REFRESH_TOKEN_SECRET=super-secret-production-refresh-key-change-me
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+FRONTEND_URL=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
 EOF
 echo "API .env written"
 

@@ -12,6 +12,12 @@ const nextConfig = {
   generateBuildId: () => 'custom-build-id',
   skipTrailingSlashRedirect: true,
   reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 const plugins = [

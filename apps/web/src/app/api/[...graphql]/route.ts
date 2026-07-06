@@ -11,18 +11,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_SERVER_URL = 'http://localhost:3001';
+const API_SERVER_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  process.env.INTERNAL_API_URL ??
+  'http://localhost:4000';
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const graphqlPath = url.pathname.replace('/api/', '');
-
-  const response = await fetch(`${API_SERVER_URL}/${graphqlPath}`, {
+  // GET is used by the Apollo DevTools / GraphQL playground for introspection.
+  // The NestJS server exposes GraphQL at /api/graphql (global prefix 'api').
+  const response = await fetch(`${API_SERVER_URL}/api/graphql`, {
     method: 'GET',
     headers: {
       'Host': API_SERVER_URL.replace(/^https?:\/\//, ''),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Authorization': request.headers.get('authorization') || '',
     },
     redirect: 'manual',
   });
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(data, {
     status: response.status,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': response.headers.get('content-type') || 'application/json',
     },
   });
 }
@@ -40,12 +43,16 @@ export async function POST(request: NextRequest) {
   const body = await request.text();
   const { query, variables, operationName } = JSON.parse(body);
 
-  const response = await fetch(`${API_SERVER_URL}/graphql`, {
+  // NestJS has a global API prefix, so the GraphQL endpoint is /api/graphql.
+  const response = await fetch(`${API_SERVER_URL}/api/graphql`, {
     method: 'POST',
     headers: {
       'Host': API_SERVER_URL.replace(/^https?:\/\//, ''),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      // Forward auth token so backend JWT guard can authenticate the request.
+      'Authorization': request.headers.get('authorization') || '',
+      // Forward cookies for refresh-token / session-cookie strategies.
       'Cookie': request.headers.get('cookie') || '',
     },
     body: JSON.stringify({
