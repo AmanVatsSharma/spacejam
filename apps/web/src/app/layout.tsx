@@ -8,6 +8,7 @@
  */
 
 import './globals.css';
+import { Toaster } from 'sonner';
 import { Providers } from '@/components/Providers';
 
 export const metadata = {
@@ -23,7 +24,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Toaster richColors position="top-center" />
+        </Providers>
       </body>
     </html>
   );

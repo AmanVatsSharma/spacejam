@@ -1,8 +1,24 @@
 "use client";
 
+/**
+ * File:        apps/web/src/app/dashboard/inventory/floor-map/page.tsx
+ * Module:      Web · Dashboard · Floor Map Page
+ * Purpose:     Visual floor map with real-time occupancy — wired to GraphQL
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-07-06
+ */
 
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_CENTERS,
+  GET_FLOORS,
+  GET_SEATS,
+  GET_DASHBOARD_METRICS,
+  CREATE_SEAT,
+  UPDATE_SEAT,
+} from "@/lib/apollo/operations";
 import styles from "./floor-map.module.css";
 
 const Icons = {
@@ -75,23 +91,198 @@ const Icons = {
   )
 };
 
+// Normalize a seat status to one of our filter categories
+function normalizeStatus(status: string): "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" {
+  const s = (status ?? "").toUpperCase();
+  if (s === "AVAILABLE" || s === "FREE" || s === "OPEN") return "AVAILABLE";
+  if (s === "MAINTENANCE" || s === "REPAIR" || s === "BLOCKED") return "MAINTENANCE";
+  return "OCCUPIED";
+}
+
+// Map seat type to a display label
+function seatTypeLabel(type: string): string {
+  const t = (type ?? "").toUpperCase();
+  if (t.includes("CABIN")) return "Cabin";
+  if (t.includes("MEETING")) return "Meeting Room";
+  if (t.includes("HEXAGON")) return "Hexagon";
+  if (t.includes("OPEN") || t.includes("DESK")) return "Open Desk";
+  return type || "Seat";
+}
+
 export default function FloorMapPage() {
-  const [activeTab, setActiveTab] = useState("Floor 01");
-  const [activeFilter, setActiveFilter] = useState("All");
+  // Active center and floor selection
+  const [activeCenterId, setActiveCenterId] = useState<string | null>(null);
+  const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>("All");
+  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+
+  // Load centers to populate floor tabs
+  const {
+    data: centersData,
+    loading: centersLoading,
+  } = useQuery<{ centers: any[] }>(GET_CENTERS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+
+  // Load floors for the active center
+  const {
+    data: floorsData,
+    loading: floorsLoading,
+  } = useQuery<{ floors: any[] }>(GET_FLOORS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+    variables: activeCenterId ? { centerId: activeCenterId } : {},
+  });
+
+  // Load seats for the active floor
+  const {
+    data: seatsData,
+    loading: seatsLoading,
+  } = useQuery<{ seats: any[] }>(GET_SEATS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+    variables: activeFloorId ? { floorId: activeFloorId } : {},
+  });
+
+  // Load dashboard metrics for stat cards
+  const {
+    data: metricsData,
+    loading: metricsLoading,
+  } = useQuery<{ dashboardMetrics: any }>(GET_DASHBOARD_METRICS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+    variables: activeCenterId ? { centerId: activeCenterId } : {},
+  });
+
+  // Mutations
+  const [createSeat] = useMutation(CREATE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }, { query: GET_FLOORS }],
+  });
+
+  const [updateSeat] = useMutation(UPDATE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }, { query: GET_DASHBOARD_METRICS }],
+  });
+
+  // Derived data
+  const floors = floorsData?.floors ?? [];
+  const seats = seatsData?.seats ?? [];
+  const metrics = metricsData?.dashboardMetrics;
+
+  // Auto-select first floor when floors load
+  const activeFloor = useMemo(
+    () => floors.find((f: any) => f.id === activeFloorId) ?? floors[0] ?? null,
+    [floors, activeFloorId]
+  );
+
+  // Auto-select first center when centers load
+  const activeCenter = useMemo(
+    () =>
+      (centersData?.centers ?? []).find((c: any) => c.id === activeCenterId)
+      ?? (centersData?.centers ?? [])[0]
+      ?? null,
+    [centersData, activeCenterId]
+  );
+
+  // Auto-select first floor when center changes or floors load
+  useMemo(() => {
+    if (floors.length > 0 && !activeFloorId) {
+      setActiveFloorId(floors[0].id);
+    }
+  }, [floors, activeFloorId]);
+
+  // Auto-select first center
+  useMemo(() => {
+    if (activeCenterId === null && centersData?.centers?.length) {
+      setActiveCenterId(centersData.centers[0].id);
+    }
+  }, [centersData, activeCenterId]);
+
+  // Filter seats by status
+  const filteredSeats = useMemo(() => {
+    if (activeFilter === "All") return seats;
+    const normalized = activeFilter.toUpperCase();
+    return seats.filter((s: any) => normalizeStatus(s.status) === normalized);
+  }, [seats, activeFilter]);
+
+  // Stats from filtered seats (not dashboard metrics — those cover all centers)
+  const seatStats = useMemo(() => {
+    const total = seats.length;
+    const available = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length;
+    const occupied = seats.filter((s: any) => normalizeStatus(s.status) === "OCCUPIED").length;
+    const maintenance = seats.filter((s: any) => normalizeStatus(s.status) === "MAINTENANCE").length;
+    return { total, available, occupied, maintenance };
+  }, [seats]);
+
+  // Selected seat details
+  const selectedSeat = useMemo(
+    () => seats.find((s: any) => s.id === selectedSeatId) ?? null,
+    [seats, selectedSeatId]
+  );
+
+  // Legend counts from filtered view
+  const legendCounts = useMemo(() => {
+    const all = seats.length;
+    const available = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length;
+    const occupied = seats.filter((s: any) => normalizeStatus(s.status) === "OCCUPIED").length;
+    const maintenance = seats.filter((s: any) => normalizeStatus(s.status) === "MAINTENANCE").length;
+    // Upcoming = seats with a future booking (not exposed in this query; use 0)
+    const upcoming = 0;
+    return { all, available, occupied, maintenance, upcoming };
+  }, [seats]);
+
+  // Handle Add Space
+  const handleAddSpace = async () => {
+    if (!activeFloorId) return;
+    try {
+      await createSeat({
+        variables: {
+          input: {
+            floorId: activeFloorId,
+            type: "OPEN_DESK",
+            status: "AVAILABLE",
+          },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to create seat:", err);
+    }
+  };
+
+  // Handle Vacate / status change
+  const handleVacate = async (seatId: string) => {
+    try {
+      await updateSeat({
+        variables: {
+          id: seatId,
+          input: { status: "AVAILABLE" },
+        },
+      });
+    } catch (err) {
+      console.error("Failed to update seat:", err);
+    }
+  };
+
+  const isLoading = centersLoading || floorsLoading || seatsLoading || metricsLoading;
 
   return (
     <div className={styles.page}>
-      
+
       {/* LEFT COLUMN */}
       <div className={styles.leftCol}>
-        
+
         {/* Header Card */}
         <div className={styles.headerCard}>
           <div className={styles.headerTitleWrap}>
             <h1 className={styles.headerTitle}>Floor Map</h1>
             <p className={styles.headerSubtitle}>Visualize space usage and real-time occupancy</p>
           </div>
-          <button className={styles.addSpaceBtn}>
+          <button
+            className={styles.addSpaceBtn}
+            onClick={handleAddSpace}
+            disabled={!activeFloorId}
+            title={!activeFloorId ? "Select a center and floor first" : "Add a new space"}
+          >
             {Icons.plus} Add Space
           </button>
         </div>
@@ -104,8 +295,8 @@ export default function FloorMapPage() {
           </div>
           <div className={styles.filterPills}>
             {["All", "Available", "Occupied", "Maintenance"].map(filter => (
-              <div 
-                key={filter} 
+              <div
+                key={filter}
                 className={`${styles.filterPill} ${activeFilter === filter ? styles.filterPillActive : ''}`}
                 onClick={() => setActiveFilter(filter)}
               >
@@ -117,42 +308,97 @@ export default function FloorMapPage() {
 
         {/* Stats Row */}
         <div className={styles.statsRow}>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>{Icons.chair}</div>
-            <div className={styles.statValue}>52</div>
-            <div className={styles.statLabel}>Total Seats</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>{Icons.circleCheck}</div>
-            <div className={styles.statValue}>32</div>
-            <div className={styles.statLabel}>Available</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>{Icons.target}</div>
-            <div className={styles.statValue}>18</div>
-            <div className={styles.statLabel}>Occupied</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statIcon}>{Icons.tools}</div>
-            <div className={styles.statValue}>2</div>
-            <div className={styles.statLabel}>Maintenance</div>
-          </div>
+          {metricsLoading && !metrics ? (
+            <>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className={styles.statCard}>
+                  <div className={styles.statIcon}>{Icons.chair}</div>
+                  <div className={styles.statValue}>—</div>
+                  <div className={styles.statLabel}>Loading…</div>
+                </div>
+              ))}
+            </>
+          ) : metrics ? (
+            <>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.chair}</div>
+                <div className={styles.statValue}>
+                  {metrics.totalSeats ?? seatStats.total}
+                </div>
+                <div className={styles.statLabel}>Total Seats</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.circleCheck}</div>
+                <div className={styles.statValue}>
+                  {metrics.availableSeats ?? seatStats.available}
+                </div>
+                <div className={styles.statLabel}>Available</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.target}</div>
+                <div className={styles.statValue}>
+                  {(metrics.totalSeats && metrics.availableSeats)
+                    ? metrics.totalSeats - metrics.availableSeats
+                    : seatStats.occupied}
+                </div>
+                <div className={styles.statLabel}>Occupied</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.tools}</div>
+                <div className={styles.statValue}>{seatStats.maintenance}</div>
+                <div className={styles.statLabel}>Maintenance</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.chair}</div>
+                <div className={styles.statValue}>{seatStats.total}</div>
+                <div className={styles.statLabel}>Total Seats</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.circleCheck}</div>
+                <div className={styles.statValue}>{seatStats.available}</div>
+                <div className={styles.statLabel}>Available</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.target}</div>
+                <div className={styles.statValue}>{seatStats.occupied}</div>
+                <div className={styles.statLabel}>Occupied</div>
+              </div>
+              <div className={styles.statCard}>
+                <div className={styles.statIcon}>{Icons.tools}</div>
+                <div className={styles.statValue}>{seatStats.maintenance}</div>
+                <div className={styles.statLabel}>Maintenance</div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Map Container */}
         <div className={styles.mapContainerCard}>
-          
-          {/* Floor Tabs */}
+
+          {/* Floor Tabs — from server floors */}
           <div className={styles.floorTabsWrap}>
-            {["Floor 01", "Floor 02", "Floor 03"].map(tab => (
-              <div 
-                key={tab} 
-                className={`${styles.floorTab} ${activeTab === tab ? styles.floorTabActive : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </div>
-            ))}
+            {floorsLoading && floors.length === 0 ? (
+              <div className={styles.floorTab}>Loading…</div>
+            ) : floors.length === 0 ? (
+              <div className={styles.floorTab}>No floors</div>
+            ) : (
+              floors.map((floor: any) => (
+                <div
+                  key={floor.id}
+                  className={`${styles.floorTab} ${
+                    (floor.id === activeFloorId || floor.id === activeFloor?.id)
+                      ? styles.floorTabActive
+                      : ""
+                  }`}
+                  onClick={() => setActiveFloorId(floor.id)}
+                >
+                  {floor.name ?? `Floor ${floor.id}`}
+                </div>
+              ))
+            )}
           </div>
 
           <div className={styles.mapToolbar}>
@@ -162,32 +408,34 @@ export default function FloorMapPage() {
                 <input type="text" placeholder="cabin 1B" defaultValue="cabin 1B" />
               </div>
               <div className={styles.mapFilterIcon}>{Icons.filter}</div>
-              
+
               <div className={styles.mapLegend}>
                 <div className={styles.legendItem}>
                   <div className={styles.legendDot} style={{ background: '#FF7847' }}></div>
                   <span>All</span>
-                  <span className={`${styles.legendCount} ${styles.legendCountActive}`}>42</span>
+                  <span className={`${styles.legendCount} ${styles.legendCountActive}`}>
+                    {legendCounts.all}
+                  </span>
                 </div>
                 <div className={styles.legendItem}>
                   <div className={styles.legendDot} style={{ background: '#10B981' }}></div>
                   <span>Available</span>
-                  <span className={styles.legendCount}>28</span>
+                  <span className={styles.legendCount}>{legendCounts.available}</span>
                 </div>
                 <div className={styles.legendItem}>
                   <div className={styles.legendDot} style={{ background: '#EF4444' }}></div>
                   <span>Occupied</span>
-                  <span className={styles.legendCount}>12</span>
+                  <span className={styles.legendCount}>{legendCounts.occupied}</span>
                 </div>
                 <div className={styles.legendItem}>
                   <div className={styles.legendDot} style={{ background: '#6B7280' }}></div>
                   <span>Under Maintenance</span>
-                  <span className={styles.legendCount}>2</span>
+                  <span className={styles.legendCount}>{legendCounts.maintenance}</span>
                 </div>
                 <div className={styles.legendItem}>
                   <div className={styles.legendDot} style={{ background: '#F59E0B' }}></div>
                   <span>Upcoming</span>
-                  <span className={styles.legendCount}>12</span>
+                  <span className={styles.legendCount}>{legendCounts.upcoming}</span>
                 </div>
               </div>
             </div>
@@ -195,153 +443,81 @@ export default function FloorMapPage() {
             <div className={styles.mapToolbarRight}>
               <div className={styles.mapDatePicker}>
                 {Icons.calendar}
-                Apr 4, 2026
+                {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </div>
               <button className={styles.mapContinueBtn}>Continue</button>
             </div>
           </div>
 
+          {/* Map Canvas */}
           <div className={styles.mapCanvas}>
-            <div className={styles.floorGrid}>
-              
-              {/* Left Area - Hexagons & Open Seats */}
-              <div className={`${styles.roomBlock} ${styles.rOpenSeats} ${styles.bgGrey}`}>
-                <div className={styles.rHexagons}>
-                  <div className={styles.hexagon}></div>
-                  <div className={styles.hexagon}></div>
-                  <div className={styles.hexagon}></div>
-                  <div className={styles.hexagon}></div>
-                </div>
-                <div style={{ position: 'absolute', left: '70px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                  8 Hexagon
-                </div>
-                <div style={{ position: 'absolute', right: '40px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                  10 Open Seats
-                </div>
-                <div className={styles.rOpenSeatsBox}>
-                  Open Seats
-                </div>
+            {isLoading && seats.length === 0 ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9CA3AF", fontSize: "14px" }}>
+                Loading floor data…
               </div>
+            ) : filteredSeats.length === 0 && seats.length === 0 ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9CA3AF", fontSize: "14px" }}>
+                {activeFloorId
+                  ? "No seats on this floor yet. Click \"Add Space\" to create one."
+                  : "Select a center and floor to view the map."}
+              </div>
+            ) : (
+              <div className={styles.floorGrid}>
+                {/* Open Seats area */}
+                <div className={`${styles.roomBlock} ${styles.rOpenSeats} ${styles.bgGrey}`}>
+                  <div className={styles.rHexagons}>
+                    {Array.from({ length: Math.min(filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("HEXAGON")).length, 4) }).map((_, i) => (
+                      <div key={i} className={styles.hexagon}></div>
+                    ))}
+                  </div>
+                  <div style={{ position: 'absolute', left: '70px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
+                    {filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("HEXAGON")).length} Hexagon
+                  </div>
+                  <div style={{ position: 'absolute', right: '40px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
+                    {filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("OPEN") || s.type?.toUpperCase().includes("DESK")).length} Open Seats
+                  </div>
+                  <div className={styles.rOpenSeatsBox}>
+                    Open Seats
+                  </div>
+                </div>
 
-              {/* Row 1 Cabins */}
-              <div className={`${styles.roomBlock} ${styles.r1A} ${styles.roomGreen}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 1A</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 5</div>
-                <div className={styles.roomStatus}>Available Now</div>
-              </div>
-              
-              <div className={`${styles.roomBlock} ${styles.r1B} ${styles.roomRed}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 1B</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 5</div>
-                <div className={styles.roomStatus}>4 months left</div>
-              </div>
+                {/* Render each seat as a room card */}
+                {filteredSeats.map((seat: any, index: number) => {
+                  const status = normalizeStatus(seat.status);
+                  const statusColor: Record<string, string> = {
+                    AVAILABLE: styles.roomGreen,
+                    OCCUPIED: styles.roomRed,
+                    MAINTENANCE: styles.roomGrey,
+                  };
+                  const statusText: Record<string, string> = {
+                    AVAILABLE: "Available Now",
+                    OCCUPIED: "Occupied",
+                    MAINTENANCE: "Unavailable",
+                  };
+                  const colorClass = statusColor[status] ?? styles.roomOrange;
 
-              <div className={`${styles.roomBlock} ${styles.r1C} ${styles.roomOrange}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 1C</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 5</div>
-                <div className={styles.roomStatus}>Book for 5 days</div>
+                  return (
+                    <div
+                      key={seat.id}
+                      className={`${styles.roomBlock} ${colorClass}`}
+                      onClick={() => setSelectedSeatId(seat.id)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <div className={styles.roomHeader}>
+                        <div className={styles.roomName}>
+                          {seatTypeLabel(seat.type)} {seat.number ?? index + 1}
+                        </div>
+                        <div className={styles.roomDot}></div>
+                      </div>
+                      <div className={styles.roomCapacity}>
+                        {Icons.chair} {seat.capacity ?? seat.features?.length ?? 1}
+                      </div>
+                      <div className={styles.roomStatus}>{statusText[status]}</div>
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className={`${styles.roomBlock} ${styles.r1D} ${styles.roomOrange}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 1D</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 5</div>
-                <div className={styles.roomStatus}>Next in 45 m</div>
-              </div>
-
-              {/* Row 1 Right Cabins */}
-              <div className={`${styles.roomBlock} ${styles.r3A} ${styles.roomGreen}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 3A</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 2</div>
-                <div className={styles.roomStatus}>Available now</div>
-              </div>
-              <div className={`${styles.roomBlock} ${styles.r3B} ${styles.roomGreen}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 3B</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 2</div>
-                <div className={styles.roomStatus}>Available now</div>
-              </div>
-              <div className={`${styles.roomBlock} ${styles.r3C} ${styles.roomRed}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 3C</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 5</div>
-                <div className={styles.roomStatus}>9 months left</div>
-              </div>
-              <div className={`${styles.roomBlock} ${styles.rMeeting} ${styles.roomRed}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Meeting Room</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 7</div>
-                <div className={styles.roomStatus} style={{ textAlign: 'center', marginTop: 'auto' }}>2h 30m left</div>
-              </div>
-
-              {/* Row 2 Cabins & Areas */}
-              <div className={`${styles.roomBlock} ${styles.r2A} ${styles.roomOrange}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 2A</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 4</div>
-                <div className={styles.roomStatus}>Book For 10 days</div>
-              </div>
-              
-              <div className={`${styles.roomBlock} ${styles.r2B} ${styles.roomGrey}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName}>Cabin 2B</div>
-                  <div className={styles.roomDot}></div>
-                </div>
-                <div className={styles.roomCapacity}>{Icons.chair} 4</div>
-                <div className={styles.roomStatus}>Unavailable</div>
-              </div>
-
-              <div className={`${styles.roomBlock} ${styles.rWashroom} ${styles.bgGreen}`}>
-                Washroom Area
-              </div>
-
-              <div className={`${styles.roomBlock} ${styles.rSofa}`}>
-                Sofa Area
-              </div>
-
-              <div className={`${styles.roomBlock} ${styles.rPantry}`}>
-                Pantry
-              </div>
-
-              {/* Bottom Right Cabins */}
-              <div className={`${styles.roomBlock} ${styles.r4A} ${styles.roomGreen}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName} style={{fontSize: '11px'}}>Cabin 4A</div>
-                </div>
-                <div className={styles.roomCapacity} style={{fontSize: '10px'}}>{Icons.chair} 2</div>
-                <div className={styles.roomStatus} style={{fontSize: '9px'}}>Available Now</div>
-              </div>
-              <div className={`${styles.roomBlock} ${styles.r4B} ${styles.roomGreen}`}>
-                <div className={styles.roomHeader}>
-                  <div className={styles.roomName} style={{fontSize: '11px'}}>Cabin 4B</div>
-                </div>
-                <div className={styles.roomCapacity} style={{fontSize: '10px'}}>{Icons.chair} 2</div>
-                <div className={styles.roomStatus} style={{fontSize: '9px'}}>Available Now</div>
-              </div>
-
-            </div>
+            )}
 
             <div className={styles.zoomControls}>
               <button className={styles.zoomBtn}>{Icons.zoomIn}</button>
@@ -355,76 +531,116 @@ export default function FloorMapPage() {
 
       {/* RIGHT COLUMN */}
       <div className={styles.rightCol}>
-        
-        <div className={styles.panelHeader}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h2 className={styles.panelTitle}>Cabin A1</h2>
-            <span className={styles.panelSubtitle}>4-seater Cabin</span>
-          </div>
-          <div className={styles.statusBadge}>
-            <div className={styles.statusDot}></div>
-            Occupied
-          </div>
-        </div>
 
-        <div className={styles.sectionBlock}>
-          <span className={styles.sectionTitle}>Capacity</span>
-          <span className={styles.sectionText}>4 seats</span>
-        </div>
-
-        <div className={styles.sectionBlock}>
-          <span className={styles.sectionTitle}>Pricing</span>
-          <div className={styles.priceWrap}>
-            <span className={styles.priceText}>₹12,000/month</span>
-            <span className={styles.priceGst}>GST: 18%</span>
-          </div>
-        </div>
-
-        <div className={styles.sectionBlock}>
-          <span className={styles.sectionTitle}>Amenities</span>
-          <div className={styles.amenityPills}>
-            <span className={styles.amenityPill}>WiFi</span>
-            <span className={styles.amenityPill}>AC</span>
-            <span className={styles.amenityPill}>Whiteboard</span>
-          </div>
-        </div>
-
-        <div className={styles.sectionBlock}>
-          <span className={styles.sectionTitle}>Occupancy</span>
-          <div className={styles.occupancyList}>
-            <div className={styles.occRow}>
-              <span className={styles.occLabel}>Company:</span>
-              <span className={styles.occValue}>TechCorp</span>
+        {selectedSeat ? (
+          <>
+            <div className={styles.panelHeader}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 className={styles.panelTitle}>
+                  {seatTypeLabel(selectedSeat.type)} {selectedSeat.number ?? ""}
+                </h2>
+                <span className={styles.panelSubtitle}>{seatTypeLabel(selectedSeat.type)}</span>
+              </div>
+              <div className={styles.statusBadge}>
+                <div className={styles.statusDot}></div>
+                {normalizeStatus(selectedSeat.status) === "AVAILABLE"
+                  ? "Available"
+                  : normalizeStatus(selectedSeat.status) === "OCCUPIED"
+                  ? "Occupied"
+                  : "Maintenance"}
+              </div>
             </div>
-            <div className={styles.occRow}>
-              <span className={styles.occLabel}>Start Date:</span>
-              <span className={styles.occValue}>Jan 10, 2026</span>
-            </div>
-            <div className={styles.occRow}>
-              <span className={styles.occLabel}>End Date:</span>
-              <span className={styles.occValue}>Mar 10, 2026</span>
-            </div>
-          </div>
-        </div>
 
-        <div className={styles.sectionBlock}>
-          <span className={styles.sectionTitle}>Schedule</span>
-          <div className={styles.scheduleCards}>
-            <div className={`${styles.schCard} ${styles.schCardActive}`}>
-              <span className={styles.schTitleOrange}>Currently Booked</span>
-              <span className={styles.schDateOrange}>Until Mar 10, 2026</span>
+            <div className={styles.sectionBlock}>
+              <span className={styles.sectionTitle}>Capacity</span>
+              <span className={styles.sectionText}>
+                {selectedSeat.capacity ?? selectedSeat.features?.length ?? 1} seats
+              </span>
             </div>
-            <div className={`${styles.schCard} ${styles.schCardGrey}`}>
-              <span className={styles.schTitleBlack}>Next Available</span>
-              <span className={styles.schDateGrey}>After Mar 10, 2026</span>
-            </div>
-          </div>
-        </div>
 
-        <div className={styles.panelActions}>
-          <button className={styles.btnSecondary}>View Details</button>
-          <button className={styles.btnPrimary}>Vacate</button>
-        </div>
+            {selectedSeat.price != null && (
+              <div className={styles.sectionBlock}>
+                <span className={styles.sectionTitle}>Pricing</span>
+                <div className={styles.priceWrap}>
+                  <span className={styles.priceText}>
+                    {typeof selectedSeat.price === "number"
+                      ? `₹${selectedSeat.price.toLocaleString("en-IN")}/month`
+                      : selectedSeat.price}
+                  </span>
+                  <span className={styles.priceGst}>GST: 18%</span>
+                </div>
+              </div>
+            )}
+
+            {selectedSeat.features && selectedSeat.features.length > 0 && (
+              <div className={styles.sectionBlock}>
+                <span className={styles.sectionTitle}>Amenities</span>
+                <div className={styles.amenityPills}>
+                  {selectedSeat.features.map((feature: string, i: number) => (
+                    <span key={i} className={styles.amenityPill}>{feature}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedSeat.location && (
+              <div className={styles.sectionBlock}>
+                <span className={styles.sectionTitle}>Location</span>
+                <span className={styles.sectionText}>{selectedSeat.location}</span>
+              </div>
+            )}
+
+            <div className={styles.panelActions}>
+              <button className={styles.btnSecondary}>View Details</button>
+              {normalizeStatus(selectedSeat.status) !== "AVAILABLE" && (
+                <button
+                  className={styles.btnPrimary}
+                  onClick={() => handleVacate(selectedSeat.id)}
+                >
+                  Vacate
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.panelHeader}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <h2 className={styles.panelTitle}>Select a Space</h2>
+                <span className={styles.panelSubtitle}>Click on a room to see details</span>
+              </div>
+            </div>
+
+            {activeFloor && (
+              <div className={styles.sectionBlock}>
+                <span className={styles.sectionTitle}>Floor</span>
+                <span className={styles.sectionText}>{activeFloor.name ?? `Floor ${activeFloor.id}`}</span>
+              </div>
+            )}
+
+            {activeCenter && (
+              <div className={styles.sectionBlock}>
+                <span className={styles.sectionTitle}>Center</span>
+                <span className={styles.sectionText}>{activeCenter.name}</span>
+              </div>
+            )}
+
+            <div className={styles.sectionBlock}>
+              <span className={styles.sectionTitle}>Available Seats</span>
+              <span className={styles.sectionText}>{seatStats.available}</span>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <span className={styles.sectionTitle}>Occupied</span>
+              <span className={styles.sectionText}>{seatStats.occupied}</span>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <span className={styles.sectionTitle}>Maintenance</span>
+              <span className={styles.sectionText}>{seatStats.maintenance}</span>
+            </div>
+          </>
+        )}
 
       </div>
 

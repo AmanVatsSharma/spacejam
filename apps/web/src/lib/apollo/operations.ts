@@ -885,3 +885,172 @@ export const UPDATE_SEAT = gql`
     }
   }
 `;
+
+/* ========================= Operations — Bookings ========================= */
+
+export const GET_BOOKINGS = gql`
+  query GetBookings($filters: BookingFiltersInput) {
+    bookings(filters: $filters) {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      notes
+      createdAt
+      updatedAt
+      user {
+        id
+        name
+        email
+        phone
+      }
+      seat {
+        id
+        number
+        type
+        status
+        price
+        floor {
+          id
+          name
+        }
+      }
+      center {
+        id
+        name
+      }
+      payment {
+        id
+        status
+        method
+        transactionId
+      }
+    }
+  }
+`;
+
+export const GET_BOOKING = gql`
+  query GetBooking($id: ID!) {
+    booking(id: $id) {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      notes
+      createdAt
+      updatedAt
+      user {
+        id
+        name
+        email
+        phone
+      }
+      seat {
+        id
+        number
+        type
+        status
+        price
+        floor {
+          id
+          name
+        }
+      }
+      center {
+        id
+        name
+      }
+      payment {
+        id
+        status
+        method
+        transactionId
+      }
+    }
+  }
+`;
+
+export const GET_MY_BOOKINGS = gql`
+  query GetMyBookings {
+    myBookings {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      createdAt
+      seat {
+        id
+        number
+        type
+        floor {
+          id
+          name
+        }
+      }
+      center {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CREATE_BOOKING = gql`
+  mutation CreateBooking($input: CreateBookingInput!) {
+    createBooking(input: $input) {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      notes
+      createdAt
+      updatedAt
+      user {
+        id
+        name
+        email
+      }
+      seat {
+        id
+        number
+        type
+        status
+        price
+      }
+      center {
+        id
+        name
+      }
+      payment {
+        id
+        status
+      }
+    }
+  }
+`;
+
+export const CANCEL_BOOKING = gql`
+  mutation CancelBooking($id: ID!) {
+    cancelBooking(id: $id) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
+export const PROCESS_PAYMENT = gql`
+  mutation ProcessPayment($paymentId: ID!, $method: String!) {
+    processPayment(paymentId: $paymentId, method: $method) {
+      id
+      status
+      method
+      transactionId
+      updatedAt
+    }
+  }
+`;

@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args } from '@nestjs/graphql';
+import { Resolver, Query, Args, ID } from '@nestjs/graphql';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -42,7 +42,7 @@ export class AnalyticsResolver {
 
   @Query(() => DashboardMetrics)
   async dashboardMetrics(
-    @Args('centerId', { nullable: true }) centerId?: string
+    @Args('centerId', { type: () => ID, nullable: true }) centerId?: string
   ): Promise<DashboardMetrics> {
     const cacheKey = centerId ? `metrics:dashboard:${centerId}` : 'metrics:dashboard:global';
 
@@ -119,7 +119,7 @@ export class AnalyticsResolver {
 
   @Query(() => RevenueReport)
   async revenueReport(
-    @Args('centerId', { nullable: true }) centerId?: string,
+    @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
     @Args('period', { nullable: true }) period?: 'month' | 'quarter' | 'year'
   ): Promise<RevenueReport> {
     const cacheKey = centerId ? `revenue:report:${centerId}` : 'revenue:report:global';
@@ -222,7 +222,7 @@ export class AnalyticsResolver {
 
   @Query(() => OccupancyReport)
   async occupancyReport(
-    @Args('centerId') centerId: string,
+    @Args('centerId', { type: () => ID }) centerId: string,
     @Args('period', { nullable: true }) period: 'week' | 'month' = 'month'
   ): Promise<OccupancyReport> {
     const now = new Date();

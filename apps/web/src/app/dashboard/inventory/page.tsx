@@ -9,95 +9,142 @@
  *   - InventoryPage — inventory page content
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-07-06
  */
 
-
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_MY_CENTERS,
+  GET_FLOORS,
+  CREATE_CENTER,
+  UPDATE_CENTER,
+} from "@/lib/apollo/operations";
 import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
 import { SetUpCenterModal, FloorSetupModal } from "@/components/ui/dashboard";
 
-const mockLocations = [
-  {
-    id: "chandigarh",
-    name: "Chandigarh",
-    expanded: true,
-    centers: [
-      { id: "it-park", name: "IT Park", selected: true },
-      { id: "sector-17", name: "Sector 17" },
-      { id: "industrial-area", name: "Industrial Area" },
-    ],
-  },
-  {
-    id: "mohali",
-    name: "Mohali",
-    centers: [{ id: "mohali-center", name: "Mohali Center" }],
-  },
-  {
-    id: "jalandhar",
-    name: "Jalandhar",
-    centers: [{ id: "jalandhar-center", name: "Jalandhar Center" }],
-  },
-];
+interface CenterLocation {
+  id: string;
+  name?: string;
+  city: string;
+}
 
-const mockFloors = [
-  {
-    floorName: "Floor 1",
-    totalSeats: 60,
-    status: "active" as const,
-    openSeats: "40 (20 available)",
-    cabins: 10,
-    occupancy: 67,
-  },
-  {
-    floorName: "Floor 2",
-    totalSeats: 55,
-    status: "active" as const,
-    openSeats: "35 (15 available)",
-    cabins: 8,
-    occupancy: 73,
-  },
-  {
-    floorName: "Floor 3",
-    totalSeats: 50,
-    status: "full" as const,
-    openSeats: "30 (5 available)",
-    cabins: 12,
-    occupancy: 90,
-  },
-  {
-    floorName: "Floor 4",
-    totalSeats: 45,
-    status: "maintenance" as const,
-    openSeats: "25 (0 available)",
-    cabins: 6,
-    occupancy: 45,
-  },
-];
+interface ServerCenter {
+  id: string;
+  name: string;
+  location: CenterLocation;
+  floors: { id: string; name: string }[];
+}
+
+interface SidebarLocation {
+  id: string;
+  name: string;
+  expanded: boolean;
+  centers: { id: string; name: string; selected?: boolean }[];
+}
 
 export default function InventoryPage() {
-  const [locations, setLocations] = useState(mockLocations);
+  const [selectedCenterId, setSelectedCenterId] = useState<string | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showFloorModal, setShowFloorModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Query centers (provides sidebar tree)
+  const {
+    data: centersData,
+    loading: centersLoading,
+    error: centersError,
+  } = useQuery<{ myCenters: ServerCenter[] }>(GET_MY_CENTERS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+
+  // Query floors — filtered by selected center
+  const {
+    data: floorsData,
+    loading: floorsLoading,
+    error: floorsError,
+  } = useQuery<{ floors: any[] }>(GET_FLOORS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+    variables: selectedCenterId ? { centerId: selectedCenterId } : {},
+  });
+
+  // Mutations
+  const [createCenter] = useMutation(CREATE_CENTER, {
+    refetchQueries: [{ query: GET_MY_CENTERS }],
+  });
+
+  const [updateCenter] = useMutation(UPDATE_CENTER, {
+    refetchQueries: [{ query: GET_MY_CENTERS }, { query: GET_FLOORS }],
+  });
+
+  // Transform myCenters → sidebar location tree (grouped by city)
+  const locations: SidebarLocation[] = useMemo(() => {
+    if (!centersData?.myCenters) return [];
+
+    // Group centers by city
+    const byCity: Record<string, SidebarLocation> = {};
+    for (const center of centersData.myCenters) {
+      const cityKey = center.location?.city ?? "Unknown City";
+      if (!byCity[cityKey]) {
+        byCity[cityKey] = {
+          id: cityKey.toLowerCase().replace(/\s+/g, "-"),
+          name: cityKey,
+          expanded: false,
+          centers: [],
+        };
+      }
+      byCity[cityKey].centers.push({
+        id: center.id,
+        name: center.name,
+        selected: center.id === selectedCenterId,
+      });
+    }
+
+    // Auto-expand the city that has the selected center
+    const result = Object.values(byCity).map((loc) => ({
+      ...loc,
+      expanded: loc.centers.some((c) => c.selected),
+    }));
+    return result;
+  }, [centersData, selectedCenterId]);
+
+  // Transform server floors → FloorCard props
+  const floors = useMemo(() => {
+    if (!floorsData?.floors) return [];
+    return floorsData.floors.map((floor: any) => ({
+      floorName: floor.name ?? `Floor ${floor.id}`,
+      totalSeats: floor.seats?.length ?? 0,
+      status: "active" as const,
+      openSeats: floor.seats?.filter((s: any) => s.status === "AVAILABLE" || s.status === "available").length ?? 0,
+      cabins: floor.seats?.filter((s: any) => s.type === "CABIN" || s.type === "cabin").length ?? 0,
+      occupancy: 0, // computed from seat statuses if booking data is available
+    }));
+  }, [floorsData]);
 
   const handleLocationSelect = (locationId: string, centerId?: string) => {
-    setLocations((prev) =>
-      prev.map((loc) =>
-        loc.id === locationId
-          ? {
-              ...loc,
-              centers: loc.centers.map((c) => ({
-                ...c,
-                selected: centerId ? c.id === centerId : false,
-              })),
-            }
-          : loc
-      )
-    );
+    if (centerId) {
+      setSelectedCenterId(centerId);
+    }
   };
+
+  // Wire SetUpCenterModal "Create center" (step 5) to CREATE_CENTER mutation
+  const handleCreateCenter = async (input: Record<string, any>) => {
+    setCreating(true);
+    try {
+      await createCenter({ variables: { input } });
+      setShowSetupModal(false);
+    } catch (err) {
+      console.error("Failed to create center:", err);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const isLoading = centersLoading || floorsLoading;
 
   return (
     <div className="flex gap-6 compact:gap-3">
@@ -111,7 +158,7 @@ export default function InventoryPage() {
               Manage coworking spaces, track capacity, and optimize utilization
             </p>
           </div>
-          <button 
+          <button
             onClick={() => setShowSetupModal(true)}
             className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
           >
@@ -129,29 +176,59 @@ export default function InventoryPage() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-[#101828]">Floor Overview</h2>
-            <button 
-              onClick={() => setShowFloorModal(true)}
-              className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M8 3V13M3 8H13" />
-              </svg>
-              <span>Add Floor</span>
-            </button>
+            {selectedCenterId ? (
+              <button
+                onClick={() => setShowFloorModal(true)}
+                className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M8 3V13M3 8H13" />
+                </svg>
+                <span>Add Floor</span>
+              </button>
+            ) : null}
           </div>
-          <FloorCardGrid floors={mockFloors} />
+          {isLoading && floors.length === 0 ? (
+            <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-[#EAEAEA]">
+              <span className="text-sm text-[#9CA3AF]">Loading floors…</span>
+            </div>
+          ) : floorsError ? (
+            <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-red-100">
+              <span className="text-sm text-red-400">Unable to load floors. Please try again.</span>
+            </div>
+          ) : floors.length === 0 ? (
+            <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-[#EAEAEA]">
+              <span className="text-sm text-[#9CA3AF]">
+                {selectedCenterId
+                  ? "No floors found for this center."
+                  : "Select a center from the sidebar to view floors."}
+              </span>
+            </div>
+          ) : (
+            <FloorCardGrid floors={floors} />
+          )}
         </div>
       </div>
 
       {/* Right Sidebar - Location Tree */}
-      <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
-      
-      <SetUpCenterModal 
-        isOpen={showSetupModal} 
-        onClose={() => setShowSetupModal(false)} 
+      {centersLoading && locations.length === 0 ? (
+        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px]">
+          <span className="text-sm text-[#9CA3AF]">Loading locations…</span>
+        </aside>
+      ) : centersError && locations.length === 0 ? (
+        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px]">
+          <span className="text-sm text-red-400">Unable to load locations.</span>
+        </aside>
+      ) : (
+        <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
+      )}
+
+      <SetUpCenterModal
+        isOpen={showSetupModal}
+        onClose={() => setShowSetupModal(false)}
       />
 
-      <FloorSetupModal 
+      <FloorSetupModal
         isOpen={showFloorModal}
         onClose={() => setShowFloorModal(false)}
       />
