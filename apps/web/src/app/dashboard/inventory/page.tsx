@@ -13,7 +13,6 @@
  */
 
 
-export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { StatCards } from "@/components/ui/stat-card";

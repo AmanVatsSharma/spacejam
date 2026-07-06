@@ -8,7 +8,7 @@
  */
 
 import './globals.css';
-import { ApolloProviderWrapper } from '@/contexts/apollo-provider-wrapper';
+import { Providers } from '@/components/Providers';
 
 export const metadata = {
   title: 'SpaceJam - Coworking Space Management',
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ApolloProviderWrapper>{children}</ApolloProviderWrapper>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

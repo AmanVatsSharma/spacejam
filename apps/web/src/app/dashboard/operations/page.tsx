@@ -13,7 +13,6 @@
  * Last-updated: 2026-07-02
  */
 
-export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";

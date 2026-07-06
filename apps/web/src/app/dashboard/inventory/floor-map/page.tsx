@@ -1,7 +1,6 @@
 "use client";
 
 
-export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import styles from "./floor-map.module.css";

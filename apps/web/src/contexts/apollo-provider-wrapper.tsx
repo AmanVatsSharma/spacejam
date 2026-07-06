@@ -24,15 +24,7 @@ export function ApolloProviderWrapper({ children }: { children: React.ReactNode 
   }, []);
 
   if (!ready) {
-    return (
-      <>
-        {typeof window !== 'undefined' && (
-          <ApolloProvider client={getApolloClient()}>
-            <AuthProvider>{children}</AuthProvider>
-          </ApolloProvider>
-        )}
-      </>
-    );
+    return null;
   }
 
   return (

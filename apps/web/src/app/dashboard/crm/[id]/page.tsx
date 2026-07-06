@@ -9,7 +9,6 @@
  * Last-updated: 2026-05-31
  */
 
-export const dynamic = 'force-dynamic';
 
 import { useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";

@@ -8,7 +8,6 @@
  * Last-updated: 2026-06-04
  */
 
-export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 

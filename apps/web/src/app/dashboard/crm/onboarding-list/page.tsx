@@ -13,7 +13,6 @@
  * Last-updated: 2026-06-26
  */
 
-export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import styles from './onboarding.module.css';

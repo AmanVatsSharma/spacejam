@@ -11,7 +11,6 @@
  * Last-updated: 2026-07-01
  */
 
-export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';

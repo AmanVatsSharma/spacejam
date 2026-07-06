@@ -10,7 +10,6 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-02
  */
-export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useCallback } from "react";
 import styles from "./page.module.css";

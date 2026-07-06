@@ -13,7 +13,6 @@
  * Last-updated: 2026-07-06
  */
 
-export const dynamic = 'force-dynamic';
 
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@apollo/client";
