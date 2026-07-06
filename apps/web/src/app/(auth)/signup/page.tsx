@@ -10,6 +10,8 @@
  * Last-updated: 2026-06-20
  */
 
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from "react";
 import Link from "next/link";
 import styles from "../auth.module.css";
