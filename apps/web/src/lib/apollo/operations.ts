@@ -1043,6 +1043,51 @@ export const CANCEL_BOOKING = gql`
   }
 `;
 
+export const UPDATE_BOOKING = gql`
+  mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
+    updateBooking(id: $id, input: $input) {
+      id
+      startDate
+      endDate
+      status
+      totalPrice
+      notes
+      updatedAt
+      seat {
+        id
+        number
+        type
+        status
+        price
+      }
+      payment {
+        id
+        status
+      }
+    }
+  }
+`;
+
+export const CHECK_IN_BOOKING = gql`
+  mutation CheckInBooking($id: ID!) {
+    checkInBooking(id: $id) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
+export const CHECK_OUT_BOOKING = gql`
+  mutation CheckOutBooking($id: ID!) {
+    checkOutBooking(id: $id) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
 export const PROCESS_PAYMENT = gql`
   mutation ProcessPayment($paymentId: ID!, $method: String!) {
     processPayment(paymentId: $paymentId, method: $method) {
@@ -1051,6 +1096,30 @@ export const PROCESS_PAYMENT = gql`
       method
       transactionId
       updatedAt
+    }
+  }
+`;
+
+/* ========================= Users ========================= */
+
+export const GET_USERS = gql`
+  query GetUsers($limit: Int, $offset: Int) {
+    users(limit: $limit, offset: $offset) {
+      id
+      name
+      email
+      role
+      phone
+      centerId
+      center {
+        id
+        name
+      }
+      active
+      emailVerified
+      twoFactorEnabled
+      lastLoginAt
+      createdAt
     }
   }
 `;

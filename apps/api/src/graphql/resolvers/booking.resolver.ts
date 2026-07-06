@@ -180,6 +180,131 @@ export class BookingResolver {
     return updatedBooking;
   }
 
+  @Mutation(() => BookingEntity)
+  async updateBooking(
+    @Args('id') id: string,
+    @Args('input') input: any,
+    @Context() context
+  ): Promise<BookingEntity> {
+    const userId = context.req.user?.id;
+    if (!userId) throw new UnauthorizedException('Unauthorized');
+
+    const booking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat', 'payment'],
+    });
+
+    if (!booking || booking.userId !== userId) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    await this.bookingRepo.update(id, input);
+
+    const updatedBooking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat', 'payment'],
+    });
+
+    await this.pubSub.publish(TRIGGERS.bookingUpdated, { bookingUpdated: updatedBooking });
+    await this.cache.invalidatePattern(`center:*`);
+
+    return updatedBooking;
+  }
+
+  @Mutation(() => BookingEntity)
+  async checkInBooking(
+    @Args('id') id: string,
+    @Context() context
+  ): Promise<BookingEntity> {
+    const userId = context.req.user?.id;
+    if (!userId) throw new UnauthorizedException('Unauthorized');
+
+    const booking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat'],
+    });
+
+    if (!booking || booking.userId !== userId) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status !== BookingStatus.CONFIRMED) {
+      throw new BadRequestException('Only confirmed bookings can be checked in');
+    }
+
+    await this.bookingRepo.update(id, {
+      status: BookingStatus.CHECKED_IN,
+    });
+
+    if (booking.seatId) {
+      await this.seatRepo.update(booking.seatId, {
+        status: SeatStatus.OCCUPIED,
+      });
+    }
+
+    const updatedBooking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat', 'payment'],
+    });
+
+    await this.pubSub.publish(TRIGGERS.bookingUpdated, { bookingUpdated: updatedBooking });
+    if (updatedBooking?.seatId) {
+      await this.pubSub.publish(TRIGGERS.seatStatusChanged, {
+        seatStatusChanged: { seatId: updatedBooking.seatId, status: SeatStatus.OCCUPIED },
+      });
+    }
+    await this.cache.invalidatePattern(`center:*`);
+
+    return updatedBooking;
+  }
+
+  @Mutation(() => BookingEntity)
+  async checkOutBooking(
+    @Args('id') id: string,
+    @Context() context
+  ): Promise<BookingEntity> {
+    const userId = context.req.user?.id;
+    if (!userId) throw new UnauthorizedException('Unauthorized');
+
+    const booking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat'],
+    });
+
+    if (!booking || booking.userId !== userId) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status !== BookingStatus.CHECKED_IN) {
+      throw new BadRequestException('Only checked-in bookings can be checked out');
+    }
+
+    await this.bookingRepo.update(id, {
+      status: BookingStatus.CHECKED_OUT,
+    });
+
+    if (booking.seatId) {
+      await this.seatRepo.update(booking.seatId, {
+        status: SeatStatus.AVAILABLE,
+      });
+    }
+
+    const updatedBooking = await this.bookingRepo.findOne({
+      where: { id },
+      relations: ['seat', 'payment'],
+    });
+
+    await this.pubSub.publish(TRIGGERS.bookingUpdated, { bookingUpdated: updatedBooking });
+    if (updatedBooking?.seatId) {
+      await this.pubSub.publish(TRIGGERS.seatStatusChanged, {
+        seatStatusChanged: { seatId: updatedBooking.seatId, status: SeatStatus.AVAILABLE },
+      });
+    }
+    await this.cache.invalidatePattern(`center:*`);
+
+    return updatedBooking;
+  }
+
   @Mutation(() => PaymentEntity)
   async processPayment(
     @Args('paymentId') paymentId: string,

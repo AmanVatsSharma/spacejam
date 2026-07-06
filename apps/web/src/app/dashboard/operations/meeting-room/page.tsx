@@ -98,8 +98,7 @@ export default function MeetingRoomsPage() {
       {/* Hero */}
       <section className={styles.heroCard}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>
-            Meeting Room status
+          <h1 className={styles.heroTitle}>Meeting Room status</h1>
           <p className={styles.heroSubtitle}>Monitor meeting room usage, availability and booking status</p>
         </div>
         <button type="button" className={styles.heroAction}>

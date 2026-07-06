@@ -68,7 +68,7 @@ export class UserRepository {
     }
 
     if (filters?.active !== undefined) {
-      queryBuilder.andWhere('user.isActive = :active', { active: filters.active });
+      queryBuilder.andWhere('user.active = :active', { active: filters.active });
     }
 
     if (filters?.search) {

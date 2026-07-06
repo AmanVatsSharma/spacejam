@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@apollo/client";
+import { GET_USERS } from "@/lib/apollo/operations";
 import styles from "./settings.module.css";
 
 const Icons = {
@@ -54,47 +56,76 @@ const Icons = {
   )
 };
 
-const DUMMY_USERS = [
-  { id: 1, name: "Sarah Johnson", group: "FRANCHISE OWNERS", role: "Franchise Owner", sub: "All Centers", status: "Active" },
-  { id: 2, name: "Michael Chen", group: "FRANCHISE OWNERS", role: "Franchise Owner", sub: "Chandigarh", status: "Active" },
-  { id: 3, name: "Priya Sharma", group: "CENTER MANAGERS", role: "Center Manager", sub: "Chandigarh-sec 18", status: "Active", email: "priya.sharma@spacejam.com", phone: "+91 98765 43210", assignedCenter: "Chandigarh", reportingManager: "Reporting Manager" },
-  { id: 4, name: "Rahul Verma", group: "CENTER MANAGERS", role: "Center Manager", sub: "Jalandhar", status: "Active" },
-  { id: 5, name: "Anita Desai", group: "CENTER MANAGERS", role: "Center Manager", sub: "Chandigarh", status: "Suspended" },
-  { id: 6, name: "Vijay Kumar", group: "SUPPORT STAFF", role: "Support Staff", sub: "Chandigarh sec 34", status: "Active" },
-  { id: 7, name: "Neha Patel", group: "SUPPORT STAFF", role: "Support Staff", sub: "Chandigarh sec 34", status: "Active" },
-];
+interface User {
+  id: string;
+  name: string;
+  email?: string;
+  role: string;
+  phone?: string;
+  center?: { id: string; name: string } | null;
+  centerId?: string | null;
+  active: boolean;
+}
+
+const ROLE_GROUP_MAP: Record<string, string> = {
+  ADMIN: "FRANCHISE OWNERS",
+  CENTER_MANAGER: "CENTER MANAGERS",
+  MEMBER: "MEMBERS",
+  SUPPORT_STAFF: "SUPPORT STAFF",
+};
+
+const GRAPHQL_ROLE_TO_DISPLAY: Record<string, string> = {
+  ADMIN: "Franchise Owner",
+  CENTER_MANAGER: "Center Manager",
+  MEMBER: "Member",
+  SUPPORT_STAFF: "Support Staff",
+};
 
 export default function SettingsAccessPage() {
   const [activeTab, setActiveTab] = useState("Profile");
-  const [activeUser, setActiveUser] = useState(DUMMY_USERS[2]); // Default Priya
   const [accountEnabled, setAccountEnabled] = useState(true);
+
+  const { data: usersData, loading: usersLoading } = useQuery<{ users: User[] }>(GET_USERS, {
+    variables: { limit: 50, offset: 0 },
+  });
+
+  const users = usersData?.users ?? [];
+  const defaultUser = users.length > 0 ? users.find((u) => u.role === "CENTER_MANAGER") ?? users[0] : null;
+  const [activeUser, setActiveUser] = useState<User | null>(defaultUser);
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("");
   };
 
   const renderUserGroup = (groupName: string) => {
-    const usersInGroup = DUMMY_USERS.filter(u => u.group === groupName);
+    if (usersLoading) {
+      return <div className={styles.loadingState}>Loading users...</div>;
+    }
+
+    const usersInGroup = users.filter(u => ROLE_GROUP_MAP[u.role] === groupName);
     if (usersInGroup.length === 0) return null;
 
     return (
       <div className={styles.directoryGroup} key={groupName}>
         <div className={styles.groupLabel}>{groupName}</div>
         {usersInGroup.map(user => {
-          const isActive = activeUser.id === user.id;
+          const isActive = activeUser?.id === user.id;
+          const centerName = user.center?.name || "No center assigned";
+          const subText = `${user.email || "No email"}\n${centerName}`;
+
           return (
-            <div 
-              key={user.id} 
+            <div
+              key={user.id}
               className={`${styles.userItem} ${isActive ? styles.userItemActive : ''}`}
-              onClick={() => { setActiveUser(user); setAccountEnabled(user.status === "Active"); }}
+              onClick={() => { setActiveUser(user); setAccountEnabled(user.active); }}
             >
               <div className={styles.listAvatar}>{getInitials(user.name)}</div>
               <div className={styles.listUserInfo}>
                 <span className={styles.listUserName}>{user.name}</span>
-                <span className={styles.listUserSub}>{user.role}<br/>{user.sub}</span>
+                <span className={styles.listUserSub}>{subText}</span>
               </div>
-              <span className={`${styles.listUserStatus} ${user.status === 'Active' ? styles.statusTxtActive : styles.statusTxtSuspended}`}>
-                {user.status}
+              <span className={`${styles.listUserStatus} ${user.active ? styles.statusTxtActive : styles.statusTxtSuspended}`}>
+                {user.active ? "Active" : "Suspended"}
               </span>
               <span className={styles.editIcon}>{Icons.editPencil}</span>
             </div>
@@ -137,43 +168,47 @@ export default function SettingsAccessPage() {
         {/* LEFT COLUMN: FORM / PERMISSIONS */}
         <div className={styles.leftCol}>
           
-          {activeTab === "Profile" ? (
+          {activeTab === "Profile" && !activeUser ? (
+            <div style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}>
+              {usersLoading ? 'Loading users...' : 'No user selected.'}
+            </div>
+          ) : activeTab === "Profile" ? (
             <>
               <div className={styles.formHeader}>
                 <div className={styles.avatarWrap}>
-                  {getInitials(activeUser.name)}
+                  {getInitials(activeUser!.name)}
                   <div className={styles.cameraIcon}>{Icons.camera}</div>
                 </div>
                 <div className={styles.formUserInfo}>
-                  <h2 className={styles.formUserName}>{activeUser.name}</h2>
-                  <p className={styles.formUserRole}>{activeUser.role}</p>
+                  <h2 className={styles.formUserName}>{activeUser!.name}</h2>
+                  <p className={styles.formUserRole}>{activeUser!.role}</p>
                 </div>
               </div>
 
               <div className={styles.formGrid}>
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Full Name</label>
-                  <input type="text" className={styles.formInput} value={activeUser.name} readOnly />
+                  <input type="text" className={styles.formInput} value={activeUser!.name} readOnly />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Email</label>
-                  <input type="email" className={styles.formInput} value={activeUser.email || ""} placeholder="No email provided" readOnly />
+                  <input type="email" className={styles.formInput} value={activeUser!.email || ""} placeholder="No email provided" readOnly />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Phone</label>
-                  <input type="text" className={styles.formInput} value={activeUser.phone || ""} placeholder="No phone provided" readOnly />
+                  <input type="text" className={styles.formInput} value={activeUser!.phone || ""} placeholder="No phone provided" readOnly />
                 </div>
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Role</label>
-                  <input type="text" className={styles.formInput} value={activeUser.role} disabled />
+                  <input type="text" className={styles.formInput} value={activeUser!.role} disabled />
                 </div>
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Assigned Centers</label>
-                  <input type="text" className={styles.formInput} value={activeUser.assignedCenter || activeUser.sub} disabled />
+                  <input type="text" className={styles.formInput} value={activeUser!.center?.name || "No center assigned"} disabled />
                 </div>
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Reporting Manager</label>
-                  <input type="text" className={styles.formInput} value={activeUser.reportingManager || "Reporting Manager"} disabled />
+                  <input type="text" className={styles.formInput} value={"Reporting Manager"} disabled />
                 </div>
               </div>
 

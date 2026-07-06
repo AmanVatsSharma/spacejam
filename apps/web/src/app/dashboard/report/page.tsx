@@ -1,5 +1,7 @@
 "use client";
 
+import { useQuery } from "@apollo/client";
+import { GET_DASHBOARD_METRICS, GET_REVENUE_REPORT } from "@/lib/apollo/operations";
 import styles from "./report.module.css";
 
 // SVG Icons
@@ -77,6 +79,26 @@ const Icons = {
 };
 
 export default function ReportPage() {
+  const { data: metricsData, loading: metricsLoading } = useQuery(GET_DASHBOARD_METRICS);
+  const { data: revenueData, loading: revenueLoading } = useQuery(GET_REVENUE_REPORT);
+
+  const metrics = metricsData?.dashboardMetrics;
+  const revenue = revenueData?.revenueReport;
+
+  const formatCurrency = (value?: number) => {
+    if (!value) return "₹0";
+    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
+    return `₹${value}`;
+  };
+
+  const occupancyPercent = metrics?.occupancyRate
+    ? `${Math.round(metrics.occupancyRate * 100)}%`
+    : "0%";
+
+  const revenueGrowth = revenue?.growth ? `${revenue.growth > 0 ? "+" : ""}${revenue.growth.toFixed(0)}%` : "0%";
+  const activeClients = metrics?.activeBookings ?? 0;
+
   return (
     <div className={styles.page}>
       
@@ -105,15 +127,15 @@ export default function ReportPage() {
           <div className={`${styles.metricIcon} ${styles.metricIconOrange}`}>{Icons.rupee}</div>
           <span className={styles.metricLabel}>Total Revenue</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>₹9.8L</span>
-            <span className={`${styles.metricTrend} ${styles.trendUp}`}>{Icons.trendingUp} 12%</span>
+            <span className={styles.metricValue}>{metricsLoading ? "..." : formatCurrency(metrics?.totalRevenue)}</span>
+            <span className={`${styles.metricTrend} ${styles.trendUp}`}>{Icons.trendingUp} {revenueGrowth}</span>
           </div>
         </div>
         <div className={styles.metricCard}>
           <div className={`${styles.metricIcon} ${styles.metricIconRed}`}>{Icons.alertCircle}</div>
           <span className={styles.metricLabel}>Outstanding Dues</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>₹1.4L</span>
+            <span className={styles.metricValue}>{metricsLoading ? "..." : formatCurrency(metrics?.pendingPayments)}</span>
             <span className={`${styles.metricTrend} ${styles.trendUp}`}>{Icons.trendingUp} 5%</span>
           </div>
         </div>
@@ -121,15 +143,15 @@ export default function ReportPage() {
           <div className={`${styles.metricIcon} ${styles.metricIconOrange}`}>{Icons.users}</div>
           <span className={styles.metricLabel}>Active Clients</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>320</span>
-            <span className={`${styles.metricTrend} ${styles.trendUpRed}`}>{Icons.trendingDown} 8%</span>
+            <span className={styles.metricValue}>{metricsLoading ? "..." : activeClients}</span>
+            <span className={`${styles.metricTrend} ${styles.trendUp}`}>{Icons.trendingUp} 8%</span>
           </div>
         </div>
         <div className={styles.metricCard}>
           <div className={`${styles.metricIcon} ${styles.metricIconOrange}`}>{Icons.activity}</div>
           <span className={styles.metricLabel}>Occupancy Rate</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>78%</span>
+            <span className={styles.metricValue}>{metricsLoading ? "..." : occupancyPercent}</span>
             <span className={`${styles.metricTrend} ${styles.trendUp}`}>{Icons.trendingUp} 5%</span>
           </div>
         </div>

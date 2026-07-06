@@ -50,8 +50,10 @@ function formatCurrency(amount: number): string {
   return `₹${Math.round(amount)}`;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user } = useAuth() || { user: null };
   const greetingName = user?.name?.split(/\s+/)[0] ?? user?.email?.split("@")[0] ?? "Jhon Doe";
 
   const [showAddLead, setShowAddLead] = useState(false);
