@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * File:        apps/web/src/hooks/use-operations.ts
  * Module:      Web · Hooks · Operations
@@ -383,7 +385,7 @@ export function useCreateMeetingRoom() {
     errorPolicy: 'all',
   });
 
-  async function create(input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function create(input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { input } });
@@ -405,7 +407,7 @@ export function useUpdateMeetingRoom() {
     errorPolicy: 'all',
   });
 
-  async function update(id: string, input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function update(id: string, input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { id, input } });
@@ -528,7 +530,7 @@ export function useCreateEvent() {
     errorPolicy: 'all',
   });
 
-  async function create(input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function create(input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { input } });
@@ -552,7 +554,7 @@ export function useUpdateEvent() {
     errorPolicy: 'all',
   });
 
-  async function update(id: string, input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function update(id: string, input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { id, input } });
@@ -675,7 +677,7 @@ export function useCreateRequest() {
     errorPolicy: 'all',
   });
 
-  async function create(input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function create(input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { input } });
@@ -697,7 +699,7 @@ export function useUpdateRequest() {
     errorPolicy: 'all',
   });
 
-  async function update(id: string, input: Parameters<typeof mutation[0]>[0]['variables']['input']) {
+  async function update(id: string, input: Record<string, unknown>) {
     setSaving(true);
     try {
       const result = await mutation({ variables: { id, input } });
@@ -798,7 +800,8 @@ export function useCancelRequest() {
     }
   }
 
-  return { cancel: cancelling, cancelling };
+  return { cancelRequest: cancel, cancelling };
+
 }
 
 export function useDeleteRequest() {

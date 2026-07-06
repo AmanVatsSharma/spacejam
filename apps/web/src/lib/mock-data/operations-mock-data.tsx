@@ -109,10 +109,8 @@ export const toEventRow = (e: any): EventRow => ({
 
 // Group events by date ranges
 export const classifyByDate = (events: EventRow[], date: string) => {
-  const d = new Date(date).setHours(0, 0, 0, 0);
   const today = new Date(date).setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrow = new Date(today).getTime();
   return {
     today: events.filter((ev) => {
       const evDate = new Date(ev.date).getTime();
@@ -197,7 +195,7 @@ const FALLBACK_PAST: EventRow[] = [
 ];
 
 const todayStr = new Date().toISOString().split('T')[0];
-export const FALLBACK_EVENTS: EventRow[] = [
+const FALLBACK_EVENTS: EventRow[] = [
   ...FALLBACK_TODAY.map(e => ({ ...e, id: `fb-t-${e.id}` })),
   ...FALLBACK_UPCOMING,
   ...FALLBACK_PAST,

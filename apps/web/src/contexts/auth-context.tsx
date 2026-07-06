@@ -4,7 +4,7 @@
  * Purpose:     Authentication context (user, tokens, signin/signup/logout)
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-20
+ * Last-updated: 2026-07-02
  */
 'use client';
 
@@ -14,10 +14,19 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
-import { useMutation, useQuery, useApolloClient } from '@apollo/client';
 
+import {
+  getApolloClient,
+  setMemoryAccessToken,
+} from '@/lib/apollo/client';
+import {
+  clearTokens,
+  getAccessToken,
+  setTokens,
+} from '@/lib/apollo/token-storage';
 import {
   CHANGE_PASSWORD,
   LOGOUT_MUTATION,
@@ -32,12 +41,6 @@ import {
   VERIFY_MAGIC_LINK,
   VERIFY_TWO_FACTOR,
 } from '@/lib/apollo/operations';
-import {
-  clearTokens,
-  getAccessToken,
-  setTokens,
-} from '@/lib/apollo/token-storage';
-import { getApolloClient, setMemoryAccessToken } from '@/lib/apollo/client';
 
 export type UserRole = 'ADMIN' | 'CENTER_MANAGER' | 'MEMBER';
 
@@ -131,19 +134,99 @@ const applyAuthPayload = (payload: AuthPayloadResult) => {
   return payload;
 };
 
+// ---- dev-mode helpers --------------------------------------------------------
+
+const DEV_USERS: Record<UserRole, AuthUser> = {
+  ADMIN: {
+    id: 'dev-admin', email: 'admin@dev.local', name: 'Dev Admin',
+    role: 'ADMIN', active: true, emailVerified: true, twoFactorEnabled: false,
+    createdAt: new Date().toISOString(),
+  },
+  CENTER_MANAGER: {
+    id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Manager',
+    role: 'CENTER_MANAGER', active: true, emailVerified: true, twoFactorEnabled: false,
+    createdAt: new Date().toISOString(),
+  },
+  MEMBER: {
+    id: 'dev-member', email: 'member@dev.local', name: 'Dev Member',
+    role: 'MEMBER', active: true, emailVerified: true, twoFactorEnabled: false,
+    createdAt: new Date().toISOString(),
+  },
+};
+
+const DEV_TOKEN = 'dev-mode-fake-token';
+
+const installDevAuth = (role: UserRole = 'ADMIN') => {
+  localStorage.setItem('spacejam_dev_auth', JSON.stringify(DEV_USERS[role]));
+  // Use the same keys as token-storage.ts so getAccessToken() finds them.
+  const accessExpiry = new Date(Date.now() + 86400000).toISOString();
+  const refreshExpiry = new Date(Date.now() + 86400000).toISOString();
+  localStorage.setItem('spacejam.access', DEV_TOKEN);
+  localStorage.setItem('spacejam.refresh', DEV_TOKEN);
+  localStorage.setItem('spacejam.access.exp', accessExpiry);
+  localStorage.setItem('spacejam.refresh.exp', refreshExpiry);
+  // Also write cookies so the Next.js proxy middleware allows dashboard access.
+  const maxAge = 86400;
+  document.cookie = `spacejam_access=${DEV_TOKEN}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  document.cookie = `spacejam_refresh=${DEV_TOKEN}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+};
+
+
+// ---- deferred Apollo hooks ---------------------------------------------------
+
+// Component that only runs the me query after hydration
+function MeQueryClient({ client, hasToken, isDevLoginAvailable }: {
+  client: ReturnType<typeof getApolloClient> | null;
+  hasToken: boolean;
+  isDevLoginAvailable: boolean;
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !client || !hasToken || isDevLoginAvailable) return;
+
+    let cancelled = false;
+    client
+      .query<{ me: AuthUser | null }>({
+        query: ME_QUERY,
+        fetchPolicy: 'network-only',
+      })
+      .then((res) => {
+        if (!cancelled) {
+          // Trigger parent re-render via stored state
+          window.dispatchEvent(new CustomEvent('me-queried', { detail: res.data }));
+        }
+      })
+      .catch(() => {
+        // Silent catch - token might be invalid
+      });
+
+    return () => { cancelled = true; };
+  }, [mounted, client, hasToken, isDevLoginAvailable]);
+
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [hasToken, setHasToken] = useState<boolean>(false);
-  const apolloClient = useApolloClient();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Memoized so the effects below can use it as a stable dependency.
-  // Defined before the effects that depend on it.
+  // Lazy-init Apollo client on browser only
+  const apolloClient = useMemo(() => {
+    if (typeof window === 'undefined') return undefined;
+    return getApolloClient();
+  }, []);
+
+  // Detect dev-login availability (client-side only)
   const isDevLoginAvailable = useMemo(() => {
     if (typeof window === 'undefined') return false;
     const { hostname } = window.location;
     const flagEnabled = process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true';
-    // Visible automatically on localhost / 127.0.0.1 / ::1, even without the
-    // env flag. Anywhere else, the env flag is required.
     const isLocalhost =
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
@@ -153,160 +236,152 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return isLocalhost || flagEnabled;
   }, []);
 
+  // Handle custom event for me query result
   useEffect(() => {
-    setHasToken(!!getAccessToken());
+    const handleMeQueried = (e: CustomEvent) => {
+      const data = e.detail as { me: AuthUser | null };
+      if (data.me) setUser(data.me);
+    };
+    window.addEventListener('me-queried', handleMeQueried as EventListener);
+    return () => window.removeEventListener('me-queried', handleMeQueried as EventListener);
   }, []);
 
-  // Single useQuery to keep the user in sync with the backend.
-  // Skip in dev mode: the dev login sets the user directly, and the GraphQL
-  // endpoint isn't reachable until the NestJS API is wired up — letting the
-  // query run would 404 and trip the error-handler below into wiping the
-  // freshly-minted dev session.
-  const { data, loading, refetch, error } = useQuery<{ me: AuthUser | null }>(ME_QUERY, {
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: true,
-    skip: !hasToken || isDevLoginAvailable,
-  });
-
+  // Handle global auth errors
   useEffect(() => {
-    if (data?.me) setUser(data.me);
-  }, [data]);
+    const handleAuthError = (e: CustomEvent) => {
+      const error = e.detail as { message?: string };
+      if (!isDevLoginAvailable) {
+        setUser(null);
+        setHasToken(false);
+        clearTokens();
+      }
+    };
+    window.addEventListener('auth-error', handleAuthError as EventListener);
+    return () => window.removeEventListener('auth-error', handleAuthError as EventListener);
+  }, [isDevLoginAvailable]);
 
-  // If the backend rejects the token (e.g. 401 after refresh failure), drop
-  // the user and clear tokens. Skipped in dev mode so a missing /api/graphql
-  // route can't log a dev session out.
+  // Read token on mount (client only)
   useEffect(() => {
-    if (error && !isDevLoginAvailable) {
-      setUser(null);
-      setHasToken(false);
-      clearTokens();
+    setIsLoading(true);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (typeof window !== 'undefined') {
+      setHasToken(!!getAccessToken());
+      timer = setTimeout(() => setIsLoading(false), 100);
+    } else {
+      setIsLoading(false);
     }
-  }, [error, isDevLoginAvailable]);
+    return () => { if (timer) clearTimeout(timer); };
+  }, []);
 
-  const [signinMutation] = useMutation<AuthPayloadShape>(SIGNIN_MUTATION);
-  const [signupMutation] = useMutation<AuthPayloadShape>(SIGNUP_MUTATION);
-  const [verifyTwoFactorMutation] = useMutation<AuthPayloadShape>(VERIFY_TWO_FACTOR);
-  const [logoutMutation] = useMutation(LOGOUT_MUTATION);
-  const [requestResetMutation] = useMutation(REQUEST_PASSWORD_RESET);
-  const [resetMutation] = useMutation(RESET_PASSWORD);
-  const [changePasswordMutation] = useMutation(CHANGE_PASSWORD);
-  const [requestMagicLinkMutation] = useMutation(REQUEST_MAGIC_LINK);
-  const [verifyMagicLinkMutation] = useMutation<AuthPayloadShape>(VERIFY_MAGIC_LINK);
-  const [regenerateRecoveryCodesMutation] = useMutation(REGENERATE_RECOVERY_CODES);
+  // Direct mutations are safe since they're only called by user actions
+  const signin = useCallback(async (input: SigninInput) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: SIGNIN_MUTATION,
+      variables: { input }
+    });
+    const payload = res.data?.signin;
+    if (!payload) throw new Error('Signin failed');
+    if (payload.twoFactorRequired) {
+      return { twoFactorRequired: true, challengeToken: payload.challengeToken ?? null };
+    }
+    const result = applyAuthPayload(payload);
+    if (result.user) setUser(result.user);
+    setHasToken(true);
+    return { twoFactorRequired: false };
+  }, [apolloClient]);
 
-  const signin = useCallback(
-    async (input: SigninInput) => {
-      const res = await signinMutation({ variables: { input } });
-      const payload = res.data?.signin;
-      if (!payload) throw new Error('Signin failed');
-      if (payload.twoFactorRequired) {
-        return {
-          twoFactorRequired: true,
-          challengeToken: payload.challengeToken ?? null,
-        };
-      }
-      const result = applyAuthPayload(payload);
-      if (result.user) setUser(result.user);
-      setHasToken(true);
-      return { twoFactorRequired: false };
-    },
-    [signinMutation],
-  );
+  const signup = useCallback(async (input: SignupInput) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: SIGNUP_MUTATION,
+      variables: { input }
+    });
+    const payload = res.data?.signup;
+    if (!payload) throw new Error('Signup failed');
+    if (payload.twoFactorRequired) {
+      throw new Error('2FA challenge is not expected on signup');
+    }
+    const result = applyAuthPayload(payload);
+    if (result.user) setUser(result.user);
+    setHasToken(true);
+  }, [apolloClient]);
 
-  const signup = useCallback(
-    async (input: SignupInput) => {
-      const res = await signupMutation({ variables: { input } });
-      const payload = res.data?.signup;
-      if (!payload) throw new Error('Signup failed');
-      if (payload.twoFactorRequired) {
-        // New accounts don't enable 2FA by default, but defend anyway.
-        throw new Error('2FA challenge is not expected on signup');
-      }
-      const result = applyAuthPayload(payload);
-      if (result.user) setUser(result.user);
-      setHasToken(true);
-    },
-    [signupMutation],
-  );
-
-  const verifyTwoFactor = useCallback(
-    async (code: string, challengeToken: string) => {
-      const res = await verifyTwoFactorMutation({
-        variables: { input: { code, challengeToken } },
-      });
-      const payload = res.data?.verifyTwoFactor;
-      if (!payload) throw new Error('2FA verification failed');
-      const result = applyAuthPayload(payload);
-      if (result.user) setUser(result.user);
-      setHasToken(true);
-    },
-    [verifyTwoFactorMutation],
-  );
+  const verifyTwoFactor = useCallback(async (code: string, challengeToken: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: VERIFY_TWO_FACTOR,
+      variables: { input: { code, challengeToken } },
+    });
+    const payload = res.data?.verifyTwoFactor;
+    if (!payload) throw new Error('2FA verification failed');
+    const result = applyAuthPayload(payload);
+    if (result.user) setUser(result.user);
+    setHasToken(true);
+  }, [apolloClient]);
 
   const logout = useCallback(async () => {
     try {
-      await logoutMutation();
+      if (apolloClient) await apolloClient.mutate({ mutation: LOGOUT_MUTATION });
     } finally {
       clearTokens();
       setUser(null);
       setHasToken(false);
-      await apolloClient.clearStore();
+      if (apolloClient) await apolloClient.clearStore();
     }
-  }, [apolloClient, logoutMutation]);
+  }, [apolloClient]);
 
-  const requestPasswordReset = useCallback(
-    async (email: string) => {
-      const res = await requestResetMutation({ variables: { input: { email } } });
-      return !!res.data?.requestPasswordReset;
-    },
-    [requestResetMutation],
-  );
+  const requestPasswordReset = useCallback(async (email: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: REQUEST_PASSWORD_RESET,
+      variables: { input: { email } },
+    });
+    return !!res.data?.requestPasswordReset;
+  }, [apolloClient]);
 
-  const resetPassword = useCallback(
-    async (token: string, newPassword: string) => {
-      const res = await resetMutation({ variables: { input: { token, newPassword } } });
-      return !!res.data?.resetPassword;
-    },
-    [resetMutation],
-  );
+  const resetPassword = useCallback(async (token: string, newPassword: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: RESET_PASSWORD,
+      variables: { input: { token, newPassword } },
+    });
+    return !!res.data?.resetPassword;
+  }, [apolloClient]);
 
-  const changePassword = useCallback(
-    async (currentPassword: string, newPassword: string) => {
-      const res = await changePasswordMutation({
-        variables: { currentPassword, newPassword },
-      });
-      const result = res.data?.changePassword ?? { ok: false, message: 'Network error' };
-      return { ok: !!result.ok, message: result.message ?? '' };
-    },
-    [changePasswordMutation],
-  );
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: CHANGE_PASSWORD,
+      variables: { input: { currentPassword, newPassword } },
+    });
+    return res.data?.changePassword ?? { ok: false, message: 'Unknown error' };
+  }, [apolloClient]);
 
-  const requestMagicLink = useCallback(
-    async (email: string) => {
-      const res = await requestMagicLinkMutation({ variables: { email } });
-      const result = res.data?.requestMagicLink ?? { ok: true, message: 'If an account exists, a link has been sent' };
-      return { ok: !!result.ok, message: result.message ?? '' };
-    },
-    [requestMagicLinkMutation],
-  );
+  const requestMagicLink = useCallback(async (email: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: REQUEST_MAGIC_LINK,
+      variables: { input: { email } },
+    });
+    return res.data?.requestMagicLink ?? { ok: false, message: 'Unknown error' };
+  }, [apolloClient]);
 
-  const verifyMagicLink = useCallback(
-    async (token: string) => {
-      const res = await verifyMagicLinkMutation({ variables: { token } });
-      const payload = res.data?.verifyMagicLink;
-      if (!payload) throw new Error('Magic link verification failed');
-      if (payload.twoFactorRequired) {
-        throw new Error('2FA required for this signin');
-      }
-      const result = applyAuthPayload(payload);
-      if (result.user) setUser(result.user);
-      setHasToken(true);
-    },
-    [verifyMagicLinkMutation],
-  );
+  const verifyMagicLink = useCallback(async (token: string) => {
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({
+      mutation: VERIFY_MAGIC_LINK,
+      variables: { input: { token } },
+    });
+    const payload = res.data?.verifyMagicLink;
+    if (!payload) throw new Error('Magic link verification failed');
+    const result = applyAuthPayload(payload);
+    if (result.user) setUser(result.user);
+    setHasToken(true);
+  }, [apolloClient]);
 
   const recoveryCodesRemaining = useCallback(async (): Promise<number> => {
-    // Issue a single-field query on demand. Apollo caches it briefly.
+    if (!apolloClient) return 0;
     const { data } = await apolloClient.query<{ recoveryCodesRemaining: number }>({
       query: RECOVERY_CODES_REMAINING,
       fetchPolicy: 'network-only',
@@ -315,121 +390,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [apolloClient]);
 
   const regenerateRecoveryCodes = useCallback(async (): Promise<string[]> => {
-    const res = await regenerateRecoveryCodesMutation();
+    if (!apolloClient) throw new Error('Apollo not ready');
+    const res = await apolloClient.mutate({ mutation: REGENERATE_RECOVERY_CODES });
     return (res.data?.regenerateRecoveryCodes as string[] | undefined) ?? [];
-  }, [regenerateRecoveryCodesMutation]);
+  }, [apolloClient]);
 
   const refresh = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
+    if (!apolloClient) return;
+    // Re-read token from storage
+    setHasToken(!!getAccessToken());
+    // Force refresh me query
+    window.dispatchEvent(new CustomEvent('refresh-user'));
+  }, [apolloClient]);
 
-  /**
-   * Mints a fake JWT-shaped access + refresh token locally so the proxy
-   * (which only inspects the cookie) lets the developer into /dashboard
-   * without any DB. The proxy only checks the cookie existence + role
-   * claim, and the dashboard pages render mock data, so this is enough for
-   * a full UI walkthrough.
-   */
-  const devSignIn = useCallback(
-    (role: UserRole = 'ADMIN') => {
-      if (!isDevLoginAvailable) {
-        // Silent no-op in production so we never accidentally enable it.
-        return;
-      }
-      const nowSeconds = Math.floor(Date.now() / 1000);
-      const expiresIn = 60 * 60 * 24; // 24h
-      const makeToken = (typ: 'access' | 'refresh') => {
-        const header = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
-          .replace(/=/g, '')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_');
-        const payload = btoa(
-          JSON.stringify({
-            sub: `dev-${role.toLowerCase()}`,
-            email: `${role.toLowerCase()}@spacejam.dev`,
-            role,
-            sid: `dev-session-${nowSeconds}`,
-            typ,
-            iat: nowSeconds,
-            exp: nowSeconds + expiresIn,
-          }),
-        )
-          .replace(/=/g, '')
-          .replace(/\+/g, '-')
-          .replace(/\//g, '_');
-        return `${header}.${payload}.dev-signature`;
-      };
-      const accessToken = makeToken('access');
-      const refreshToken = makeToken('refresh');
-      setTokens({
-        accessToken,
-        refreshToken,
-        accessTokenExpiresAt: new Date((nowSeconds + expiresIn) * 1000).toISOString(),
-        refreshTokenExpiresAt: new Date((nowSeconds + expiresIn) * 1000).toISOString(),
-      });
-      setMemoryAccessToken(accessToken);
-      const devUser: AuthUser = {
-        id: `dev-${role.toLowerCase()}`,
-        email: `${role.toLowerCase()}@spacejam.dev`,
-        name: `Dev ${role}`,
-        role,
-        active: true,
-        emailVerified: true,
-        twoFactorEnabled: false,
-        avatar: null,
-        createdAt: new Date().toISOString(),
-      };
-      setUser(devUser);
-      setHasToken(true);
-    },
-    [isDevLoginAvailable],
+  const devSignIn = useCallback((role: UserRole = 'ADMIN') => {
+    if (!isDevLoginAvailable) return;
+    installDevAuth(role);
+    setUser(DEV_USERS[role]);
+    setHasToken(true);
+  }, [isDevLoginAvailable]);
+
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    isAuthenticated: !!user?.active,
+    isLoading,
+    hasToken,
+    signin,
+    signup,
+    verifyTwoFactor,
+    logout,
+    requestPasswordReset,
+    resetPassword,
+    changePassword,
+    requestMagicLink,
+    verifyMagicLink,
+    recoveryCodesRemaining,
+    regenerateRecoveryCodes,
+    refresh,
+    devSignIn,
+    isDevLoginAvailable,
+  }), [
+    user, hasToken, isLoading,
+    signin, signup, verifyTwoFactor, logout,
+    requestPasswordReset, resetPassword, changePassword,
+    requestMagicLink, verifyMagicLink,
+    recoveryCodesRemaining, regenerateRecoveryCodes, refresh,
+    devSignIn, isDevLoginAvailable,
+  ]);
+
+  return (
+    <AuthContext.Provider value={value}>
+      {apolloClient && (
+        <MeQueryClient
+          client={apolloClient}
+          hasToken={hasToken}
+          isDevLoginAvailable={isDevLoginAvailable}
+        />
+      )}
+      {children}
+    </AuthContext.Provider>
   );
-
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      isAuthenticated: !!user && hasToken,
-      isLoading: loading && hasToken,
-      hasToken,
-      signin,
-      signup,
-      verifyTwoFactor,
-      logout,
-      requestPasswordReset,
-      resetPassword,
-      changePassword,
-      requestMagicLink,
-      verifyMagicLink,
-      recoveryCodesRemaining,
-      regenerateRecoveryCodes,
-      refresh,
-      devSignIn,
-      isDevLoginAvailable,
-    }),
-    [
-      user,
-      hasToken,
-      loading,
-      signin,
-      signup,
-      verifyTwoFactor,
-      logout,
-      requestPasswordReset,
-      resetPassword,
-      changePassword,
-      requestMagicLink,
-      verifyMagicLink,
-      recoveryCodesRemaining,
-      regenerateRecoveryCodes,
-      refresh,
-      devSignIn,
-      isDevLoginAvailable,
-    ],
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-// re-export the apollo client getter so other modules can use it without
-// importing the path again.
-export { getApolloClient as getApolloClientInstance };
