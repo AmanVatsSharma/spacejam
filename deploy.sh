@@ -51,7 +51,8 @@ npm install --prefer-offline 2>&1 | tail -5
 echo ""
 echo "=== [5/6] Building apps ==="
 npx nx build api
-npx nx build web
+cd /home/ubuntu/spacejam/apps/web && npx next build --webpack
+cd /home/ubuntu/spacejam
 
 echo ""
 echo "=== [6/6] Starting / restarting via PM2 ==="
