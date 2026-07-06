@@ -50,7 +50,7 @@ const Icons = {
 
 /* --------------- Status styles --------------- */
 
-function getStatusStyle(status: RequestStatus) {
+function getStatusStyle(status: string) {
   switch (status) {
     case "Pending": return "bg-[#FFF0E6] text-[#FF7847]";
     case "Approved": return "bg-[#E6F4EA] text-[#1E8E3E]";
@@ -76,14 +76,7 @@ export default function RequestsPage() {
   const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
 
-  // Detect demo fallback: Apollo returns null/empty (backend unavailable or missing)
-  useEffect(() => {
-    if (!loading && !error && !requests?.length && !isDemo) {
-      const timer = setTimeout(() => setIsDemo(true), 2000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [loading, error, requests?.length, isDemo]);
+  // Loading state is handled by Apollo hook; fall back to loading indicator if needed
 
   const requestList = requests.map((r: any) => ({
       id: r.id,
@@ -149,7 +142,6 @@ export default function RequestsPage() {
         <div className="flex-1 flex flex-col gap-5 min-w-0">
           {/* Filters */}
           <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-[280px]">
             <div className="relative flex-1 max-w-[280px]">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">{Icons.search}</span>
               <input
@@ -277,28 +269,9 @@ export default function RequestsPage() {
               className="w-full mt-2 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">View Pending</button>
           </div>
 
-          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">
-            <h3 className="text-[16px] font-bold text-gray-900 mb-5">Recent Activities</h3>
-            <div className="flex flex-col gap-6">
-              {FALLBACK_ACTIVITIES.map((activity, idx) => (
-                <div key={idx} className="flex gap-4 items-start">
-                  <div className="shrink-0 mt-0.5">{activity.icon === "payment" ? Icons.payment : Icons.printer}</div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[14px] font-bold text-gray-900">{activity.title}</span>
-                    <span className="text-[13px] text-gray-500">{activity.description}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Activities section removed - real data integration pending */}
         </div>
       </div>
-
-      {/* Modal */}
-      <PendingApprovalsModal
-        isOpen={showPendingModal}
-        onClose={() => setShowPendingModal(false)}
-      />
     </div>
   );
 }
