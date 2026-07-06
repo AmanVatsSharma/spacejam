@@ -1,3 +1,6 @@
+"use client";
+
+
 /**
  * File:        apps/web/src/app/dashboard/operations/page.tsx
  * Module:      Web · Dashboard · Operations Page
@@ -7,10 +10,10 @@
  *   - OperationsPage — operations page content
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-28
+ * Last-updated: 2026-07-02
  */
 
-"use client";
+export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";

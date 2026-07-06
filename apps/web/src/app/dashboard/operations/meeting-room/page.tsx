@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/operations/meeting-room/page.tsx
  * Module:      Web · Dashboard · Meeting Room
@@ -7,7 +9,8 @@
  * Last-updated: 2026-07-02
  */
 
-"use client";
+
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { useMeetingRooms } from "@/hooks/use-operations";

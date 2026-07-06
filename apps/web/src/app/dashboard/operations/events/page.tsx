@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * File:        apps/web/src/app/dashboard/operations/events/page.tsx
  * Module:      Web · Dashboard · Operations · Events
@@ -8,7 +10,8 @@
  * Last-updated: 2026-07-02
  */
 
-"use client";
+
+export const dynamic = 'force-dynamic';
 
 import { useMemo, useState, useEffect } from "react";
 import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent } from "@/hooks/use-operations";
