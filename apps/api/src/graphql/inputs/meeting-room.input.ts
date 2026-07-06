@@ -22,12 +22,12 @@ export class RoomFiltersInput {
   @IsOptional()
   floorId?: string;
 
-  @Field({ nullable: true })
+  @Field(() => RoomType, { nullable: true })
   @IsEnum(RoomType)
   @IsOptional()
   type?: RoomType;
 
-  @Field({ nullable: true })
+  @Field(() => RoomStatus, { nullable: true })
   @IsEnum(RoomStatus)
   @IsOptional()
   status?: RoomStatus;
@@ -73,7 +73,7 @@ export class CreateMeetingRoomInput {
   @IsOptional()
   floorId?: string;
 
-  @Field()
+  @Field(() => RoomType)
   @IsEnum(RoomType)
   @IsNotEmpty()
   type!: RoomType;
@@ -83,7 +83,7 @@ export class CreateMeetingRoomInput {
   @IsNotEmpty()
   capacity!: number;
 
-  @Field({ nullable: true })
+  @Field(() => RoomStatus, { nullable: true })
   @IsEnum(RoomStatus)
   @IsOptional()
   status?: RoomStatus;
@@ -117,7 +117,7 @@ export class UpdateMeetingRoomInput {
   @IsOptional()
   floorId?: string;
 
-  @Field({ nullable: true })
+  @Field(() => RoomType, { nullable: true })
   @IsEnum(RoomType)
   @IsOptional()
   type?: RoomType;
@@ -127,7 +127,7 @@ export class UpdateMeetingRoomInput {
   @IsOptional()
   capacity?: number;
 
-  @Field({ nullable: true })
+  @Field(() => RoomStatus, { nullable: true })
   @IsEnum(RoomStatus)
   @IsOptional()
   status?: RoomStatus;

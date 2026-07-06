@@ -13,6 +13,13 @@ module.exports = {
   experiments: {
     outputModule: false,
   },
+  // Prevent webpack from tree-shaking NestJS decorator-referenced classes
+  // (classes only used as @Query(() => SomeClass) arguments). Without this,
+  // webpack marks them as unused and they resolve to undefined at runtime,
+  // causing "TypeError: metatype is not a constructor".
+  optimization: {
+    usedExports: false,
+  },
   plugins: [
     new NxAppWebpackPlugin({
       target: 'node',

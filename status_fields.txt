@@ -1,0 +1,255 @@
+apps\api\src\typeorm\entities\seat.entity.ts:
+@Field(() => SeatStatus)
+  @Column({ type: 'enum', enum: SeatStatus, default: SeatStatus.AVAILABLE })
+  status!:
+
+apps\api\src\typeorm\entities\request.entity.ts:
+@Field(() => RequestStatus)
+  @Column({
+    type: 'enum',
+    enum: RequestStatus,
+    default: RequestStatus.PENDING,
+  })
+  status!:
+
+apps\api\src\typeorm\entities\payment.entity.ts:
+@Field(() => PaymentStatus)
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  status!:
+
+apps\api\src\typeorm\entities\meeting-room.entity.ts:
+@Field(() => RoomStatus)
+  @Column({ type: 'enum', enum: RoomStatus, default: RoomStatus.AVAILABLE })
+  status!:
+
+apps\api\src\typeorm\entities\lead.entity.ts:
+@Field(() => LeadStatus)
+  @Column({ type: 'enum', enum: LeadStatus, default: LeadStatus.NEW })
+  status!:
+
+apps\api\src\typeorm\entities\invoice.entity.ts:
+@Field(() => InvoiceStatus)
+  @Column({ type: 'enum', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
+  status!:
+
+apps\api\src\typeorm\entities\event.entity.ts:
+@Field(() => EventStatus)
+  @Column({
+    type: 'enum',
+    enum: EventStatus,
+    default: EventStatus.PENDING,
+  })
+  status!:
+
+apps\api\src\typeorm\entities\deposit.entity.ts:
+@Field(() => DepositStatus)
+  @Column({ type: 'enum', enum: DepositStatus, default: DepositStatus.HELD })
+  status!:
+
+apps\api\src\typeorm\entities\customer.entity.ts:
+@Field(() => CustomerStatus)
+    @Column({
+        type: 'enum',
+        enum: CustomerStatus,
+        default: CustomerStatus.ACTIVE,
+    })
+    status!:
+
+apps\api\src\typeorm\entities\contract.entity.ts:
+@Field()
+  @Column({ name: 'endDate', type: 'date' })
+  endDate!: Date;
+
+  @Field(() => ContractStatus)
+  @Column({ type: 'enum', enum: ContractStatus })
+  status!:
+
+apps\api\src\typeorm\entities\center.entity.ts:
+@Field(() => CenterStatus)
+  @Column({ type: 'enum', enum: CenterStatus, default: CenterStatus.ACTIVE })
+  status!:
+
+apps\api\src\typeorm\entities\booking.entity.ts:
+@Field(() => BookingStatus)
+  @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
+  status!:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field({ nullable: true })
+  @IsNumber()
+  @IsOptional()
+  totalAmount?: number;
+
+  @Field(() => InvoiceStatus, { nullable: true })
+  @IsEnum(InvoiceStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field({ nullable: true })
+  @IsNumber()
+  @IsOptional()
+  totalAmount?: number;
+
+  @Field(() => InvoiceStatus, { nullable: true })
+  @IsEnum(InvoiceStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field(() => InvoiceStatus, { nullable: true })
+  @IsEnum(InvoiceStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field({ nullable: true })
+  @IsNumber()
+  @IsOptional()
+  amount?: number;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field({ nullable: true })
+  @IsDate()
+  @IsOptional()
+  endDate?: Date;
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\revenue.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\request.input.ts:
+@Field(() => RequestStatus, { nullable: true })
+  @IsEnum(RequestStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\request.input.ts:
+@Field(() => RequestStatus, { nullable: true })
+  @IsEnum(RequestStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\meeting-room.input.ts:
+@Field(() => RoomStatus, { nullable: true })
+  @IsEnum(RoomStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\meeting-room.input.ts:
+@Field(() => RoomStatus, { nullable: true })
+  @IsEnum(RoomStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\meeting-room.input.ts:
+@Field(() => RoomStatus, { nullable: true })
+  @IsEnum(RoomStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\event.input.ts:
+@Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @Field(() => EventStatus, { nullable: true })
+  @IsEnum(EventStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\event.input.ts:
+@Field(() => EventStatus, { nullable: true })
+  @IsEnum(EventStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\customer.input.ts:
+@Field(() => CustomerStatus, { nullable: true })
+    @IsEnum(CustomerStatus)
+    @IsOptional()
+    status?:
+
+apps\api\src\graphql\inputs\customer.input.ts:
+@Field(() => CustomerStatus, { nullable: true })
+    @IsEnum(CustomerStatus)
+    @IsOptional()
+    status?:
+
+apps\api\src\graphql\inputs\customer.input.ts:
+@Field(() => CustomerStatus, { nullable: true })
+    @IsEnum(CustomerStatus)
+    @IsOptional()
+    status?:
+
+apps\api\src\graphql\inputs\crm.input.ts:
+@Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  company?: string;
+
+  @Field(() => LeadStatus, { nullable: true })
+  @IsEnum(LeadStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\crm.input.ts:
+@Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  company?: string;
+
+  @Field(() => LeadStatus, { nullable: true })
+  @IsEnum(LeadStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\crm.input.ts:
+@Field(() => LeadStatus, { nullable: true })
+  @IsEnum(LeadStatus)
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\center.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\center.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\center.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+
+apps\api\src\graphql\inputs\booking.input.ts:
+@Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  status?:
+

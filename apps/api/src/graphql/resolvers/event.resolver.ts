@@ -55,7 +55,7 @@ export class EventResolver {
   }
 
   @Query(() => Event, { nullable: true })
-  async event(@Args('id', () => ID) id: string): Promise<Event | null> {
+  async event(@Args('id', { type: () => ID }) id: string): Promise<Event | null> {
     return this.eventRepo.findOne({
       where: { id },
       relations: ['center', 'meetingRoom', 'requestedBy'],
@@ -223,7 +223,7 @@ export class EventResolver {
 
   @Mutation(() => CreateEventPayload)
   async updateEvent(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEventInput,
   ): Promise<any> {
     await this.eventRepo.update(id, input);
@@ -244,8 +244,8 @@ export class EventResolver {
 
   @Mutation(() => CreateEventPayload)
   async updateEventStatus(
-    @Args('id', () => ID) id: string,
-    @Args('status') status: EventStatus,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('status', { type: () => EventStatus }) status: EventStatus,
   ): Promise<any> {
     await this.eventRepo.update(id, { status });
 
@@ -264,7 +264,7 @@ export class EventResolver {
   }
 
   @Mutation(() => Boolean)
-  async cancelEvent(@Args('id', () => ID) id: string): Promise<boolean> {
+  async cancelEvent(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.eventRepo.update(id, {
       status: EventStatus.CANCELLED,
     });
@@ -276,7 +276,7 @@ export class EventResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteEvent(@Args('id', () => ID) id: string): Promise<boolean> {
+  async deleteEvent(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.eventRepo.delete(id);
 
     await this.cache.invalidatePattern('events:*');
@@ -289,7 +289,7 @@ export class EventResolver {
   async myEvents(
     @Args('requestedBy', { nullable: true }) requestedBy?: string,
     @Args('centerId', { nullable: true }) centerId?: string,
-    @Args('status', { nullable: true }) status?: EventStatus,
+    @Args('status', { type: () => EventStatus, nullable: true }) status?: EventStatus,
   ): Promise<Event[]> {
     const where: any = {};
 

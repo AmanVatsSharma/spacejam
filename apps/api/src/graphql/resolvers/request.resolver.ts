@@ -7,11 +7,12 @@
  * Last-updated: 2026-07-02
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID, Int } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Request, RequestStatus, RequestType } from '../../typeorm/entities/request.entity';
-import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput } from '../inputs/request.input';
+import { Request } from '../../typeorm/entities/request.entity';
+import { RequestStatus, RequestType } from '../types/user.type';
+import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput, RequestStatistics, CreateRequestPayload } from '../inputs/request.input';
 import { CacheService } from '../../cache/cache.service';
 
 @Resolver(() => Request)
@@ -53,7 +54,7 @@ export class RequestResolver {
   }
 
   @Query(() => Request, { nullable: true })
-  async request(@Args('id', () => ID) id: string): Promise<Request | null> {
+  async request(@Args('id', { type: () => ID }) id: string): Promise<Request | null> {
     return this.requestRepo.findOne({
       where: { id },
       relations: ['center', 'requestedBy', 'assignedTo'],
@@ -96,7 +97,7 @@ export class RequestResolver {
   @Query(() => [Request])
   async myRequests(
     @Args('requestedBy') requestedBy: string,
-    @Args('status', { nullable: true }) status?: RequestStatus,
+    @Args('status', { type: () => RequestStatus, nullable: true }) status?: RequestStatus,
   ): Promise<Request[]> {
     const where: any = { requestedById: requestedBy };
     if (status) where.status = status;
@@ -126,7 +127,7 @@ export class RequestResolver {
 
   @Query(() => [Request])
   async requestsByType(
-    @Args('type') type: RequestType,
+    @Args('type', { type: () => RequestType }) type: RequestType,
     @Args('centerId', { nullable: true }) centerId?: string,
   ): Promise<Request[]> {
     const where: any = { type };
@@ -200,7 +201,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async updateRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateRequestInput,
   ): Promise<Request> {
     await this.requestRepo.update(id, input);
@@ -218,7 +219,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async assignRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('assignedToId') assignedToId: string,
   ): Promise<Request> {
     await this.requestRepo.update(id, {
@@ -239,7 +240,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async approveRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
   ): Promise<Request> {
     await this.requestRepo.update(id, {
       status: RequestStatus.IN_PROGRESS,
@@ -258,7 +259,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async rejectRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('resolution') resolution: string,
   ): Promise<Request> {
     await this.requestRepo.update(id, {
@@ -279,7 +280,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async completeRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('resolution', { nullable: true }) resolution?: string,
   ): Promise<Request> {
     const completedDate = new Date().toISOString().split('T')[0];
@@ -302,7 +303,7 @@ export class RequestResolver {
   }
 
   @Mutation(() => Boolean)
-  async cancelRequest(@Args('id', () => ID) id: string): Promise<boolean> {
+  async cancelRequest(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.requestRepo.update(id, {
       status: RequestStatus.CANCELLED,
     });
@@ -314,7 +315,7 @@ export class RequestResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteRequest(@Args('id', () => ID) id: string): Promise<boolean> {
+  async deleteRequest(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.requestRepo.delete(id);
 
     await this.cache.invalidatePattern('requests:*');
@@ -326,7 +327,7 @@ export class RequestResolver {
   @Query(() => [Request])
   async requestsByCenter(
     @Args('centerId') centerId: string,
-    @Args('limit', { nullable: true, type: 'Int' }) limit?: number,
+    @Args('limit', { nullable: true, type: () => Int }) limit?: number,
   ): Promise<Request[]> {
     return this.requestRepo.find({
       where: { centerId },
@@ -338,7 +339,7 @@ export class RequestResolver {
 
   @Mutation(() => Request)
   async escalateRequest(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
   ): Promise<Request> {
     await this.requestRepo.update(id, { urgency: 'HIGH' });
 

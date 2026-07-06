@@ -249,7 +249,7 @@ export class UpdateDepositInput {
   @IsOptional()
   amount?: number;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   status?: string;
@@ -277,7 +277,7 @@ export class UpdateDepositInput {
 
 @InputType()
 export class DepositFiltersInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   status?: string;
@@ -403,7 +403,7 @@ export class UpdateContractInput {
   @IsOptional()
   endDate?: Date;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   status?: string;
@@ -431,7 +431,7 @@ export class UpdateContractInput {
 
 @InputType()
 export class ContractFiltersInput {
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
   status?: string;

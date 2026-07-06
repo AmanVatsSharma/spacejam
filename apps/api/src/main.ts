@@ -7,6 +7,7 @@
  * Last-updated: 2026-06-20
  */
 
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';

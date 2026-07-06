@@ -9,6 +9,7 @@
 
 import { ObjectType, Field, InputType, Int, Float } from '@nestjs/graphql';
 import { RequestType, RequestStatus } from '../types/user.type';
+import { Request as RequestEntity } from '../../typeorm/entities/request.entity';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsNumber, IsBoolean } from 'class-validator';
 
 @InputType()
@@ -58,9 +59,9 @@ export class CreateRequestInput {
   @IsOptional()
   attachedFile?: string;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  metadata?: any;
+  metadata?: string;
 }
 
 @InputType()
@@ -115,19 +116,19 @@ export class UpdateRequestInput {
   @IsOptional()
   attachedFile?: string;
 
-  @Field(() => Object, { nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  metadata?: any;
+  metadata?: string;
 }
 
 @InputType()
 export class RequestFiltersInput {
-  @Field({ nullable: true })
+  @Field(() => RequestStatus, { nullable: true })
   @IsEnum(RequestStatus)
   @IsOptional()
   status?: RequestStatus;
 
-  @Field({ nullable: true })
+  @Field(() => RequestType, { nullable: true })
   @IsEnum(RequestType)
   @IsOptional()
   type?: RequestType;
@@ -209,8 +210,8 @@ export class CreateRequestPayload {
   @Field()
   success!: boolean;
 
-  @Field({ nullable: true })
-  request?: any;
+  @Field(() => RequestEntity, { nullable: true })
+  request?: RequestEntity;
 
   @Field({ nullable: true })
   error?: string;

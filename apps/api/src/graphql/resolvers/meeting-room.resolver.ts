@@ -53,7 +53,7 @@ export class MeetingRoomResolver {
   }
 
   @Query(() => MeetingRoom, { nullable: true })
-  async meetingRoom(@Args('id', () => ID) id: string): Promise<MeetingRoom | null> {
+  async meetingRoom(@Args('id', { type: () => ID }) id: string): Promise<MeetingRoom | null> {
     return this.roomRepo.findOne({
       where: { id },
       relations: ['center', 'bookings'],
@@ -89,7 +89,7 @@ export class MeetingRoomResolver {
 
   @Mutation(() => MeetingRoom)
   async updateMeetingRoom(
-    @Args('id', () => ID) id: string,
+    @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateMeetingRoomInput,
   ): Promise<MeetingRoom> {
     await this.roomRepo.update(id, input);
@@ -101,8 +101,8 @@ export class MeetingRoomResolver {
 
   @Mutation(() => MeetingRoom)
   async updateRoomStatus(
-    @Args('id', () => ID) id: string,
-    @Args('status') status: string,
+    @Args('id', { type: () => ID }) id: string,
+    @Args('status', { type: () => String }) status: string,
   ): Promise<MeetingRoom> {
     await this.roomRepo.update(id, { status });
     const room = await this.roomRepo.findOne({ where: { id }, relations: ['center'] });
@@ -112,7 +112,7 @@ export class MeetingRoomResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteMeetingRoom(@Args('id', () => ID) id: string): Promise<boolean> {
+  async deleteMeetingRoom(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.roomRepo.delete(id);
     await this.cache.invalidatePattern('meeting_rooms:*');
     await this.cache.invalidate(`meeting_room:${id}`);
@@ -121,8 +121,8 @@ export class MeetingRoomResolver {
 
   @Mutation(() => Boolean)
   async bulkUpdateStatus(
-    @Args('roomIds', () => [String]) roomIds: string[],
-    @Args('status') status: string,
+    @Args('roomIds', { type: () => [String] }) roomIds: string[],
+    @Args('status', { type: () => String }) status: string,
   ): Promise<boolean> {
     await this.roomRepo.update(
       { id: In(roomIds) as any },

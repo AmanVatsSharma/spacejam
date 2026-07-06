@@ -9,6 +9,7 @@
 
 import { ObjectType, Field, InputType, Int, Float } from '@nestjs/graphql';
 import { EventType, EventStatus } from '../types/user.type';
+import { Event } from '../../typeorm/entities/event.entity';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsNumber, IsArray } from 'class-validator';
 
 @InputType()
@@ -166,12 +167,12 @@ export class UpdateEventInput {
 
 @InputType()
 export class EventFiltersInput {
-  @Field({ nullable: true })
+  @Field(() => EventStatus, { nullable: true })
   @IsEnum(EventStatus)
   @IsOptional()
   status?: EventStatus;
 
-  @Field({ nullable: true })
+  @Field(() => EventType, { nullable: true })
   @IsEnum(EventType)
   @IsOptional()
   type?: EventType;
@@ -240,8 +241,8 @@ export class CreateEventPayload {
   @Field()
   success!: boolean;
 
-  @Field({ nullable: true })
-  event?: any;
+  @Field(() => Event, { nullable: true })
+  event?: Event;
 
   @Field({ nullable: true })
   error?: string;

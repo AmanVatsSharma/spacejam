@@ -1,0 +1,47 @@
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +27ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCacheModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPubSubModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +4ms[39m
+[33m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [33m   WARN[39m [38;5;3m[EmailService] [39m[33mSMTP_HOST not configured — emails will be logged to console only[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mLoggerModule dependencies initialized[39m[38;5;3m +24ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +7ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGraphQLSchemaBuilderModule dependencies initialized[39m[38;5;3m +0ms[39m
+[33m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [33m   WARN[39m [38;5;3m[CacheService] [39m[33mRedis error: connect ENOENT //[39m
+[33m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [33m   WARN[39m [38;5;3m[CacheService] [39m[33mRedis error: connect ENOENT //[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmCoreModule dependencies initialized[39m[38;5;3m +47ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUserRepositoryModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mBookingModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mCenterModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAnalyticsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[31m[Nest] 33064  - [39m07/06/2026, 7:50:05 PM [31m  ERROR[39m [38;5;3m[ExceptionHandler] [39mTypeError: metatype is not a constructor
+    at Injector.instantiateClass (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\injector.js:431:231)
+    at callback (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\injector.js:72:45)
+[90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at async Injector.resolveConstructorParams (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\injector.js:180:24)
+    at async Injector.loadInstance (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\injector.js:77:13)
+    at async Injector.loadInjectable (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\injector.js:104:9)
+    at async c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\instance-loader.js:80:13
+    at async Promise.all (index 0)
+    at async InstanceLoader.createInstancesOfInjectables (c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\instance-loader.js:79:9)
+    at async c:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam\node_modules\[4m@nestjs\core[24m\injector\instance-loader.js:41:13

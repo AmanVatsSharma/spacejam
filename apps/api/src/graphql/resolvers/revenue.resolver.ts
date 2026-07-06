@@ -134,7 +134,7 @@ export class InvoiceResolver {
 
   @Query(() => Number)
   async invoiceCount(
-    @Args('status', { nullable: true }) status?: InvoiceStatus
+    @Args('status', { type: () => InvoiceStatus, nullable: true }) status?: InvoiceStatus
   ): Promise<number> {
     const where = status ? { status } : {};
     return this.invoiceRepo.count({ where });
