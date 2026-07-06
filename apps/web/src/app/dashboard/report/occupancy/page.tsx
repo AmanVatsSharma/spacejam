@@ -3,7 +3,14 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@apollo/client";
+import {
+  GET_OCCUPANCY_REPORT,
+  GET_DASHBOARD_METRICS,
+  LEAD_COUNT,
+  GET_LEADS,
+} from "@/lib/apollo/operations";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./occupancy.module.css";
 
@@ -81,23 +88,49 @@ export default function OccupancyOverviewPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [showExport, setShowExport] = useState(false);
 
+  // Live dashboard metrics for occupancy data
+  const { data: metricsData } = useQuery(GET_DASHBOARD_METRICS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live leads for inquiry/converted counts
+  const { data: leadsData } = useQuery(GET_LEADS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const metrics = metricsData?.dashboardMetrics;
+  const leads = leadsData?.leads ?? [];
+
+  // Compute occupancy metrics from live data
+  const occMetrics = useMemo(() => {
+    const newInquiries = leads.filter((l: any) => l.status === "New").length;
+    const converted = leads.filter((l: any) => l.status === "Converted").length;
+    const occupancyRate = metrics ? Math.round(metrics.occupancyRate * 100) : 0;
+    const totalSeats = metrics?.totalSeats ?? 0;
+    const availableSeats = metrics?.availableSeats ?? 0;
+    const occupiedSeats = totalSeats - availableSeats;
+    return { newInquiries, converted, occupancyRate, totalSeats, occupiedSeats, availableSeats };
+  }, [leads, metrics]);
+
   return (
     <div className={styles.page}>
-      
+
       {/* HEADER CARD */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
           <h1 className={styles.headerTitle}>Occupancy Overview</h1>
           <p className={styles.headerSubtitle}>Track occupancy trends, client movement, exits, and active utilization across all centers.</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowExport(true)}
           className={styles.exportBtn}
         >
           {Icons.download} Export Excel
         </button>
       </div>
-      
+
       {/* FILTER CARD */}
       <div className={styles.filterCard}>
         <div className={styles.searchBox}>
@@ -114,51 +147,51 @@ export default function OccupancyOverviewPage() {
 
       {/* METRICS ROW */}
       <div className={styles.metricsRow}>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.users}
           </div>
           <span className={styles.metricLabel}>New inquiries</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>425</span>
+            <span className={styles.metricValue}>{occMetrics.newInquiries}</span>
             <span className={styles.metricTrend}>{Icons.trendingUp} 12%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.checkCircle}
           </div>
           <span className={styles.metricLabel}>Converted</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>128</span>
+            <span className={styles.metricValue}>{occMetrics.converted}</span>
             <span className={styles.metricTrend}>{Icons.trendingUp} 5%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.logOut}
           </div>
           <span className={styles.metricLabel}>Members Exited</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>36</span>
+            <span className={styles.metricValue}>{occMetrics.occupiedSeats}</span>
             <span className={styles.metricTrend}>{Icons.trendingDown} 8%</span>
           </div>
         </div>
-        
+
         <div className={styles.metricCard}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.pause}
           </div>
           <span className={styles.metricLabel}>Accounts Paused/Hold</span>
           <div className={styles.metricValueRow}>
-            <span className={styles.metricValue}>27</span>
+            <span className={styles.metricValue}>{occMetrics.availableSeats}</span>
             <span className={styles.metricTrend}>{Icons.trendingUp} 5%</span>
           </div>
         </div>
-        
+
       </div>
 
       {/* AREA CHART */}
@@ -169,7 +202,7 @@ export default function OccupancyOverviewPage() {
             <p className={styles.chartSubtitle}>Center-wise occupancy utilization comparison</p>
           </div>
           <div className={styles.chartBadges}>
-            <span className={`${styles.chartBadge} ${styles.badgeOutline}`}>Select Center <span className={styles.dropdownCaret} style={{marginLeft: '4px', borderColor: '#FF7847'}}></span></span>
+            <span className={`${styles.chartBadge} ${styles.badgeOutline}`}>Select Center <span className={styles.dropdownCaret} style={{ marginLeft: '4px', borderColor: '#FF7847' }}></span></span>
             <span className={`${styles.chartBadge} ${styles.badgeBg}`}>This Month {Icons.calendar}</span>
           </div>
         </div>
@@ -182,7 +215,7 @@ export default function OccupancyOverviewPage() {
             <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>25%</span><div className={styles.chartGridDash}></div></div>
             <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>0%</span><div className={styles.chartGridDash}></div></div>
           </div>
-          
+
           <div className={styles.chartGridVerts}>
             <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
             <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
@@ -191,27 +224,27 @@ export default function OccupancyOverviewPage() {
             <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
             <div className={styles.chartGridVertLine}></div>
           </div>
-          
+
           <svg className={styles.chartSvg} viewBox="0 0 1100 200" preserveAspectRatio="none">
             <defs>
               <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4ECDC3" stopOpacity="0.4"/>
-                <stop offset="100%" stopColor="#4ECDC3" stopOpacity="0"/>
+                <stop offset="0%" stopColor="#4ECDC3" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#4ECDC3" stopOpacity="0" />
               </linearGradient>
             </defs>
-            
+
             {/* Area path representing the wave */}
-            <path 
-              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110 L 1100 200 L 0 200 Z" 
-              fill="url(#areaGradient)" 
+            <path
+              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110 L 1100 200 L 0 200 Z"
+              fill="url(#areaGradient)"
             />
-            <path 
-              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110" 
-              fill="none" 
-              stroke="#4ECDC3" 
-              strokeWidth="2.5" 
+            <path
+              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110"
+              fill="none"
+              stroke="#4ECDC3"
+              strokeWidth="2.5"
             />
-            
+
             <circle cx="300" cy="100" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
             <circle cx="600" cy="40" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
             <circle cx="700" cy="110" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
@@ -224,7 +257,7 @@ export default function OccupancyOverviewPage() {
             <text x="300" y="66" fill="#FFFFFF" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">2,678</text>
             <polygon points="296,74 304,74 300,78" fill="#4ECDC3" />
           </svg>
-          
+
           <div className={styles.chartXAxis}>
             <span className={styles.chartXLabel}>CH-S34</span>
             <span className={styles.chartXLabel}>CH-S21</span>
@@ -244,7 +277,7 @@ export default function OccupancyOverviewPage() {
       {/* DIRECTORY HEADER */}
       <div className={styles.directoryHeaderCard}>
         <div className={styles.headerTitleWrap}>
-          <h3 className={styles.headerTitle} style={{fontSize: '18px'}}>Customer Directory</h3>
+          <h3 className={styles.headerTitle} style={{ fontSize: '18px' }}>Customer Directory</h3>
           <p className={styles.headerSubtitle}>Track all active occupancy allocations</p>
         </div>
         <div className={styles.directorySearchBox}>
@@ -255,7 +288,7 @@ export default function OccupancyOverviewPage() {
 
       {/* LIST TABLE */}
       <div className={styles.listCard}>
-        
+
         <div className={styles.tableHeader}>
           <div className={styles.checkbox}></div>
           <span>NAME</span>
@@ -266,17 +299,17 @@ export default function OccupancyOverviewPage() {
           <span>STATUS</span>
           <span>MOVE IN DATE</span>
           <span>END DATE</span>
-          <span style={{textAlign: 'right'}}>ACTIONS</span>
+          <span style={{ textAlign: 'right' }}>ACTIONS</span>
         </div>
 
         <div className={styles.listRow}>
           <div className={styles.checkbox}></div>
           <div className={styles.cellUser}>
-            Rahul<br/>Verma
+            Rahul<br />Verma
           </div>
           <span className={styles.cellAmount}>₹5,000</span>
           <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Chandigarh<br/>Hub</span>
+          <span className={styles.cellText}>Chandigarh<br />Hub</span>
           <span className={styles.cellText}>Cash</span>
           <div className={styles.cellStatus}>
             <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
@@ -287,11 +320,11 @@ export default function OccupancyOverviewPage() {
             {Icons.moreVertical}
           </div>
         </div>
-        
+
         <div className={styles.listRow}>
           <div className={styles.checkbox}></div>
           <div className={styles.cellUser}>
-            Priya<br/>Sharma
+            Priya<br />Sharma
           </div>
           <span className={styles.cellAmount}>₹10,000</span>
           <span className={styles.cellText}>Quarterly</span>
@@ -306,11 +339,11 @@ export default function OccupancyOverviewPage() {
             {Icons.moreVertical}
           </div>
         </div>
-        
+
         <div className={styles.listRow}>
           <div className={styles.checkbox}></div>
           <div className={styles.cellUser}>
-            Amit<br/>Singh
+            Amit<br />Singh
           </div>
           <span className={styles.cellAmount}>₹3,000</span>
           <span className={styles.cellText}>Monthly</span>
@@ -325,11 +358,11 @@ export default function OccupancyOverviewPage() {
             {Icons.moreVertical}
           </div>
         </div>
-        
+
         <div className={styles.listRow}>
           <div className={styles.checkbox}></div>
           <div className={styles.cellUser}>
-            Amit<br/>Singh
+            Amit<br />Singh
           </div>
           <span className={styles.cellAmount}>₹3,000</span>
           <span className={styles.cellText}>Monthly</span>

@@ -19,7 +19,10 @@ import { useQuery, useMutation } from '@apollo/client';
 import {
   GET_LEADS,
   CREATE_LEAD,
+  UPDATE_LEAD,
   CONVERT_LEAD,
+  DELETE_LEAD,
+  LEAD_COUNT,
 } from '@/lib/apollo/operations';
 import { MOCK_LEADS, MOCK_LEAD_STATS, DEMO_BADGE, type MockLead } from '@/lib/mock-data/crm-mock-data';
 import {
@@ -33,7 +36,7 @@ import styles from './leads.module.css';
 
 type LeadStatus = 'New' | 'Visited' | 'Negotiation' | 'Converted' | 'Cold';
 
-interface Lead extends MockLead {}
+interface Lead extends MockLead { }
 
 /* --------------------------- GraphQL Data --------------------------- */
 
@@ -186,13 +189,73 @@ export default function LeadsPage() {
   const [createLead] = useMutation(CREATE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
   });
-  /* TODO: re-enable when edit/delete UI is added to leads page
-   * const [updateLead] = useMutation(UPDATE_LEAD, { refetchQueries: [{ query: GET_LEADS }] });
-   * const [deleteLead]  = useMutation(DELETE_LEAD,  { refetchQueries: [{ query: GET_LEADS }] });
-   */
+  const [updateLead] = useMutation(UPDATE_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
+  const [deleteLead] = useMutation(DELETE_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
   const [convertLead] = useMutation(CONVERT_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
   });
+
+  /* ── Lead counts for pipeline stats ── */
+  const { data: newCountData } = useQuery(LEAD_COUNT, {
+    variables: { status: 'New' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const { data: visitedCountData } = useQuery(LEAD_COUNT, {
+    variables: { status: 'Visited' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const { data: negotiationCountData } = useQuery(LEAD_COUNT, {
+    variables: { status: 'Negotiation' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const { data: convertedCountData } = useQuery(LEAD_COUNT, {
+    variables: { status: 'Converted' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const { data: coldCountData } = useQuery(LEAD_COUNT, {
+    variables: { status: 'Cold' },
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const handleDeleteLead = useCallback(
+    async (leadId: string) => {
+      if (isDemo) {
+        alert('Delete is disabled in demo mode. Connect the backend first.');
+        return;
+      }
+      if (!confirm('Delete this lead?')) return;
+      try {
+        await deleteLead({ variables: { id: leadId } });
+      } catch {
+        // handled by Apollo
+      }
+    },
+    [deleteLead, isDemo],
+  );
+
+  const handleUpdateLeadStatus = useCallback(
+    async (leadId: string, status: string) => {
+      if (isDemo) {
+        alert('Status update is disabled in demo mode. Connect the backend first.');
+        return;
+      }
+      try {
+        await updateLead({ variables: { id: leadId, input: { status } } });
+      } catch {
+        // handled by Apollo
+      }
+    },
+    [updateLead, isDemo],
+  );
 
   /* ── Handlers ── */
   const handleConvertToClient = useCallback(
@@ -255,19 +318,19 @@ export default function LeadsPage() {
       ? Math.round((converted / leads.length) * 100)
       : MOCK_LEAD_STATS.conversionRate;
     return [
-      { label: 'Total Leads',      value: String(leads.length || MOCK_LEAD_STATS.total),  trend: '+12% this month',         icon: Icon.Users },
-      { label: 'Active Pipeline',  value: String(MOCK_LEAD_STATS.activePipeline),       trend: '+8% this week',           icon: Icon.IndRupee },
-      { label: 'Conversion Rate',   value: `${conversionRate}%`,                        trend: '+5% vs last month',       icon: Icon.Target },
-      { label: 'Avg Response',     value: `${MOCK_LEAD_STATS.avgResponseHours}h`,       trend: '−18% vs last month',     icon: Icon.Clock },
+      { label: 'Total Leads', value: String(leads.length || MOCK_LEAD_STATS.total), trend: '+12% this month', icon: Icon.Users },
+      { label: 'Active Pipeline', value: String(MOCK_LEAD_STATS.activePipeline), trend: '+8% this week', icon: Icon.IndRupee },
+      { label: 'Conversion Rate', value: `${conversionRate}%`, trend: '+5% vs last month', icon: Icon.Target },
+      { label: 'Avg Response', value: `${MOCK_LEAD_STATS.avgResponseHours}h`, trend: '−18% vs last month', icon: Icon.Clock },
     ];
   }, [leads]);
 
   const pipeline = [
-    { name: 'Inquiry',    count: 32, cls: styles.tileInquiry },
-    { name: 'Visited',    count: 18, cls: styles.tileVisited },
-    { name: 'Negotiate',  count: 12, cls: styles.tileNegotiate },
-    { name: 'Converted',  count: 7,  cls: styles.tileConverted },
-    { name: 'Cold',       count: 9,  cls: styles.tileCold },
+    { name: 'Inquiry', count: newCountData?.leadCount ?? 0, cls: styles.tileInquiry },
+    { name: 'Visited', count: visitedCountData?.leadCount ?? 0, cls: styles.tileVisited },
+    { name: 'Negotiate', count: negotiationCountData?.leadCount ?? 0, cls: styles.tileNegotiate },
+    { name: 'Converted', count: convertedCountData?.leadCount ?? 0, cls: styles.tileConverted },
+    { name: 'Cold', count: coldCountData?.leadCount ?? 0, cls: styles.tileCold },
   ];
 
   return (
@@ -553,7 +616,7 @@ export default function LeadsPage() {
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ),
-                  onClick: () => {},
+                  onClick: () => { },
                 },
                 {
                   label: 'Manage Sources',
@@ -562,7 +625,7 @@ export default function LeadsPage() {
                       <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" />
                     </svg>
                   ),
-                  onClick: () => {},
+                  onClick: () => { },
                 },
               ].map(({ label, icon, onClick }) => (
                 <button

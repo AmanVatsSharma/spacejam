@@ -3,7 +3,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@apollo/client";
+import { GET_SEATS, GET_FLOORS } from "@/lib/apollo/operations";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./table-view.module.css";
 
@@ -34,124 +36,54 @@ const Icons = {
   )
 };
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Number(amount));
+}
+
 export default function TableViewPage() {
   const [activeDropdown, setActiveDropdown] = useState<number | null>(0);
   const [showExport, setShowExport] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const inventoryData = [
-    {
-      id: 1,
-      spaceName: "Executive Cabin 101",
-      location: "Chandigarh",
-      floor: "1st Floor",
-      type: "Cabin",
-      capacity: 4,
-      price: "₹25,000",
-      gst: "18%",
-      status: "Occupied",
-      assignedTo: "Tech Solutions Pvt Ltd",
-      startDate: "01 Jan 2026",
-      endDate: "31 Dec 2026",
-    },
-    {
-      id: 2,
-      spaceName: "Hot Desk Area A",
-      location: "Mohali",
-      floor: "2nd Floor",
-      type: "Desk",
-      capacity: 20,
-      price: "₹5,000",
-      gst: "18%",
-      status: "Available",
-      assignedTo: "-",
-      startDate: "-",
-      endDate: "-",
-    },
-    {
-      id: 3,
-      spaceName: "Meeting Room 201",
-      location: "Chandigarh",
-      floor: "2nd Floor",
-      type: "Meeting Room",
-      capacity: 10,
-      price: "₹15,000",
-      gst: "18%",
-      status: "Occupied",
-      assignedTo: "Creative Agency Inc",
-      startDate: "15 Mar 2026",
-      endDate: "15 Mar 2026",
-    },
-    {
-      id: 4,
-      spaceName: "Private Office 102",
-      location: "Jalandhar",
-      floor: "1st Floor",
-      type: "Cabin",
-      capacity: 6,
-      price: "₹35,000",
-      gst: "18%",
-      status: "Maintenance",
-      assignedTo: "-",
-      startDate: "-",
-      endDate: "-",
-    },
-    {
-      id: 5,
-      spaceName: "Conference Hall B",
-      location: "Mohali",
-      floor: "3rd Floor",
-      type: "Meeting Room",
-      capacity: 25,
-      price: "₹40,000",
-      gst: "18%",
-      status: "Available",
-      assignedTo: "-",
-      startDate: "-",
-      endDate: "-",
-    },
-    {
-      id: 6,
-      spaceName: "Dedicated Desk 301",
-      location: "Chandigarh",
-      floor: "3rd Floor",
-      type: "Desk",
+  // Live seats data
+  const { data: seatsData, loading, error } = useQuery(GET_SEATS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const seats = seatsData?.seats ?? [];
+
+  // Map API seats to the table's expected shape
+  const inventoryData = useMemo(() => {
+    return seats.map((seat: any, index: number) => ({
+      id: index + 1,
+      spaceName: seat.number ?? `Seat ${seat.id}`,
+      location: seat.location ?? "—",
+      floor: seat.floor?.name ?? "—",
+      type: seat.type ?? "—",
       capacity: 1,
-      price: "₹8,000",
+      price: seat.price ? formatCurrency(seat.price) : "—",
       gst: "18%",
-      status: "Occupied",
-      assignedTo: "Freelance Designer",
-      startDate: "01 Apr 2026",
-      endDate: "30 Sep 2026",
-    },
-    {
-      id: 7,
-      spaceName: "Team Cabin 203",
-      location: "Chandigarh",
-      floor: "2nd Floor",
-      type: "Cabin",
-      capacity: 8,
-      price: "₹45,000",
-      gst: "18%",
-      status: "Available",
-      assignedTo: "-",
+      status: seat.status ?? "Available",
+      assignedTo: seat.status === "OCCUPIED" ? "Assigned" : "-",
       startDate: "-",
       endDate: "-",
-    },
-    {
-      id: 8,
-      spaceName: "Meeting Room 102",
-      location: "Jalandhar",
-      floor: "1st Floor",
-      type: "Meeting Room",
-      capacity: 12,
-      price: "₹18,000",
-      gst: "18%",
-      status: "Occupied",
-      assignedTo: "Marketing Pro Ltd",
-      startDate: "10 Feb 2026",
-      endDate: "09 Aug 2026",
-    }
-  ];
+    }));
+  }, [seats]);
+
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return inventoryData;
+    const q = search.toLowerCase();
+    return inventoryData.filter((item: any) =>
+      item.spaceName?.toLowerCase().includes(q) ||
+      item.type?.toLowerCase().includes(q) ||
+      item.status?.toLowerCase().includes(q)
+    );
+  }, [inventoryData, search]);
 
   const toggleDropdown = (index: number) => {
     setActiveDropdown(activeDropdown === index ? null : index);
@@ -159,7 +91,7 @@ export default function TableViewPage() {
 
   return (
     <div className={styles.page}>
-      
+
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
@@ -169,9 +101,9 @@ export default function TableViewPage() {
         <div className={styles.headerActions}>
           <div className={styles.searchBox}>
             <span className={styles.searchIcon}>{Icons.search}</span>
-            <input type="text" placeholder="Search spaces..." />
+            <input type="text" placeholder="Search spaces..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <button 
+          <button
             onClick={() => setShowExport(true)}
             className={styles.exportBtn}
           >
@@ -189,19 +121,19 @@ export default function TableViewPage() {
           <div className={styles.searchBoxIcon}>{Icons.search}</div>
           <input type="text" placeholder="Search Space Name and Company" />
         </div>
-        
+
         <select className={styles.filterSelect} defaultValue="Location">
           <option disabled>Location</option>
           <option>Chandigarh</option>
           <option>Mohali</option>
           <option>Jalandhar</option>
         </select>
-        
+
         <select className={styles.filterSelect} defaultValue="Sub-Location">
           <option disabled>Sub-Location</option>
           <option>All</option>
         </select>
-        
+
         <select className={styles.filterSelect} defaultValue="Floor">
           <option disabled>Floor</option>
           <option>1st Floor</option>
@@ -248,53 +180,72 @@ export default function TableViewPage() {
             </tr>
           </thead>
           <tbody>
-            {inventoryData.map((row, index) => (
-              <tr key={row.id}>
-                <td className={styles.colSpaceName}>
-                  <div style={{ width: '120px', lineHeight: '1.4' }}>{row.spaceName}</div>
-                </td>
-                <td>{row.location}</td>
-                <td>
-                  <div style={{ width: '60px', lineHeight: '1.4' }}>{row.floor}</div>
-                </td>
-                <td>
-                  <div style={{ width: '80px', lineHeight: '1.4' }}>{row.type}</div>
-                </td>
-                <td>{row.capacity}</td>
-                <td style={{ fontWeight: 600 }}>{row.price}</td>
-                <td>{row.gst}</td>
-                <td>
-                  <span className={`${styles.badge} ${
-                    row.status === 'Occupied' ? styles.badgeOccupied :
-                    row.status === 'Available' ? styles.badgeAvailable :
-                    styles.badgeMaintenance
-                  }`}>
-                    {row.status}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ width: '120px', lineHeight: '1.4' }}>{row.assignedTo}</div>
-                </td>
-                <td>
-                  <div style={{ width: '60px', lineHeight: '1.4' }}>{row.startDate}</div>
-                </td>
-                <td>
-                  <div style={{ width: '60px', lineHeight: '1.4' }}>{row.endDate}</div>
-                </td>
-                <td className={styles.actionCell}>
-                  <div className={styles.actionBtn} onClick={() => toggleDropdown(index)}>
-                    {Icons.chevronDown}
-                  </div>
-                  {activeDropdown === index && (
-                    <div className={styles.actionDropdown}>
-                      <div className={styles.dropdownItem}>Occupied</div>
-                      <div className={styles.dropdownItem}>Available</div>
-                      <div className={styles.dropdownItem}>Maintenance</div>
-                    </div>
-                  )}
+            {loading && filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                  Loading inventory…
                 </td>
               </tr>
-            ))}
+            ) : error && filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                  Unable to load inventory. Please try again.
+                </td>
+              </tr>
+            ) : filteredData.length === 0 ? (
+              <tr>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                  No spaces found.
+                </td>
+              </tr>
+            ) : (
+              filteredData.map((row: any, index: number) => (
+                <tr key={row.id}>
+                  <td className={styles.colSpaceName}>
+                    <div style={{ width: '120px', lineHeight: '1.4' }}>{row.spaceName}</div>
+                  </td>
+                  <td>{row.location}</td>
+                  <td>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.floor}</div>
+                  </td>
+                  <td>
+                    <div style={{ width: '80px', lineHeight: '1.4' }}>{row.type}</div>
+                  </td>
+                  <td>{row.capacity}</td>
+                  <td style={{ fontWeight: 600 }}>{row.price}</td>
+                  <td>{row.gst}</td>
+                  <td>
+                    <span className={`${styles.badge} ${row.status === 'Occupied' || row.status === 'OCCUPIED' ? styles.badgeOccupied :
+                      row.status === 'Available' || row.status === 'AVAILABLE' ? styles.badgeAvailable :
+                        styles.badgeMaintenance
+                      }`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ width: '120px', lineHeight: '1.4' }}>{row.assignedTo}</div>
+                  </td>
+                  <td>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.startDate}</div>
+                  </td>
+                  <td>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.endDate}</div>
+                  </td>
+                  <td className={styles.actionCell}>
+                    <div className={styles.actionBtn} onClick={() => toggleDropdown(index)}>
+                      {Icons.chevronDown}
+                    </div>
+                    {activeDropdown === index && (
+                      <div className={styles.actionDropdown}>
+                        <div className={styles.dropdownItem}>Occupied</div>
+                        <div className={styles.dropdownItem}>Available</div>
+                        <div className={styles.dropdownItem}>Maintenance</div>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
