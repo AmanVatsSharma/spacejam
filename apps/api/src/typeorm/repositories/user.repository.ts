@@ -15,7 +15,7 @@ import { User, UserRole } from '../entities/user.entity';
 export interface UserFilters {
   role?: UserRole;
   centerId?: string;
-  isActive?: boolean;
+  active?: boolean;
   search?: string;
   limit?: number;
   offset?: number;
@@ -43,7 +43,7 @@ export class UserRepository {
    */
   async findByIdActive(id: string): Promise<User | null> {
     const user = await this.userRepo.findOne({
-      where: { id, isActive: true },
+      where: { id, active: true },
       relations: ['center'],
     });
     return user ?? null;
@@ -67,8 +67,8 @@ export class UserRepository {
       queryBuilder.andWhere('user.centerId = :centerId', { centerId: filters.centerId });
     }
 
-    if (filters?.isActive !== undefined) {
-      queryBuilder.andWhere('user.isActive = :isActive', { isActive: filters.isActive });
+    if (filters?.active !== undefined) {
+      queryBuilder.andWhere('user.isActive = :active', { active: filters.active });
     }
 
     if (filters?.search) {
@@ -117,7 +117,7 @@ export class UserRepository {
 
   async validateCredentials(email: string, password: string): Promise<User | null> {
     const user = await this.findByEmail(email);
-    if (!user || !user.isActive) {
+    if (!user || !user.active) {
       return null;
     }
     // Password comparison should be done in auth service with bcrypt

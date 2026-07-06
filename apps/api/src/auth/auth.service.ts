@@ -34,7 +34,7 @@ export class AuthService {
       relations: ['center'],
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.active) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -73,7 +73,7 @@ export class AuthService {
         name: user.name,
         role: user.role as UserRole,
         centerId: user.centerId,
-        isActive: user.isActive
+        isActive: user.active
       },
       expiresIn: 3600
     };
@@ -97,7 +97,7 @@ export class AuthService {
         relations: ['center'],
       });
 
-      if (!user || !user.isActive) {
+      if (!user || !user.active) {
         throw new UnauthorizedException('User not found');
       }
 
@@ -128,7 +128,7 @@ export class AuthService {
           name: user.name,
           role: user.role as UserRole,
           centerId: user.centerId,
-          isActive: user.isActive
+          isActive: user.active
         },
         expiresIn: 3600
       };
@@ -194,7 +194,7 @@ export class AuthService {
       where: { email }
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.active) {
       return null;
     }
 

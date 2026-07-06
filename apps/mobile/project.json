@@ -1,0 +1,35 @@
+{
+  "name": "mobile",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/mobile",
+  "projectType": "application",
+  "targets": {
+    "start": {
+      "command": "expo start",
+      "options": {
+        "cwd": "apps/mobile"
+      }
+    },
+    "android": {
+      "command": "expo run:android",
+      "options": {
+        "cwd": "apps/mobile"
+      }
+    },
+    "ios": {
+      "command": "expo run:ios",
+      "options": {
+        "cwd": "apps/mobile"
+      }
+    },
+    "prebuild": {
+      "command": "expo prebuild",
+      "options": {
+        "cwd": "apps/mobile"
+      }
+    },
+    "lint": {
+      "command": "expo lint"
+    }
+  }
+}
