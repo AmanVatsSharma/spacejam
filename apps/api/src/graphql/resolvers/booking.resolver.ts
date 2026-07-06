@@ -8,7 +8,7 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context } from '@nestjs/graphql';
-import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException, Scope } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -27,7 +27,6 @@ export const TRIGGERS = {
 } as const;
 
 @Resolver(() => BookingEntity)
-@Scope(Scope.DEFAULT)
 export class BookingResolver {
   constructor(
     private cache: CacheService,
@@ -38,7 +37,7 @@ export class BookingResolver {
     @InjectRepository(PaymentEntity)
     private paymentRepo: Repository<PaymentEntity>,
     private readonly pubSub: PubSubService,
-  ) {}
+  ) { }
 
   @Query(() => [BookingEntity])
   async bookings(
