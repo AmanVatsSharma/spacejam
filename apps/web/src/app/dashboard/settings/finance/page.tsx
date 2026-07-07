@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 import styles from "./finance.module.css";
 
 const Icons = {
@@ -90,7 +91,7 @@ const Icons = {
 
 export default function FinanceSettingsPage() {
   const [activeTab, setActiveTab] = useState("Wallet Rules"); // Defaulting to Wallet Rules based on prompt context, although usually Deposits
-  
+
   // Toggles for Deposit Settings
   const [verificationRequired, setVerificationRequired] = useState(true);
   const [otpRequired, setOtpRequired] = useState(true);
@@ -108,7 +109,7 @@ export default function FinanceSettingsPage() {
 
   return (
     <div className={styles.page}>
-      
+
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
@@ -128,8 +129,8 @@ export default function FinanceSettingsPage() {
       {/* Sub Tabs */}
       <div className={styles.subTabs}>
         {["Deposits", "Wallet Rules", "Refund Policies", "Invoice Defaults"].map(tab => (
-          <div 
-            key={tab} 
+          <div
+            key={tab}
             className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -140,10 +141,10 @@ export default function FinanceSettingsPage() {
 
       {/* Split Layout */}
       <div className={styles.splitLayout}>
-        
+
         {/* LEFT COLUMN */}
         <div className={styles.leftCol}>
-          
+
           {activeTab === "Deposits" && (
             <div className={styles.contentCard}>
               <div className={styles.formHeader}>
@@ -487,7 +488,7 @@ export default function FinanceSettingsPage() {
 
         {/* RIGHT COLUMN */}
         <div className={styles.rightCol}>
-          
+
           {activeTab === "Deposits" && (
             <div className={styles.contentCardSmallPadding}>
               <h3 className={styles.flowTitle}>Flow Preview</h3>
@@ -533,7 +534,7 @@ export default function FinanceSettingsPage() {
           {activeTab === "Wallet Rules" && (
             <div className={styles.contentCardSmallPadding}>
               <h3 className={styles.flowTitle}>Token Overview</h3>
-              
+
               <div className={styles.overviewSection}>
                 <span className={styles.overviewLabel}>Monthly Allocation</span>
                 <div className={styles.overviewBigText}>
@@ -591,7 +592,7 @@ export default function FinanceSettingsPage() {
           {activeTab === "Refund Policies" && (
             <div className={styles.contentCardSmallPadding}>
               <h3 className={styles.flowTitle} style={{ marginBottom: '24px' }}>Policy Summary</h3>
-              
+
               <div className={styles.policyGroup}>
                 <div className={styles.policyTitleRow}>
                   <span className={styles.policyTitleIcon}>{Icons.undo}</span>
@@ -682,7 +683,7 @@ export default function FinanceSettingsPage() {
           {activeTab === "Invoice Defaults" && (
             <div className={styles.contentCardSmallPadding}>
               <h3 className={styles.flowTitle} style={{ marginBottom: '24px' }}>Invoice Preview</h3>
-              
+
               <div className={styles.invoicePreviewCard}>
                 <div className={styles.invoiceHeader}>
                   <div className={styles.invoiceLogo}>

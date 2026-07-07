@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
 import styles from "./notification.module.css";
 
 const Icons = {
@@ -91,7 +92,7 @@ const Icons = {
 
 export default function NotificationSettingsPage() {
   const [activeTab, setActiveTab] = useState("Channels");
-  
+
   // Channels State
   const [channels, setChannels] = useState([
     { id: 'whatsapp', name: 'WhatsApp', icon: Icons.whatsapp, active: true, connected: true },
@@ -210,7 +211,7 @@ export default function NotificationSettingsPage() {
 
   return (
     <div className={styles.page}>
-      
+
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
@@ -230,8 +231,8 @@ export default function NotificationSettingsPage() {
       {/* Sub Tabs */}
       <div className={styles.subTabs}>
         {["Channels", "Automations"].map(tab => (
-          <div 
-            key={tab} 
+          <div
+            key={tab}
             className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
             onClick={() => {
               setActiveTab(tab);
@@ -245,10 +246,10 @@ export default function NotificationSettingsPage() {
 
       {/* Split Layout */}
       <div className={styles.splitLayout}>
-        
+
         {/* LEFT COLUMN */}
         <div className={styles.leftCol}>
-          
+
           {activeTab === "Channels" && (
             <div className={styles.contentCard}>
               <div className={styles.sectionHeader}>
@@ -263,14 +264,14 @@ export default function NotificationSettingsPage() {
                       <div className={`${styles.channelIcon} ${!channel.active ? styles.channelIconGrey : ''}`}>
                         {channel.icon}
                       </div>
-                      <div 
-                        className={`${styles.toggleSwitch} ${!channel.active ? styles.toggleSwitchOff : ''}`} 
+                      <div
+                        className={`${styles.toggleSwitch} ${!channel.active ? styles.toggleSwitchOff : ''}`}
                         onClick={() => toggleChannel(channel.id)}
                       >
                         <div className={styles.toggleKnob} style={{ transform: channel.active ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                       </div>
                     </div>
-                    
+
                     <div className={styles.channelInfo}>
                       <span className={styles.channelName}>{channel.name}</span>
                       <div className={styles.channelStatusWrap}>
@@ -367,8 +368,8 @@ export default function NotificationSettingsPage() {
                     </div>
                     {isDropdownOpen && (
                       <div style={{
-                        position: 'absolute', top: '70px', left: 0, right: 0, background: 'white', 
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)', 
+                        position: 'absolute', top: '70px', left: 0, right: 0, background: 'white',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
                         borderRadius: '8px', zIndex: 10, border: '1px solid #E5E7EB', padding: '8px 0'
                       }}>
                         <div style={{ padding: '8px 16px', fontSize: '14px', color: '#4B5563', cursor: 'pointer' }}>View Details</div>
@@ -454,7 +455,7 @@ export default function NotificationSettingsPage() {
             <div className={styles.contentCardSmallPadding}>
               <h3 className={styles.flowTitle}>Messaging Automation</h3>
               <p className={styles.flowSub}>Create and manage automated workflows</p>
-              
+
               <button className={styles.addAutoBtn}>
                 {Icons.plus} Add Automation
               </button>

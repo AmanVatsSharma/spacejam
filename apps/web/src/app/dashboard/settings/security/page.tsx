@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { CHANGE_PASSWORD } from "@/lib/apollo/operations";
+import { useAuth } from "@/contexts/auth-context";
 import styles from "./security.module.css";
 
 const Icons = {
@@ -100,7 +103,7 @@ const Icons = {
 
 export default function SecuritySettingsPage() {
   const [activeTab, setActiveTab] = useState("Authentication");
-  
+
   // Authentication State
   const [emailLogin, setEmailLogin] = useState(true);
   const [otpLogin, setOtpLogin] = useState(true);
@@ -126,7 +129,7 @@ export default function SecuritySettingsPage() {
 
   return (
     <div className={styles.page}>
-      
+
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
@@ -146,8 +149,8 @@ export default function SecuritySettingsPage() {
       {/* Sub Tabs */}
       <div className={styles.subTabs}>
         {["Authentication", "Verification Rules", "Device Management"].map(tab => (
-          <div 
-            key={tab} 
+          <div
+            key={tab}
             className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
             onClick={() => setActiveTab(tab)}
           >
@@ -158,10 +161,10 @@ export default function SecuritySettingsPage() {
 
       {/* Split Layout */}
       <div className={styles.splitLayout}>
-        
+
         {/* LEFT COLUMN */}
         <div className={styles.leftCol}>
-          
+
           {activeTab === "Authentication" && (
             <>
               <div className={styles.contentCard}>
@@ -441,7 +444,7 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.deviceList}>
-                  
+
                   <div className={styles.deviceCard}>
                     <div className={styles.deviceInfoLeft}>
                       <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
@@ -571,7 +574,7 @@ export default function SecuritySettingsPage() {
 
         {/* RIGHT COLUMN */}
         <div className={styles.rightCol}>
-          
+
           {activeTab === "Authentication" && (
             <div className={styles.contentCardSmallPadding}>
               <div className={styles.rightPanelTitleWrap}>
