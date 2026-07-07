@@ -262,9 +262,9 @@ function useContracts() {
 
 function useInvoiceCount() {
   const { data } = useQuery<InvoiceCountResult>(INVOICE_COUNT, {
-    variables: { status: "Overdue" },
+    variables: { status: "OVERDUE" },
   });
-  return data?.invoiceCount ?? MOCK_INVOICES.filter((i) => i.status === "Overdue").length;
+  return data?.invoiceCount ?? MOCK_INVOICES.filter((i) => i.status === "Overdue" || i.status === "OVERDUE").length;
 }
 
 /* ──────────────────────────────────────────────────────────

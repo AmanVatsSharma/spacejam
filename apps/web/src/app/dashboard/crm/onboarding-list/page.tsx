@@ -14,7 +14,9 @@
  */
 
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@apollo/client';
+import { GET_LEADS } from '@/lib/apollo/operations';
 import styles from './onboarding.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -41,122 +43,6 @@ interface OnboardingLead {
   avatar?: string;
 }
 
-/* ----------------------------- Data ------------------------------ */
-
-const ONBOARDING_LEADS: OnboardingLead[] = [
-  {
-    id: 'o1',
-    name: 'Aarav Patel',
-    email: 'aarav.p@nextera.in',
-    phone: '+91 98200 11233',
-    company: 'Nextera Solutions',
-    requirement: 'Private Office · 8 seats',
-    location: 'Bandra Kurla Complex',
-    source: 'Website',
-    status: 'New',
-    lastActivity: '2 hours ago',
-    assignedTo: 'Rahul',
-    avatar: 'https://i.pravatar.cc/64?img=11',
-  },
-  {
-    id: 'o2',
-    name: 'Sneha Kapoor',
-    email: 'sneha.k@brightloop.io',
-    phone: '+91 99675 44321',
-    company: 'Brightloop Tech',
-    requirement: 'Dedicated Desk · 4 seats',
-    location: 'Andheri East',
-    source: 'Referral',
-    status: 'Visit Scheduled',
-    lastActivity: '1 day ago',
-    assignedTo: 'Priya',
-    avatar: 'https://i.pravatar.cc/64?img=47',
-  },
-  {
-    id: 'o3',
-    name: 'Rohan Mehta',
-    email: 'rohan.m@quanta.dev',
-    phone: '+91 90040 56789',
-    company: 'Quanta Labs',
-    requirement: 'Hot Desk · 12 seats',
-    location: 'Powai',
-    source: 'Walk-in',
-    status: 'Visit Complete',
-    lastActivity: '3 days ago',
-    assignedTo: 'Rahul',
-    avatar: 'https://i.pravatar.cc/64?img=15',
-  },
-  {
-    id: 'o4',
-    name: 'Anjali Shah',
-    email: 'anjali.s@pixel8.co',
-    phone: '+91 99209 87412',
-    company: 'Pixel8 Agency',
-    requirement: 'Meeting Room · 2 day pass',
-    location: 'Lower Parel',
-    source: 'Social',
-    status: 'Negotiation',
-    lastActivity: '5 hours ago',
-    assignedTo: 'Priya',
-    avatar: 'https://i.pravatar.cc/64?img=48',
-  },
-  {
-    id: 'o5',
-    name: 'Vikram Joshi',
-    email: 'vikram.j@northgate.in',
-    phone: '+91 98330 77821',
-    company: 'Northgate Capital',
-    requirement: 'Enterprise Floor · 25 seats',
-    location: 'Worli',
-    source: 'Referral',
-    status: 'Agreement Sent',
-    lastActivity: '1 day ago',
-    assignedTo: 'Rahul',
-    avatar: 'https://i.pravatar.cc/64?img=12',
-  },
-  {
-    id: 'o6',
-    name: 'Meera Reddy',
-    email: 'meera.r@orbitstudio.in',
-    phone: '+91 97730 55664',
-    company: 'Orbit Studio',
-    requirement: 'Hot Desk · 3 seats',
-    location: 'Malad',
-    source: 'Email',
-    status: 'New',
-    lastActivity: 'Today',
-    assignedTo: 'Priya',
-    avatar: 'https://i.pravatar.cc/64?img=44',
-  },
-  {
-    id: 'o7',
-    name: 'Aditya Singh',
-    email: 'aditya.s@cloudbase.io',
-    phone: '+91 98110 33445',
-    company: 'CloudBase Solutions',
-    requirement: 'Private Office · 6 seats',
-    location: 'Goregaon',
-    source: 'Website',
-    status: 'Visit Scheduled',
-    lastActivity: '2 days ago',
-    assignedTo: 'Rahul',
-    avatar: 'https://i.pravatar.cc/64?img=13',
-  },
-  {
-    id: 'o8',
-    name: 'Kavya Nair',
-    email: 'kavya.n@driftworks.in',
-    phone: '+91 99441 22331',
-    company: 'Driftworks Studio',
-    requirement: 'Dedicated Desk · 2 seats',
-    location: 'Juhu',
-    source: 'Walk-in',
-    status: 'Visit Complete',
-    lastActivity: '4 days ago',
-    assignedTo: 'Priya',
-    avatar: 'https://i.pravatar.cc/64?img=49',
-  },
-];
 
 /* --------------------------- Helpers ----------------------------- */
 
@@ -238,6 +124,48 @@ const Icon = {
   ),
 };
 
+/* ─── Backend Lead shape ─── */
+interface BackendLead {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  source?: string;
+  requirement?: string;
+  location?: string;
+  status: string;
+  lastContact?: string;
+  assignedTo?: { id: string; name: string; email: string } | null;
+}
+
+/* ─── Map backend status to onboarding status ─── */
+const BACKEND_TO_ONBOARDING: Record<string, OnboardingStatus> = {
+  New: 'New',
+  Visited: 'Visit Scheduled',
+  'Visit Scheduled': 'Visit Scheduled',
+  'Visit Complete': 'Visit Complete',
+  Negotiation: 'Negotiation',
+  'Agreement Sent': 'Agreement Sent',
+  Converted: 'Agreement Sent',
+};
+
+function mapLeadToOnboarding(l: BackendLead): OnboardingLead {
+  return {
+    id: l.id,
+    name: l.name,
+    email: l.email,
+    phone: l.phone ?? '',
+    company: l.company ?? '',
+    requirement: l.requirement ?? '',
+    location: l.location ?? '',
+    source: l.source ?? 'Website',
+    status: BACKEND_TO_ONBOARDING[l.status] ?? 'New',
+    lastActivity: l.lastContact ?? '—',
+    assignedTo: l.assignedTo?.name ?? 'Unassigned',
+  };
+}
+
 /* --------------------------- Component --------------------------- */
 
 export default function OnboardingPage() {
@@ -245,42 +173,55 @@ export default function OnboardingPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | OnboardingStatus>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
 
-  const stats = [
+  /* ── Apollo data ── */
+  const { data, loading, error } = useQuery<{ leads: BackendLead[] }>(GET_LEADS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const leads: OnboardingLead[] = useMemo(() => {
+    if (!data?.leads?.length) return [];
+    return data.leads
+      .filter((l) => BACKEND_TO_ONBOARDING[l.status])
+      .map(mapLeadToOnboarding);
+  }, [data]);
+
+  const stats = useMemo(() => [
     {
       label: 'Total Onboarding',
-      value: ONBOARDING_LEADS.length,
-      trend: '+3 this week',
+      value: leads.length,
+      trend: '',
       icon: Icon.Users,
       iconBg: 'bg-orange-50',
       iconColor: 'text-orange-500',
     },
     {
       label: 'Visits Scheduled',
-      value: ONBOARDING_LEADS.filter((l) => l.status === 'Visit Scheduled').length,
-      trend: '+2 this week',
+      value: leads.filter((l) => l.status === 'Visit Scheduled').length,
+      trend: '',
       icon: Icon.Calendar,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-500',
     },
     {
       label: 'Visits Complete',
-      value: ONBOARDING_LEADS.filter((l) => l.status === 'Visit Complete').length,
-      trend: '+1 this week',
+      value: leads.filter((l) => l.status === 'Visit Complete').length,
+      trend: '',
       icon: Icon.CheckCircle,
       iconBg: 'bg-emerald-50',
       iconColor: 'text-emerald-500',
     },
     {
       label: 'Agreements Sent',
-      value: ONBOARDING_LEADS.filter((l) => l.status === 'Agreement Sent').length,
-      trend: '+1 this week',
+      value: leads.filter((l) => l.status === 'Agreement Sent').length,
+      trend: '',
       icon: Icon.FileText,
       iconBg: 'bg-purple-50',
       iconColor: 'text-purple-500',
     },
-  ];
+  ], [leads]);
 
-  const filtered = ONBOARDING_LEADS.filter((l) => {
+  const filtered = useMemo(() => leads.filter((l) => {
     const q = search.trim().toLowerCase();
     const matchesQuery =
       q.length === 0 ||
@@ -290,7 +231,7 @@ export default function OnboardingPage() {
     const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
     const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
     return matchesQuery && matchesStatus && matchesSource;
-  });
+  }), [leads, search, statusFilter, sourceFilter]);
 
   return (
     <div className={styles.shell}>
@@ -326,14 +267,14 @@ export default function OnboardingPage() {
                 p === 'all'
                   ? 'New'
                   : p === 'New'
-                  ? 'Visit Scheduled'
-                  : p === 'Visit Scheduled'
-                  ? 'Visit Complete'
-                  : p === 'Visit Complete'
-                  ? 'Negotiation'
-                  : p === 'Negotiation'
-                  ? 'Agreement Sent'
-                  : 'all',
+                    ? 'Visit Scheduled'
+                    : p === 'Visit Scheduled'
+                      ? 'Visit Complete'
+                      : p === 'Visit Complete'
+                        ? 'Negotiation'
+                        : p === 'Negotiation'
+                          ? 'Agreement Sent'
+                          : 'all',
               )
             }
             className="h-8 px-3 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"

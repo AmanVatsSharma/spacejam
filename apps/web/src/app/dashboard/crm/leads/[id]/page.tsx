@@ -1,7 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  GET_LEAD,
+  UPDATE_LEAD,
+  CONVERT_LEAD,
+  DELETE_LEAD,
+  CREATE_CUSTOMER,
+} from "@/lib/apollo/operations";
 
 // Icons
 const Icons = {
@@ -98,14 +106,52 @@ const Icons = {
   ),
 };
 
-import { 
+import {
   EditLeadDialog, ConvertClientDialog, UpdateStatusDialog, ScheduleVisitDialog,
-  SendProposalDialog, AttachDocsDialog, CallLeadDialog, WhatsappDialog, EmailDialog, AddNoteDialog 
+  SendProposalDialog, AttachDocsDialog, CallLeadDialog, WhatsappDialog, EmailDialog, AddNoteDialog
 } from './LeadDialogs';
 
 export default function LeadDetailsPage() {
   const router = useRouter();
-  
+  const params = useParams();
+  const leadId = params?.id as string;
+
+  /* ── Apollo: fetch lead ── */
+  const { data, loading } = useQuery(GET_LEAD, {
+    variables: { id: leadId },
+    skip: !leadId,
+    fetchPolicy: "cache-and-network",
+  });
+  const lead = data?.lead;
+
+  /* ── Mutations ── */
+  const [updateLead] = useMutation(UPDATE_LEAD, {
+    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
+  });
+  const [convertLead] = useMutation(CONVERT_LEAD, {
+    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
+  });
+  const [deleteLead] = useMutation(DELETE_LEAD);
+
+  const handleConvertToClient = async () => {
+    try {
+      await convertLead({ variables: { id: leadId } });
+      setShowConvertClient(false);
+    } catch (err) {
+      console.error("Failed to convert lead:", err);
+    }
+  };
+
+  const handleUpdateLead = async (input: Record<string, unknown>) => {
+    try {
+      await updateLead({ variables: { id: leadId, input } });
+      setShowEditLead(false);
+      setShowUpdateStatus(false);
+    } catch (err) {
+      console.error("Failed to update lead:", err);
+    }
+  };
+
   const [showEditLead, setShowEditLead] = useState(false);
   const [showConvertClient, setShowConvertClient] = useState(false);
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
@@ -116,17 +162,17 @@ export default function LeadDetailsPage() {
   const [showWhatsapp, setShowWhatsapp] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
-  
+
   return (
     <div className="flex flex-col xl:flex-row gap-6 w-full max-w-[1400px] mx-auto pb-10 px-4 sm:px-0">
-      
+
       {/* Left Column (Main Content) */}
       <div className="flex flex-col gap-6 flex-1 min-w-0">
-        
+
         {/* Header Card */}
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-0">
           <div className="flex items-start gap-4">
-            <button 
+            <button
               onClick={() => router.push('/dashboard/crm/leads')}
               className="mt-1 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors shrink-0"
             >
@@ -155,7 +201,7 @@ export default function LeadDetailsPage() {
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#FF6A2F] text-white flex items-center justify-center text-[28px] sm:text-[32px] font-bold shrink-0">
             RS
           </div>
-          
+
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8 w-full">
             <div className="flex flex-col gap-1">
@@ -199,13 +245,13 @@ export default function LeadDetailsPage() {
 
         {/* Two Columns: Next Follow-up & Scheduled Visit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Next Follow-up */}
           <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col h-full">
             <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
               <span className="text-[#FF6A2F]">{Icons.clock}</span> Next Follow-up
             </h3>
-            
+
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">NEXT FOLLOW-UP DATE</span>
@@ -235,7 +281,7 @@ export default function LeadDetailsPage() {
             <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
               <span className="text-[#FBBF24]">{Icons.calendar}</span> Scheduled Visit
             </h3>
-            
+
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">VISIT DATE</span>
@@ -268,7 +314,7 @@ export default function LeadDetailsPage() {
           <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
             <span className="text-[#06B6D4]">{Icons.document}</span> Proposal Details
           </h3>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PLAN TYPE</span>
@@ -302,15 +348,15 @@ export default function LeadDetailsPage() {
 
       {/* Right Column (Sidebar) */}
       <div className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0">
-        
+
         {/* Pipeline Status */}
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
           <h3 className="text-[16px] font-bold text-gray-900 mb-6">Lead Details</h3>
-          
+
           <div className="flex flex-col gap-0 relative">
             {/* Timeline line */}
             <div className="absolute left-[15px] top-[20px] bottom-[20px] w-0.5 bg-gray-100 -z-10"></div>
-            
+
             {/* Inquiry */}
             <div className="flex items-start gap-4 pb-6 relative">
               <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] flex items-center justify-center shrink-0 bg-white z-10 relative">
@@ -320,7 +366,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[14px] font-semibold text-[#10B981]">Inquiry</span>
               </div>
             </div>
-            
+
             {/* Visited */}
             <div className="flex items-start gap-4 pb-6 relative">
               <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] flex items-center justify-center shrink-0 bg-white z-10 relative">
@@ -330,7 +376,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[14px] font-semibold text-[#10B981]">Visited</span>
               </div>
             </div>
-            
+
             {/* Negotiation (Current) */}
             <div className="flex items-start gap-4 pb-6 relative">
               <div className="w-8 h-8 rounded-full bg-[#FFF2EA] border border-[#FFD9D4] text-[#FF6A2F] flex items-center justify-center shrink-0 bg-white z-10 relative">
@@ -341,7 +387,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[11px] font-semibold text-[#FF6A2F] bg-[#FFF2EA] px-2 py-0.5 rounded-full">Current</span>
               </div>
             </div>
-            
+
             {/* Converted */}
             <div className="flex items-start gap-4 pb-6 opacity-50 relative">
               <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center shrink-0 bg-white z-10 relative">
@@ -351,7 +397,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[14px] font-medium text-gray-500">Converted</span>
               </div>
             </div>
-            
+
             {/* Dropped */}
             <div className="flex items-start gap-4 opacity-50 relative">
               <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center shrink-0 bg-white z-10 relative">
@@ -386,10 +432,10 @@ export default function LeadDetailsPage() {
         {/* Recent Activities */}
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
           <h3 className="text-[16px] font-bold text-gray-900 mb-6">Recent Activities</h3>
-          
+
           <div className="flex flex-col gap-5 relative">
             <div className="absolute left-[3px] top-[10px] bottom-[10px] w-[1.5px] bg-gray-100 -z-10"></div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
               <div className="flex flex-col gap-0.5">
@@ -397,7 +443,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[12px] text-[#FF6A2F]">2h ago</span>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
               <div className="flex flex-col gap-0.5">
@@ -405,7 +451,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[12px] text-[#FF6A2F]">5h ago</span>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
               <div className="flex flex-col gap-0.5">
@@ -413,7 +459,7 @@ export default function LeadDetailsPage() {
                 <span className="text-[12px] text-[#FF6A2F]">1d ago</span>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-4">
               <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
               <div className="flex flex-col gap-0.5">

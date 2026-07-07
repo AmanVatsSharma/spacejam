@@ -1,10 +1,23 @@
 "use client";
 
+import { useState, useMemo } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_DEPOSITS, RELEASE_DEPOSIT, DELETE_DEPOSIT } from "@/lib/apollo/operations";
 
+/* ─── Backend Deposit shape ─── */
+interface BackendDeposit {
+  id: string;
+  customerName: string;
+  amount: number;
+  status: string;
+  receivedDate: string;
+  releasedDate?: string | null;
+  referenceNumber?: string;
+  center?: { id: string; name: string } | null;
+}
 
-import { useState } from "react";
-
-interface Deposit {
+/* ─── UI Deposit shape ─── */
+interface UIDeposit {
   id: string;
   name: string;
   amount: string;
@@ -15,22 +28,31 @@ interface Deposit {
   date: string;
 }
 
-const mockDeposits: Deposit[] = [
-  { id: "1", name: "Rahul Verma", amount: "₹5,000", plan: "Monthly", center: "Chandigarh Hub", payMode: "Cash", status: "Active", date: "Apr 15" },
-  { id: "2", name: "Priya Sharma", amount: "₹10,000", plan: "Quarterly", center: "Mumbai Office", payMode: "UPI", status: "Frozen", date: "Apr 20" },
-  { id: "3", name: "Amit Singh", amount: "₹3,000", plan: "Monthly", center: "Delhi Center", payMode: "Card", status: "Pending", date: "Mar 28" },
-  { id: "4", name: "Amit Singh", amount: "₹3,000", plan: "Monthly", center: "Delhi Center", payMode: "Card", status: "Release", date: "Mar 28" },
-];
+function mapBackendToUI(d: BackendDeposit): UIDeposit {
+  const statusMap: Record<string, UIDeposit["status"]> = {
+    HELD: "Active",
+    ACTIVE: "Active",
+    FROZEN: "Frozen",
+    PENDING: "Pending",
+    RELEASED: "Release",
+    RELEASE: "Release",
+  };
 
-const mockActivities = [
-  { id: "1", type: "add", text: "Deposit added for Noah Brown - ₹8,000" },
-  { id: "2", type: "refund", text: "Refund processed for Liam Anderson - ₹5,500" },
-  { id: "3", type: "freeze", text: "Freeze applied to Emma Davis deposit" },
-  { id: "4", type: "add", text: "Deposit added for Michael Chen - ₹3,500" },
-  { id: "5", type: "add", text: "Deposit added for Sarah Momo Chen - ₹3,500" },
-];
+  return {
+    id: d.id,
+    name: d.customerName ?? "Unknown",
+    amount: `₹${Number(d.amount ?? 0).toLocaleString("en-IN")}`,
+    plan: "Monthly",
+    center: d.center?.name ?? "—",
+    payMode: "Online",
+    status: statusMap[d.status] ?? "Pending",
+    date: d.receivedDate
+      ? new Date(d.receivedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : "—",
+  };
+}
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   Active: "bg-green-100 text-green-700",
   Frozen: "bg-cyan-100 text-cyan-700",
   Pending: "bg-orange-100 text-orange-700",
@@ -39,12 +61,75 @@ const statusStyles = {
 
 export default function CRMDepositsPage() {
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
+  /* ── Apollo data ── */
+  const { data, loading, error } = useQuery<{ deposits: BackendDeposit[] }>(
+    GET_DEPOSITS,
+    { fetchPolicy: "cache-and-network", errorPolicy: "all" }
+  );
+
+  const [releaseDeposit] = useMutation(RELEASE_DEPOSIT, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+
+  const [deleteDeposit] = useMutation(DELETE_DEPOSIT, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+
+  /* ── Transform ── */
+  const rawDeposits: UIDeposit[] = useMemo(() => {
+    if (!data?.deposits?.length) return [];
+    return data.deposits.map(mapBackendToUI);
+  }, [data]);
+
+  const deposits: UIDeposit[] = useMemo(() => {
+    return rawDeposits.filter((d) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesQuery =
+        !q || d.name.toLowerCase().includes(q) || d.center.toLowerCase().includes(q);
+      const matchesStatus = !statusFilter || d.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [rawDeposits, searchQuery, statusFilter]);
+
+  /* ── Stats ── */
+  const stats = useMemo(() => {
+    const total = rawDeposits.reduce((sum, d) => sum + parseFloat(d.amount.replace(/[₹,]/g, "") || "0"), 0);
+    const pending = rawDeposits.filter((d) => d.status === "Pending").length;
+    const frozen = rawDeposits.filter((d) => d.status === "Frozen").length;
+    const frozenAmount = rawDeposits
+      .filter((d) => d.status === "Frozen")
+      .reduce((sum, d) => sum + parseFloat(d.amount.replace(/[₹,]/g, "") || "0"), 0);
+    return { total, pending, frozen, frozenAmount };
+  }, [rawDeposits]);
+
+  const handleRelease = async (id: string) => {
+    try {
+      await releaseDeposit({ variables: { id } });
+      setOpenActionMenu(null);
+    } catch { /* Apollo handles */ }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this deposit?")) return;
+    try {
+      await deleteDeposit({ variables: { id } });
+      setOpenActionMenu(null);
+    } catch { /* Apollo handles */ }
+  };
+
+  const formatCurrency = (n: number) => {
+    if (n >= 10000000) return `₹${(n / 10000000).toFixed(1)}Cr`;
+    if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+    return `₹${n.toLocaleString("en-IN")}`;
+  };
 
   return (
     <div className="flex gap-6 w-full max-w-[1440px] mx-auto">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col gap-6 min-w-0">
-        
         {/* Header */}
         <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div>
@@ -71,17 +156,27 @@ export default function CRMDepositsPage() {
               </svg>
               <input
                 type="text"
-                placeholder="Search Invoice.."
+                placeholder="Search deposits..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent w-64 bg-white"
               />
             </div>
-            <select className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]">
-              <option value="">All Statues</option>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]"
+            >
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Frozen">Frozen</option>
+              <option value="Pending">Pending</option>
+              <option value="Release">Released</option>
             </select>
-            <select className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]">
-              <option value="">Last 30 Days</option>
-            </select>
-            <button className="px-4 py-2 bg-orange-50 text-[#FF6A2F] rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors">
+            <button
+              onClick={() => { setSearchQuery(""); setStatusFilter(""); }}
+              className="px-4 py-2 bg-orange-50 text-[#FF6A2F] rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors"
+            >
               Clear All
             </button>
           </div>
@@ -92,7 +187,9 @@ export default function CRMDepositsPage() {
                 <span className="text-xl font-medium">₹</span>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#101828]">₹15,0,000</h3>
+                <h3 className="text-2xl font-bold text-[#101828]">
+                  {loading ? "..." : formatCurrency(stats.total)}
+                </h3>
                 <p className="text-sm text-gray-500 mt-1">Total Deposits Held</p>
               </div>
             </div>
@@ -104,8 +201,10 @@ export default function CRMDepositsPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#101828]">₹11,500</h3>
-                <p className="text-sm text-gray-500 mt-1">Pending Release (2)</p>
+                <h3 className="text-2xl font-bold text-[#101828]">
+                  {loading ? "..." : stats.pending}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Pending Release</p>
               </div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
@@ -115,8 +214,10 @@ export default function CRMDepositsPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#101828]">₹7,500</h3>
-                <p className="text-sm text-gray-500 mt-1">Frozen Deposits</p>
+                <h3 className="text-2xl font-bold text-[#101828]">
+                  {loading ? "..." : formatCurrency(stats.frozenAmount)}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Frozen Deposits ({stats.frozen})</p>
               </div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
@@ -138,63 +239,73 @@ export default function CRMDepositsPage() {
         {/* Table Area */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left whitespace-nowrap">
-              <thead className="text-xs text-gray-500 font-semibold bg-gray-50/50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 tracking-wider">NAME</th>
-                  <th className="px-6 py-4 tracking-wider">AMOUNT</th>
-                  <th className="px-6 py-4 tracking-wider">PLAN</th>
-                  <th className="px-6 py-4 tracking-wider">CENTER</th>
-                  <th className="px-6 py-4 tracking-wider">PAY-MODE</th>
-                  <th className="px-6 py-4 tracking-wider">STATUS</th>
-                  <th className="px-6 py-4 tracking-wider">DATE</th>
-                  <th className="px-6 py-4 tracking-wider text-center">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {mockDeposits.map((deposit) => (
-                  <tr key={deposit.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-5 font-medium text-[#101828]">
-                      {deposit.name}
-                    </td>
-                    <td className="px-6 py-5 text-[#FF6A2F] font-semibold">{deposit.amount}</td>
-                    <td className="px-6 py-5 text-gray-500">{deposit.plan}</td>
-                    <td className="px-6 py-5 text-gray-500">{deposit.center}</td>
-                    <td className="px-6 py-5 text-gray-500">{deposit.payMode}</td>
-                    <td className="px-6 py-5">
-                      <button className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize flex items-center gap-1.5 ${statusStyles[deposit.status]}`}>
-                        {deposit.status}
-                        {deposit.status === "Active" || deposit.status === "Frozen" || deposit.status === "Pending" || deposit.status === "Release" ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70">
-                            <polyline points="6 9 12 15 18 9" />
-                          </svg>
-                        ) : null}
-                      </button>
-                    </td>
-                    <td className="px-6 py-5 text-gray-500">{deposit.date}</td>
-                    <td className="px-6 py-5 text-center relative">
-                      <button 
-                        onClick={() => setOpenActionMenu(openActionMenu === deposit.id ? null : deposit.id)}
-                        className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="12" cy="5" r="1" />
-                          <circle cx="12" cy="19" r="1" />
-                        </svg>
-                      </button>
-                      {openActionMenu === deposit.id && (
-                        <div className="absolute right-10 top-10 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-10 py-2 text-left animate-in fade-in zoom-in duration-150">
-                          <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium">View Details</button>
-                          <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium">Release</button>
-                          <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium">Freeze</button>
-                        </div>
-                      )}
-                    </td>
+            {loading && deposits.length === 0 ? (
+              <div className="flex items-center justify-center h-40 text-sm text-gray-400">Loading deposits…</div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-40 text-sm text-red-400">Failed to load deposits. Please try again.</div>
+            ) : deposits.length === 0 ? (
+              <div className="flex items-center justify-center h-40 text-sm text-gray-400">No deposits found.</div>
+            ) : (
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="text-xs text-gray-500 font-semibold bg-gray-50/50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 tracking-wider">NAME</th>
+                    <th className="px-6 py-4 tracking-wider">AMOUNT</th>
+                    <th className="px-6 py-4 tracking-wider">PLAN</th>
+                    <th className="px-6 py-4 tracking-wider">CENTER</th>
+                    <th className="px-6 py-4 tracking-wider">PAY-MODE</th>
+                    <th className="px-6 py-4 tracking-wider">STATUS</th>
+                    <th className="px-6 py-4 tracking-wider">DATE</th>
+                    <th className="px-6 py-4 tracking-wider text-center">ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {deposits.map((deposit) => (
+                    <tr key={deposit.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-5 font-medium text-[#101828]">{deposit.name}</td>
+                      <td className="px-6 py-5 text-[#FF6A2F] font-semibold">{deposit.amount}</td>
+                      <td className="px-6 py-5 text-gray-500">{deposit.plan}</td>
+                      <td className="px-6 py-5 text-gray-500">{deposit.center}</td>
+                      <td className="px-6 py-5 text-gray-500">{deposit.payMode}</td>
+                      <td className="px-6 py-5">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize ${statusStyles[deposit.status]}`}>
+                          {deposit.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-gray-500">{deposit.date}</td>
+                      <td className="px-6 py-5 text-center relative">
+                        <button
+                          onClick={() => setOpenActionMenu(openActionMenu === deposit.id ? null : deposit.id)}
+                          className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                          </svg>
+                        </button>
+                        {openActionMenu === deposit.id && (
+                          <div className="absolute right-10 top-10 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-10 py-2 text-left animate-in fade-in zoom-in duration-150">
+                            <button
+                              onClick={() => handleRelease(deposit.id)}
+                              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                            >
+                              Release
+                            </button>
+                            <button
+                              onClick={() => handleDelete(deposit.id)}
+                              className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
@@ -235,40 +346,10 @@ export default function CRMDepositsPage() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-1">
-          <h2 className="text-lg font-semibold text-[#101828] mb-6">Recent Activities</h2>
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="absolute left-[11px] top-3 bottom-3 w-px bg-gray-200"></div>
-            
-            <div className="flex flex-col gap-6">
-              {mockActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4 relative">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 border-2 border-white
-                    ${activity.type === 'add' ? 'bg-orange-50 text-[#FF6A2F]' : 
-                      activity.type === 'refund' ? 'bg-orange-50 text-[#FF6A2F]' : 
-                      'bg-orange-50 text-[#FF6A2F]'}`}>
-                    {activity.type === 'add' && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                      </svg>
-                    )}
-                    {activity.type === 'refund' && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                    {activity.type === 'freeze' && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
-                      </svg>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-900 leading-snug font-medium pt-0.5">{activity.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold text-[#101828] mb-6">Recent Activity</h2>
+          <p className="text-sm text-gray-400">
+            {loading ? "Loading…" : `${rawDeposits.length} deposits on record.`}
+          </p>
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { CREATE_CUSTOMER } from "@/lib/apollo/operations";
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
 const STEPS = [
@@ -16,6 +18,9 @@ const STEPS = [
 export default function OnboardingWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [createCustomer] = useMutation(CREATE_CUSTOMER);
 
   const [userRoles, setUserRoles] = useState([
     { id: 1, role: "Head User/HR", name: "", phone: "" },
@@ -125,7 +130,7 @@ export default function OnboardingWizardPage() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 bg-white">
-              <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+              <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
               Apr 4, 2026
             </div>
             <button onClick={() => setShowInteractiveMap(false)} className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">Continue</button>
@@ -184,17 +189,17 @@ export default function OnboardingWizardPage() {
             {/* Small cabins 3A 3B */}
             <div className="absolute top-0 left-[640px] w-[75px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-2 flex flex-col justify-between text-center">
               <div>
-                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br/>3A</h3>
+                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br />3A</h3>
                 <div className="flex items-center justify-center gap-1 text-gray-500 text-[11px] mt-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
               </div>
-              <div className="text-[#FF6A2F] text-[10px]">Next In<br/>45 m</div>
+              <div className="text-[#FF6A2F] text-[10px]">Next In<br />45 m</div>
             </div>
             <div className="absolute top-0 left-[715px] w-[75px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-2 flex flex-col justify-between text-center">
               <div>
-                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br/>3B</h3>
+                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br />3B</h3>
                 <div className="flex items-center justify-center gap-1 text-gray-500 text-[11px] mt-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
               </div>
-              <div className="text-[#FF6A2F] text-[10px]">Next In<br/>45 m</div>
+              <div className="text-[#FF6A2F] text-[10px]">Next In<br />45 m</div>
             </div>
 
             {/* Cabin 3C */}
@@ -240,7 +245,7 @@ export default function OnboardingWizardPage() {
             <div className="absolute top-[140px] left-[240px] w-[200px] h-[438px] flex flex-col items-center pt-24 border-r-2 border-gray-400">
               <h4 className="text-[14px] font-medium text-gray-800 mb-4">10 Open Seats</h4>
               <div className="w-[90px] h-[240px] bg-[#F2FBF5] border-2 border-gray-400 flex items-center justify-center">
-                <span className="text-[#21A366] font-bold text-[14px] text-center">Open<br/>Seats</span>
+                <span className="text-[#21A366] font-bold text-[14px] text-center">Open<br />Seats</span>
               </div>
             </div>
 
@@ -275,23 +280,23 @@ export default function OnboardingWizardPage() {
 
             {/* Sofa Area / Pantry */}
             <div className="absolute top-[220px] left-[840px] w-[258px] h-[358px] border-l-2 border-t-2 border-gray-400 flex flex-col items-center">
-              <span className="text-gray-800 font-medium text-[15px] absolute top-[40px] left-[20px]">Sofa<br/>Area</span>
-              
+              <span className="text-gray-800 font-medium text-[15px] absolute top-[40px] left-[20px]">Sofa<br />Area</span>
+
               {/* Small cabins 4A 4B */}
               <div className="absolute top-[0px] left-[130px] flex">
                 <div className="w-[50px] h-[100px] bg-[#FFF8F6] border-2 border-gray-400 p-1 flex flex-col justify-between text-center">
                   <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br/>4A</h3>
+                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br />4A</h3>
                     <div className="flex items-center justify-center gap-1 text-gray-500 text-[9px] mt-0.5"><svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
                   </div>
-                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br/>45 m</div>
+                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br />45 m</div>
                 </div>
                 <div className="w-[50px] h-[100px] bg-[#FFF8F6] border-t-2 border-r-2 border-b-2 border-gray-400 p-1 flex flex-col justify-between text-center -ml-[2px]">
                   <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br/>4B</h3>
+                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br />4B</h3>
                     <div className="flex items-center justify-center gap-1 text-gray-500 text-[9px] mt-0.5"><svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
                   </div>
-                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br/>45 m</div>
+                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br />45 m</div>
                 </div>
               </div>
 
@@ -339,29 +344,27 @@ export default function OnboardingWizardPage() {
         {/* Left Sidebar (Stepper) */}
         <div className="w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col min-h-[700px]">
           <h2 className="text-[18px] font-bold text-[#101828] mb-6">Onboarding Process</h2>
-          
+
           <div className="flex flex-col flex-1">
             {STEPS.map((step, index) => {
               const isActive = step.id === currentStep;
               const isPast = step.id < currentStep;
-              
+
               return (
                 <div key={step.id} className="flex gap-4 relative group cursor-pointer" onClick={() => setCurrentStep(step.id)}>
                   {/* Line connecting steps */}
                   {index !== STEPS.length - 1 && (
-                    <div 
-                      className={`absolute left-4 top-10 bottom-[-16px] w-[2px] transition-colors ${
-                        isActive || isPast ? "bg-[#FF6A2F]" : "bg-gray-100"
-                      }`}
+                    <div
+                      className={`absolute left-4 top-10 bottom-[-16px] w-[2px] transition-colors ${isActive || isPast ? "bg-[#FF6A2F]" : "bg-gray-100"
+                        }`}
                     />
                   )}
 
                   <div className="flex flex-col items-center z-10 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                      isActive || isPast 
-                        ? "bg-[#FF6A2F] text-white shadow-sm" 
-                        : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isActive || isPast
+                      ? "bg-[#FF6A2F] text-white shadow-sm"
+                      : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
+                      }`}>
                       {/* Using custom icons per step from Figma might be complex without the SVGs, so using generic or checkmarks */}
                       {isPast ? (
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
@@ -377,9 +380,8 @@ export default function OnboardingWizardPage() {
                   </div>
 
                   <div className="pb-8 pt-1">
-                    <h3 className={`text-[15px] font-bold transition-colors ${
-                      isActive ? "text-[#101828]" : "text-gray-500 group-hover:text-gray-700"
-                    }`}>
+                    <h3 className={`text-[15px] font-bold transition-colors ${isActive ? "text-[#101828]" : "text-gray-500 group-hover:text-gray-700"
+                      }`}>
                       {step.title}
                     </h3>
                     <p className="text-[13px] text-gray-400 mt-1 leading-relaxed max-w-[240px]">
@@ -432,9 +434,9 @@ export default function OnboardingWizardPage() {
                   {/* A green circle with checkmark representing the image */}
                   <div className="absolute inset-0 bg-green-50 rounded-full flex items-center justify-center">
                     <div className="w-20 h-20 bg-[#00C853] rounded-full flex items-center justify-center shadow-lg transform scale-110">
-                       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-10 h-10">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                       </svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-10 h-10">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     </div>
                   </div>
                   {/* Confetti mocks */}
@@ -443,12 +445,12 @@ export default function OnboardingWizardPage() {
                   <div className="absolute bottom-6 left-2 w-3 h-3 bg-red-400 transform rotate-12"></div>
                   <div className="absolute bottom-2 right-8 w-2 h-2 bg-orange-400 rounded-sm"></div>
                 </div>
-                
+
                 <h3 className="text-[22px] font-bold text-gray-900 mb-2">File Upload Successfully 🎉</h3>
                 <p className="text-[14px] text-gray-500 mb-8 max-w-[300px] leading-relaxed">
                   Your employee details have been uploaded successfully.<br />You can now proceed to the next step.
                 </p>
-                <button 
+                <button
                   onClick={handleNext}
                   className="px-8 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[15px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
                 >
@@ -536,7 +538,7 @@ export default function OnboardingWizardPage() {
                         ))}
                       </div>
                       <div className="flex justify-end mt-6">
-                        <button 
+                        <button
                           onClick={addUserRole}
                           className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm flex items-center gap-1.5"
                         >
@@ -554,25 +556,25 @@ export default function OnboardingWizardPage() {
                   <>
                     <div>
                       <h3 className="text-[16px] font-bold text-[#101828] mb-5">Employees Details</h3>
-                      
+
                       <div className="flex gap-8 mb-6">
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="empMode" 
-                            checked={employeeMode === "bulk"} 
+                          <input
+                            type="radio"
+                            name="empMode"
+                            checked={employeeMode === "bulk"}
                             onChange={() => setEmployeeMode("bulk")}
-                            className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F]" 
+                            className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F]"
                           />
                           <span className="text-[14px] text-gray-800 font-medium">Bulk Upload Employees</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="empMode" 
-                            checked={employeeMode === "individual"} 
+                          <input
+                            type="radio"
+                            name="empMode"
+                            checked={employeeMode === "individual"}
                             onChange={() => setEmployeeMode("individual")}
-                            className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F]" 
+                            className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F]"
                           />
                           <span className="text-[14px] text-gray-800 font-medium">Add Individually</span>
                         </label>
@@ -631,9 +633,9 @@ export default function OnboardingWizardPage() {
                               </div>
                             </div>
                           ))}
-                          
+
                           <div className="flex justify-end mt-2">
-                            <button 
+                            <button
                               onClick={addIndividual}
                               className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
                             >
@@ -652,18 +654,18 @@ export default function OnboardingWizardPage() {
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Plan Type</h3>
                       <div className="flex gap-4">
-                        <button 
+                        <button
                           onClick={() => setPlanType("Hot Desk")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${planType === "Hot Desk" ? "border-[#FF6A2F] bg-[#FFF8F6] text-[#FF6A2F]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M4 16h16M4 20h16M6 16v4M18 16v4M8 10h8M8 10v6M16 10v6M10 6h4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M4 16h16M4 20h16M6 16v4M18 16v4M8 10h8M8 10v6M16 10v6M10 6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           <span className="text-[13px] font-semibold">Hot Desk</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => setPlanType("Customize Deal")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${planType === "Customize Deal" ? "border-[#FF6A2F] bg-[#FFF8F6] text-[#FF6A2F]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           <span className="text-[13px] font-semibold">Customize Deal</span>
                         </button>
                       </div>
@@ -755,7 +757,7 @@ export default function OnboardingWizardPage() {
                       <div className="mt-2">
                         <h3 className="text-[14px] font-bold text-[#101828] mb-3">Deal Details (Customize Deal)</h3>
                         <p className="text-[13px] font-bold text-gray-800 mb-3">Section 1: Step-Up Pricing Schedule</p>
-                        
+
                         <div className="flex gap-4 mb-4">
                           <div className="flex-1">
                             <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Start Date</label>
@@ -854,18 +856,18 @@ export default function OnboardingWizardPage() {
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Plan Type</h3>
                       <div className="flex gap-4">
-                        <button 
+                        <button
                           onClick={() => setPlanType("Hot Desk")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${planType === "Hot Desk" ? "border-[#FF6A2F] bg-[#FFF8F6] text-[#FF6A2F]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M4 16h16M4 20h16M6 16v4M18 16v4M8 10h8M8 10v6M16 10v6M10 6h4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M4 16h16M4 20h16M6 16v4M18 16v4M8 10h8M8 10v6M16 10v6M10 6h4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           <span className="text-[13px] font-semibold">Hot Desk</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => setPlanType("Customize Deal")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${planType === "Customize Deal" ? "border-[#FF6A2F] bg-[#FFF8F6] text-[#FF6A2F]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6 mb-2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           <span className="text-[13px] font-semibold">Customize Deal</span>
                         </button>
                       </div>
@@ -875,8 +877,8 @@ export default function OnboardingWizardPage() {
                     <div>
                       <h2 className="text-[24px] font-bold text-[#101828] mb-1">Cabin 1A</h2>
                       <div className="flex items-center gap-4 text-[13px] text-gray-500 mb-6">
-                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round"/></svg> Capacity: 5</span>
-                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round"/></svg> Saturday, Apr 4, 2026</span>
+                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round" /></svg> Capacity: 5</span>
+                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" /></svg> Saturday, Apr 4, 2026</span>
                       </div>
 
                       {/* Currently Occupied card */}
@@ -899,7 +901,7 @@ export default function OnboardingWizardPage() {
 
                       <div>
                         <h3 className="text-[14px] font-bold text-[#101828] mb-4">Make New Booking</h3>
-                        
+
                         <h3 className="text-[13px] font-medium text-gray-700 mb-3">Duration</h3>
                         <div className="flex gap-3 mb-6">
                           <button className="flex-1 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shadow-sm">1 Hour</button>
@@ -933,13 +935,13 @@ export default function OnboardingWizardPage() {
                         </div>
                         <p className="text-center text-[11px] text-gray-400 mt-3">Maximum capacity: 5 people</p>
                       </div>
-                      
+
                       <div className="flex gap-4 mt-10">
                         <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-colors shadow-sm">
                           Cancel
                         </button>
                         <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold shadow-sm hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                           Confirm Booking
                         </button>
                       </div>
@@ -953,28 +955,28 @@ export default function OnboardingWizardPage() {
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Payment Mode Preference</h3>
                       <div className="flex gap-4">
-                        <button 
+                        <button
                           onClick={() => setPaymentMode("UPI")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "UPI" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
                           <span className={`text-[16px] font-bold mb-1 ${paymentMode === "UPI" ? "text-[#FF6A2F]" : "text-gray-700"}`}>G Pay</span>
                           <span className={`text-[12px] font-bold ${paymentMode === "UPI" ? "text-[#101828]" : ""}`}>UPI</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => setPaymentMode("Bank Transfer")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Bank Transfer" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
                           <svg className="w-6 h-6 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
                           <span className={`text-[12px] font-bold ${paymentMode === "Bank Transfer" ? "text-[#101828]" : ""}`}>Bank Transfer</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => setPaymentMode("Card")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Card" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
                           <svg className="w-6 h-6 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                           <span className={`text-[12px] font-bold ${paymentMode === "Card" ? "text-[#101828]" : ""}`}>Card</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => setPaymentMode("Cheque")}
                           className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Cheque" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
                         >
@@ -1046,19 +1048,19 @@ export default function OnboardingWizardPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name</label>
-                          <input type="text" placeholder="Enter full name as per bank" value={bankDetails.holderName} onChange={(e) => setBankDetails({...bankDetails, holderName: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="Enter full name as per bank" value={bankDetails.holderName} onChange={(e) => setBankDetails({ ...bankDetails, holderName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Number</label>
-                          <input type="text" placeholder="Enter account number" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="Enter account number" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[12px] text-gray-700 font-medium mb-1.5">IFSC Code</label>
-                          <input type="text" placeholder="e.g., HDFC0001234" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({...bankDetails, ifscCode: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="e.g., HDFC0001234" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({ ...bankDetails, ifscCode: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Bank Name</label>
-                          <input type="text" placeholder="Enter bank name" value={bankDetails.bankName} onChange={(e) => setBankDetails({...bankDetails, bankName: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="Enter bank name" value={bankDetails.bankName} onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -1092,11 +1094,11 @@ export default function OnboardingWizardPage() {
                           </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" checked={additionalServices.meetingRoom} onChange={(e) => setAdditionalServices({...additionalServices, meetingRoom: e.target.checked})} className="sr-only peer" />
+                          <input type="checkbox" checked={additionalServices.meetingRoom} onChange={(e) => setAdditionalServices({ ...additionalServices, meetingRoom: e.target.checked })} className="sr-only peer" />
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF6A2F]"></div>
                         </label>
                       </div>
-                      
+
                       {/* Printing Access */}
                       <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white">
                         <div className="flex items-center gap-4">
@@ -1109,7 +1111,7 @@ export default function OnboardingWizardPage() {
                           </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" checked={additionalServices.printing} onChange={(e) => setAdditionalServices({...additionalServices, printing: e.target.checked})} className="sr-only peer" />
+                          <input type="checkbox" checked={additionalServices.printing} onChange={(e) => setAdditionalServices({ ...additionalServices, printing: e.target.checked })} className="sr-only peer" />
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF6A2F]"></div>
                         </label>
                       </div>
@@ -1126,7 +1128,7 @@ export default function OnboardingWizardPage() {
                           </div>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
-                          <input type="checkbox" checked={additionalServices.valetParking} onChange={(e) => setAdditionalServices({...additionalServices, valetParking: e.target.checked})} className="sr-only peer" />
+                          <input type="checkbox" checked={additionalServices.valetParking} onChange={(e) => setAdditionalServices({ ...additionalServices, valetParking: e.target.checked })} className="sr-only peer" />
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF6A2F]"></div>
                         </label>
                       </div>
@@ -1144,32 +1146,32 @@ export default function OnboardingWizardPage() {
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={additionalServices.tokenWallet} onChange={(e) => setAdditionalServices({...additionalServices, tokenWallet: e.target.checked})} className="sr-only peer" />
+                            <input type="checkbox" checked={additionalServices.tokenWallet} onChange={(e) => setAdditionalServices({ ...additionalServices, tokenWallet: e.target.checked })} className="sr-only peer" />
                             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF6A2F]"></div>
                           </label>
                         </div>
-                        
+
                         {additionalServices.tokenWallet && (
                           <div className="p-5 pt-0">
                             <div className="grid grid-cols-2 gap-4 mb-4">
                               <div>
                                 <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name</label>
-                                <input type="text" value={walletDetails.holderName} onChange={(e) => setWalletDetails({...walletDetails, holderName: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
+                                <input type="text" value={walletDetails.holderName} onChange={(e) => setWalletDetails({ ...walletDetails, holderName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
                               </div>
                               <div>
                                 <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Number</label>
-                                <input type="text" value={walletDetails.accountNumber} onChange={(e) => setWalletDetails({...walletDetails, accountNumber: e.target.value})} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
+                                <input type="text" value={walletDetails.accountNumber} onChange={(e) => setWalletDetails({ ...walletDetails, accountNumber: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
                               </div>
                             </div>
                             <label className="flex items-center gap-2 cursor-pointer">
-                              <input type="checkbox" checked={walletDetails.autoRecharge} onChange={(e) => setWalletDetails({...walletDetails, autoRecharge: e.target.checked})} className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300" />
+                              <input type="checkbox" checked={walletDetails.autoRecharge} onChange={(e) => setWalletDetails({ ...walletDetails, autoRecharge: e.target.checked })} className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300" />
                               <span className="text-[13px] text-gray-800 font-medium">Enable auto-recharge when balance is low</span>
                             </label>
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-[#21A366]">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 shrink-0">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1340,11 +1342,11 @@ export default function OnboardingWizardPage() {
                       </div>
                       <div className="p-5 border-t border-gray-200">
                         <label className="flex items-center gap-3 cursor-pointer">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={termsAgreed}
                             onChange={(e) => setTermsAgreed(e.target.checked)}
-                            className="w-5 h-5 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300" 
+                            className="w-5 h-5 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300"
                           />
                           <span className="text-[13px] text-gray-800 font-medium">
                             I have read and agree to the <span className="text-[#FF6A2F] cursor-pointer">Terms & Conditions</span> and <span className="text-[#FF6A2F] cursor-pointer">Privacy Policy</span>
@@ -1368,7 +1370,7 @@ export default function OnboardingWizardPage() {
                       <p className="text-[13px] text-gray-500 mb-6">Choose how you'd like to receive updates and notifications about this client.</p>
 
                       <div className="grid grid-cols-3 gap-4 mb-8">
-                        <div 
+                        <div
                           onClick={() => setCommunicationChannel("Email")}
                           className={`p-4 rounded-xl border ${communicationChannel === "Email" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
                         >
@@ -1381,7 +1383,7 @@ export default function OnboardingWizardPage() {
                           </div>
                         </div>
 
-                        <div 
+                        <div
                           onClick={() => setCommunicationChannel("WhatsApp")}
                           className={`p-4 rounded-xl border ${communicationChannel === "WhatsApp" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
                         >
@@ -1394,7 +1396,7 @@ export default function OnboardingWizardPage() {
                           </div>
                         </div>
 
-                        <div 
+                        <div
                           onClick={() => setCommunicationChannel("In-App")}
                           className={`p-4 rounded-xl border ${communicationChannel === "In-App" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 bg-white"} cursor-pointer flex items-start gap-3`}
                         >
@@ -1412,20 +1414,20 @@ export default function OnboardingWizardPage() {
                         <div className="mb-8">
                           {emailIds.map((email, idx) => (
                             <div key={idx} className="mb-3">
-                              <input 
-                                type="text" 
-                                placeholder="Add mail Id" 
+                              <input
+                                type="text"
+                                placeholder="Add mail Id"
                                 value={email}
                                 onChange={(e) => {
                                   const newEmails = [...emailIds];
                                   newEmails[idx] = e.target.value;
                                   setEmailIds(newEmails);
                                 }}
-                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white" 
+                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white"
                               />
                             </div>
                           ))}
-                          <button 
+                          <button
                             onClick={() => setEmailIds([...emailIds, ""])}
                             className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-medium mt-1"
                           >
@@ -1438,7 +1440,7 @@ export default function OnboardingWizardPage() {
                       {communicationChannel === "WhatsApp" && (
                         <div className="mb-8">
                           <h4 className="text-[15px] font-bold text-gray-900 mb-4">WhatsApp Notifications</h4>
-                          
+
                           <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl mb-6">
                             <div>
                               <p className="text-[14px] font-bold text-gray-900">Join WhatsApp Community</p>
@@ -1452,20 +1454,20 @@ export default function OnboardingWizardPage() {
 
                           {phoneNumbers.map((phone, idx) => (
                             <div key={idx} className="mb-3">
-                              <input 
-                                type="text" 
-                                placeholder="+91 phone number" 
+                              <input
+                                type="text"
+                                placeholder="+91 phone number"
                                 value={phone}
                                 onChange={(e) => {
                                   const newPhones = [...phoneNumbers];
                                   newPhones[idx] = e.target.value;
                                   setPhoneNumbers(newPhones);
                                 }}
-                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white" 
+                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50/50 focus:outline-none focus:border-[#FF6A2F] focus:bg-white"
                               />
                             </div>
                           ))}
-                          <button 
+                          <button
                             onClick={() => setPhoneNumbers([...phoneNumbers, ""])}
                             className="flex items-center gap-2 text-[#FF6A2F] text-[13px] font-medium mt-1"
                           >
@@ -1484,12 +1486,12 @@ export default function OnboardingWizardPage() {
                           If this client was referred by someone, enter the referral code here to track the source.
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-400"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
                         </p>
-                        <input 
-                          type="text" 
-                          placeholder="e.g., REF2024XYZ" 
+                        <input
+                          type="text"
+                          placeholder="e.g., REF2024XYZ"
                           value={referralCode}
                           onChange={(e) => setReferralCode(e.target.value)}
-                          className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] mb-4 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" 
+                          className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] mb-4 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]"
                         />
                         <div className="bg-[#FFF8F6] p-4 rounded-lg flex items-start gap-3 border border-[#FFE7DE] mb-6">
                           <div className="mt-0.5 shrink-0 text-[#FF6A2F]">
@@ -1866,7 +1868,7 @@ export default function OnboardingWizardPage() {
                             </p>
                           )}
                         </div>
-                        <button 
+                        <button
                           onClick={() => setShowSignatureModal(true)}
                           className="px-6 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-medium hover:bg-[#E55A20] transition-colors"
                         >
@@ -1897,8 +1899,30 @@ export default function OnboardingWizardPage() {
                         The client account is now active and ready to use workspace.
                       </p>
 
-                      <button className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm">
-                        Go to client Dashboard
+                      <button
+                        onClick={async () => {
+                          if (isSubmitting) return;
+                          setIsSubmitting(true);
+                          try {
+                            await createCustomer({
+                              variables: {
+                                input: {
+                                  name: "New Client",
+                                  email: "client@example.com",
+                                  status: "ACTIVE",
+                                },
+                              },
+                            });
+                          } catch (err) {
+                            console.error("Failed to create customer:", err);
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }}
+                        disabled={isSubmitting}
+                        className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm disabled:opacity-50"
+                      >
+                        {isSubmitting ? "Creating..." : "Go to client Dashboard"}
                       </button>
 
                       <div className="flex items-center gap-3 w-full mb-8">
@@ -1955,14 +1979,13 @@ export default function OnboardingWizardPage() {
             {/* Footer */}
             {!uploadSuccess && currentStep < 10 && (
               <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
-                <button 
+                <button
                   onClick={handlePrev}
                   disabled={currentStep === 1}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-colors ${
-                    currentStep === 1 
-                      ? "bg-gray-50 text-gray-400 cursor-not-allowed" 
-                      : "bg-[#F9FAFB] text-gray-700 hover:bg-gray-100 border border-gray-200"
-                  }`}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-[14px] font-semibold transition-colors ${currentStep === 1
+                    ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                    : "bg-[#F9FAFB] text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1974,7 +1997,7 @@ export default function OnboardingWizardPage() {
                   <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-colors shadow-sm">
                     Save as Draft
                   </button>
-                  <button 
+                  <button
                     onClick={handleNext}
                     className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
                   >
@@ -1996,7 +2019,7 @@ export default function OnboardingWizardPage() {
           <div className="bg-white rounded-2xl w-full max-w-[600px] overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-[18px] font-bold text-gray-900">Add Digital Signature</h2>
-              <button 
+              <button
                 onClick={() => setShowSignatureModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -2005,14 +2028,14 @@ export default function OnboardingWizardPage() {
             </div>
             <div className="p-6">
               <div className="flex items-center gap-2 mb-6">
-                <button 
+                <button
                   onClick={() => setSignatureMode("Draw")}
                   className={`px-5 py-2 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors ${signatureMode === "Draw" ? "bg-[#FF6A2F] text-white shadow-sm" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                   Draw
                 </button>
-                <button 
+                <button
                   onClick={() => setSignatureMode("Upload")}
                   className={`px-5 py-2 rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors ${signatureMode === "Upload" ? "bg-[#FF6A2F] text-white shadow-sm" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"}`}
                 >
@@ -2028,16 +2051,16 @@ export default function OnboardingWizardPage() {
                     {/* Simulated drawing canvas */}
                     {signatureSaved ? (
                       <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-                        <svg viewBox="0 0 200 100" className="w-full h-full opacity-80" style={{stroke: '#1f2937', strokeWidth: 2, fill: 'none'}}>
-                          <path d="M40 50 C 40 20, 60 20, 60 50 C 60 80, 80 80, 80 50 C 80 20, 100 20, 100 50" strokeLinecap="round"/>
-                          <path d="M100 50 C 100 20, 120 20, 120 50 C 120 80, 140 80, 140 50 C 140 20, 160 20, 160 50" strokeLinecap="round"/>
+                        <svg viewBox="0 0 200 100" className="w-full h-full opacity-80" style={{ stroke: '#1f2937', strokeWidth: 2, fill: 'none' }}>
+                          <path d="M40 50 C 40 20, 60 20, 60 50 C 60 80, 80 80, 80 50 C 80 20, 100 20, 100 50" strokeLinecap="round" />
+                          <path d="M100 50 C 100 20, 120 20, 120 50 C 120 80, 140 80, 140 50 C 140 20, 160 20, 160 50" strokeLinecap="round" />
                         </svg>
                       </div>
                     ) : (
                       <div className="w-full h-full cursor-crosshair"></div>
                     )}
                   </div>
-                  <button 
+                  <button
                     onClick={() => setSignatureSaved(false)}
                     className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 font-medium"
                   >
@@ -2059,13 +2082,13 @@ export default function OnboardingWizardPage() {
               )}
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3 bg-gray-50/50">
-              <button 
+              <button
                 onClick={() => setShowSignatureModal(false)}
                 className="px-5 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-semibold hover:bg-gray-50"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setSignatureSaved(true);
                   setShowSignatureModal(false);

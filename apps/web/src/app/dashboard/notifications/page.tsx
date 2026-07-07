@@ -1,8 +1,9 @@
 "use client";
 
-
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { useQuery } from "@apollo/client";
+import { GET_BOOKINGS, GET_DEPOSITS } from "@/lib/apollo/operations";
 
 // Icons
 const Icons = {
@@ -59,8 +60,29 @@ const Icons = {
 };
 
 export default function NotificationsPage() {
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSendDialog, setShowSendDialog] = useState(false);
+
+  /* ── Live data for notification context ── */
+  const { data: bookingsData } = useQuery(GET_BOOKINGS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const { data: depositsData } = useQuery(GET_DEPOSITS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+
+  const notificationCount = useMemo(() => {
+    const activeBookings = (bookingsData?.bookings ?? []).filter(
+      (b: any) => b.status === "CHECKED_IN" || b.status === "CONFIRMED"
+    ).length;
+    const pendingDeposits = (depositsData?.deposits ?? []).filter(
+      (d: any) => d.status === "PENDING" || d.status === "HELD"
+    ).length;
+    return activeBookings + pendingDeposits;
+  }, [bookingsData, depositsData]);
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1000px] mx-auto pb-10 px-4 sm:px-0">
@@ -73,7 +95,7 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <button 
+          <button
             onClick={() => setShowSendDialog(true)}
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm w-full sm:w-auto"
           >
@@ -97,7 +119,7 @@ export default function NotificationsPage() {
             className="w-full pl-9 pr-4 py-2.5 sm:py-2 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent bg-white"
           />
         </div>
-        
+
         <div className="grid grid-cols-2 sm:flex flex-wrap gap-3 w-full sm:w-auto">
           {["All Status", "All Center", "All Types", "All Priorities", "This Week", "All Companies"].map((filterName, idx) => (
             <div className="relative w-full sm:w-auto" key={idx}>
@@ -127,7 +149,7 @@ export default function NotificationsPage() {
         <p className="text-[14px] sm:text-[16px] font-semibold text-[#101828]">Occupancy dropped 8% in Ludhiana due to 3 enterprise exits this week.</p>
         <div>
           <button className="text-[#FF6A2F] text-[13px] font-medium hover:underline flex items-center gap-1">
-            View Detailed Report 
+            View Detailed Report
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
@@ -137,7 +159,7 @@ export default function NotificationsPage() {
 
       <div className="flex flex-col gap-4 sm:gap-5">
         <h3 className="text-[12px] font-bold text-gray-500 uppercase tracking-wider pl-1">TODAY</h3>
-        
+
         {/* Notification 1 */}
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6A2F]"></div>
@@ -314,7 +336,7 @@ export default function NotificationsPage() {
 
       <div className="flex flex-col gap-4 sm:gap-5 mt-2">
         <h3 className="text-[12px] font-bold text-gray-500 uppercase tracking-wider pl-1">YESTERDAY</h3>
-        
+
         {/* Notification 5 */}
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#E5E7EB]"></div>
@@ -374,9 +396,9 @@ export default function NotificationsPage() {
       </div>
 
       {/* Send Notification Dialog */}
-      <SendNotificationDialog 
-        open={showSendDialog} 
-        onClose={() => setShowSendDialog(false)} 
+      <SendNotificationDialog
+        open={showSendDialog}
+        onClose={() => setShowSendDialog(false)}
       />
 
     </div>
@@ -450,7 +472,7 @@ function SendNotificationDialog({
 
         {/* Body */}
         <div className="p-4 sm:p-6 flex flex-col gap-5 sm:gap-6 max-h-[70vh] overflow-y-auto">
-          
+
           {/* Send To */}
           <div className="flex flex-col gap-2">
             <label className="text-[13px] sm:text-[14px] font-semibold text-gray-700">Send To</label>
@@ -480,8 +502,8 @@ function SendNotificationDialog({
                   </svg>
                 </button>
               </div>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 className="flex-1 min-w-[50px] bg-transparent outline-none text-[13px] sm:text-[14px]"
               />
             </div>
@@ -507,7 +529,7 @@ function SendNotificationDialog({
               rows={6}
               className="w-full px-4 py-3 bg-[#F9FAFB] border border-gray-200 rounded-xl text-[13px] sm:text-[14px] text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent transition-all resize-none"
             />
-            
+
             {/* Variables */}
             <div className="mt-2 flex flex-col gap-2">
               <span className="text-[12px] sm:text-[13px] text-gray-500">Insert variables:</span>
