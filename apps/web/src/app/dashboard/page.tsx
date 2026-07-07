@@ -15,13 +15,15 @@
 
 
 import React, { useState, useMemo } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import { useAuth } from "@/contexts/auth-context";
 import {
   GET_DASHBOARD_METRICS,
   GET_LEADS,
   LEAD_COUNT,
   GET_DEPOSITS,
+  CREATE_LEAD,
+  CREATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 import {
   StatCard,
@@ -32,16 +34,31 @@ import {
 } from "@/components/ui/stat-card";
 import {
   TotalLeadCard,
-  ApprovalQueueCardDemo,
-  PaymentHealthCardDemo,
-  TasksComplianceCardDemo,
-  RoomAvailabilityCircleCardDemo,
-  MeetingRoomBookingGridDemo,
-  DepositHeldCardDemo,
-  EventTodayCardDemo,
+  ApprovalQueueCard,
+  PaymentHealthCard,
+  TasksComplianceCard,
+  RoomAvailabilityCircleCard,
+  MeetingRoomBookingGrid,
+  MetricCard,
   AddLeadModal,
   AddClientModal,
 } from "@/components/ui/dashboard";
+
+// Icons for MetricCards
+const DepositIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="12" height="12" rx="2" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M4 5h6M4 7h4" stroke="#FF6A2F" strokeWidth="1.33" strokeLinecap="round"/>
+  </svg>
+);
+
+const EventIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="12" height="12" rx="2" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M7 4.5l1.35 1.35 2.15 0.3-1.55 1.5 0.35 2.1L7 8.1 4.7 9.75l0.35-2.1L3.5 6.15l2.15-0.3L7 4.5z" stroke="#FF6A2F" strokeWidth="1.33" strokeLinejoin="round"/>
+  </svg>
+);
+
 
 function formatCurrency(amount: number): string {
   if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
@@ -53,7 +70,31 @@ function formatCurrency(amount: number): string {
 
 export default function DashboardPage() {
   const { user } = useAuth() || { user: null };
-  const greetingName = user?.name?.split(/\s+/)[0] ?? user?.email?.split("@")[0] ?? "Jhon Doe";
+  const greetingName = user?.name?.split(" ")[0] || "User";
+
+  const [createLead] = useMutation(CREATE_LEAD, {
+    refetchQueries: [{ query: LEAD_COUNT }, { query: GET_LEADS }],
+  });
+
+  const [createCustomer] = useMutation(CREATE_CUSTOMER);
+
+  const handleAddLead = async (input: Record<string, string>) => {
+    try {
+      await createLead({ variables: { input } });
+      setShowAddLead(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddClient = async (input: Record<string, string>) => {
+    try {
+      await createCustomer({ variables: { input } });
+      setShowAddClient(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -136,8 +177,15 @@ export default function DashboardPage() {
     },
   ];
 
+  // Payment Health Calculation
+  const totalPayments = (metrics?.totalRevenue || 0) + (metrics?.pendingPayments || 0);
+  const paidPercent = totalPayments ? Math.round(((metrics?.totalRevenue || 0) / totalPayments) * 100) : 0;
+  const partialPercent = totalPayments ? Math.round(((metrics?.pendingPayments || 0) / totalPayments) * 100) : 0;
+  const paymentHealthPaid = { percent: paidPercent, amount: formatCurrency(metrics?.totalRevenue || 0) };
+  const paymentHealthPartial = { percent: partialPercent, amount: formatCurrency(metrics?.pendingPayments || 0) };
+
   return (
-    <div className="flex flex-col gap-[24px]">
+    <div className="w-full flex flex-col gap-[24px] compact:gap-4 p-8 compact:p-4">
       {/* Welcome Header */}
       <div className="bg-white rounded-[14px] shadow-sm border border-[#E5E7EB] px-6 py-5 flex items-center justify-between">
         <div className="flex flex-col gap-1">
@@ -186,19 +234,34 @@ export default function DashboardPage() {
             converted={leadBreakdown.converted}
           />
           <div className="flex gap-[24px]">
-            <DepositHeldCardDemo />
-            <EventTodayCardDemo />
+            <MetricCard
+              label="Deposit Held"
+              value={formatCurrency(depositHeld)}
+              icon={<DepositIcon />}
+              className="flex-1"
+            />
+            <MetricCard
+              label="Event Today"
+              value="0"
+              icon={<EventIcon />}
+              className="flex-1"
+            />
           </div>
         </div>
 
         {/* Middle Column */}
         <div className="flex-shrink-0">
-          <PaymentHealthCardDemo />
+          <PaymentHealthCard
+            total={formatCurrency(totalPayments)}
+            paid={paymentHealthPaid}
+            overdue={{ percent: 0, amount: "₹0" }}
+            partial={paymentHealthPartial}
+          />
         </div>
 
         {/* Right Column */}
         <div className="flex-1 min-w-0 w-full h-full">
-          <TasksComplianceCardDemo />
+          <TasksComplianceCard items={[]} badgeCount={0} />
         </div>
       </div>
 
@@ -206,23 +269,27 @@ export default function DashboardPage() {
       <div className="flex gap-[24px] compact:flex-col items-start w-full">
         {/* Left Column */}
         <div className="flex-shrink-0">
-          <RoomAvailabilityCircleCardDemo />
+          <RoomAvailabilityCircleCard
+            totalAvailable={metrics?.availableSeats || 0}
+            totalSeats={metrics?.totalSeats || 0}
+            subStats={[]}
+          />
         </div>
 
         {/* Middle Column */}
         <div className="flex-shrink-0">
-          <MeetingRoomBookingGridDemo />
+          <MeetingRoomBookingGrid rooms={[]} />
         </div>
 
         {/* Right Column */}
         <div className="flex-1 min-w-0 w-full">
-          <ApprovalQueueCardDemo />
+          <ApprovalQueueCard items={[]} pendingCount={0} />
         </div>
       </div>
 
       {/* Modals */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
-      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onAdd={handleAddClient} />
     </div>
   );
 }

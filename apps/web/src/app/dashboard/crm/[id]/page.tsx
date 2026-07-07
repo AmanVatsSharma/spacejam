@@ -10,8 +10,10 @@
  */
 
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_LEAD, UPDATE_LEAD, CONVERT_LEAD } from "@/lib/apollo/operations";
 import EditLeadModal from "@/components/crm/EditLeadModal";
 
 const Icons = {
@@ -113,7 +115,7 @@ const Icons = {
   ),
   whatsapp: (
     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.1421.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.1421.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
     </svg>
   ),
   email: (
@@ -321,7 +323,21 @@ export default function LeadDetailPage() {
   const params = useParams();
   const router = useRouter();
   const leadId = params.id as string;
-  const lead = leadsData[leadId] || leadsData["rahul-sharma"];
+
+  /* ── Apollo: fetch lead ── */
+  const { data, loading } = useQuery(GET_LEAD, {
+    variables: { id: leadId },
+    skip: !leadId,
+    fetchPolicy: "cache-and-network",
+  });
+  const lead = data?.lead;
+
+  const [updateLead] = useMutation(UPDATE_LEAD, {
+    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
+  });
+  const [convertLead] = useMutation(CONVERT_LEAD, {
+    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
+  });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -337,301 +353,301 @@ export default function LeadDetailPage() {
         leadData={lead}
       />
       <div className="p-6 compact:p-3">
-      <div className="flex gap-6 compact:gap-3">
-        {/* LEFT SIDE - Main Content */}
-        <div className="flex-1 flex flex-col gap-6 compact:gap-3 min-w-0">
-          {/* Page Header */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleBack}
-                  className="w-9 h-9 bg-[#f3f4f6] rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  {Icons.arrowLeft}
-                </button>
-                <div>
-                  <h1 className="text-xl font-semibold text-[#101828]">Lead Details</h1>
-                  <p className="text-sm text-[#4a5565] mt-0.5">View lead information, track interactions, and convert potential clients into members.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                >
-                  {Icons.edit}
-                  <span>Edit Lead</span>
-                </button>
-                <button className="px-4 py-2 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors">
-                  {Icons.userCheck}
-                  <span>Convert to Client</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Lead Info Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <div className="flex gap-5">
-              <div className="w-20 h-20 bg-[#ff7847] rounded-2xl flex items-center justify-center shrink-0">
-                <span className="text-2xl font-bold text-white">{lead.initials}</span>
-              </div>
-              <div className="flex-1 grid grid-cols-1 compact:grid-cols-3 gap-x-6 compact:gap-x-3 gap-y-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.users} Lead Name
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.name}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.phone} Phone Number
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.phone}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.mail} Email
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.email}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.building} Company Name
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.company}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.globe} Lead Source
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.source}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.briefcase} Interested Plan
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.plan}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.teamSize} Team Size
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.teamSize}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.calendar} Preferred Move-in Date
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.moveInDate}</p>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                      {Icons.mapPin} Assigned Center Manager
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-[#101828]">{lead.assignedCM}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Next Follow-up + Scheduled Visit Cards - 2 Columns */}
-          <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
-            {/* Next Follow-up Card */}
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-[#ff7847]">{Icons.clock}</span>
-                <h3 className="text-base font-semibold text-[#101828]">Next Follow-up</h3>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Next Follow-up Date</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.nextFollowUp}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Lead Stage</p>
-                  <span className="inline-block mt-1 px-3 py-1 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">{lead.stage}</span>
-                </div>
-                <div>
-                  <p className="text-sm text-[#364153]">{lead.followUpNote}</p>
-                </div>
-                <button className="w-full py-2.5 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
-                  {Icons.checkCircle}
-                  <span>Update Status</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Scheduled Visit Card */}
-            <div className="bg-white rounded-2xl shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-[#ff7847]">{Icons.calendarDays}</span>
-                <h3 className="text-base font-semibold text-[#101828]">Scheduled Visit</h3>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Date</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.visitDate}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Type</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.visitType}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Assigned Staff</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.visitStaff}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2.5 bg-[#ffcf4e] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors">
-                    {Icons.calendar}
-                    <span>Schedule Visit</span>
+        <div className="flex gap-6 compact:gap-3">
+          {/* LEFT SIDE - Main Content */}
+          <div className="flex-1 flex flex-col gap-6 compact:gap-3 min-w-0">
+            {/* Page Header */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleBack}
+                    className="w-9 h-9 bg-[#f3f4f6] rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors"
+                  >
+                    {Icons.arrowLeft}
                   </button>
-                  <button className="flex-1 py-2.5 bg-white border border-[#e5e7eb] text-[#364153] rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
-                    {Icons.clock}
-                    <span>Reschedule</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Proposal Details Card */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-[#ff7847]">{Icons.fileText}</span>
-              <h3 className="text-base font-semibold text-[#101828]">Proposal Details</h3>
-            </div>
-            <div className="grid grid-cols-1 compact:grid-cols-4 gap-6 compact:gap-3 mb-4">
-              <div>
-                <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Plan Type</p>
-                <p className="text-sm font-medium text-[#101828]">{lead.proposalPlan}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Interested Seats</p>
-                <p className="text-sm font-medium text-[#101828]">{lead.interestedSeats}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Expected Budget</p>
-                <p className="text-sm font-medium text-[#101828]">{lead.expectedBudget}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Duration</p>
-                <p className="text-sm font-medium text-[#101828]">{lead.duration}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button className="px-5 py-2.5 bg-[#00d1c6] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-cyan-600 transition-colors">
-                {Icons.send}
-                <span>Send Proposal</span>
-              </button>
-              <button className="px-5 py-2.5 bg-white border border-[#e5e7eb] text-[#364153] rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors">
-                {Icons.paperclip}
-                <span>Attach Documents</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE - Sidebar */}
-        <div className="w-80 flex flex-col gap-6">
-          {/* Lead Details - Pipeline Status */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-lg font-semibold text-[#101828] mb-4">Lead Details</h3>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#dcfce7] rounded-xl flex items-center justify-center">
-                  {Icons.inquiry}
-                </div>
-                <span className="text-sm font-medium text-[#008236]">Inquiry</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#dcfce7] rounded-xl flex items-center justify-center">
-                  {Icons.visited}
-                </div>
-                <span className="text-sm font-medium text-[#008236]">Visited</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[rgba(255,120,71,0.05)] rounded-xl flex items-center justify-center">
-                  {Icons.negotiation}
-                </div>
-                <span className="text-sm font-medium text-[#ff7847]">Negotiation</span>
-                <span className="ml-auto px-2 py-0.5 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">Current</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#f9fafb] rounded-xl flex items-center justify-center border-2 border-[#d1d5dc]">
-                  {Icons.converted}
-                </div>
-                <span className="text-sm font-medium text-[#6a7282]">Converted</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#f3f4f6] rounded-xl flex items-center justify-center">
-                  {Icons.dropped}
-                </div>
-                <span className="text-sm font-medium text-[#6a7282]">Dropped</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-lg font-semibold text-[#101828] mb-4">Quick Actions</h3>
-            <div className="flex flex-col gap-2">
-              <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.call}
-                <span>Call Lead</span>
-              </button>
-              <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.whatsapp}
-                <span>Send WhatsApp</span>
-              </button>
-              <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.email}
-                <span>Send Email</span>
-              </button>
-              <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
-                {Icons.note}
-                <span>Add Note</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Recent Activities */}
-          <div className="bg-white rounded-2xl shadow-sm p-5">
-            <h3 className="text-lg font-semibold text-[#101828] mb-4">Recent Activities</h3>
-            <div className="flex flex-col gap-4">
-              {lead.activities.map((activity, index) => (
-                <div key={index} className="flex gap-3">
-                  <div className="w-2 h-2 bg-[#ff7847] rounded-full mt-2 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-[#101828]">{activity.title}</p>
-                    <p className="text-xs text-[#ff7847]">{activity.time}</p>
+                    <h1 className="text-xl font-semibold text-[#101828]">Lead Details</h1>
+                    <p className="text-sm text-[#4a5565] mt-0.5">View lead information, track interactions, and convert potential clients into members.</p>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-4 py-2 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                  >
+                    {Icons.edit}
+                    <span>Edit Lead</span>
+                  </button>
+                  <button className="px-4 py-2 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                    {Icons.userCheck}
+                    <span>Convert to Client</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Lead Info Card */}
+            <div className="bg-white rounded-2xl shadow-sm p-6">
+              <div className="flex gap-5">
+                <div className="w-20 h-20 bg-[#ff7847] rounded-2xl flex items-center justify-center shrink-0">
+                  <span className="text-2xl font-bold text-white">{lead.initials}</span>
+                </div>
+                <div className="flex-1 grid grid-cols-1 compact:grid-cols-3 gap-x-6 compact:gap-x-3 gap-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.users} Lead Name
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.name}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.phone} Phone Number
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.phone}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.mail} Email
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.email}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.building} Company Name
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.company}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.globe} Lead Source
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.source}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.briefcase} Interested Plan
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.plan}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.teamSize} Team Size
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.teamSize}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.calendar} Preferred Move-in Date
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.moveInDate}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
+                        {Icons.mapPin} Assigned Center Manager
+                      </span>
+                    </div>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.assignedCM}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Follow-up + Scheduled Visit Cards - 2 Columns */}
+            <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
+              {/* Next Follow-up Card */}
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[#ff7847]">{Icons.clock}</span>
+                  <h3 className="text-base font-semibold text-[#101828]">Next Follow-up</h3>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Next Follow-up Date</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.nextFollowUp}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Lead Stage</p>
+                    <span className="inline-block mt-1 px-3 py-1 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">{lead.stage}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#364153]">{lead.followUpNote}</p>
+                  </div>
+                  <button className="w-full py-2.5 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
+                    {Icons.checkCircle}
+                    <span>Update Status</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scheduled Visit Card */}
+              <div className="bg-white rounded-2xl shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[#ff7847]">{Icons.calendarDays}</span>
+                  <h3 className="text-base font-semibold text-[#101828]">Scheduled Visit</h3>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Date</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.visitDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Type</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.visitType}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Assigned Staff</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.visitStaff}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="flex-1 py-2.5 bg-[#ffcf4e] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors">
+                      {Icons.calendar}
+                      <span>Schedule Visit</span>
+                    </button>
+                    <button className="flex-1 py-2.5 bg-white border border-[#e5e7eb] text-[#364153] rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+                      {Icons.clock}
+                      <span>Reschedule</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Proposal Details Card */}
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[#ff7847]">{Icons.fileText}</span>
+                <h3 className="text-base font-semibold text-[#101828]">Proposal Details</h3>
+              </div>
+              <div className="grid grid-cols-1 compact:grid-cols-4 gap-6 compact:gap-3 mb-4">
+                <div>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Plan Type</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.proposalPlan}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Interested Seats</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.interestedSeats}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Expected Budget</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.expectedBudget}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Duration</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.duration}</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button className="px-5 py-2.5 bg-[#00d1c6] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-cyan-600 transition-colors">
+                  {Icons.send}
+                  <span>Send Proposal</span>
+                </button>
+                <button className="px-5 py-2.5 bg-white border border-[#e5e7eb] text-[#364153] rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors">
+                  {Icons.paperclip}
+                  <span>Attach Documents</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Sidebar */}
+          <div className="w-80 flex flex-col gap-6">
+            {/* Lead Details - Pipeline Status */}
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <h3 className="text-lg font-semibold text-[#101828] mb-4">Lead Details</h3>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#dcfce7] rounded-xl flex items-center justify-center">
+                    {Icons.inquiry}
+                  </div>
+                  <span className="text-sm font-medium text-[#008236]">Inquiry</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#dcfce7] rounded-xl flex items-center justify-center">
+                    {Icons.visited}
+                  </div>
+                  <span className="text-sm font-medium text-[#008236]">Visited</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[rgba(255,120,71,0.05)] rounded-xl flex items-center justify-center">
+                    {Icons.negotiation}
+                  </div>
+                  <span className="text-sm font-medium text-[#ff7847]">Negotiation</span>
+                  <span className="ml-auto px-2 py-0.5 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">Current</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#f9fafb] rounded-xl flex items-center justify-center border-2 border-[#d1d5dc]">
+                    {Icons.converted}
+                  </div>
+                  <span className="text-sm font-medium text-[#6a7282]">Converted</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#f3f4f6] rounded-xl flex items-center justify-center">
+                    {Icons.dropped}
+                  </div>
+                  <span className="text-sm font-medium text-[#6a7282]">Dropped</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <h3 className="text-lg font-semibold text-[#101828] mb-4">Quick Actions</h3>
+              <div className="flex flex-col gap-2">
+                <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                  {Icons.call}
+                  <span>Call Lead</span>
+                </button>
+                <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                  {Icons.whatsapp}
+                  <span>Send WhatsApp</span>
+                </button>
+                <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                  {Icons.email}
+                  <span>Send Email</span>
+                </button>
+                <button className="w-full py-2.5 bg-white border border-[#e5e7eb] rounded-xl text-sm font-medium text-[#364153] flex items-center gap-3 px-4 hover:bg-gray-50 transition-colors">
+                  {Icons.note}
+                  <span>Add Note</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Recent Activities */}
+            <div className="bg-white rounded-2xl shadow-sm p-5">
+              <h3 className="text-lg font-semibold text-[#101828] mb-4">Recent Activities</h3>
+              <div className="flex flex-col gap-4">
+                {lead.activities.map((activity, index) => (
+                  <div key={index} className="flex gap-3">
+                    <div className="w-2 h-2 bg-[#ff7847] rounded-full mt-2 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-[#101828]">{activity.title}</p>
+                      <p className="text-xs text-[#ff7847]">{activity.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </Fragment>
   );
 }

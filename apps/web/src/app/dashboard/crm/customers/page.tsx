@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import {
   GET_CUSTOMERS,
   DELETE_CUSTOMER,
+  CREATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
 
@@ -134,6 +135,19 @@ export default function CustomersPage() {
   const [deleteCustomer] = useMutation(DELETE_CUSTOMER, {
     refetchQueries: [{ query: GET_CUSTOMERS }],
   });
+
+  const [createCustomer] = useMutation(CREATE_CUSTOMER, {
+    refetchQueries: [{ query: GET_CUSTOMERS }],
+  });
+
+  const handleAddClient = async (input: Record<string, string>) => {
+    try {
+      await createCustomer({ variables: { input } });
+      setShowAddClient(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const customers = data?.customers ?? [];
 
@@ -361,11 +375,15 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <ExportToExcelDialog
-        open={showExportDialog}
-        onClose={() => setShowExportDialog(false)}
-      />
-      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onAdd={handleAddClient} />
+      
+      {/* Export Dialog */}
+      {showExportDialog && (
+        <ExportToExcelDialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+        />
+      )}
     </div>
   );
 }
