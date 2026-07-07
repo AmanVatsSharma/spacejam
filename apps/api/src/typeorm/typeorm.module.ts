@@ -29,6 +29,10 @@ import { Lead } from './entities/lead.entity';
 import { MeetingRoom } from './entities/meeting-room.entity';
 import { Event } from './entities/event.entity';
 import { Request } from './entities/request.entity';
+import { Deposit } from './entities/deposit.entity';
+import { Invoice } from './entities/invoice.entity';
+import { Contract } from './entities/contract.entity';
+import { Customer } from './entities/customer.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -48,6 +52,10 @@ const ALL_ENTITIES = [
   MeetingRoom,
   Event,
   Request,
+  Customer,
+  Deposit,
+  Invoice,
+  Contract,
 ];
 
 @Module({

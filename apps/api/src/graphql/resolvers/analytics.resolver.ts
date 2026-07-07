@@ -10,7 +10,7 @@
 import { Resolver, Query, Args, ID } from '@nestjs/graphql';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual } from 'typeorm';
 import {
   BookingStatus,
   PaymentStatus,
@@ -47,7 +47,7 @@ export class AnalyticsResolver {
   ): Promise<DashboardMetrics> {
     const cacheKey = centerId ? `metrics:dashboard:${centerId}` : 'metrics:dashboard:global';
 
-    return this.cache.getOrSet<DashboardMetrics>(async () => {
+    return this.cache.getOrSet<DashboardMetrics>(cacheKey, async () => {
       const where: any = centerId ? { centerId } : {};
       const now = new Date();
       const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
@@ -56,7 +56,7 @@ export class AnalyticsResolver {
         where: {
           ...where,
           status: 'CONFIRMED',
-          createdAt: { $gte: thirtyDaysAgo }
+          createdAt: MoreThanOrEqual(thirtyDaysAgo)
         } as any,
         relations: ['seat', 'payment'],
       });
@@ -115,7 +115,7 @@ export class AnalyticsResolver {
         totalSeats,
         availableSeats: totalSeats - occupiedSeats,
       };
-    }, 1800); // Cache for 30 minutes
+    }, { ttl: 1800 }); // Cache for 30 minutes
   }
 
   @Query(() => RevenueReport)
@@ -125,7 +125,7 @@ export class AnalyticsResolver {
   ): Promise<RevenueReport> {
     const cacheKey = centerId ? `revenue:report:${centerId}` : 'revenue:report:global';
 
-    return this.cache.getOrSet<RevenueReport>(async () => {
+    return this.cache.getOrSet<RevenueReport>(cacheKey, async () => {
       const now = new Date();
       let dateRange = { since: new Date(), until: now };
 
@@ -150,7 +150,7 @@ export class AnalyticsResolver {
         const bookings = await this.bookingRepo.find({
           where: {
             centerId,
-            createdAt: { $gte: dateRange.since, $lte: dateRange.until }
+            createdAt: Between(dateRange.since, dateRange.until)
           } as any,
           relations: ['payment'],
         });
@@ -188,7 +188,7 @@ export class AnalyticsResolver {
         const prevBookings = await this.bookingRepo.find({
           where: {
             centerId,
-            createdAt: { $gte: prevPeriodStart, $lte: prevPeriodEnd }
+            createdAt: Between(prevPeriodStart, prevPeriodEnd)
           } as any,
         });
 
@@ -206,7 +206,7 @@ export class AnalyticsResolver {
       const payments = await this.paymentRepo.find({
         where: {
           status: PaymentStatus.COMPLETED,
-          createdAt: { $gte: dateRange.since, $lte: dateRange.until }
+          createdAt: Between(dateRange.since, dateRange.until)
         } as any,
         relations: ['booking'],
       });
@@ -218,7 +218,7 @@ export class AnalyticsResolver {
         byMonth: [],
         growth: 0,
       };
-    }, 86400); // Cache for 24 hours
+    }, { ttl: 86400 }); // Cache for 24 hours
   }
 
   @Query(() => OccupancyReport)
@@ -242,7 +242,7 @@ export class AnalyticsResolver {
     const bookings = await this.bookingRepo.find({
       where: {
         centerId,
-        createdAt: { $gte: dateRange.since, $lte: dateRange.until }
+        createdAt: Between(dateRange.since, dateRange.until)
       } as any,
       relations: ['seat'],
     });

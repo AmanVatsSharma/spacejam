@@ -10,4 +10,4 @@ pm2 delete spacejam-api || true
 pm2 start "apps/api/dist/main.js" --name spacejam-api --cwd /home/ubuntu/spacejam
 pm2 save
 pm2 logs spacejam-api --lines 20 --nostream
-curl -s -o /dev/null -w "API HTTP %{http_code}\n" http://localhost:3001/graphql
+curl -s -o /dev/null -w "API HTTP %{http_code}\n" http://localhost:4000/api/health

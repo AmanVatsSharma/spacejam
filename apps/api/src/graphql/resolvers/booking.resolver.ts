@@ -54,7 +54,7 @@ export class BookingResolver {
 
     const bookings = await this.bookingRepo.find({
       where,
-      relations: ['user', 'seat', 'payment'],
+      relations: ['user', 'seat', 'seat.floor', 'center', 'payment'],
       order: { createdAt: 'desc' },
     });
 
@@ -68,7 +68,7 @@ export class BookingResolver {
 
     const bookings = await this.bookingRepo.find({
       where: { userId } as any,
-      relations: ['seat', 'seat.floor', 'payment'],
+      relations: ['seat', 'seat.floor', 'center', 'payment'],
       order: { createdAt: 'desc' },
     });
 
@@ -79,7 +79,7 @@ export class BookingResolver {
   async booking(@Args('id', { type: () => ID }) id: string): Promise<BookingEntity | null> {
     const booking = await this.bookingRepo.findOne({
       where: { id },
-      relations: ['user', 'seat', 'seat.floor', 'payment'],
+      relations: ['user', 'seat', 'seat.floor', 'center', 'payment'],
     });
 
     return booking as unknown as Booking | null;
