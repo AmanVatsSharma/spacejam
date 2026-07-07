@@ -65,7 +65,8 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
       }
       router.push(target);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sign-in failed';
+      let message = err instanceof Error ? err.message : 'Sign-in failed';
+      message = message.replace(/^(GraphQL error:|ApolloError:)\s*/i, '').trim();
       setError(message);
       setStep('error');
       toast.error(message);
@@ -85,7 +86,8 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
       await auth.verifyTwoFactor(code, challengeToken);
       router.push(target);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid code';
+      let message = err instanceof Error ? err.message : 'Invalid code';
+      message = message.replace(/^(GraphQL error:|ApolloError:)\s*/i, '').trim();
       setError(message);
       setStep('twoFactor');
     }

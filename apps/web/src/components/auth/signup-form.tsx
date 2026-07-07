@@ -58,7 +58,8 @@ export function SignupForm({ defaultEmail, defaultName, nextHref }: SignupFormPr
       await auth.signup({ email, password, name: name || undefined });
       router.push(target);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sign-up failed';
+      let message = err instanceof Error ? err.message : 'Sign-up failed';
+      message = message.replace(/^(GraphQL error:|ApolloError:)\s*/i, '').trim();
       setError(message);
       toast.error(message);
     } finally {

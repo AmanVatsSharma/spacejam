@@ -10,7 +10,9 @@ if [ -d "/home/ubuntu/spacejam" ]; then
 fi
 sudo rm -rf /home/ubuntu/spacejam
 mkdir -p /home/ubuntu/spacejam
-tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam
+sudo tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam
+sudo chown -R ubuntu:ubuntu /home/ubuntu/spacejam
+sudo chmod -R u+w /home/ubuntu/spacejam
 
 echo ""
 echo "=== [2/6] Writing production .env files ==="
@@ -60,7 +62,7 @@ npm install pino --save 2>&1 | tail -3
 echo ""
 echo "=== [5/6] Building apps ==="
 # API — built by nx webpack to apps/api/dist/main.js
-npx nx build api
+NX_DAEMON=false NX_REJECT_UNKNOWN_LOCAL_CACHE=0 npx nx build api
 # Web — use --webpack flag to avoid Next.js 16 Turbopack prerender bug
 cd /home/ubuntu/spacejam/apps/web && npx next build --webpack
 cd /home/ubuntu/spacejam
