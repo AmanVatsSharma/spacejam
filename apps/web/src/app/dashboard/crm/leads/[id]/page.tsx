@@ -163,6 +163,34 @@ export default function LeadDetailsPage() {
   const [showEmail, setShowEmail] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-full border-2 border-[#FF6A2F] border-t-transparent animate-spin" />
+          <span className="text-sm text-gray-400">Loading lead details…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-700 mb-2">Lead not found</p>
+          <p className="text-sm text-gray-400 mb-4">This lead may have been deleted or the link is invalid.</p>
+          <button
+            onClick={() => router.push("/dashboard/crm/leads")}
+            className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-medium hover:bg-[#E55A20]"
+          >
+            Back to Leads
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col xl:flex-row gap-6 w-full max-w-[1400px] mx-auto pb-10 px-4 sm:px-0">
 

@@ -65,6 +65,41 @@ const ROLE_LABEL: Record<string, string> = {
 
 export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false, user }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      title: "Deposit Release Approval",
+      desc: "Tech Innovators Pvt Ltd • ₹50,000",
+      time: "5 min ago",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 4h6m-6 4h6M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
+        </svg>
+      )
+    },
+    {
+      id: 2,
+      title: "Invoice Overdue",
+      desc: "DataStream Solutions • INV-2026-1234",
+      time: "12 min ago",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      )
+    },
+    {
+      id: 3,
+      title: "Occupancy Alert",
+      desc: "Center occupancy dropped to 76%",
+      time: "1 hour ago",
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    }
+  ]);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const notifMenuRef = useRef<HTMLDivElement | null>(null);
@@ -162,7 +197,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
               <path d="M8 13V14C8 15.1 8.9 16 10 16C11.1 16 12 15.1 12 14V13" />
             </svg>
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF7847] rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-              3
+              {notifications.length}
             </span>
           </button>
 
@@ -170,46 +205,30 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
             <div className="absolute right-0 top-14 w-80 rounded-2xl border border-[#E5E7EB] bg-white py-2 shadow-xl z-50">
               <div className="flex justify-between items-center px-4 py-3 border-b border-[#F3F4F6]">
                 <span className="font-bold text-[#1F2937] text-sm">Notifications</span>
-                <button className="text-xs text-[#FF6A2F] hover:underline font-medium">Mark all read</button>
+                <button 
+                  onClick={() => setNotifications([])} 
+                  className="text-xs text-[#FF6A2F] hover:underline font-medium"
+                >
+                  Mark all read
+                </button>
               </div>
               <div className="flex flex-col max-h-[320px] overflow-y-auto">
-                {/* Example short notification items */}
-                <div className="px-4 py-3 border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#FFF2EA] text-[#FF6A2F] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 4h6m-6 4h6M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1F2937]">Deposit Release Approval</p>
-                    <p className="text-[13px] text-[#6B7280] mt-0.5 leading-snug">Tech Innovators Pvt Ltd • ₹50,000</p>
-                    <p className="text-xs text-[#FF6A2F] mt-1.5 font-medium">5 min ago</p>
-                  </div>
-                </div>
-                <div className="px-4 py-3 border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#FFF2EA] text-[#FF6A2F] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1F2937]">Invoice Overdue</p>
-                    <p className="text-[13px] text-[#6B7280] mt-0.5 leading-snug">DataStream Solutions • INV-2026-1234</p>
-                    <p className="text-xs text-[#FF6A2F] mt-1.5 font-medium">12 min ago</p>
-                  </div>
-                </div>
-                <div className="px-4 py-3 border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#FFF2EA] text-[#FF6A2F] flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1F2937]">Occupancy Alert</p>
-                    <p className="text-[13px] text-[#6B7280] mt-0.5 leading-snug">Center occupancy dropped to 76%</p>
-                    <p className="text-xs text-[#FF6A2F] mt-1.5 font-medium">1 hour ago</p>
-                  </div>
-                </div>
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-gray-500">No new notifications</div>
+                ) : (
+                  notifications.map((notif) => (
+                    <div key={notif.id} className="px-4 py-3 border-b border-[#F3F4F6] hover:bg-gray-50 cursor-pointer flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#FFF2EA] text-[#FF6A2F] flex items-center justify-center shrink-0 mt-0.5">
+                        {notif.icon}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1F2937]">{notif.title}</p>
+                        <p className="text-[13px] text-[#6B7280] mt-0.5 leading-snug">{notif.desc}</p>
+                        <p className="text-xs text-[#FF6A2F] mt-1.5 font-medium">{notif.time}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
               <div className="px-4 py-3 border-t border-[#F3F4F6] text-center bg-white rounded-b-2xl">
                 <Link 
