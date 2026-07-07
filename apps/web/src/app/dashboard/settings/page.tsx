@@ -64,7 +64,7 @@ interface User {
   phone?: string;
   center?: { id: string; name: string } | null;
   centerId?: string | null;
-  active: boolean;
+  isActive: boolean;
 }
 
 const ROLE_GROUP_MAP: Record<string, string> = {
@@ -117,15 +117,15 @@ export default function SettingsAccessPage() {
             <div
               key={user.id}
               className={`${styles.userItem} ${isActive ? styles.userItemActive : ''}`}
-              onClick={() => { setActiveUser(user); setAccountEnabled(user.active); }}
+              onClick={() => { setActiveUser(user); setAccountEnabled(user.isActive); }}
             >
               <div className={styles.listAvatar}>{getInitials(user.name)}</div>
               <div className={styles.listUserInfo}>
                 <span className={styles.listUserName}>{user.name}</span>
                 <span className={styles.listUserSub}>{subText}</span>
               </div>
-              <span className={`${styles.listUserStatus} ${user.active ? styles.statusTxtActive : styles.statusTxtSuspended}`}>
-                {user.active ? "Active" : "Suspended"}
+              <span className={`${styles.listUserStatus} ${user.isActive ? styles.statusTxtActive : styles.statusTxtSuspended}`}>
+                {user.isActive ? "Active" : "Suspended"}
               </span>
               <span className={styles.editIcon}>{Icons.editPencil}</span>
             </div>

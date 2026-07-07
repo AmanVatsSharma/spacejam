@@ -41,9 +41,8 @@ export interface AuthUser {
   email: string;
   name: string;
   role: UserRole;
-  active: boolean;
+  isActive: boolean;
   emailVerified: boolean;
-  twoFactorEnabled: boolean;
   avatar?: string | null;
   lastLoginAt?: string | null;
   createdAt: string;
@@ -131,17 +130,17 @@ const applyAuthPayload = (payload: AuthPayloadResult) => {
 const DEV_USERS: Record<UserRole, AuthUser> = {
   ADMIN: {
     id: 'dev-admin', email: 'admin@dev.local', name: 'Dev Admin',
-    role: 'ADMIN', active: true, emailVerified: true, twoFactorEnabled: false,
+    role: 'ADMIN', isActive: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
   CENTER_MANAGER: {
     id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Manager',
-    role: 'CENTER_MANAGER', active: true, emailVerified: true, twoFactorEnabled: false,
+    role: 'CENTER_MANAGER', isActive: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
   MEMBER: {
     id: 'dev-member', email: 'member@dev.local', name: 'Dev Member',
-    role: 'MEMBER', active: true, emailVerified: true, twoFactorEnabled: false,
+    role: 'MEMBER', isActive: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
 };
@@ -404,7 +403,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
-    isAuthenticated: !!user?.active,
+    isAuthenticated: !!user?.isActive,
     isLoading,
     hasToken,
     signin,

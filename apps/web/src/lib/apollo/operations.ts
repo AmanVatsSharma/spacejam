@@ -22,9 +22,8 @@ export const SIGNIN_MUTATION = gql`
         email
         name
         role
-        active
+        isActive
         emailVerified
-        twoFactorEnabled
       }
     }
   }
@@ -44,9 +43,8 @@ export const SIGNUP_MUTATION = gql`
         email
         name
         role
-        active
+        isActive
         emailVerified
-        twoFactorEnabled
       }
     }
   }
@@ -94,9 +92,8 @@ export const ME_QUERY = gql`
       email
       name
       role
-      active
+      isActive
       emailVerified
-      twoFactorEnabled
       lastLoginAt
       createdAt
     }
@@ -157,9 +154,8 @@ export const VERIFY_MAGIC_LINK = gql`
         email
         name
         role
-        active
+        isActive
         emailVerified
-        twoFactorEnabled
         avatar
         lastLoginAt
         createdAt
@@ -1102,9 +1098,8 @@ export const GET_USERS = gql`
         id
         name
       }
-      active
+      isActive
       emailVerified
-      twoFactorEnabled
       lastLoginAt
       createdAt
     }
