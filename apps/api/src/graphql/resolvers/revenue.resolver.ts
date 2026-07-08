@@ -240,6 +240,136 @@ export class DepositResolver {
     await this.cache.invalidate(`deposit:${id}`);
     return true;
   }
+
+  @Mutation(() => DepositEntity)
+  async freezeDeposit(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<DepositEntity> {
+    await this.depositRepo.update(id, {
+      status: DepositStatus.FROZEN,
+      frozen: true,
+    });
+    const deposit = await this.depositRepo.findOne({
+      where: { id },
+      relations: ['customer', 'center'],
+    });
+    if (!deposit) throw new NotFoundException('Deposit not found');
+    await this.cache.invalidatePattern('deposits:*');
+    await this.cache.invalidate(`deposit:${id}`);
+    return deposit;
+  }
+
+  @Mutation(() => DepositEntity)
+  async unfreezeDeposit(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<DepositEntity> {
+    await this.depositRepo.update(id, {
+      status: DepositStatus.HELD,
+      frozen: false,
+    });
+    const deposit = await this.depositRepo.findOne({
+      where: { id },
+      relations: ['customer', 'center'],
+    });
+    if (!deposit) throw new NotFoundException('Deposit not found');
+    await this.cache.invalidatePattern('deposits:*');
+    await this.cache.invalidate(`deposit:${id}`);
+    return deposit;
+  }
+
+  @Mutation(() => DepositEntity)
+  async requestDepositRelease(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('reason', { nullable: true }) reason?: string,
+  ): Promise<DepositEntity> {
+    await this.depositRepo.update(id, {
+      status: DepositStatus.RELEASE_REQUESTED,
+      releaseRequestedDate: new Date(),
+      releaseReason: reason ?? null,
+    });
+    const deposit = await this.depositRepo.findOne({
+      where: { id },
+      relations: ['customer', 'center'],
+    });
+    if (!deposit) throw new NotFoundException('Deposit not found');
+    await this.cache.invalidatePattern('deposits:*');
+    await this.cache.invalidate(`deposit:${id}`);
+    return deposit;
+  }
+
+  @Mutation(() => DepositEntity)
+  async approveDepositRelease(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<DepositEntity> {
+    await this.depositRepo.update(id, {
+      status: DepositStatus.RELEASED,
+      releasedDate: new Date(),
+      releaseRequestedDate: null,
+      releaseReason: null,
+    });
+    const deposit = await this.depositRepo.findOne({
+      where: { id },
+      relations: ['customer', 'center'],
+    });
+    if (!deposit) throw new NotFoundException('Deposit not found');
+    await this.cache.invalidatePattern('deposits:*');
+    await this.cache.invalidate(`deposit:${id}`);
+    return deposit;
+  }
+
+  @Mutation(() => Boolean)
+  async sendDepositReminder(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('reminderType') reminderType: string,
+  ): Promise<boolean> {
+    const deposit = await this.depositRepo.findOne({
+      where: { id },
+      relations: ['customer'],
+    });
+    if (!deposit) throw new NotFoundException('Deposit not found');
+    // Email/notification infra is not yet wired into the revenue module.
+    // Log the intent so it is observable until a notifier is integrated.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[DepositReminder] deposit=${id} type=${reminderType} customer=${deposit.customerName} amount=${deposit.amount}`,
+    );
+    return true;
+  }
+
+  @Mutation(() => String)
+  async exportDeposits(
+    @Args('format', { nullable: true }) format?: string,
+  ): Promise<string> {
+    const deposits = await this.depositRepo.find({
+      relations: ['customer', 'center'],
+      order: { createdAt: 'DESC' },
+      take: 500,
+    });
+
+    const fmt = (format ?? 'csv').toLowerCase();
+    if (fmt === 'json') {
+      return JSON.stringify(deposits);
+    }
+
+    // CSV (default)
+    const header = [
+      'ReferenceNumber', 'CustomerName', 'Amount', 'DepositType',
+      'Status', 'ReceivedDate', 'ReleasedDate', 'Notes',
+    ].join(',');
+    const rows = deposits.map((d) =>
+      [
+        d.referenceNumber,
+        `"${(d.customerName ?? '').replace(/"/g, '""')}"`,
+        d.amount,
+        d.depositType,
+        d.status,
+        d.receivedDate ? new Date(d.receivedDate).toISOString().split('T')[0] : '',
+        d.releasedDate ? new Date(d.releasedDate).toISOString().split('T')[0] : '',
+        `"${(d.notes ?? '').replace(/"/g, '""')}"`,
+      ].join(','),
+    );
+    return [header, ...rows].join('\n');
+  }
 }
 
 @Resolver(() => ContractEntity)
@@ -321,6 +451,25 @@ export class ContractResolver {
     @Args('id', { type: () => ID }) id: string,
   ): Promise<ContractEntity> {
     await this.contractRepo.update(id, { status: ContractStatus.TERMINATED });
+    const contract = await this.contractRepo.findOne({
+      where: { id },
+      relations: ['customer', 'center'],
+    });
+    if (!contract) throw new NotFoundException('Contract not found');
+    await this.cache.invalidatePattern('contracts:*');
+    await this.cache.invalidate(`contract:${id}`);
+    return contract;
+  }
+
+  @Mutation(() => ContractEntity)
+  async renewContract(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('newEndDate') newEndDate: Date,
+  ): Promise<ContractEntity> {
+    await this.contractRepo.update(id, {
+      endDate: newEndDate,
+      status: ContractStatus.ACTIVE,
+    });
     const contract = await this.contractRepo.findOne({
       where: { id },
       relations: ['customer', 'center'],

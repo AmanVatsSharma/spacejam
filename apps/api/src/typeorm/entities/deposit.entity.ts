@@ -63,6 +63,18 @@ export class Deposit {
   @Column({ name: 'releasedDate', type: 'date', nullable: true })
   releasedDate?: Date;
 
+  @Field(() => Date, { nullable: true })
+  @Column({ name: 'releaseRequestedDate', type: 'date', nullable: true })
+  releaseRequestedDate?: Date;
+
+  @Field(() => String, { nullable: true })
+  @Column({ name: 'releaseReason', type: 'text', nullable: true })
+  releaseReason?: string;
+
+  @Field(() => Boolean, { defaultValue: false })
+  @Column({ name: 'frozen', type: 'boolean', default: false })
+  frozen?: boolean;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   notes?: string;

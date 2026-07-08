@@ -168,6 +168,8 @@ export enum DepositStatus {
   HELD = 'Held',
   RELEASED = 'Released',
   REFUNDED = 'Refunded',
+  FROZEN = 'Frozen',
+  RELEASE_REQUESTED = 'Release Requested',
 }
 
 export enum DepositType {
