@@ -63,7 +63,7 @@ export default function TableViewPage() {
       spaceName: seat.number ?? `Seat ${seat.id}`,
       location: seat.location ?? "—",
       floor: seat.floor?.name ?? "—",
-      type: seat.type ?? "—",
+      type: seat.seatType ?? "—",
       capacity: 1,
       price: seat.price ? formatCurrency(seat.price) : "—",
       gst: "18%",

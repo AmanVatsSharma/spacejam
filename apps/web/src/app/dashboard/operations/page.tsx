@@ -355,13 +355,15 @@ export default function OperationsPage() {
       )}
 
       {/* Meeting Rooms */}
-      {activeTab === "meeting-rooms" && <MeetingRoomsTab />}
+      {activeTab === "meeting-rooms" && <MeetingRoomsTab onBookRoom={() => setShowBookRoom(true)} />}
+
+      {/* Book Room Modal — rendered at page root so "New Booking" works on every tab */}
+      <BookRoomModal open={showBookRoom} onClose={() => setShowBookRoom(false)} />
     </div>
   );
 }
 
-function MeetingRoomsTab() {
-  const [showBookRoom, setShowBookRoom] = useState(false);
+function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
   const { rooms, loading: roomsLoading, refetch: refetchRooms } = useMeetingRooms();
   const { requests, loading: requestsLoading } = useRequests({ status: "PENDING", limit: 10 });
 
@@ -384,7 +386,7 @@ function MeetingRoomsTab() {
           <p className="text-[#4A5565]">Monitor meeting room usage, availability and booking status</p>
         </div>
         <button
-          onClick={() => setShowBookRoom(true)}
+          onClick={() => onBookRoom?.()}
           className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -443,7 +445,7 @@ function MeetingRoomsTab() {
                 </p>
                 {isActionable ? (
                   <button
-                    onClick={() => setShowBookRoom(true)}
+                    onClick={() => onBookRoom?.()}
                     className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
                   >
                     {room.status === "OCCUPIED" ? "Extend" : "Book Now"}
@@ -476,12 +478,12 @@ function MeetingRoomsTab() {
                     <path d="M10 7V13M7 10H13" />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium text-[#101828]">{req.title ?? req.type}</p>
+                    <p className="text-sm font-medium text-[#101828]">{req.title ?? req.requestType}</p>
                     <p className="text-xs text-[#6A7282]">{req.requestedBy?.name ?? "—"}</p>
                   </div>
                 </div>
                 <div className={`w-5 h-5 rounded-full border-2 ${
-                  req.status === "COMPLETED" || req.status === "APPROVED"
+                  req.status === "COMPLETED" || req.status === "IN_PROGRESS"
                     ? "border-[#10B981] bg-[#10B981]"
                     : "border-[#FF7847]"
                 }`} />
@@ -490,8 +492,6 @@ function MeetingRoomsTab() {
           )}
         </div>
       </div>
-
-      <BookRoomModal open={showBookRoom} onClose={() => setShowBookRoom(false)} />
     </div>
   );
 }

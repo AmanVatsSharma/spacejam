@@ -102,10 +102,10 @@ function normalizeStatus(status: string): "AVAILABLE" | "OCCUPIED" | "MAINTENANC
 // Map seat type to a display label
 function seatTypeLabel(type: string): string {
   const t = (type ?? "").toUpperCase();
+  if (t === "HOT_DESK" || t.includes("OPEN") || t.includes("DESK") || t.includes("HEXAGON")) return "Open Desk";
+  if (t === "DEDICATED") return "Dedicated";
   if (t.includes("CABIN")) return "Cabin";
   if (t.includes("MEETING")) return "Meeting Room";
-  if (t.includes("HEXAGON")) return "Hexagon";
-  if (t.includes("OPEN") || t.includes("DESK")) return "Open Desk";
   return type || "Seat";
 }
 
@@ -239,7 +239,8 @@ export default function FloorMapPage() {
         variables: {
           input: {
             floorId: activeFloorId,
-            type: "OPEN_DESK",
+            number: `S-${Date.now().toString().slice(-5)}`,
+            seatType: "HOT_DESK",
             status: "AVAILABLE",
           },
         },
@@ -466,15 +467,15 @@ export default function FloorMapPage() {
                 {/* Open Seats area */}
                 <div className={`${styles.roomBlock} ${styles.rOpenSeats} ${styles.bgGrey}`}>
                   <div className={styles.rHexagons}>
-                    {Array.from({ length: Math.min(filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("HEXAGON")).length, 4) }).map((_, i) => (
+                    {Array.from({ length: Math.min(filteredSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length, 4) }).map((_, i) => (
                       <div key={i} className={styles.hexagon}></div>
                     ))}
                   </div>
                   <div style={{ position: 'absolute', left: '70px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("HEXAGON")).length} Hexagon
+                    {filteredSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length} Hexagon
                   </div>
                   <div style={{ position: 'absolute', right: '40px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {filteredSeats.filter((s: any) => s.type?.toUpperCase().includes("OPEN") || s.type?.toUpperCase().includes("DESK")).length} Open Seats
+                    {filteredSeats.filter((s: any) => s.seatType === "HOT_DESK" || s.seatType === "DEDICATED" || s.seatType?.toUpperCase().includes("OPEN") || s.seatType?.toUpperCase().includes("DESK")).length} Open Seats
                   </div>
                   <div className={styles.rOpenSeatsBox}>
                     Open Seats
@@ -505,12 +506,12 @@ export default function FloorMapPage() {
                     >
                       <div className={styles.roomHeader}>
                         <div className={styles.roomName}>
-                          {seatTypeLabel(seat.type)} {seat.number ?? index + 1}
+                          {seatTypeLabel(seat.seatType)} {seat.number ?? index + 1}
                         </div>
                         <div className={styles.roomDot}></div>
                       </div>
                       <div className={styles.roomCapacity}>
-                        {Icons.chair} {seat.capacity ?? seat.features?.length ?? 1}
+                        {Icons.chair} {seat.features?.length ?? 1}
                       </div>
                       <div className={styles.roomStatus}>{statusText[status]}</div>
                     </div>
@@ -537,9 +538,9 @@ export default function FloorMapPage() {
             <div className={styles.panelHeader}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2 className={styles.panelTitle}>
-                  {seatTypeLabel(selectedSeat.type)} {selectedSeat.number ?? ""}
+                  {seatTypeLabel(selectedSeat.seatType)} {selectedSeat.number ?? ""}
                 </h2>
-                <span className={styles.panelSubtitle}>{seatTypeLabel(selectedSeat.type)}</span>
+                <span className={styles.panelSubtitle}>{seatTypeLabel(selectedSeat.seatType)}</span>
               </div>
               <div className={styles.statusBadge}>
                 <div className={styles.statusDot}></div>
@@ -554,7 +555,7 @@ export default function FloorMapPage() {
             <div className={styles.sectionBlock}>
               <span className={styles.sectionTitle}>Capacity</span>
               <span className={styles.sectionText}>
-                {selectedSeat.capacity ?? selectedSeat.features?.length ?? 1} seats
+                {selectedSeat.features?.length ?? 1} seats
               </span>
             </div>
 
