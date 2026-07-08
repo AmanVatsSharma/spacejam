@@ -198,11 +198,11 @@ export function UpdateStatusDialog({ open, onClose }: { open: boolean; onClose: 
         <div className="flex flex-col gap-1.5">
           <label className="text-[13px] font-medium text-gray-700">Lead Stage</label>
           <select className="w-full px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] border-none outline-none">
-            <option>Inquiry</option>
+            <option>New</option>
             <option>Visited</option>
             <option selected>Negotiation</option>
             <option>Converted</option>
-            <option>Dropped</option>
+            <option>Cold</option>
           </select>
         </div>
         <div className="flex flex-col gap-1.5">

@@ -1909,7 +1909,7 @@ export default function OnboardingWizardPage() {
                                 input: {
                                   name: "New Client",
                                   email: "client@example.com",
-                                  status: "ACTIVE",
+                                  status: "Active",
                                 },
                               },
                             });

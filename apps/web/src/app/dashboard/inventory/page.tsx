@@ -120,7 +120,7 @@ export default function InventoryPage() {
       totalSeats: floor.seats?.length ?? 0,
       status: "active" as const,
       openSeats: floor.seats?.filter((s: any) => s.status === "AVAILABLE" || s.status === "available").length ?? 0,
-      cabins: floor.seats?.filter((s: any) => s.type === "CABIN" || s.type === "cabin").length ?? 0,
+      cabins: floor.seats?.filter((s: any) => s.seatType === "CABIN" || s.seatType === "cabin").length ?? 0,
       occupancy: 0, // computed from seat statuses if booking data is available
     }));
   }, [floorsData]);

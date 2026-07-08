@@ -340,10 +340,42 @@ export default function LeadDetailPage() {
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   const handleBack = () => {
     router.push("/dashboard/crm");
   };
+
+  const handleConvert = async () => {
+    if (converting) return;
+    setConverting(true);
+    try {
+      await convertLead({ variables: { id: leadId } });
+      router.push("/dashboard/crm/customers");
+    } catch {
+      // handled by Apollo error link
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (status: string) => {
+    try {
+      await updateLead({ variables: { id: leadId, input: { status } } });
+    } catch {
+      // handled by Apollo error link
+    }
+  };
+
+  // Derive display values from real Lead fields (with sensible fallbacks)
+  const initials = lead?.name
+    ? lead.name.split(/\s+/).map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
+    : "—";
+  const activities = [
+    { title: "Lead created", time: lead?.createdAt ? new Date(lead.createdAt).toLocaleString() : "—" },
+    { title: "Last updated", time: lead?.updatedAt ? new Date(lead.updatedAt).toLocaleString() : "—" },
+    ...(lead?.lastContact ? [{ title: "Last contact", time: lead.lastContact }] : []),
+  ];
 
   if (loading) {
     return (
@@ -407,9 +439,13 @@ export default function LeadDetailPage() {
                     {Icons.edit}
                     <span>Edit Lead</span>
                   </button>
-                  <button className="px-4 py-2 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                  <button
+                    onClick={handleConvert}
+                    disabled={converting}
+                    className="px-4 py-2 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-orange-600 transition-colors disabled:opacity-60"
+                  >
                     {Icons.userCheck}
-                    <span>Convert to Client</span>
+                    <span>{converting ? "Converting…" : "Convert to Client"}</span>
                   </button>
                 </div>
               </div>
@@ -419,7 +455,7 @@ export default function LeadDetailPage() {
             <div className="bg-white rounded-2xl shadow-sm p-6">
               <div className="flex gap-5">
                 <div className="w-20 h-20 bg-[#ff7847] rounded-2xl flex items-center justify-center shrink-0">
-                  <span className="text-2xl font-bold text-white">{lead.initials}</span>
+                  <span className="text-2xl font-bold text-white">{initials}</span>
                 </div>
                 <div className="flex-1 grid grid-cols-1 compact:grid-cols-3 gap-x-6 compact:gap-x-3 gap-y-4">
                   <div>
@@ -428,7 +464,7 @@ export default function LeadDetailPage() {
                         {Icons.users} Lead Name
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.name}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.name ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -436,7 +472,7 @@ export default function LeadDetailPage() {
                         {Icons.phone} Phone Number
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.phone}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.phone ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -444,7 +480,7 @@ export default function LeadDetailPage() {
                         {Icons.mail} Email
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.email}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.email ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -452,7 +488,7 @@ export default function LeadDetailPage() {
                         {Icons.building} Company Name
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.company}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.company ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -460,39 +496,39 @@ export default function LeadDetailPage() {
                         {Icons.globe} Lead Source
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.source}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.source ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                        {Icons.briefcase} Interested Plan
+                        {Icons.briefcase} Requirement
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.plan}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.requirement ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                        {Icons.teamSize} Team Size
+                        {Icons.mapPin} Location
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.teamSize}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.location ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                        {Icons.calendar} Preferred Move-in Date
+                        {Icons.teamSize} Budget
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.moveInDate}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.budget ?? "—"}</p>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide flex items-center gap-1">
-                        {Icons.mapPin} Assigned Center Manager
+                        {Icons.users} Assigned To
                       </span>
                     </div>
-                    <p className="text-sm font-semibold text-[#101828]">{lead.assignedCM}</p>
+                    <p className="text-sm font-semibold text-[#101828]">{lead.assignedTo?.name ?? "—"}</p>
                   </div>
                 </div>
               </div>
@@ -508,19 +544,22 @@ export default function LeadDetailPage() {
                 </div>
                 <div className="flex flex-col gap-3">
                   <div>
-                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Next Follow-up Date</p>
-                    <p className="text-sm font-medium text-[#101828]">{lead.nextFollowUp}</p>
+                    <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Last Contact</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.lastContact ?? "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Lead Stage</p>
-                    <span className="inline-block mt-1 px-3 py-1 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">{lead.stage}</span>
+                    <span className="inline-block mt-1 px-3 py-1 bg-[rgba(255,120,71,0.05)] rounded-full text-xs font-medium text-[#ff7847]">{lead.status ?? "New"}</span>
                   </div>
                   <div>
-                    <p className="text-sm text-[#364153]">{lead.followUpNote}</p>
+                    <p className="text-sm text-[#364153]">{lead.notes ?? "No notes recorded yet."}</p>
                   </div>
-                  <button className="w-full py-2.5 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
+                  <button
+                    onClick={() => handleUpdateStatus("Visited")}
+                    className="w-full py-2.5 bg-[#ff7847] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors"
+                  >
                     {Icons.checkCircle}
-                    <span>Update Status</span>
+                    <span>Mark as Visited</span>
                   </button>
                 </div>
               </div>
@@ -534,15 +573,15 @@ export default function LeadDetailPage() {
                 <div className="flex flex-col gap-3">
                   <div>
                     <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Date</p>
-                    <p className="text-sm font-medium text-[#101828]">{lead.visitDate}</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.lastContact ?? "Not scheduled"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Visit Type</p>
-                    <p className="text-sm font-medium text-[#101828]">{lead.visitType}</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.status === "Visited" ? "Center Tour" : "—"}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Assigned Staff</p>
-                    <p className="text-sm font-medium text-[#101828]">{lead.visitStaff}</p>
+                    <p className="text-sm font-medium text-[#101828]">{lead.assignedTo?.name ?? "—"}</p>
                   </div>
                   <div className="flex gap-2">
                     <button className="flex-1 py-2.5 bg-[#ffcf4e] text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors">
@@ -566,20 +605,20 @@ export default function LeadDetailPage() {
               </div>
               <div className="grid grid-cols-1 compact:grid-cols-4 gap-6 compact:gap-3 mb-4">
                 <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Plan Type</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.proposalPlan}</p>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Requirement</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.requirement ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Interested Seats</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.interestedSeats}</p>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Location</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.location ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Expected Budget</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.expectedBudget}</p>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Budget</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.budget ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Duration</p>
-                  <p className="text-sm font-medium text-[#101828]">{lead.duration}</p>
+                  <p className="text-[10px] font-medium text-[#6a7282] uppercase tracking-wide">Center</p>
+                  <p className="text-sm font-medium text-[#101828]">{lead.center?.name ?? "—"}</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -662,7 +701,7 @@ export default function LeadDetailPage() {
             <div className="bg-white rounded-2xl shadow-sm p-5">
               <h3 className="text-lg font-semibold text-[#101828] mb-4">Recent Activities</h3>
               <div className="flex flex-col gap-4">
-                {lead.activities.map((activity, index) => (
+                {activities.map((activity, index) => (
                   <div key={index} className="flex gap-3">
                     <div className="w-2 h-2 bg-[#ff7847] rounded-full mt-2 shrink-0" />
                     <div>
