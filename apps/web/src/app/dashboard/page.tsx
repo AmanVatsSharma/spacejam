@@ -17,6 +17,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { useAuth } from "@/contexts/auth-context";
+import { normalizeStatus } from "@/lib/revenue-status";
 import {
   GET_DASHBOARD_METRICS,
   GET_LEADS,
@@ -138,7 +139,7 @@ export default function DashboardPage() {
   // Compute deposit held total
   const depositHeld = useMemo(() => {
     return deposits
-      .filter((d: any) => d.status === "Held" || d.status === "Active")
+      .filter((d: any) => normalizeStatus(d.status) === "HELD" || normalizeStatus(d.status) === "ACTIVE")
       .reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0);
   }, [deposits]);
 

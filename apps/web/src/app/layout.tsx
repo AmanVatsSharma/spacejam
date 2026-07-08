@@ -14,6 +14,8 @@
 import './globals.css';
 import { Providers } from '@/components/Providers';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: 'SpaceJam - Coworking Space Management',
   description: 'Manage your coworking space efficiently',
