@@ -11,10 +11,33 @@
 
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { useQuery } from "@apollo/client";
+import { GET_CUSTOMER } from "@/lib/apollo/operations";
 import styles from "./customer-detail.module.css";
 
 type Tab = "overview" | "employees" | "activity" | "documents";
+
+/** Placeholder for any field that has no backend source yet. */
+const NA = "—";
+
+/** Format an ISO date string into a short readable date; returns NA if missing. */
+function formatDate(iso?: string | null): string {
+  if (!iso) return NA;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return NA;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** Format a numeric amount as INR; returns NA if not a finite number. */
+function formatRupee(amount?: number | null): string {
+  if (amount === null || amount === undefined || !Number.isFinite(amount)) return NA;
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
 
 /* ----- Icons (inline SVG, matches leads/[id] pattern) ----- */
 const Icons = {
@@ -214,34 +237,7 @@ type MembershipField = { label: string; value: string };
 type FinancialField = { label: string; value: string; highlight?: boolean };
 type UsageField = { label: string; value: string; trend?: string; subtext?: string };
 
-const MEMBERSHIP_FIELDS: MembershipField[] = [
-  { label: "Plan Type", value: "Enterprise" },
-  { label: "Number of Seats", value: "25" },
-  { label: "Type of Seat", value: "Hot Desk" },
-  { label: "Active Since", value: "Jan 15, 2024" },
-  { label: "Renewal Date", value: "Jan 15, 2026" },
-  { label: "Contact Email", value: "contact@technova.com" },
-  { label: "Phone Number", value: "+1 555 0101" },
-];
-
-const FINANCIAL_FIELDS: FinancialField[] = [
-  { label: "Total Paid", value: "₹25,000", highlight: true },
-  { label: "Pending Dues", value: "₹0" },
-  { label: "Last Payment", value: "Feb 1, 2026" },
-  { label: "Mode of Payment", value: "UPI" },
-  { label: "Payment Cycle", value: "Monthly" },
-  { label: "Invoice Date", value: "Feb 1, 2026" },
-  { label: "Invoice Amount", value: "₹500" },
-  { label: "Security Deposit", value: "Feb 1, 2026" },
-];
-
-const USAGE_FIELDS: UsageField[] = [
-  { label: "Meeting Rooms (This Month)", value: "18", trend: "+12% from last month" },
-  { label: "Printing Credits", value: "245", subtext: "pages remaining" },
-  { label: "Wallet Balance", value: "₹185", subtext: "available credit" },
-];
-
-/* ----- Activity Timeline tab data ----- */
+/* ----- Activity Timeline tab item type ----- */
 type Activity = {
   id: string;
   actor: string;
@@ -250,52 +246,7 @@ type Activity = {
   time: string;
 };
 
-const ACTIVITIES: Activity[] = [
-  {
-    id: "a1",
-    actor: "Priya Sharma",
-    actorInitials: "PS",
-    message: "marked Invoice #INV-2025-0142 as paid via NEFT transfer",
-    time: "2 hours ago",
-  },
-  {
-    id: "a2",
-    actor: "System",
-    actorInitials: "SY",
-    message: "auto-generated monthly invoice for Enterprise plan (25 seats)",
-    time: "1 day ago",
-  },
-  {
-    id: "a3",
-    actor: "Raj Patel",
-    actorInitials: "RP",
-    message: "assigned hot desk HD-205 to new team member Sarah Chen",
-    time: "3 days ago",
-  },
-  {
-    id: "a4",
-    actor: "Aman Verma",
-    actorInitials: "AV",
-    message: "resolved support ticket #TKT-342 regarding meeting room double booking",
-    time: "5 days ago",
-  },
-  {
-    id: "a5",
-    actor: "Priya Sharma",
-    actorInitials: "PS",
-    message: "marked Invoice #INV-2025-0141 as paid",
-    time: "1 week ago",
-  },
-  {
-    id: "a6",
-    actor: "System",
-    actorInitials: "SY",
-    message: "onboarded customer with Enterprise plan and 25 active seats",
-    time: "2 weeks ago",
-  },
-];
-
-/* ----- Documents tab data ----- */
+/* ----- Documents tab item type ----- */
 type Document = {
   id: string;
   name: string;
@@ -305,34 +256,7 @@ type Document = {
   variant: "pdf" | "image";
 };
 
-const DOCUMENTS: Document[] = [
-  {
-    id: "d1",
-    name: "Business Registration Certificate",
-    type: "PDF",
-    size: "2.4 MB",
-    uploadedAt: "Jan 15, 2024",
-    variant: "pdf",
-  },
-  {
-    id: "d2",
-    name: "Service Agreement - Signed",
-    type: "PDF",
-    size: "1.8 MB",
-    uploadedAt: "Jan 15, 2024",
-    variant: "pdf",
-  },
-  {
-    id: "d3",
-    name: "Payment Authorization Form",
-    type: "PDF",
-    size: "890 KB",
-    uploadedAt: "Jan 15, 2024",
-    variant: "image",
-  },
-];
-
-/* ----- Employees tab data ----- */
+/* ----- Employees tab item type ----- */
 type Employee = {
   name: string;
   email: string;
@@ -342,44 +266,28 @@ type Employee = {
   actions: ("edit" | "remove")[];
 };
 
-const EMPLOYEES: Employee[] = [
-  {
-    name: "Alex Thompson",
-    email: "alex@technova.com",
-    role: "CTO",
-    seat: "A-101",
-    status: "active",
-    actions: ["remove"],
-  },
-  {
-    name: "Jamie Lee",
-    email: "jamie@technova.com",
-    role: "Lead Developer",
-    seat: "A-102",
-    status: "active",
-    actions: ["remove"],
-  },
-  {
-    name: "Morgan Davis",
-    email: "morgan@technova.com",
-    role: "Product Manager",
-    seat: "A-103",
-    status: "active",
-    actions: ["edit", "remove"],
-  },
-];
-
 /* ============================================================
    Component
    ============================================================ */
 export default function CustomerDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const customerId = params?.id as string;
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [note, setNote] = useState("");
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [showFreezeDialog, setShowFreezeDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
+
+  /* ── Apollo: fetch customer ── */
+  const { data, loading, error } = useQuery(GET_CUSTOMER, {
+    variables: { id: customerId },
+    skip: !customerId,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const customer = data?.customer;
 
   // Lock body scroll while dialog is open
   useEffect(() => {
@@ -391,6 +299,72 @@ export default function CustomerDetailPage() {
       document.body.style.overflow = prev;
     };
   }, [showUpgradeDialog, showRenewDialog]);
+
+  /* ── Loading state ── */
+  if (loading && !customer) {
+    return (
+      <div className={styles.shell}>
+        <div className={styles.loadingState}>
+          <div className={styles.spinner} aria-hidden="true" />
+          <p>Loading customer details…</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error / not-found state ── */
+  if (!customer) {
+    return (
+      <div className={styles.shell}>
+        <div className={styles.loadingState}>
+          <p className={styles.notFoundTitle}>Customer not found</p>
+          <p className={styles.notFoundBody}>
+            {error
+              ? "We couldn't load this customer. Please try again later."
+              : "This customer may have been deleted or the link is invalid."}
+          </p>
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => router.push("/dashboard/crm/customers")}
+          >
+            {Icons.arrowLeft}
+            Back to customers
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Derived data from the live customer record ── */
+  const displayName = customer.name || customer.company || "Customer";
+  const initials = (displayName.trim().slice(0, 2) || "CN").toUpperCase();
+  const memberSince = formatDate(customer.joinDate ?? customer.createdAt);
+  const seatsLabel =
+    customer.teamSize != null ? `${customer.teamSize} seats` : NA;
+
+  const membershipFields: MembershipField[] = [
+    { label: "Company", value: customer.company || NA },
+    { label: "Number of Seats", value: customer.teamSize != null ? String(customer.teamSize) : NA },
+    { label: "Status", value: customer.status || NA },
+    { label: "Active Since", value: memberSince },
+    { label: "Location", value: customer.location || NA },
+    { label: "Contact Email", value: customer.email || NA },
+    { label: "Phone Number", value: customer.phone || NA },
+  ];
+
+  const financialFields: FinancialField[] = [
+    { label: "Total Spent", value: formatRupee(customer.totalSpent), highlight: true },
+    { label: "Last Booking", value: formatDate(customer.lastBooking) },
+    { label: "Total Bookings", value: customer.totalBookings != null ? String(customer.totalBookings) : NA },
+    { label: "Notes", value: customer.notes || NA },
+  ];
+
+  const usageFields: UsageField[] = [
+    { label: "Total Bookings", value: customer.totalBookings != null ? String(customer.totalBookings) : NA },
+    { label: "Team Size", value: customer.teamSize != null ? String(customer.teamSize) : NA },
+    { label: "Location", value: customer.location || NA },
+  ];
 
   return (
     <div className={styles.shell}>
@@ -406,18 +380,19 @@ export default function CustomerDetailPage() {
             {Icons.arrowLeft}
           </button>
 
-          <div className={styles.avatar}>TN</div>
+          <div className={styles.avatar}>{initials}</div>
 
           <div className={styles.profileMeta}>
-            <h1 className={styles.customerName}>TechNova Solutions</h1>
+            <h1 className={styles.customerName}>{displayName}</h1>
             <div className={styles.metaRow}>
               <span className={styles.metaItem}>
                 {Icons.building}
-                Enterprise · 25 seats
+                {customer.company || NA}
+                {customer.teamSize != null ? ` · ${customer.teamSize} seats` : ""}
               </span>
               <span className={styles.metaItem}>
                 {Icons.calendar}
-                Member since Jan 2024
+                Member since {memberSince}
               </span>
             </div>
           </div>
@@ -443,14 +418,18 @@ export default function CustomerDetailPage() {
       <div className={styles.kpiGrid}>
         <KpiCard
           icon={Icons.trendingUp}
-          value="₹25,000"
+          value={formatRupee(customer.totalSpent)}
           label="Total Revenue Generated"
         />
-        <KpiCard icon={Icons.rupee} value="₹0" label="Outstanding Dues" />
-        <KpiCard icon={Icons.users} value="25" label="Active Seats" />
+        <KpiCard icon={Icons.rupee} value={NA} label="Outstanding Dues" />
+        <KpiCard
+          icon={Icons.users}
+          value={customer.teamSize != null ? String(customer.teamSize) : NA}
+          label="Active Seats"
+        />
         <KpiCard
           icon={Icons.shield}
-          value="₹5,000"
+          value={NA}
           label="Security Deposit Held"
         />
       </div>
@@ -480,7 +459,7 @@ export default function CustomerDetailPage() {
               <section className={styles.card}>
                 <h2 className={styles.cardTitle}>Membership Details</h2>
                 <div className={`${styles.fieldGrid} ${styles.fieldGrid3}`}>
-                  {MEMBERSHIP_FIELDS.map((f) => (
+                  {membershipFields.map((f) => (
                     <Field key={f.label} label={f.label} value={f.value} />
                   ))}
                 </div>
@@ -489,7 +468,7 @@ export default function CustomerDetailPage() {
               <section className={styles.card}>
                 <h2 className={styles.cardTitle}>Financial Summary</h2>
                 <div className={`${styles.fieldGrid} ${styles.fieldGrid4}`}>
-                  {FINANCIAL_FIELDS.map((f) => (
+                  {financialFields.map((f) => (
                     <Field
                       key={f.label}
                       label={f.label}
@@ -503,7 +482,7 @@ export default function CustomerDetailPage() {
               <section className={styles.card}>
                 <h2 className={styles.cardTitle}>Usage Metrics</h2>
                 <div className={`${styles.fieldGrid} ${styles.fieldGrid3}`}>
-                  {USAGE_FIELDS.map((f) => (
+                  {usageFields.map((f) => (
                     <Field
                       key={f.label}
                       label={f.label}
@@ -517,9 +496,9 @@ export default function CustomerDetailPage() {
             </>
           )}
 
-          {activeTab === "employees" && <EmployeesList employees={EMPLOYEES} />}
-          {activeTab === "activity" && <ActivityList activities={ACTIVITIES} />}
-          {activeTab === "documents" && <DocumentsList documents={DOCUMENTS} />}
+          {activeTab === "employees" && <EmployeesList employees={[]} />}
+          {activeTab === "activity" && <ActivityList activities={[]} />}
+          {activeTab === "documents" && <DocumentsList documents={[]} />}
         </div>
 
         {/* Right column */}
@@ -544,13 +523,13 @@ export default function CustomerDetailPage() {
             <div className={styles.fieldStackLarge}>
               <span className={styles.fieldLabel}>Lifetime Value</span>
               <span className={`${styles.fieldValue} ${styles.fieldValueHighlight}`}>
-                ₹150,000
+                {formatRupee(customer.totalSpent)}
               </span>
             </div>
             <div className={styles.fieldStack}>
               <span className={styles.fieldLabel}>Last Activity</span>
               <span className={`${styles.fieldValue} ${styles.fieldValueSecondary}`}>
-                2 hours ago
+                {formatDate(customer.lastBooking)}
               </span>
             </div>
           </section>
@@ -572,7 +551,7 @@ export default function CustomerDetailPage() {
 
       <PlanUpgradeDialog
         open={showUpgradeDialog}
-        customerName="TechNova Solutions"
+        customerName={displayName}
         onClose={() => setShowUpgradeDialog(false)}
       />
 
@@ -583,13 +562,13 @@ export default function CustomerDetailPage() {
 
       <FreezeAccountDialog
         open={showFreezeDialog}
-        customerName="TechNova Solutions"
+        customerName={displayName}
         onClose={() => setShowFreezeDialog(false)}
       />
 
       <RenewMembershipDialog
         open={showRenewDialog}
-        customerName="TechNova Solutions"
+        customerName={displayName}
         onClose={() => setShowRenewDialog(false)}
       />
     </div>
@@ -678,53 +657,57 @@ function EmployeesList({ employees }: { employees: Employee[] }) {
         </button>
       </header>
 
-      <div className={styles.empTable} role="table" aria-label="Team members">
-        <div className={styles.empHeaderRow} role="row">
-          <div className={styles.empHeaderCell} role="columnheader">Name</div>
-          <div className={styles.empHeaderCell} role="columnheader">Role</div>
-          <div className={styles.empHeaderCell} role="columnheader">Assigned Seat</div>
-          <div className={styles.empHeaderCell} role="columnheader">Status</div>
-          <div className={`${styles.empHeaderCell} ${styles.empHeaderCellActions}`} role="columnheader">Actions</div>
-        </div>
+      {employees.length === 0 ? (
+        <EmptyState title="No team members" body="No team members have been added for this customer yet." />
+      ) : (
+        <div className={styles.empTable} role="table" aria-label="Team members">
+          <div className={styles.empHeaderRow} role="row">
+            <div className={styles.empHeaderCell} role="columnheader">Name</div>
+            <div className={styles.empHeaderCell} role="columnheader">Role</div>
+            <div className={styles.empHeaderCell} role="columnheader">Assigned Seat</div>
+            <div className={styles.empHeaderCell} role="columnheader">Status</div>
+            <div className={`${styles.empHeaderCell} ${styles.empHeaderCellActions}`} role="columnheader">Actions</div>
+          </div>
 
-        <div className={styles.empBody} role="rowgroup">
-          {employees.map((emp) => (
-            <div key={emp.email} className={styles.empRow} role="row">
-              <div className={styles.empCell} role="cell">
-                <div className={styles.empName}>{emp.name}</div>
-                <div className={styles.empEmail}>{emp.email}</div>
-              </div>
-              <div className={styles.empCell} role="cell">
-                <span className={styles.empRole}>{emp.role}</span>
-              </div>
-              <div className={styles.empCell} role="cell">
-                <span className={styles.empSeatBadge}>{emp.seat}</span>
-              </div>
-              <div className={styles.empCell} role="cell">
-                <span className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}>
-                  {emp.status}
-                </span>
-              </div>
-              <div className={styles.empCell} role="cell">
-                <div className={styles.empActions}>
-                  {emp.actions.includes("edit") && (
-                    <button type="button" className={styles.empActionBtn}>
-                      {Icons.edit}
-                      <span>Edit</span>
-                    </button>
-                  )}
-                  {emp.actions.includes("remove") && (
-                    <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`}>
-                      {Icons.trash}
-                      <span>Remove</span>
-                    </button>
-                  )}
+          <div className={styles.empBody} role="rowgroup">
+            {employees.map((emp) => (
+              <div key={emp.email} className={styles.empRow} role="row">
+                <div className={styles.empCell} role="cell">
+                  <div className={styles.empName}>{emp.name}</div>
+                  <div className={styles.empEmail}>{emp.email}</div>
+                </div>
+                <div className={styles.empCell} role="cell">
+                  <span className={styles.empRole}>{emp.role}</span>
+                </div>
+                <div className={styles.empCell} role="cell">
+                  <span className={styles.empSeatBadge}>{emp.seat}</span>
+                </div>
+                <div className={styles.empCell} role="cell">
+                  <span className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}>
+                    {emp.status}
+                  </span>
+                </div>
+                <div className={styles.empCell} role="cell">
+                  <div className={styles.empActions}>
+                    {emp.actions.includes("edit") && (
+                      <button type="button" className={styles.empActionBtn}>
+                        {Icons.edit}
+                        <span>Edit</span>
+                      </button>
+                    )}
+                    {emp.actions.includes("remove") && (
+                      <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`}>
+                        {Icons.trash}
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
@@ -740,27 +723,31 @@ function ActivityList({ activities }: { activities: Activity[] }) {
         </button>
       </header>
 
-      <ol className={styles.activityList}>
-        {activities.map((a, idx) => {
-          const isLast = idx === activities.length - 1;
-          return (
-            <li key={a.id} className={styles.activityItem}>
-              <span className={styles.activityAvatar} aria-hidden="true">
-                {a.actorInitials}
-              </span>
-              {!isLast && <span className={styles.activityLine} aria-hidden="true" />}
-              <div className={styles.activityBody}>
-                <p className={styles.activityText}>
-                  <strong className={styles.activityActor}>{a.actor}</strong>
-                  {" "}
-                  <span className={styles.activityMessage}>{a.message}</span>
-                </p>
-                <span className={styles.activityTime}>{a.time}</span>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+      {activities.length === 0 ? (
+        <EmptyState title="No activities recorded" body="There is no activity history for this customer yet." />
+      ) : (
+        <ol className={styles.activityList}>
+          {activities.map((a, idx) => {
+            const isLast = idx === activities.length - 1;
+            return (
+              <li key={a.id} className={styles.activityItem}>
+                <span className={styles.activityAvatar} aria-hidden="true">
+                  {a.actorInitials}
+                </span>
+                {!isLast && <span className={styles.activityLine} aria-hidden="true" />}
+                <div className={styles.activityBody}>
+                  <p className={styles.activityText}>
+                    <strong className={styles.activityActor}>{a.actor}</strong>
+                    {" "}
+                    <span className={styles.activityMessage}>{a.message}</span>
+                  </p>
+                  <span className={styles.activityTime}>{a.time}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </section>
   );
 }
@@ -776,40 +763,54 @@ function DocumentsList({ documents }: { documents: Document[] }) {
         </button>
       </header>
 
-      <div className={styles.documentsList}>
-        {documents.map((d) => (
-          <article key={d.id} className={styles.documentsRow}>
-            <div
-              className={`${styles.documentsIconWrap} ${d.variant === "image" ? styles.documentsIconWrapImage : ""}`}
-              aria-hidden="true"
-            >
-              {d.variant === "pdf" ? Icons.filePdf : Icons.fileImage}
-            </div>
-
-            <div className={styles.documentsMeta}>
-              <p className={styles.documentsName}>{d.name}</p>
-              <p className={styles.documentsSub}>
-                {d.type} · {d.size} · Uploaded {d.uploadedAt}
-              </p>
-            </div>
-
-            <div className={styles.documentsActions}>
-              <button type="button" className={styles.documentsViewBtn}>
-                {Icons.view}
-                <span>View</span>
-              </button>
-              <button
-                type="button"
-                className={styles.documentsDownloadBtn}
-                aria-label={`Download ${d.name}`}
+      {documents.length === 0 ? (
+        <EmptyState title="No documents" body="No documents have been uploaded for this customer yet." />
+      ) : (
+        <div className={styles.documentsList}>
+          {documents.map((d) => (
+            <article key={d.id} className={styles.documentsRow}>
+              <div
+                className={`${styles.documentsIconWrap} ${d.variant === "image" ? styles.documentsIconWrapImage : ""}`}
+                aria-hidden="true"
               >
-                {Icons.download}
-              </button>
-            </div>
-          </article>
-        ))}
-      </div>
+                {d.variant === "pdf" ? Icons.filePdf : Icons.fileImage}
+              </div>
+
+              <div className={styles.documentsMeta}>
+                <p className={styles.documentsName}>{d.name}</p>
+                <p className={styles.documentsSub}>
+                  {d.type} · {d.size} · Uploaded {d.uploadedAt}
+                </p>
+              </div>
+
+              <div className={styles.documentsActions}>
+                <button type="button" className={styles.documentsViewBtn}>
+                  {Icons.view}
+                  <span>View</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.documentsDownloadBtn}
+                  aria-label={`Download ${d.name}`}
+                >
+                  {Icons.download}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
+  );
+}
+
+/* ----- Shared empty-state placeholder ----- */
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className={styles.emptyState} role="status">
+      <p className={styles.emptyStateTitle}>{title}</p>
+      <p className={styles.emptyStateBody}>{body}</p>
+    </div>
   );
 }
 
