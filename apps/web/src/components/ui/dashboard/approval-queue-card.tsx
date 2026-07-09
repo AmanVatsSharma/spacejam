@@ -101,35 +101,42 @@ export function ApprovalQueueCard({
 
       {/* Approval Items */}
       <div className="flex flex-col gap-3">
-        {defaultItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center gap-3 p-3 rounded-[10px] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-colors"
-          >
-            {/* Icon */}
+        {defaultItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center bg-[#F9FAFB] rounded-[10px] border border-dashed border-[#E5E7EB] min-h-[140px]">
+            <span className="text-[14px] font-medium text-[#6B7280]">Queue is empty</span>
+            <span className="text-[12px] text-[#9CA3AF] mt-1">No approvals pending your review.</span>
+          </div>
+        ) : (
+          defaultItems.map((item) => (
             <div
-              className="w-[40px] h-[40px] rounded-[12px] flex items-center justify-center flex-shrink-0"
-              style={{ background: getBgColor(item.iconColor) }}
+              key={item.id}
+              className="flex items-center gap-3 p-3 rounded-[10px] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-colors"
             >
-              <AlertIcon color={item.iconColor} />
-            </div>
-
-            {/* Content */}
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="text-[14px] font-semibold text-[#1F2937] leading-[17px] truncate">
-                  {item.title}
-                </span>
-                <span className="text-[12px] text-[#9CA3AF] whitespace-nowrap ml-2">
-                  {item.timeAgo}
+              {/* Icon */}
+              <div
+                className="w-[40px] h-[40px] rounded-[12px] flex items-center justify-center flex-shrink-0"
+                style={{ background: getBgColor(item.iconColor) }}
+              >
+                <AlertIcon color={item.iconColor} />
+              </div>
+  
+              {/* Content */}
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-semibold text-[#1F2937] leading-[17px] truncate">
+                    {item.title}
+                  </span>
+                  <span className="text-[12px] text-[#9CA3AF] whitespace-nowrap ml-2">
+                    {item.timeAgo}
+                  </span>
+                </div>
+                <span className="text-[12px] text-[#6B7280] leading-[15px] truncate">
+                  {item.subtitle}
                 </span>
               </div>
-              <span className="text-[12px] text-[#6B7280] leading-[15px] truncate">
-                {item.subtitle}
-              </span>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* View All Button */}
