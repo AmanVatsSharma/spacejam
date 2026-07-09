@@ -10,11 +10,15 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { UPDATE_LEAD, GET_LEADS } from "@/lib/apollo/operations";
 
 interface EditLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   leadData?: {
+    id?: string;
     name: string;
     phone: string;
     email: string;
@@ -63,6 +67,11 @@ export default function EditLeadModal({ isOpen, onClose, leadData }: EditLeadMod
   });
 
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [updateLead] = useMutation(UPDATE_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
 
   if (!isOpen) return null;
 
@@ -79,14 +88,55 @@ export default function EditLeadModal({ isOpen, onClose, leadData }: EditLeadMod
     setDropdownOpen(null);
   };
 
-  const handleSave = () => {
-    console.log("Saving lead data:", formData);
-    onClose();
+  const persist = async () => {
+    const leadId = leadData?.id;
+    if (!leadId) {
+      toast.error("Cannot save: missing lead id");
+      return false;
+    }
+    setSaving(true);
+    try {
+      await updateLead({
+        variables: {
+          id: leadId,
+          input: {
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
+            company: formData.company,
+            source: formData.source,
+            requirement: formData.plan,
+            teamSize: Number(formData.teamSize) || undefined,
+            moveInDate: formData.moveInDate || undefined,
+            assignedCM: formData.assignedCM,
+            preferredCenter: formData.preferredCenter,
+            notes: formData.notes,
+          },
+        },
+      });
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update lead");
+      return false;
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSaveDraft = () => {
-    console.log("Saving as draft:", formData);
-    onClose();
+  const handleSave = async () => {
+    const ok = await persist();
+    if (ok) {
+      toast.success("Lead updated");
+      onClose();
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    const ok = await persist();
+    if (ok) {
+      toast.success("Lead saved");
+      onClose();
+    }
   };
 
   return (
@@ -311,13 +361,15 @@ export default function EditLeadModal({ isOpen, onClose, leadData }: EditLeadMod
           </button>
           <button
             onClick={handleSaveDraft}
-            className="h-[40px] px-5 bg-white border border-[rgba(0,0,0,0.1)] rounded-[12px] text-[14px] font-medium text-[#0a0a0a] hover:bg-gray-50 transition-colors"
+            disabled={saving}
+            className="h-[40px] px-5 bg-white border border-[rgba(0,0,0,0.1)] rounded-[12px] text-[14px] font-medium text-[#0a0a0a] hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Save as Draft
           </button>
           <button
             onClick={handleSave}
-            className="h-[40px] px-5 bg-[#ff7847] rounded-[12px] text-[14px] font-medium text-white hover:bg-orange-600 transition-colors"
+            disabled={saving}
+            className="h-[40px] px-5 bg-[#ff7847] rounded-[12px] text-[14px] font-medium text-white hover:bg-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Update Lead
           </button>

@@ -206,10 +206,6 @@ export default function SettingsAccessPage() {
                   <label className={styles.formLabel}>Assigned Centers</label>
                   <input type="text" className={styles.formInput} value={activeUser!.center?.name || "No center assigned"} disabled />
                 </div>
-                <div className={styles.formGroupFull}>
-                  <label className={styles.formLabel}>Reporting Manager</label>
-                  <input type="text" className={styles.formInput} value={"Reporting Manager"} disabled />
-                </div>
               </div>
 
               <div>
@@ -339,46 +335,23 @@ export default function SettingsAccessPage() {
             </>
           ) : activeTab === "Centers" ? (
             <>
-              <p className={styles.centersSubtitle}>Select which centers this user can access and manage</p>
-              
+              <p className={styles.centersSubtitle}>Centers assigned to this user</p>
+
               <div className={styles.radioList}>
-                <div className={styles.radioGroup}>
-                  <div className={styles.radioItem}>
-                    <div className={`${styles.radioIcon} ${styles.radioIconActive}`}>
-                      <div className={styles.radioDot}></div>
-                    </div>
-                    <span className={styles.radioLabel}>Chandigarh</span>
-                  </div>
-                  
-                  <div className={styles.radioChildren}>
+                {activeUser?.center ? (
+                  <div className={styles.radioGroup}>
                     <div className={styles.radioItem}>
-                      <div className={styles.radioIcon}></div>
-                      <span className={styles.radioLabelSub}>Sector 18</span>
-                    </div>
-                    <div className={styles.radioItem}>
-                      <div className={styles.radioIcon}></div>
-                      <span className={styles.radioLabelSub}>sector 21</span>
-                    </div>
-                    <div className={styles.radioItem}>
-                      <div className={styles.radioIcon}></div>
-                      <span className={styles.radioLabelSub}>Sector 29</span>
+                      <div className={`${styles.radioIcon} ${styles.radioIconActive}`}>
+                        <div className={styles.radioDot}></div>
+                      </div>
+                      <span className={styles.radioLabel}>{activeUser.center.name}</span>
                     </div>
                   </div>
-                </div>
-
-                <div className={styles.radioGroup}>
-                  <div className={styles.radioItem}>
-                    <div className={styles.radioIcon}></div>
-                    <span className={styles.radioLabel}>Jalandhar</span>
+                ) : (
+                  <div style={{ padding: '32px', textAlign: 'center', color: '#6B7280' }}>
+                    No center assigned to this user.
                   </div>
-                </div>
-
-                <div className={styles.radioGroup}>
-                  <div className={styles.radioItem}>
-                    <div className={styles.radioIcon}></div>
-                    <span className={styles.radioLabel}>Mohali</span>
-                  </div>
-                </div>
+                )}
               </div>
             </>
           ) : activeTab === "Security" ? (
@@ -414,28 +387,10 @@ export default function SettingsAccessPage() {
 
               <div className={styles.secGroup}>
                 <h3 className={styles.secGroupTitle}>Device Management</h3>
-                
-                <div className={styles.deviceCard}>
-                  <div className={styles.deviceIcon}>{Icons.phone}</div>
-                  <div className={styles.deviceInfo}>
-                    <span className={styles.deviceTitle}>iPhone 13 Pro</span>
-                    <span className={styles.deviceSub}>Mumbai, India</span>
-                  </div>
-                  <span className={styles.deviceTime}>Active now</span>
-                </div>
 
-                <div className={styles.deviceCard}>
-                  <div className={styles.deviceIcon}>{Icons.laptop}</div>
-                  <div className={styles.deviceInfo}>
-                    <span className={styles.deviceTitle}>MacBook Pro</span>
-                    <span className={styles.deviceSub}>Bangalore, India</span>
-                  </div>
-                  <span className={styles.deviceTime}>2 hours ago</span>
+                <div style={{ padding: '32px', textAlign: 'center', color: '#6B7280' }}>
+                  No active device sessions to display.
                 </div>
-
-                <button className={styles.logoutAllBtn}>
-                  {Icons.logout} Logout All Devices
-                </button>
               </div>
             </>
           ) : activeTab === "Notifications" ? (
@@ -446,7 +401,7 @@ export default function SettingsAccessPage() {
                 <div className={styles.secRow}>
                   <div className={styles.secRowInfo}>
                     <span className={styles.secRowTitle}>WhatsApp</span>
-                    <span className={styles.secRowSub}>+91 98765 43210</span>
+                    <span className={styles.secRowSub}>{activeUser?.phone || "Not configured"}</span>
                   </div>
                   <div className={styles.toggleSwitch}>
                     <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
@@ -456,7 +411,7 @@ export default function SettingsAccessPage() {
                 <div className={styles.secRow}>
                   <div className={styles.secRowInfo}>
                     <span className={styles.secRowTitle}>Email</span>
-                    <span className={styles.secRowSub}>priya.sharma@spacejam.com</span>
+                    <span className={styles.secRowSub}>{activeUser?.email || "Not configured"}</span>
                   </div>
                   <div className={styles.toggleSwitch}>
                     <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
