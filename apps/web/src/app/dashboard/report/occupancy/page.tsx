@@ -5,11 +5,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@apollo/client";
 import {
-  GET_OCCUPANCY_REPORT,
   GET_DASHBOARD_METRICS,
-  LEAD_COUNT,
   GET_LEADS,
+  GET_CUSTOMERS,
 } from "@/lib/apollo/operations";
+import { normalizeStatus } from "@/lib/revenue-status";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./occupancy.module.css";
 
@@ -84,7 +84,7 @@ const Icons = {
 };
 
 export default function OccupancyOverviewPage() {
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
 
   // Live dashboard metrics for occupancy data
@@ -99,19 +99,58 @@ export default function OccupancyOverviewPage() {
     errorPolicy: 'all',
   });
 
+  // Live customers for the directory table
+  const { data: customersData } = useQuery(GET_CUSTOMERS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
   const metrics = metricsData?.dashboardMetrics;
   const leads = leadsData?.leads ?? [];
+  const customers = customersData?.customers ?? [];
 
   // Compute occupancy metrics from live data
   const occMetrics = useMemo(() => {
-    const newInquiries = leads.filter((l: any) => l.status === "New").length;
-    const converted = leads.filter((l: any) => l.status === "Converted").length;
+    const newInquiries = leads.filter((l: any) => normalizeStatus(l.status) === "NEW").length;
+    const converted = leads.filter((l: any) => normalizeStatus(l.status) === "CONVERTED").length;
     const occupancyRate = metrics ? Math.round(metrics.occupancyRate * 100) : 0;
     const totalSeats = metrics?.totalSeats ?? 0;
     const availableSeats = metrics?.availableSeats ?? 0;
     const occupiedSeats = totalSeats - availableSeats;
     return { newInquiries, converted, occupancyRate, totalSeats, occupiedSeats, availableSeats };
   }, [leads, metrics]);
+
+  // Map normalized customer status to existing CSS badge classes
+  const customerStatusClass = (raw: string): string => {
+    switch (normalizeStatus(raw)) {
+      case 'ACTIVE':
+        return styles.statusActive;
+      case 'HOLD':
+      case 'ON_HOLD':
+      case 'PAUSED':
+        return styles.statusHold;
+      case 'INACTIVE':
+      case 'EXITED':
+      case 'CHURNED':
+        return styles.statusExited;
+      default:
+        return styles.statusActive;
+    }
+  };
+  const customerStatusLabel = (raw: string): string => {
+    const s = normalizeStatus(raw);
+    if (s === 'ACTIVE') return 'Active';
+    if (s === 'HOLD' || s === 'ON_HOLD' || s === 'PAUSED') return 'Hold';
+    if (s === 'INACTIVE' || s === 'EXITED' || s === 'CHURNED') return 'Exited';
+    return raw || '—';
+  };
+
+  const formatDate = (value?: string | null): string => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
 
   return (
     <div className={styles.page}>
@@ -154,7 +193,7 @@ export default function OccupancyOverviewPage() {
           <span className={styles.metricLabel}>New inquiries</span>
           <div className={styles.metricValueRow}>
             <span className={styles.metricValue}>{occMetrics.newInquiries}</span>
-            <span className={styles.metricTrend}>{Icons.trendingUp} 12%</span>
+            <span className={styles.metricTrend}>{Icons.trendingUp} {occMetrics.occupancyRate}%</span>
           </div>
         </div>
 
@@ -165,7 +204,7 @@ export default function OccupancyOverviewPage() {
           <span className={styles.metricLabel}>Converted</span>
           <div className={styles.metricValueRow}>
             <span className={styles.metricValue}>{occMetrics.converted}</span>
-            <span className={styles.metricTrend}>{Icons.trendingUp} 5%</span>
+            <span className={styles.metricTrend}>{Icons.trendingUp} {occMetrics.occupancyRate}%</span>
           </div>
         </div>
 
@@ -176,7 +215,7 @@ export default function OccupancyOverviewPage() {
           <span className={styles.metricLabel}>Members Exited</span>
           <div className={styles.metricValueRow}>
             <span className={styles.metricValue}>{occMetrics.occupiedSeats}</span>
-            <span className={styles.metricTrend}>{Icons.trendingDown} 8%</span>
+            <span className={styles.metricTrend}>{Icons.trendingDown} {100 - occMetrics.occupancyRate}%</span>
           </div>
         </div>
 
@@ -187,7 +226,7 @@ export default function OccupancyOverviewPage() {
           <span className={styles.metricLabel}>Accounts Paused/Hold</span>
           <div className={styles.metricValueRow}>
             <span className={styles.metricValue}>{occMetrics.availableSeats}</span>
-            <span className={styles.metricTrend}>{Icons.trendingUp} 5%</span>
+            <span className={styles.metricTrend}>{Icons.trendingUp} {occMetrics.occupancyRate}%</span>
           </div>
         </div>
 
@@ -207,68 +246,8 @@ export default function OccupancyOverviewPage() {
         </div>
 
         <div className={styles.chartContainer}>
-          <div className={styles.chartGrid}>
-            <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>100%</span><div className={styles.chartGridDash}></div></div>
-            <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>75%</span><div className={styles.chartGridDash}></div></div>
-            <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>50%</span><div className={styles.chartGridDash}></div></div>
-            <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>25%</span><div className={styles.chartGridDash}></div></div>
-            <div className={styles.chartGridLine}><span className={styles.chartGridLabel}>0%</span><div className={styles.chartGridDash}></div></div>
-          </div>
-
-          <div className={styles.chartGridVerts}>
-            <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
-            <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
-            <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
-            <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
-            <div className={styles.chartGridVertLine}></div><div className={styles.chartGridVertLine}></div>
-            <div className={styles.chartGridVertLine}></div>
-          </div>
-
-          <svg className={styles.chartSvg} viewBox="0 0 1100 200" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4ECDC3" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#4ECDC3" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-
-            {/* Area path representing the wave */}
-            <path
-              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110 L 1100 200 L 0 200 Z"
-              fill="url(#areaGradient)"
-            />
-            <path
-              d="M 0 160 Q 50 150 100 150 T 200 60 T 300 100 T 400 150 T 500 140 T 600 40 T 700 110 T 800 140 T 900 110 T 1000 60 T 1100 110"
-              fill="none"
-              stroke="#4ECDC3"
-              strokeWidth="2.5"
-            />
-
-            <circle cx="300" cy="100" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-            <circle cx="600" cy="40" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-            <circle cx="700" cy="110" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-            <circle cx="800" cy="140" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-            <circle cx="900" cy="110" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-            <circle cx="1000" cy="60" r="4" fill="#FFFFFF" stroke="#4ECDC3" strokeWidth="2" />
-
-            {/* Tooltip Mock */}
-            <rect x="275" y="50" width="50" height="24" rx="4" fill="#4ECDC3" />
-            <text x="300" y="66" fill="#FFFFFF" fontSize="10" fontWeight="600" fontFamily="sans-serif" textAnchor="middle">2,678</text>
-            <polygon points="296,74 304,74 300,78" fill="#4ECDC3" />
-          </svg>
-
-          <div className={styles.chartXAxis}>
-            <span className={styles.chartXLabel}>CH-S34</span>
-            <span className={styles.chartXLabel}>CH-S21</span>
-            <span className={styles.chartXLabel}>CH-S12</span>
-            <span className={styles.chartXLabel}>JAL-01</span>
-            <span className={styles.chartXLabel}>JAL-02</span>
-            <span className={styles.chartXLabel}>JAL-03</span>
-            <span className={styles.chartXLabel}>MO-01</span>
-            <span className={styles.chartXLabel}>MO-02</span>
-            <span className={styles.chartXLabel}>MO-03</span>
-            <span className={styles.chartXLabel}>LU-01</span>
-            <span className={styles.chartXLabel}>LU-02</span>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', fontSize: '13px' }}>
+            Select a center to view occupancy trend data
           </div>
         </div>
       </div>
@@ -301,81 +280,30 @@ export default function OccupancyOverviewPage() {
           <span style={{ textAlign: 'right' }}>ACTIONS</span>
         </div>
 
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Rahul<br />Verma
+        {customers.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#6B7280' }}>
+            No customers found
           </div>
-          <span className={styles.cellAmount}>₹5,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Chandigarh<br />Hub</span>
-          <span className={styles.cellText}>Cash</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
-          </div>
-          <span className={styles.cellText}>12 Jan 2026</span>
-          <span className={styles.cellText}>12 Jun 2026</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 1 ? null : 1)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
-
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Priya<br />Sharma
-          </div>
-          <span className={styles.cellAmount}>₹10,000</span>
-          <span className={styles.cellText}>Quarterly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>UPI</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusHold}`}>Hold</span>
-          </div>
-          <span className={styles.cellText}>05 Feb 2026</span>
-          <span className={styles.cellText}>05 Jun 2026</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 2 ? null : 2)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
-
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Amit<br />Singh
-          </div>
-          <span className={styles.cellAmount}>₹3,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>Card</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusExited}`}>Exited</span>
-          </div>
-          <span className={styles.cellText}>20 Mar 2026</span>
-          <span className={styles.cellText}>20 Jun 2026</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 3 ? null : 3)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
-
-        <div className={styles.listRow}>
-          <div className={styles.checkbox}></div>
-          <div className={styles.cellUser}>
-            Amit<br />Singh
-          </div>
-          <span className={styles.cellAmount}>₹3,000</span>
-          <span className={styles.cellText}>Monthly</span>
-          <span className={styles.cellText}>Jalandhar</span>
-          <span className={styles.cellText}>Card</span>
-          <div className={styles.cellStatus}>
-            <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>
-          </div>
-          <span className={styles.cellText}>15 Apr 2026</span>
-          <span className={styles.cellText}>15 Jun 2026</span>
-          <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === 4 ? null : 4)}>
-            {Icons.moreVertical}
-          </div>
-        </div>
+        ) : (
+          customers.map((c: any) => (
+            <div key={c.id} className={styles.listRow}>
+              <div className={styles.checkbox}></div>
+              <div className={styles.cellUser}>{c.name || '—'}</div>
+              <span className={styles.cellAmount}>{c.totalSpent != null ? `₹${Number(c.totalSpent).toLocaleString('en-IN')}` : '—'}</span>
+              <span className={styles.cellText}>{c.teamSize != null ? `${c.teamSize} seats` : '—'}</span>
+              <span className={styles.cellText}>{c.location || c.company || '—'}</span>
+              <span className={styles.cellText}>{c.phone || '—'}</span>
+              <div className={styles.cellStatus}>
+                <span className={`${styles.statusBadge} ${customerStatusClass(c.status)}`}>{customerStatusLabel(c.status)}</span>
+              </div>
+              <span className={styles.cellText}>{formatDate(c.joinDate)}</span>
+              <span className={styles.cellText}>{formatDate(c.lastBooking)}</span>
+              <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}>
+                {Icons.moreVertical}
+              </div>
+            </div>
+          ))
+        )}
 
       </div>
 

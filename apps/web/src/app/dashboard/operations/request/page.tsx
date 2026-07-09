@@ -13,8 +13,12 @@
 
 
 import { useMemo, useState } from "react";
-import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest } from "@/hooks/use-operations";
+import { useRequests, useAssignRequest, useUpdateRequest, useCompleteRequest, useRejectRequest, useApproveRequest, useRequestStats } from "@/hooks/use-operations";
 import { PendingApprovalsModal } from "@/components/ui/dashboard/pending-approvals-modal";
+import { AddRequestModal } from "../modals/add-request-modal";
+
+// Local status type — UI display vocabulary used by this page's filters & comparisons.
+type RequestStatus = "Pending" | "Approved" | "Rejected";
 
 /* --------------- Icons --------------- */
 
@@ -63,34 +67,55 @@ function getStatusStyle(status: string) {
 
 export default function RequestsPage() {
   const { requests, loading, error } = useRequests();
-  const { assign } = useAssignRequest();
+  const { stats } = useRequestStats();
+  const { assign: _assign } = useAssignRequest();
   const { update } = useUpdateRequest();
   const { complete: _complete } = useCompleteRequest();
   const { reject } = useRejectRequest();
+  const { approve } = useApproveRequest();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All Categories" | "Events" | "Printer" | "Upgrade" | "Services">("All Categories");
-  const [statusFilter, setStatusFilter] = useState<"All Statues" | "Pending" | "Approved" | "Rejected">("All Statues");
-  const [typeFilter, setTypeFilter] = useState<"Request Type" | string>("Request Type");
+  const [statusFilter, setStatusFilter] = useState<"All Statuses" | "Pending" | "Approved" | "Rejected">("All Statuses");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
   const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showAddRequest, setShowAddRequest] = useState(false);
 
   // Loading state is handled by Apollo hook; fall back to loading indicator if needed
 
-  const requestList = requests.map((r: any) => ({
+  // Map backend RequestStatus (PENDING/IN_PROGRESS/COMPLETED/REJECTED/CANCELLED)
+  // to the UI's display vocabulary. IN_PROGRESS == "Approved" (work underway).
+  function mapStatus(raw: string): "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled" {
+    const s = (raw ?? "").toUpperCase();
+    if (s === "PENDING") return "Pending";
+    if (s === "IN_PROGRESS") return "Approved";
+    if (s === "REJECTED") return "Rejected";
+    if (s === "COMPLETED") return "Completed";
+    if (s === "CANCELLED") return "Cancelled";
+    return "Pending";
+  }
+
+  const requestList: {
+    id: string;
+    requestType: "Events" | "Printer" | "Upgrade" | "Services";
+    requestedBy: string;
+    details: string;
+    date: string;
+    status: "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled";
+  }[] = requests.map((r: any) => ({
       id: r.id,
-      requestType: (r.type ?? "Services") as "Events" | "Printer" | "Upgrade" | "Services",
+      requestType: (r.requestType ?? "Services") as "Events" | "Printer" | "Upgrade" | "Services",
       requestedBy: r.requestedBy?.name ?? "Unknown",
       details: r.title,
       date: r.dueDate ? new Date(r.dueDate).toLocaleDateString("en-GB") : new Date(r.createdAt).toLocaleDateString("en-GB"),
-      status: (r.status ?? "").replace("_", " ") as "Pending" | "Approved" | "Rejected",
+      status: mapStatus(r.status),
     }));
 
   const filtered = useMemo(() => {
     return requestList.filter((r) => {
       if (categoryFilter !== "All Categories" && r.requestType !== categoryFilter) return false;
-      if (statusFilter !== "All Statues" && r.status !== statusFilter) return false;
+      if (statusFilter !== "All Statuses" && r.status !== statusFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
@@ -111,8 +136,7 @@ export default function RequestsPage() {
   const handleClearAll = () => {
     setSearchQuery("");
     setCategoryFilter("All Categories");
-    setStatusFilter("All Statues");
-    setTypeFilter("Request Type");
+    setStatusFilter("All Statuses");
   };
 
   const handleStatusChange = (reqId: string, newStatus: string) => {
@@ -120,9 +144,8 @@ export default function RequestsPage() {
     if (status === "Pending") {
       update(reqId, { status: "PENDING" } as any);
     } else if (status === "Approved") {
-      // Approve = assign + update
-      assign(reqId, "admin"); // placeholder assignee
-      update(reqId, { status: "APPROVED" } as any);
+      // Approve via the dedicated approveRequest mutation (sets status IN_PROGRESS)
+      approve(reqId);
     } else if (status === "Rejected") {
       reject(reqId, "Rejected by admin");
     }
@@ -132,9 +155,20 @@ export default function RequestsPage() {
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
       {/* Header */}
-      <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6">
-        <h1 className="text-[28px] font-bold text-[#101828]">Request & Registration</h1>
-        <p className="text-[15px] text-[#667085] mt-1">Manage requests for events, printers and account upgrades</p>
+      <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[28px] font-bold text-[#101828]">Request & Registration</h1>
+          <p className="text-[15px] text-[#667085] mt-1">Manage requests for events, printers and account upgrades</p>
+        </div>
+        <button
+          onClick={() => setShowAddRequest(true)}
+          className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm shrink-0"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M8 3V13M3 8H13" strokeLinecap="round" />
+          </svg>
+          <span>New Request</span>
+        </button>
       </div>
 
       <div className="flex gap-6 items-start">
@@ -164,15 +198,7 @@ export default function RequestsPage() {
             <div className="relative">
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
                 className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[140px] shadow-sm">
-                <option>All Statues</option><option>Pending</option><option>Approved</option><option>Rejected</option>
-              </select>
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
-            </div>
-
-            <div className="relative">
-              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[150px] shadow-sm">
-                <option>Request Type</option><option>Type A</option><option>Type B</option>
+                <option>All Statuses</option><option>Pending</option><option>Approved</option><option>Rejected</option>
               </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
             </div>
@@ -194,6 +220,35 @@ export default function RequestsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
+                {loading && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-[14px] text-gray-400">Loading requests…</td>
+                  </tr>
+                )}
+                {error && !loading && (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-[14px] text-red-500">Error loading requests. Check connection.</td>
+                  </tr>
+                )}
+                {!loading && !error && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3 text-gray-500">
+                        <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                        </div>
+                        <p className="text-[15px] font-semibold text-gray-700">No requests found</p>
+                        <p className="text-[13px] text-gray-500 max-w-[320px]">
+                          {requests.length === 0
+                            ? "There are no requests yet. Click “New Request” to submit one."
+                            : "No requests match the current filters. Try clearing them."}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {filtered.map((request) => (
                   <tr key={request.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-5 text-[14px] font-medium text-gray-900">{request.requestType}</td>
@@ -236,7 +291,7 @@ export default function RequestsPage() {
                         <div className="absolute right-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden">
                           <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
                             onClick={() => {
-                              assign(request.id, "admin");
+                              approve(request.id);
                               setOpenActionMenu(null);
                             }}>Approve</button>
                           <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
@@ -259,11 +314,19 @@ export default function RequestsPage() {
           <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <span className="text-[16px] font-bold text-gray-900">Total Requests</span>
-              <span className="text-[18px] font-semibold text-gray-900">{totalCount}</span>
+              <span className="text-[18px] font-semibold text-gray-900">{stats.totalRequests ?? totalCount}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[14px] text-gray-500">Pending Approvals</span>
-              <span className="text-[16px] font-semibold text-gray-900">{pendingCount}</span>
+              <span className="text-[16px] font-semibold text-gray-900">{stats.pendingRequests ?? pendingCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-gray-500">In Progress</span>
+              <span className="text-[16px] font-semibold text-gray-900">{stats.inProgressRequests ?? 0}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-gray-500">High Urgency</span>
+              <span className="text-[16px] font-semibold text-gray-900">{stats.highUrgencyRequests ?? 0}</span>
             </div>
             <button onClick={() => setShowPendingModal(true)}
               className="w-full mt-2 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">View Pending</button>
@@ -272,6 +335,10 @@ export default function RequestsPage() {
           {/* Activities section removed - real data integration pending */}
         </div>
       </div>
+
+      {/* Modals */}
+      <AddRequestModal open={showAddRequest} onClose={() => setShowAddRequest(false)} />
+      <PendingApprovalsModal isOpen={showPendingModal} onClose={() => setShowPendingModal(false)} />
     </div>
   );
 }
