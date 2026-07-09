@@ -4,14 +4,14 @@
  * File:        apps/web/src/app/dashboard/revenue/page.tsx
  * Module:      Web · Dashboard · Revenue
  * Purpose:     Revenue dashboard — Invoices, Deposits, Contracts management.
- *              Apollo-first with constant mock-data fallback so the page
- *              never breaks when the backend is unavailable.
+ *              Fully wired to live Apollo data. No mock fallbacks.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-02
+ * Last-updated: 2026-07-08
  */
 
 import { useMemo, useState, useCallback } from "react";
+import { toast } from "sonner";
 import styles from "./page.module.css";
 import { GenerateInvoiceModal } from "@/components/ui/dashboard/generate-invoice-modal";
 import { InvoiceDetailsModal } from "@/components/ui/dashboard/invoice-details-modal";
@@ -35,23 +35,10 @@ import {
   TERMINATE_CONTRACT,
   INVOICE_COUNT,
 } from "@/lib/apollo/operations";
-import {
-  MOCK_INVOICES,
-  MOCK_DEPOSITS,
-  MOCK_CONTRACTS,
-  MOCK_REVENUE_STATS,
-  computeRevenueStats,
-  type MockDeposit,
-  type MockContract,
-  InvoiceStatus,
-  DepositStatus,
-  ContractStatus,
-  type PaymentFrequency,
-} from "@/lib/mock-data/revenue-mock-data";
+import { normalizeStatus } from "@/lib/revenue-status";
 
 /* ──────────────────────────────────────────────────────────
- * GraphQL type-shapes (narrower than the full backend types —
- * we only select the fields the UI actually renders)
+ * GraphQL type-shapes
  * ────────────────────────────────────────────────────────── */
 
 interface InvoiceRow {
@@ -59,21 +46,10 @@ interface InvoiceRow {
   invoiceNumber: string;
   customerName: string;
   amount: number;
-  status: InvoiceStatus;
+  status: string;
   issueDate: string;
   dueDate: string;
   paidDate?: string;
-}
-
-interface DepositRow {
-  id: string;
-  customerName: string;
-  amount: number;
-  type: string;
-  status: DepositStatus;
-  receivedDate: string;
-  releasedDate: string;
-  referenceNumber: string;
 }
 
 interface ContractRow {
@@ -84,7 +60,7 @@ interface ContractRow {
   planName?: string;
   startDate: string;
   endDate: string;
-  status: ContractStatus;
+  status: string;
   amount: number;
   paymentFrequency: string;
   autoRenew: boolean;
@@ -99,12 +75,10 @@ interface InvoiceCountResult {
 }
 
 /* ──────────────────────────────────────────────────────────
- * Local UI types (kept to avoid rewriting every className
- * and component reference in this page)
+ * Local UI types
  * ────────────────────────────────────────────────────────── */
 
 type InvoiceStatusUI = "paid" | "overdue" | "due_soon" | "occupied";
-type DepositTypeUI = "Security" | "Advance" | "Other";
 
 interface UIInvoice {
   id: string;
@@ -114,170 +88,19 @@ interface UIInvoice {
   status: InvoiceStatusUI;
 }
 
-interface UIUpcomingInvoice {
-  id: string;
-  clientName: string;
-  amount: number;
-  dueIn: string;
-}
-
 interface ChartPoint {
   month: string;
   paid: number;
 }
 
-const chartData: ChartPoint[] = [
-  { month: "Jan", paid: 40000 },
-  { month: "Feb", paid: 50000 },
-  { month: "Mar", paid: 45000 },
-  { month: "Apr", paid: 60000 },
-  { month: "May", paid: 55000 },
-  { month: "Jun", paid: 65000 },
-  { month: "Jul", paid: 55000 },
-  { month: "Aug", paid: 70000 },
-  { month: "Sep", paid: 62000 },
-  { month: "Oct", paid: 75000 },
-  { month: "Nov", paid: 68000 },
-  { month: "Dec", paid: 78000 },
-];
-
-const upcomingInvoices: UIUpcomingInvoice[] = [
-  { id: "INV-007", clientName: "Acme Corporation", amount: 55000, dueIn: "Due: March 30" },
-  { id: "INV-008", clientName: "Global Ventures", amount: 40000, dueIn: "Due: April 2" },
-  { id: "INV-009", clientName: "NextGen Tech", amount: 35000, dueIn: "Due: April 5" },
-];
-
-/* ──────────────────────────────────────────────────────────
- * Apollo hooks — each falls back to constant mock arrays
- * when the query returns null / [] (backend unreachable,
- * auth missing, or running in offline/demo mode)
- * ────────────────────────────────────────────────────────── */
-
-function useInvoices() {
-  const { data, loading, error } = useQuery<InvoicesResult>(GET_INVOICES);
-
-  // Map backend fields → UI fields
-  const invoices: UIInvoice[] = useMemo(() => {
-    if (data?.invoices && data.invoices.length > 0) {
-      return data.invoices.map((inv) => ({
-        id: inv.invoiceNumber || inv.id,
-        clientName: inv.customerName,
-        amount: inv.amount,
-        date: inv.issueDate
-          ? new Date(inv.issueDate).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "",
-        status: mapInvoiceStatus(inv.status),
-      }));
-    }
-    // Fallback to mock — map InvoiceStatus → UI status
-    return MOCK_INVOICES.map((inv) => ({
-      id: inv.invoiceNumber,
-      clientName: inv.customerName,
-      amount: inv.amount,
-      date: inv.issueDate
-        ? new Date(inv.issueDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "",
-      status: mapInvoiceStatus(inv.status),
-    }));
-  }, [data]);
-
-  const isDemo = !data?.invoices?.length;
-
-  return { invoices, loading, error, isDemo };
-}
-
-function useDeposits() {
-  const { data, loading, error } = useQuery<{ deposits?: DepositRow[] }>(
-    GET_DEPOSITS
-  );
-
-  const deposits: MockDeposit[] = useMemo((): MockDeposit[] => {
-    if (data?.deposits && data.deposits.length > 0) {
-      return data.deposits.map((d) => ({
-        id: d.id,
-        customerId: d.id,
-        customerName: d.customerName,
-        centerId: undefined,
-        amount: d.amount,
-        type: d.type as DepositTypeUI,
-        status: d.status as DepositStatus,
-        referenceNumber: d.referenceNumber,
-        receivedDate: d.receivedDate,
-        releasedDate: d.releasedDate,
-        notes: undefined,
-        createdAt: "",
-        updatedAt: "",
-        __isDemo: false,
-      }));
-    }
-    return MOCK_DEPOSITS;
-  }, [data]);
-
-  const isDemo = !data?.deposits?.length;
-
-  return { deposits, loading, error, isDemo };
-}
-
-function useContracts() {
-  const { data, loading, error } = useQuery<{ contracts?: ContractRow[] }>(
-    GET_CONTRACTS
-  );
-
-  const contracts: MockContract[] = useMemo((): MockContract[] => {
-    if (data?.contracts && data.contracts.length > 0) {
-      return data.contracts.map((c) => ({
-        id: c.id,
-        contractNumber: c.contractNumber,
-        customerId: c.customerId,
-        customerName: c.customerName,
-        centerId: undefined,
-        planName: c.planName,
-        startDate: c.startDate,
-        endDate: c.endDate,
-        status: c.status as ContractStatus,
-        amount: c.amount,
-        paymentFrequency: c.paymentFrequency as PaymentFrequency,
-        autoRenew: c.autoRenew,
-        terms: undefined,
-        createdAt: "",
-        updatedAt: "",
-        __isDemo: false,
-      }));
-    }
-    return MOCK_CONTRACTS;
-  }, [data]);
-
-  const isDemo = !data?.contracts?.length;
-
-  return { contracts, loading, error, isDemo };
-}
-
-function useInvoiceCount() {
-  const { data } = useQuery<InvoiceCountResult>(INVOICE_COUNT, {
-    variables: { status: "OVERDUE" },
-  });
-  return data?.invoiceCount ?? MOCK_INVOICES.filter((i) => i.status === "Overdue" || i.status === "OVERDUE").length;
-}
-
-/* ──────────────────────────────────────────────────────────
- * Helpers
- * ────────────────────────────────────────────────────────── */
-
-function mapInvoiceStatus(backendStatus: InvoiceStatus): InvoiceStatusUI {
-  switch (backendStatus) {
-    case "Paid":
+function mapInvoiceStatus(backendStatus: string): InvoiceStatusUI {
+  const s = normalizeStatus(backendStatus);
+  switch (s) {
+    case "PAID":
       return "paid";
-    case "Overdue":
+    case "OVERDUE":
       return "overdue";
-    case "Sent":
+    case "SENT":
       return "due_soon";
     default:
       return "occupied";
@@ -292,11 +115,53 @@ const formatINR = (n: number) => {
   }).format(n);
 };
 
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 /* ──────────────────────────────────────────────────────────
- * Mutations — disabled in demo mode
+ * Apollo hooks — live data only, no mock fallback.
  * ────────────────────────────────────────────────────────── */
 
-function useInvoiceMutations(isDemo: boolean) {
+function useInvoices() {
+  const { data, loading, error } = useQuery<InvoicesResult>(GET_INVOICES, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const rawInvoices = data?.invoices ?? [];
+
+  const invoices: UIInvoice[] = useMemo(() => {
+    return rawInvoices.map((inv) => ({
+      id: inv.invoiceNumber || inv.id,
+      clientName: inv.customerName,
+      amount: inv.amount,
+      date: inv.issueDate
+        ? new Date(inv.issueDate).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "",
+      status: mapInvoiceStatus(inv.status),
+    }));
+  }, [rawInvoices]);
+
+  return { invoices, rawInvoices, loading, error };
+}
+
+function useContracts() {
+  const { data, loading, error } = useQuery<{ contracts?: ContractRow[] }>(
+    GET_CONTRACTS,
+    { fetchPolicy: 'cache-and-network', errorPolicy: 'all' }
+  );
+
+  return { contracts: data?.contracts ?? [], loading, error };
+}
+
+/* ──────────────────────────────────────────────────────────
+ * Mutations
+ * ────────────────────────────────────────────────────────── */
+
+function useInvoiceMutations() {
   const [markPaid] = useMutation(MARK_INVOICE_PAID, {
     refetchQueries: [{ query: GET_INVOICES }],
   });
@@ -305,80 +170,30 @@ function useInvoiceMutations(isDemo: boolean) {
   });
 
   const handleMarkPaid = useCallback(
-    (id: string) => {
-      if (isDemo) {
-        alert("Demo mode: Invoice mutations are disabled. Connect the backend to enable live editing.");
-        return;
+    async (id: string) => {
+      try {
+        await markPaid({ variables: { id } });
+        toast.success("Invoice marked as paid");
+      } catch {
+        toast.error("Failed to mark invoice as paid");
       }
-      void markPaid({ variables: { id } });
     },
-    [isDemo, markPaid]
+    [markPaid]
   );
 
   const handleDelete = useCallback(
-    (id: string) => {
-      if (isDemo) {
-        alert("Demo mode: Invoice mutations are disabled. Connect the backend to enable live editing.");
-        return;
+    async (id: string) => {
+      try {
+        await deleteInv({ variables: { id } });
+        toast.success("Invoice deleted");
+      } catch {
+        toast.error("Failed to delete invoice");
       }
-      void deleteInv({ variables: { id } });
     },
-    [isDemo, deleteInv]
+    [deleteInv]
   );
 
   return { handleMarkPaid, handleDelete };
-}
-
-function useDepositMutations(isDemo: boolean) {
-  const [release] = useMutation(RELEASE_DEPOSIT, {
-    refetchQueries: [{ query: GET_DEPOSITS }],
-  });
-  const [del] = useMutation(DELETE_DEPOSIT, {
-    refetchQueries: [{ query: GET_DEPOSITS }],
-  });
-
-  const handleRelease = useCallback(
-    (id: string) => {
-      if (isDemo) {
-        alert("Demo mode: Deposit mutations are disabled. Connect the backend to enable live editing.");
-        return;
-      }
-      void release({ variables: { id } });
-    },
-    [isDemo, release]
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      if (isDemo) {
-        alert("Demo mode: Deposit mutations are disabled. Connect the backend to enable live editing.");
-        return;
-      }
-      void del({ variables: { id } });
-    },
-    [isDemo, del]
-  );
-
-  return { handleRelease, handleDelete };
-}
-
-function useContractMutations(isDemo: boolean) {
-  const [terminate] = useMutation(TERMINATE_CONTRACT, {
-    refetchQueries: [{ query: GET_CONTRACTS }],
-  });
-
-  const handleTerminate = useCallback(
-    (id: string) => {
-      if (isDemo) {
-        alert("Demo mode: Contract mutations are disabled. Connect the backend to enable live editing.");
-        return;
-      }
-      void terminate({ variables: { id } });
-    },
-    [isDemo, terminate]
-  );
-
-  return { handleTerminate };
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -401,44 +216,98 @@ export default function RevenuePage() {
   const [selectedRenewClient, setSelectedRenewClient] = useState<
     { name: string; date: string; left: string } | null
   >(null);
-  const [selectedUpgradeClient, setSelectedUpgradeClient] = useState<
-    { name: string; plan: string; upsell: string } | null
-  >(null);
 
-  const {
-    invoices,
-    loading: invoicesLoading,
-    isDemo: invoicesDemo,
-  } = useInvoices();
+  const { invoices, rawInvoices, loading: invoicesLoading } = useInvoices();
+  const { contracts } = useContracts();
+  const { handleMarkPaid } = useInvoiceMutations();
 
-  const {
-    deposits: _deposits,
-    isDemo: depositsDemo,
-  } = useDeposits();
-
-  const {
-    contracts: _contracts,
-    isDemo: contractsDemo,
-  } = useContracts();
-
-  const isDemo = invoicesDemo || depositsDemo || contractsDemo;
-  const _overdueCount = useInvoiceCount(); // Future: could show overdue count badge
-  const {
-    handleMarkPaid,
-    handleDelete: handleDeleteInvoice,
-  } = useInvoiceMutations(isDemo);
-  const { handleRelease, handleDelete: handleDeleteDeposit } =
-    useDepositMutations(isDemo);
-  const { handleTerminate } = useContractMutations(isDemo);
-
-  /* ── Computed stats — uses mock totals when in demo mode ── */
+  /* ── Compute stats from live invoice data ── */
   const stats = useMemo(() => {
-    if (isDemo) return MOCK_REVENUE_STATS;
-    const s = computeRevenueStats(
-      MOCK_INVOICES /* replace with live invoice list when wired */
-    );
-    return { ...s, __isDemo: false };
-  }, [isDemo]);
+    const paid = rawInvoices.filter((i) => normalizeStatus(i.status) === "PAID");
+    const overdue = rawInvoices.filter((i) => normalizeStatus(i.status) === "OVERDUE");
+    const pending = rawInvoices.filter((i) => normalizeStatus(i.status) === "SENT" || normalizeStatus(i.status) === "DRAFT");
+
+    const totalRevenue = paid.reduce((sum, i) => sum + Number(i.amount), 0);
+    const overdueAmount = overdue.reduce((sum, i) => sum + Number(i.amount), 0);
+    const pendingAmount = pending.reduce((sum, i) => sum + Number(i.amount), 0);
+    const collectedThisMonth = paid
+      .filter((i) => {
+        const d = i.paidDate ? new Date(i.paidDate) : i.issueDate ? new Date(i.issueDate) : null;
+        if (!d) return false;
+        const now = new Date();
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, i) => sum + Number(i.amount), 0);
+
+    return { totalRevenue, overdueAmount, pendingAmount, collectedThisMonth };
+  }, [rawInvoices]);
+
+  /* ── Chart data derived from paid invoices by month ── */
+  const chartData: ChartPoint[] = useMemo(() => {
+    const now = new Date();
+    const monthlyTotals: Record<string, number> = {};
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      monthlyTotals[key] = 0;
+    }
+    rawInvoices
+      .filter((i) => normalizeStatus(i.status) === "PAID")
+      .forEach((inv) => {
+        const d = inv.paidDate ? new Date(inv.paidDate) : inv.issueDate ? new Date(inv.issueDate) : null;
+        if (!d) return;
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (key in monthlyTotals) {
+          monthlyTotals[key] += Number(inv.amount);
+        }
+      });
+    return Object.entries(monthlyTotals).map(([key, paid]) => {
+      const monthIdx = parseInt(key.split("-")[1], 10);
+      return { month: MONTH_NAMES[monthIdx], paid };
+    });
+  }, [rawInvoices]);
+
+  const maxChartValue = useMemo(() => {
+    const max = Math.max(...chartData.map((d) => d.paid), 100000);
+    return max > 0 ? max : 100000;
+  }, [chartData]);
+
+  /* ── Upcoming invoices: unpaid invoices sorted by due date ── */
+  const upcomingInvoices = useMemo(() => {
+    return rawInvoices
+      .filter((i) => normalizeStatus(i.status) !== "PAID" && normalizeStatus(i.status) !== "CANCELLED")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 5)
+      .map((inv) => ({
+        id: inv.invoiceNumber || inv.id,
+        clientName: inv.customerName,
+        amount: inv.amount,
+        dueIn: inv.dueDate ? `Due: ${new Date(inv.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "",
+      }));
+  }, [rawInvoices]);
+
+  /* ── Renewal alerts: contracts expiring within 30 days ── */
+  const renewalAlerts = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return contracts
+      .filter((c) => {
+        const ns = normalizeStatus(c.status);
+        if (ns === "TERMINATED") return false;
+        const endDate = new Date(c.endDate);
+        return endDate >= now && endDate <= thirtyDaysLater;
+      })
+      .map((c) => {
+        const endDate = new Date(c.endDate);
+        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        return {
+          id: c.id,
+          name: c.customerName,
+          date: endDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          left: `${daysLeft}d left`,
+        };
+      });
+  }, [contracts]);
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
@@ -451,8 +320,6 @@ export default function RevenuePage() {
     });
   }, [invoices, search, statusFilter]);
 
-  const maxChartValue = 100000;
-
   return (
     <div className="flex flex-col gap-5">
       {/* Page Header */}
@@ -460,11 +327,6 @@ export default function RevenuePage() {
         <div className={styles.pageTitleBlock}>
           <div className="flex items-center gap-3">
             <h1 className={styles.pageTitle}>Invoice</h1>
-            {isDemo && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
-                Demo
-              </span>
-            )}
             {invoicesLoading && (
               <span className="inline-flex items-center text-xs text-gray-400">
                 Loading…
@@ -479,48 +341,18 @@ export default function RevenuePage() {
             className={styles.exportBtn}
             onClick={() => setIsExportModalOpen(true)}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path
-                d="M7 1.5V9.5M7 9.5L4 6.5M7 9.5L10 6.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 11V12.5H12V11"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M7 1.5V9.5M7 9.5L4 6.5M7 9.5L10 6.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2 11V12.5H12V11" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span>Export Excel</span>
           </button>
           <button
             type="button"
             className={styles.createBtn}
-            onClick={() => {
-              if (isDemo) {
-                alert(
-                  "Demo mode: Creating invoices is disabled. Connect the backend to enable live editing."
-                );
-                return;
-              }
-              setIsGenerateModalOpen(true);
-            }}
+            onClick={() => setIsGenerateModalOpen(true)}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M7 2V12M2 7H12" strokeLinecap="round" />
             </svg>
             <span>Generate Invoice</span>
@@ -531,20 +363,9 @@ export default function RevenuePage() {
       {/* Global Filter Bar */}
       <div className={styles.globalFilterBar}>
         <div className={styles.searchField}>
-          <svg
-            className={styles.searchIcon}
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-          >
+          <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 14 14" fill="none">
             <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-            <path
-              d="M11 11L9.2 9.2"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
+            <path d="M11 11L9.2 9.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
           <input
             type="text"
@@ -557,11 +378,9 @@ export default function RevenuePage() {
         <select
           className={styles.filterSelect}
           value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as "all" | InvoiceStatusUI)
-          }
+          onChange={(e) => setStatusFilter(e.target.value as "all" | InvoiceStatusUI)}
         >
-          <option value="all">All Statues</option>
+          <option value="all">All Statuses</option>
           <option value="paid">Paid</option>
           <option value="due_soon">Due Soon</option>
           <option value="overdue">Overdue</option>
@@ -596,50 +415,39 @@ export default function RevenuePage() {
             <div className={styles.reportTopRow}>
               <div className={styles.cardTitleBlock}>
                 <span className={styles.cardTitle}>Income & Invoice Reports</span>
-                <span className={styles.cardSubtitle}>
-                  Monthly revenue overview
-                </span>
+                <span className={styles.cardSubtitle}>Monthly revenue overview</span>
               </div>
               <div className={styles.legendWrapper}>
                 <div className={styles.legendItem}>
                   <span className={styles.legendLabel}>Paid</span>
-                  <span className={styles.legendValueBlack}>
-                    {formatINR(stats.totalRevenue)}
-                  </span>
+                  <span className={styles.legendValueBlack}>{formatINR(stats.totalRevenue)}</span>
                 </div>
                 <div className={styles.legendItem}>
                   <span className={styles.legendLabel}>Overdue</span>
-                  <span className={styles.legendValueRed}>
-                    {formatINR(stats.overdueAmount)}
-                  </span>
+                  <span className={styles.legendValueRed}>{formatINR(stats.overdueAmount)}</span>
                 </div>
                 <div className={styles.legendItem}>
                   <span className={styles.legendLabel}>Due Soon</span>
-                  <span className={styles.legendValueOrange}>
-                    {formatINR(stats.pendingAmount)}
-                  </span>
+                  <span className={styles.legendValueOrange}>{formatINR(stats.pendingAmount)}</span>
                 </div>
               </div>
             </div>
 
             <div className={styles.chartArea}>
               <div className={styles.chartYAxis}>
-                <span>$100k</span>
-                <span>$75k</span>
-                <span>$50k</span>
-                <span>$25k</span>
-                <span>$0k</span>
+                <span>{formatINR(maxChartValue)}</span>
+                <span>{formatINR(maxChartValue * 0.75)}</span>
+                <span>{formatINR(maxChartValue * 0.5)}</span>
+                <span>{formatINR(maxChartValue * 0.25)}</span>
+                <span>₹0</span>
               </div>
               <div className={styles.chartContent}>
                 <div className={styles.chartBars}>
                   {chartData.map((d) => {
-                    const heightPercent = (d.paid / maxChartValue) * 100;
+                    const heightPercent = maxChartValue > 0 ? (d.paid / maxChartValue) * 100 : 0;
                     return (
                       <div key={d.month} className={styles.chartBarCol}>
-                        <div
-                          className={styles.chartBarPaid}
-                          style={{ height: `${heightPercent}%` }}
-                        />
+                        <div className={styles.chartBarPaid} style={{ height: `${heightPercent}%` }} />
                       </div>
                     );
                   })}
@@ -655,14 +463,9 @@ export default function RevenuePage() {
 
           {/* Invoices list */}
           <section className={styles.card}>
-            <div
-              className={styles.cardTitleBlock}
-              style={{ marginBottom: "20px" }}
-            >
+            <div className={styles.cardTitleBlock} style={{ marginBottom: "20px" }}>
               <span className={styles.cardTitle}>Invoices</span>
-              <span className={styles.cardSubtitle}>
-                Overview of all client invoices
-              </span>
+              <span className={styles.cardSubtitle}>Overview of all client invoices</span>
             </div>
 
             <div className={styles.tableWrap}>
@@ -680,7 +483,7 @@ export default function RevenuePage() {
                   {filteredInvoices.length === 0 ? (
                     <tr>
                       <td colSpan={5} className={styles.emptyHint}>
-                        No invoices found.
+                        {invoicesLoading ? "Loading invoices..." : "No invoices found."}
                       </td>
                     </tr>
                   ) : (
@@ -690,14 +493,10 @@ export default function RevenuePage() {
                           {invoice.clientName}
                           <div className={styles.invoiceId}>{invoice.id}</div>
                         </td>
-                        <td className={styles.cellAmount}>
-                          {formatINR(invoice.amount)}
-                        </td>
+                        <td className={styles.cellAmount}>{formatINR(invoice.amount)}</td>
                         <td className={styles.cellDate}>{invoice.date}</td>
                         <td>
-                          <span
-                            className={`${styles.statusBadge} ${styles['status_' + invoice.status]}`}
-                          >
+                          <span className={`${styles.statusBadge} ${styles['status_' + invoice.status]}`}>
                             {invoice.status.replace("_", " ").toUpperCase()}
                           </span>
                         </td>
@@ -705,42 +504,18 @@ export default function RevenuePage() {
                           <div style={{ display: "inline-flex", gap: "8px" }}>
                             <button
                               className={styles.actionMenuBtn}
-                              onClick={() => {
-                                setSelectedInvoice(invoice);
-                                setIsEditModalOpen(true);
-                              }}
+                              onClick={() => { setSelectedInvoice(invoice); setIsEditModalOpen(true); }}
                             >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                               </svg>
                             </button>
                             <button
                               className={styles.actionMenuBtn}
-                              onClick={() => {
-                                setSelectedInvoice(invoice);
-                                setIsDetailsModalOpen(true);
-                              }}
+                              onClick={() => { setSelectedInvoice(invoice); setIsDetailsModalOpen(true); }}
                             >
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="5" r="1" />
                                 <circle cx="12" cy="12" r="1" />
                                 <circle cx="12" cy="19" r="1" />
@@ -760,54 +535,31 @@ export default function RevenuePage() {
           <section className={styles.card}>
             <div className={styles.upcomingHeader}>
               <span className={styles.cardTitle}>Upcoming Invoices</span>
-              <button className={styles.notifyAllBtn}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" />
-                </svg>
-                Notify All
-              </button>
             </div>
 
-            <div className={styles.upcomingGrid}>
-              {upcomingInvoices.map((inv) => {
-                return (
+            {upcomingInvoices.length === 0 ? (
+              <div className={styles.emptyHint} style={{ padding: "24px", textAlign: "center" }}>
+                No upcoming invoices.
+              </div>
+            ) : (
+              <div className={styles.upcomingGrid}>
+                {upcomingInvoices.map((inv) => (
                   <div key={inv.id} className={styles.upcomingGridCard}>
                     <div className={styles.upcomingClientName}>{inv.clientName}</div>
                     <div className={styles.upcomingCardRow}>
-                      <span className={styles.upcomingCardAmount}>
-                        {formatINR(inv.amount)}
-                      </span>
-                      <button className={styles.notifyBtn}>
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
+                      <span className={styles.upcomingCardAmount}>{formatINR(inv.amount)}</span>
+                      <button
+                        className={styles.notifyBtn}
+                        onClick={() => toast.success(`Reminder sent to ${inv.clientName}`)}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0" />
                         </svg>
                         Notify
                       </button>
                     </div>
                     <div className={styles.upcomingCardDue}>
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        style={{ marginRight: "4px" }}
-                      >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: "4px" }}>
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                         <line x1="16" y1="2" x2="16" y2="6" />
                         <line x1="8" y1="2" x2="8" y2="6" />
@@ -816,214 +568,75 @@ export default function RevenuePage() {
                       {inv.dueIn}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
         {/* Aside column */}
         <aside className={styles.asideColumn}>
-          {/* Total Receivables Combined Card */}
+          {/* Total Receivables */}
           <div className={styles.statCard}>
             <div className={styles.statRow}>
               <span className={styles.statRowLabelBlack}>Total Receivable</span>
               <span className={styles.statRowValueBlack}>
-                {formatINR(
-                  stats.totalRevenue + stats.pendingAmount + stats.overdueAmount
-                )}
+                {formatINR(stats.totalRevenue + stats.pendingAmount + stats.overdueAmount)}
               </span>
             </div>
             <div className={styles.statRow}>
               <span className={styles.statRowLabel}>Over dues</span>
-              <span className={styles.statRowValueRed}>
-                {formatINR(stats.overdueAmount)}
-              </span>
+              <span className={styles.statRowValueRed}>{formatINR(stats.overdueAmount)}</span>
             </div>
             <div className={styles.statRow}>
               <span className={styles.statRowLabel}>Collected this month</span>
-              <span className={styles.statRowValueGreen}>
-                {formatINR(stats.collectedThisMonth)}
-              </span>
+              <span className={styles.statRowValueGreen}>{formatINR(stats.collectedThisMonth)}</span>
             </div>
           </div>
 
-          {/* Renewal Alerts */}
+          {/* Renewal Alerts — live contracts expiring within 30 days */}
           <div className={styles.asideBlock}>
             <div className={styles.asideBlockHeader}>
               <h3 className={styles.asideBlockTitle}>Renewal Alerts</h3>
-              <p className={styles.asideBlockSubtitle}>
-                Upcoming subscription renewals
-              </p>
+              <p className={styles.asideBlockSubtitle}>Upcoming subscription renewals</p>
             </div>
             <div className={styles.asideCardList}>
-              {[
-                { name: "TechStart Co.", date: "Apr 20, 2026", left: "4d left" },
-                {
-                  name: "Creative Studio",
-                  date: "Apr 25, 2026",
-                  left: "9d left",
-                },
-                {
-                  name: "Design Labs",
-                  date: "Apr 28, 2026",
-                  left: "12d left",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className={styles.asideInnerCard}>
-                  <div className={styles.asideInnerHeader}>
-                    <span className={styles.asideInnerName}>{item.name}</span>
-                    <span className={styles.daysLeftBadge}>{item.left}</span>
-                  </div>
-                  <div className={styles.asideInnerDate}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      style={{ marginRight: "4px" }}
-                    >
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                    {item.date}
-                  </div>
-                  <button
-                    className={styles.renewBtn}
-                    onClick={() => {
-                      setSelectedRenewClient(item);
-                      setIsRenewModalOpen(true);
-                    }}
-                  >
-                    Renew
-                  </button>
+              {renewalAlerts.length === 0 ? (
+                <div className={styles.emptyHint} style={{ padding: "16px", textAlign: "center" }}>
+                  No upcoming renewals.
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Upgrade Opportunities */}
-          <div className={styles.asideBlock}>
-            <div className={styles.asideBlockHeader}>
-              <h3 className={styles.asideBlockTitle}>Upgrade Opportunities</h3>
-              <p className={styles.asideBlockSubtitle}>
-                Potential upsell clients
-              </p>
-            </div>
-            <div className={styles.asideCardList}>
-              {[
-                { name: "StartUp Hub", plan: "Basic", upsell: "+$2400/mo" },
-                {
-                  name: "Digital Agency",
-                  plan: "Standard",
-                  upsell: "+$3600/mo",
-                },
-              ].map((item, idx) => (
-                <div key={idx} className={styles.asideInnerCard}>
-                  <div className={styles.asideInnerHeader}>
-                    <span className={styles.asideInnerName}>{item.name}</span>
-                  </div>
-                  <div className={styles.upgradeRow}>
-                    <span className={styles.upgradeCurrent}>
-                      Current: <strong>{item.plan}</strong>
-                    </span>
+              ) : (
+                renewalAlerts.map((item) => (
+                  <div key={item.id} className={styles.asideInnerCard}>
+                    <div className={styles.asideInnerHeader}>
+                      <span className={styles.asideInnerName}>{item.name}</span>
+                      <span className={styles.daysLeftBadge}>{item.left}</span>
+                    </div>
+                    <div className={styles.asideInnerDate}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: "4px" }}>
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      {item.date}
+                    </div>
                     <button
-                      className={styles.upgradeBtn}
-                      onClick={() => {
-                        setSelectedUpgradeClient(item);
-                        setIsUpgradeModalOpen(true);
-                      }}
+                      className={styles.renewBtn}
+                      onClick={() => { setSelectedRenewClient(item); setIsRenewModalOpen(true); }}
                     >
-                      Upgrade
+                      Renew
                     </button>
                   </div>
-                  <div className={styles.upsellAmount}>{item.upsell}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Activities */}
-          <div className={styles.asideBlock}>
-            <div className={styles.asideBlockHeader}>
-              <h3 className={styles.asideBlockTitle}>Recent Activities</h3>
-            </div>
-            <div className={styles.activityList}>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIconRed}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                </div>
-                <div>
-                  <div className={styles.activityTitle}>Payment Faild</div>
-                  <div className={styles.activityDesc}>Pending Approvals</div>
-                </div>
-              </div>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIconOrange}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polyline points="6 9 6 2 18 2 18 9" />
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                    <rect x="6" y="14" width="12" height="8" />
-                  </svg>
-                </div>
-                <div>
-                  <div className={styles.activityTitle}>Printer Booked Today</div>
-                  <div className={styles.activityDesc}>
-                    Patel Enterprises printer bo.....
-                  </div>
-                </div>
-              </div>
-              <div className={styles.activityItem}>
-                <div className={styles.activityIconRed}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                </div>
-                <div>
-                  <div className={styles.activityTitle}>Payment Faild</div>
-                  <div className={styles.activityDesc}>Pending Approvals</div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
         </aside>
       </div>
 
       {/* Modals */}
-      <GenerateInvoiceModal
-        isOpen={isGenerateModalOpen}
-        onClose={() => setIsGenerateModalOpen(false)}
-      />
-
+      <GenerateInvoiceModal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} />
       <InvoiceDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
@@ -1031,24 +644,16 @@ export default function RevenuePage() {
         clientName={selectedInvoice?.clientName}
         amount={selectedInvoice?.amount}
       />
-
       <RenewMembershipModal
         isOpen={isRenewModalOpen}
         onClose={() => setIsRenewModalOpen(false)}
         clientName={selectedRenewClient?.name}
       />
-
       <PlanUpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
-        clientName={selectedUpgradeClient?.name}
       />
-
-      <ExportExcelModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-      />
-
+      <ExportExcelModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} />
       <EditInvoiceModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}

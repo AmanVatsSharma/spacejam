@@ -4,11 +4,14 @@
 
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_CONTRACTS,
   TERMINATE_CONTRACT,
+  RENEW_CONTRACT,
 } from "@/lib/apollo/operations";
-import { AddLeadModal } from "@/components/ui/dashboard";
+import { AddContractModal } from "./modals/add-contract-modal";
+import { normalizeStatus, contractStatusLabel } from "@/lib/revenue-status";
 
 interface Contract {
   id: string;
@@ -50,15 +53,14 @@ function formatDate(dateStr?: string | null): string {
 }
 
 const statusColors: Record<string, string> = {
-  Active: "bg-[#FF6A2F] text-white",
-  "Expiring Soon": "bg-[#FFB703] text-white",
-  Expired: "bg-[#06D6A0] text-white",
-  Upgraded: "bg-[#3A4556] text-white",
-  Terminated: "bg-[#EF476F] text-white",
+  ACTIVE: "bg-[#FF6A2F] text-white",
+  EXPIRING_SOON: "bg-[#FFB703] text-white",
+  EXPIRED: "bg-[#06D6A0] text-white",
+  TERMINATED: "bg-[#EF476F] text-white",
 };
 
 export default function ContractsPage() {
-  const [showAddLead, setShowAddLead] = useState(false);
+  const [showAddContract, setShowAddContract] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -72,6 +74,10 @@ export default function ContractsPage() {
     refetchQueries: [{ query: GET_CONTRACTS }],
   });
 
+  const [renewContract, { loading: renewing }] = useMutation(RENEW_CONTRACT, {
+    refetchQueries: [{ query: GET_CONTRACTS }],
+  });
+
   const contracts = data?.contracts ?? [];
 
   const filtered = useMemo(() => {
@@ -82,7 +88,7 @@ export default function ContractsPage() {
         c.customerName?.toLowerCase().includes(q) ||
         c.contractNumber?.toLowerCase().includes(q) ||
         c.planName?.toLowerCase().includes(q);
-      const matchesStatus = !statusFilter || c.status === statusFilter;
+      const matchesStatus = !statusFilter || normalizeStatus(c.status) === statusFilter;
       return matchesQuery && matchesStatus;
     });
   }, [contracts, search, statusFilter]);
@@ -94,21 +100,44 @@ export default function ContractsPage() {
 
   // Compute stats from live data
   const stats = useMemo(() => {
-    const active = contracts.filter((c) => c.status === "Active");
-    const expiring = contracts.filter((c) => c.status === "Expiring Soon");
-    const expired = contracts.filter((c) => c.status === "Expired");
-    const upgraded = contracts.filter((c) => c.status === "Upgraded");
-    const terminated = contracts.filter((c) => c.status === "Terminated");
+    const active = contracts.filter((c) => normalizeStatus(c.status) === "ACTIVE");
+    const expiring = contracts.filter((c) => normalizeStatus(c.status) === "EXPIRING_SOON");
+    const expired = contracts.filter((c) => normalizeStatus(c.status) === "EXPIRED");
+    const terminated = contracts.filter((c) => normalizeStatus(c.status) === "TERMINATED");
     const monthlyRevenue = active.reduce((sum, c) => sum + Number(c.amount), 0);
-    return { active, expiring, expired, upgraded, terminated, monthlyRevenue, activeCount: active.length };
+    return { active, expiring, expired, terminated, monthlyRevenue, activeCount: active.length };
   }, [contracts]);
 
   const handleTerminate = async (id: string) => {
     if (!confirm('Terminate this contract? This action cannot be undone.')) return;
     try {
       await terminateContract({ variables: { id } });
-    } catch {
-      // handled by Apollo
+      toast.success('Contract terminated');
+    } catch (err) {
+      toast.error(`Failed to terminate: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleRenew = async (id: string) => {
+    const input = window.prompt('Enter new end date (YYYY-MM-DD):');
+    if (!input) return;
+    // Accept YYYY-MM-DD and convert to an ISO datetime the backend expects.
+    const parsed = new Date(input);
+    if (Number.isNaN(parsed.getTime())) {
+      toast.error('Invalid date. Please use the YYYY-MM-DD format.');
+      return;
+    }
+    try {
+      const { errors } = await renewContract({
+        variables: { id, newEndDate: parsed.toISOString() },
+      });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success('Contract renewed successfully');
+    } catch (err) {
+      toast.error(`Failed to renew: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
@@ -139,11 +168,10 @@ export default function ContractsPage() {
             className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]/20"
           >
             <option value="">All status</option>
-            <option value="Active">Active</option>
-            <option value="Expiring Soon">Expiring Soon</option>
-            <option value="Expired">Expired</option>
-            <option value="Upgraded">Upgraded</option>
-            <option value="Terminated">Terminated</option>
+            <option value="ACTIVE">Active</option>
+            <option value="EXPIRING_SOON">Expiring Soon</option>
+            <option value="EXPIRED">Expired</option>
+            <option value="TERMINATED">Terminated</option>
           </select>
 
           <button
@@ -154,7 +182,7 @@ export default function ContractsPage() {
           </button>
 
           <button
-            onClick={() => setShowAddLead(true)}
+            onClick={() => setShowAddContract(true)}
             className="ml-auto px-5 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold flex items-center gap-2 hover:bg-[#E55A20] transition-colors shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
@@ -180,24 +208,23 @@ export default function ContractsPage() {
             )}
           </div>
           <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
-            <h3 className="text-[32px] font-bold text-gray-900 mb-1">{stats.upgraded.length}</h3>
-            <p className="text-[13px] text-gray-500 mb-2">Upgrades Completed</p>
+            <h3 className="text-[32px] font-bold text-gray-900 mb-1">{stats.terminated.length}</h3>
+            <p className="text-[13px] text-gray-500 mb-2">Contracts Terminated</p>
           </div>
         </div>
 
         {/* Status Ribbons */}
         <div className="flex gap-3 mb-6 overflow-x-auto pb-2 flex-shrink-0">
           {[
-            { name: "Active", count: stats.active.length, cls: "bg-[#FF6A2F]" },
-            { name: "Renewal Due", count: stats.expiring.length, cls: "bg-[#FFB703]" },
-            { name: "Expired", count: stats.expired.length, cls: "bg-[#06D6A0]" },
-            { name: "Upgraded", count: stats.upgraded.length, cls: "bg-[#3A4556]" },
-            { name: "Terminated", count: stats.terminated.length, cls: "bg-[#EF476F]" },
+            { name: "Active", filter: "ACTIVE", count: stats.active.length, cls: "bg-[#FF6A2F]" },
+            { name: "Renewal Due", filter: "EXPIRING_SOON", count: stats.expiring.length, cls: "bg-[#FFB703]" },
+            { name: "Expired", filter: "EXPIRED", count: stats.expired.length, cls: "bg-[#06D6A0]" },
+            { name: "Terminated", filter: "TERMINATED", count: stats.terminated.length, cls: "bg-[#EF476F]" },
           ].map((s) => (
             <button
               key={s.name}
-              onClick={() => setStatusFilter(statusFilter === s.name ? "" : s.name === "Renewal Due" ? "Expiring Soon" : s.name)}
-              className={`flex-1 min-w-[120px] ${s.cls} ${statusFilter === s.name || (statusFilter === "Expiring Soon" && s.name === "Renewal Due") ? "ring-2 ring-offset-2 ring-gray-400" : ""} text-white py-4 rounded-xl flex flex-col items-center justify-center transition-all shadow-sm opacity-90 hover:opacity-100`}
+              onClick={() => setStatusFilter(statusFilter === s.filter ? "" : s.filter)}
+              className={`flex-1 min-w-[120px] ${s.cls} ${statusFilter === s.filter ? "ring-2 ring-offset-2 ring-gray-400" : ""} text-white py-4 rounded-xl flex flex-col items-center justify-center transition-all shadow-sm opacity-90 hover:opacity-100`}
             >
               <span className="text-[14px] font-medium mb-1">{s.name}</span>
               <span className="text-[24px] font-bold">{s.count}</span>
@@ -251,8 +278,8 @@ export default function ContractsPage() {
                       <td className="py-4 px-6 text-[14px] text-gray-600">{contract.planName ?? "—"}</td>
                       <td className="py-4 px-6 text-[14px] font-medium text-gray-900">{formatCurrency(Number(contract.amount))}</td>
                       <td className="py-4 px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${statusColors[contract.status] ?? "bg-gray-100 text-gray-700"}`}>
-                          {contract.status}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium text-white ${statusColors[normalizeStatus(contract.status)] ?? "bg-gray-100 text-gray-700"}`}>
+                          {contractStatusLabel[normalizeStatus(contract.status)] ?? contract.status}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-[14px] text-gray-600">{formatDate(contract.endDate)}</td>
@@ -373,9 +400,20 @@ export default function ContractsPage() {
 
             {/* Bottom Actions */}
             <div className="space-y-3 pt-8 mt-auto">
-              <button className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2 shadow-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                Renew Contract
+              <button
+                onClick={() => handleRenew(selected.id)}
+                disabled={renewing}
+                className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {renewing ? (
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                    <path d="M22 12a10 10 0 01-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                )}
+                {renewing ? "Renewing..." : "Renew Contract"}
               </button>
               <button
                 onClick={() => handleTerminate(selected.id)}
@@ -394,7 +432,7 @@ export default function ContractsPage() {
       </div>
 
       {/* Modals */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
+      <AddContractModal open={showAddContract} onClose={() => setShowAddContract(false)} />
     </div>
   );
 }
