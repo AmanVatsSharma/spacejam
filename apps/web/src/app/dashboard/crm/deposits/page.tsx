@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { GET_DEPOSITS, RELEASE_DEPOSIT, DELETE_DEPOSIT } from "@/lib/apollo/operations";
 
 /* ─── Backend Deposit shape ─── */
@@ -60,9 +62,12 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function CRMDepositsPage() {
+  const router = useRouter();
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const goToRevenueDeposits = () => router.push("/dashboard/revenue/deposits");
 
   /* ── Apollo data ── */
   const { data, loading, error } = useQuery<{ deposits: BackendDeposit[] }>(
@@ -136,7 +141,10 @@ export default function CRMDepositsPage() {
             <h1 className="text-2xl font-semibold text-[#101828]">Security Deposits</h1>
             <p className="text-sm text-gray-500 mt-1">Manage client deposits, refunds, and holds</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+          <button
+            onClick={() => toast.info("Export coming soon")}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -315,27 +323,39 @@ export default function CRMDepositsPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-[#101828] mb-4">Quick Actions</h2>
           <div className="flex flex-col gap-3">
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700">
+            <button
+              onClick={() => { toast.info("Opening Approve Release Requests…"); goToRevenueDeposits(); }}
+              className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
               Approve Requests
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700">
+            <button
+              onClick={() => { toast.info("Opening Freeze Account…"); goToRevenueDeposits(); }}
+              className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
               </svg>
               Freeze Account
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700">
+            <button
+              onClick={() => { toast.info("Opening Add Deposit…"); goToRevenueDeposits(); }}
+              className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Add Deposit
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700">
+            <button
+              onClick={() => { toast.info("Opening Send Reminder…"); goToRevenueDeposits(); }}
+              className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />

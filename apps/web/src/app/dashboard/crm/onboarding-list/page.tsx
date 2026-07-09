@@ -16,6 +16,8 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { GET_LEADS } from '@/lib/apollo/operations';
 import styles from './onboarding.module.css';
 
@@ -169,6 +171,7 @@ function mapLeadToOnboarding(l: BackendLead): OnboardingLead {
 /* --------------------------- Component --------------------------- */
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | OnboardingStatus>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
@@ -360,16 +363,48 @@ export default function OnboardingPage() {
                     <td>{lead.lastActivity}</td>
                     <td>
                       <div className={styles.actionBtns}>
-                        <button type="button" className={styles.actionBtn} title="Call">
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          title="Call"
+                          onClick={() => {
+                            if (lead.phone) {
+                              window.location.href = `tel:${lead.phone}`;
+                            } else {
+                              toast.info("No phone number on file");
+                            }
+                          }}
+                        >
                           {Icon.Phone}
                         </button>
-                        <button type="button" className={styles.actionBtn} title="Email">
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          title="Email"
+                          onClick={() => {
+                            if (lead.email) {
+                              window.location.href = `mailto:${lead.email}`;
+                            } else {
+                              toast.info("No email on file");
+                            }
+                          }}
+                        >
                           {Icon.Mail}
                         </button>
-                        <button type="button" className={styles.actionBtn} title="View">
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          title="View"
+                          onClick={() => router.push(`/dashboard/crm/leads/${lead.id}`)}
+                        >
                           {Icon.Eye}
                         </button>
-                        <button type="button" className={styles.actionBtn} title="Edit">
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          title="Edit"
+                          onClick={() => toast.info("Edit coming soon")}
+                        >
                           {Icon.Edit}
                         </button>
                       </div>

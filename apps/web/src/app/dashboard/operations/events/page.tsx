@@ -146,7 +146,7 @@ function StatusPill({ status }: { status: EventStatus }) {
   return <span className={`${styles.statusPill} ${styles.statusPending}`}>Pending</span>;
 }
 
-function EventRowItem({ event, selected, onSelect, onConfirm }: { event: EventRow; selected: boolean; onSelect: () => void; onConfirm?: (id: string) => void }) {
+function EventRowItem({ event, selected, onSelect, onConfirm, onEdit, onCancel }: { event: EventRow; selected: boolean; onSelect: () => void; onConfirm?: (id: string) => void; onEdit?: (id: string) => void; onCancel?: (id: string) => void }) {
   return (
     <div className={`${styles.eventRow} ${selected ? styles.eventRowSelected : ""}`} onClick={onSelect} role="button" tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
@@ -171,15 +171,15 @@ function EventRowItem({ event, selected, onSelect, onConfirm }: { event: EventRo
               <CheckIcon /> Confirm Booking
             </button>
           )}
-          <button type="button" className={styles.btnOutline} onClick={(e) => e.stopPropagation()}>Edit</button>
-          <button type="button" className={styles.btnDanger} onClick={(e) => e.stopPropagation()}>Cancel</button>
+          <button type="button" className={styles.btnOutline} onClick={(e) => { e.stopPropagation(); onEdit?.(event.id); }}>Edit</button>
+          <button type="button" className={styles.btnDanger} onClick={(e) => { e.stopPropagation(); onCancel?.(event.id); }}>Cancel</button>
         </div>
       </div>
     </div>
   );
 }
 
-function SectionCard({ title, count, events, selectedId, onSelect, onConfirm, emptyLabel }: { title: string; count: number; events: EventRow[]; selectedId: string | null; onSelect: (id: string) => void; onConfirm?: (id: string) => void; emptyLabel: string }) {
+function SectionCard({ title, count, events, selectedId, onSelect, onConfirm, onEdit, onCancel, emptyLabel }: { title: string; count: number; events: EventRow[]; selectedId: string | null; onSelect: (id: string) => void; onConfirm?: (id: string) => void; onEdit?: (id: string) => void; onCancel?: (id: string) => void; emptyLabel: string }) {
   return (
     <section className={styles.sectionCard}>
       <div className={styles.sectionHeader}>
@@ -191,7 +191,7 @@ function SectionCard({ title, count, events, selectedId, onSelect, onConfirm, em
       ) : (
         <div className={styles.eventList}>
           {events.map((ev) => (
-            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} onConfirm={onConfirm} />
+            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} onConfirm={onConfirm} onEdit={onEdit} onCancel={onCancel} />
           ))}
         </div>
       )}
@@ -211,7 +211,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   );
 }
 
-function EventDetailPanel({ event, onUpdateStatus, onCancel, onComplete }: { event: EventRow; onUpdateStatus?: (id: string, status: string) => void; onCancel?: (id: string) => void; onComplete?: (id: string) => void }) {
+function EventDetailPanel({ event, onUpdateStatus, onCancel, onComplete, onEdit }: { event: EventRow; onUpdateStatus?: (id: string, status: string) => void; onCancel?: (id: string) => void; onComplete?: (id: string) => void; onEdit?: (id: string) => void }) {
   return (
     <aside className={styles.detailPanel} aria-label="Event details panel">
       <div className={styles.detailHead}>
@@ -230,7 +230,7 @@ function EventDetailPanel({ event, onUpdateStatus, onCancel, onComplete }: { eve
       </div>
       <div className={styles.detailDivider} />
       <div className={styles.detailActions}>
-        <button type="button" className={styles.btnEdit}>Edit Event</button>
+        <button type="button" className={styles.btnEdit} onClick={() => onEdit?.(event.id)}>Edit Event</button>
         {event.status !== "completed" && (
           <button type="button" className={styles.btnComplete} onClick={() => onComplete?.(event.id)}>
             <CheckIcon color="#10B981" /> Mark as Completed
@@ -327,6 +327,10 @@ export default function EventsPage() {
     else toast.error("Could not cancel event");
   };
 
+  const handleEditEvent = (_id: string) => {
+    toast.info("Edit event coming soon");
+  };
+
   const hasEvents = allEvents.length > 0;
 
   return (
@@ -356,8 +360,8 @@ export default function EventsPage() {
               onClick={() => setFilter(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
           ))}
         </div>
-        <button type="button" className={styles.dropdown}><span>All types</span><span className={styles.dropdownCaret} /></button>
-        <button type="button" className={styles.dropdown}><span>All Status</span><span className={styles.dropdownCaret} /></button>
+        <button type="button" className={styles.dropdown} onClick={() => toast.info("Type filter coming soon")}><span>All types</span><span className={styles.dropdownCaret} /></button>
+        <button type="button" className={styles.dropdown} onClick={() => toast.info("Status filter coming soon")}><span>All Status</span><span className={styles.dropdownCaret} /></button>
         <button type="button" className={styles.clearAll} onClick={() => { setSearch(""); setFilter("all"); }}>Clear All</button>
       </section>
 
@@ -378,13 +382,13 @@ export default function EventsPage() {
             </div>
           )}
           {hasEvents && showToday && (
-            <SectionCard title="Today's Events" count={todayEvts.length} events={todayEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No events scheduled for today." />
+            <SectionCard title="Today's Events" count={todayEvts.length} events={todayEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} onEdit={handleEditEvent} onCancel={handleCancel} emptyLabel="No events scheduled for today." />
           )}
           {hasEvents && showUpcoming && (
-            <SectionCard title="Upcoming Events" count={upcomingEvts.length} events={upcomingEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No upcoming events." />
+            <SectionCard title="Upcoming Events" count={upcomingEvts.length} events={upcomingEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} onEdit={handleEditEvent} onCancel={handleCancel} emptyLabel="No upcoming events." />
           )}
           {hasEvents && showPast && (
-            <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No past events." />
+            <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} onEdit={handleEditEvent} onCancel={handleCancel} emptyLabel="No past events." />
           )}
         </div>
 
@@ -394,6 +398,7 @@ export default function EventsPage() {
             onUpdateStatus={(id, status) => updateStatus(id, status as any)}
             onCancel={handleCancel}
             onComplete={handleComplete}
+            onEdit={handleEditEvent}
           />
         ) : (
           <EmptySidePanel />
