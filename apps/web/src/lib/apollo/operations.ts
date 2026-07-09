@@ -22,7 +22,7 @@ export const SIGNIN_MUTATION = gql`
         email
         name
         role
-        isActive
+        active
         emailVerified
       }
     }
@@ -43,7 +43,7 @@ export const SIGNUP_MUTATION = gql`
         email
         name
         role
-        isActive
+        active
         emailVerified
       }
     }
@@ -92,7 +92,7 @@ export const ME_QUERY = gql`
       email
       name
       role
-      isActive
+      active
       emailVerified
       lastLoginAt
       createdAt
@@ -154,7 +154,7 @@ export const VERIFY_MAGIC_LINK = gql`
         email
         name
         role
-        isActive
+        active
         emailVerified
         avatar
         lastLoginAt
@@ -187,6 +187,36 @@ export const REGENERATE_RECOVERY_CODES = gql`
 `;
 
 /* ========================= CRM — Leads ========================= */
+
+export const GET_LEAD = gql`
+  query GetLead($id: ID!) {
+    lead(id: $id) {
+      id
+      name
+      email
+      phone
+      company
+      source
+      requirement
+      budget
+      location
+      status
+      lastContact
+      notes
+      assignedTo {
+        id
+        name
+        email
+      }
+      center {
+        id
+        name
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
 
 export const GET_LEADS = gql`
   query GetLeads($filters: LeadFiltersInput) {
@@ -377,7 +407,7 @@ export const DELETE_INVOICE = gql`
 `;
 
 export const MARK_INVOICE_PAID = gql`
-  mutation MarkInvoicePaid($id: ID!, $paymentMethod: String) {
+  mutation MarkInvoicePaid($id: ID!, $paymentMethod: PaymentMethod) {
     markInvoicePaid(id: $id, paymentMethod: $paymentMethod) {
       id
       invoiceNumber
@@ -404,7 +434,12 @@ export const GET_DEPOSITS = gql`
       customerId
       customerName
       centerId
+      center {
+        id
+        name
+      }
       amount
+      depositType
       status
       referenceNumber
       receivedDate
@@ -423,7 +458,12 @@ export const GET_DEPOSIT = gql`
       customerId
       customerName
       centerId
+      center {
+        id
+        name
+      }
       amount
+      depositType
       status
       referenceNumber
       receivedDate
@@ -487,6 +527,63 @@ export const RELEASE_DEPOSIT = gql`
 export const DELETE_DEPOSIT = gql`
   mutation DeleteDeposit($id: ID!) {
     deleteDeposit(id: $id)
+  }
+`;
+
+export const FREEZE_DEPOSIT = gql`
+  mutation FreezeDeposit($id: ID!) {
+    freezeDeposit(id: $id) {
+      id
+      status
+      frozen
+      updatedAt
+    }
+  }
+`;
+
+export const UNFREEZE_DEPOSIT = gql`
+  mutation UnfreezeDeposit($id: ID!) {
+    unfreezeDeposit(id: $id) {
+      id
+      status
+      frozen
+      updatedAt
+    }
+  }
+`;
+
+export const REQUEST_DEPOSIT_RELEASE = gql`
+  mutation RequestDepositRelease($id: ID!, $reason: String) {
+    requestDepositRelease(id: $id, reason: $reason) {
+      id
+      status
+      releaseRequestedDate
+      releaseReason
+      updatedAt
+    }
+  }
+`;
+
+export const APPROVE_DEPOSIT_RELEASE = gql`
+  mutation ApproveDepositRelease($id: ID!) {
+    approveDepositRelease(id: $id) {
+      id
+      status
+      releasedDate
+      updatedAt
+    }
+  }
+`;
+
+export const SEND_DEPOSIT_REMINDER = gql`
+  mutation SendDepositReminder($id: ID!, $reminderType: String!) {
+    sendDepositReminder(id: $id, reminderType: $reminderType)
+  }
+`;
+
+export const EXPORT_DEPOSITS = gql`
+  mutation ExportDeposits($format: String) {
+    exportDeposits(format: $format)
   }
 `;
 
@@ -590,6 +687,17 @@ export const TERMINATE_CONTRACT = gql`
   }
 `;
 
+export const RENEW_CONTRACT = gql`
+  mutation RenewContract($id: ID!, $newEndDate: DateTime!) {
+    renewContract(id: $id, newEndDate: $newEndDate) {
+      id
+      endDate
+      status
+      updatedAt
+    }
+  }
+`;
+
 /* ========================= CRM — Customers ========================= */
 
 export const GET_CUSTOMERS = gql`
@@ -604,6 +712,10 @@ export const GET_CUSTOMERS = gql`
       totalBookings
       totalSpent
       lastBooking
+      location
+      teamSize
+      joinDate
+      notes
       createdAt
     }
   }
@@ -621,6 +733,10 @@ export const GET_CUSTOMER = gql`
       totalBookings
       totalSpent
       lastBooking
+      location
+      teamSize
+      joinDate
+      notes
       createdAt
     }
   }
@@ -821,6 +937,15 @@ export const GET_FLOORS = gql`
       layout
       createdAt
       updatedAt
+      seats {
+        id
+        number
+        seatType
+        status
+        price
+        features
+        location
+      }
     }
   }
 `;
@@ -1098,7 +1223,7 @@ export const GET_USERS = gql`
         id
         name
       }
-      isActive
+      active
       emailVerified
       lastLoginAt
       createdAt
