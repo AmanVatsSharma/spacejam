@@ -30,7 +30,7 @@ import { useAuth } from "@/contexts/auth-context";
  */
 const SECTION_TABS: Record<string, HeaderTab[]> = {
   dashboard: [
-    { id: "changelog", label: "What's new", href: "/changelog" }
+    { id: "changelog", label: "What's new", href: "/dashboard/changelog" }
   ],
   revenue: [
     { id: "invoices", label: "Invoices", href: "/dashboard/revenue" },
