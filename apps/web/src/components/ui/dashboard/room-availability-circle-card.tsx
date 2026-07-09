@@ -133,28 +133,35 @@ export function RoomAvailabilityCircleCard({
       </div>
 
       {/* Sub stats grid 2x3 */}
-      <div className={styles.subStatsGrid}>
-        {subStats.map((stat) => {
-          const percent = stat.total > 0 ? (stat.available / stat.total) * 100 : 0;
-          return (
-            <div key={stat.label} className={styles.subStat}>
-              <div className={styles.subStatHeader}>
-                <span className={styles.subStatLabel}>{stat.label}</span>
-                <span className={styles.subStatValue}>
-                  <span className={styles.valueNumber}>{stat.available}</span>
-                  <span className={styles.valueTotal}>/{stat.total}</span>
-                </span>
+      {subStats.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-6 text-center bg-[#F9FAFB] rounded-[10px] border border-dashed border-[#E5E7EB] mt-4 min-h-[140px]">
+          <span className="text-[14px] font-medium text-[#6B7280]">No seat data available</span>
+          <span className="text-[12px] text-[#9CA3AF] mt-1">Detailed room capacity metrics are not available at this time.</span>
+        </div>
+      ) : (
+        <div className={styles.subStatsGrid}>
+          {subStats.map((stat) => {
+            const percent = stat.total > 0 ? (stat.available / stat.total) * 100 : 0;
+            return (
+              <div key={stat.label} className={styles.subStat}>
+                <div className={styles.subStatHeader}>
+                  <span className={styles.subStatLabel}>{stat.label}</span>
+                  <span className={styles.subStatValue}>
+                    <span className={styles.valueNumber}>{stat.available}</span>
+                    <span className={styles.valueTotal}>/{stat.total}</span>
+                  </span>
+                </div>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressFillLeft}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
               </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressFillLeft}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

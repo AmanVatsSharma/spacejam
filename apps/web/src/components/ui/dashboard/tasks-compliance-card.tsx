@@ -128,26 +128,33 @@ export function TasksComplianceCard({
 
       {/* Compliance Items */}
       <div className="flex flex-col gap-3">
-        {defaultItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between p-3 rounded-[10px] cursor-pointer hover:opacity-90 transition-opacity"
-            style={{ background: getBgColor(item.color) }}
-          >
-            <div className="flex items-center gap-3">
-              {getIcon(item.color)}
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-semibold text-[#1F2937] leading-[17px]">
-                  {item.title}
-                </span>
-                <span className="text-[12px] text-[#6B7280] leading-[15px]">
-                  {item.subtitle}
-                </span>
-              </div>
-            </div>
-            <ArrowRightIcon />
+        {defaultItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center bg-[#F9FAFB] rounded-[10px] border border-dashed border-[#E5E7EB] min-h-[140px]">
+            <span className="text-[14px] font-medium text-[#6B7280]">All caught up!</span>
+            <span className="text-[12px] text-[#9CA3AF] mt-1">No pending tasks or compliance issues.</span>
           </div>
-        ))}
+        ) : (
+          defaultItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between p-3 rounded-[10px] cursor-pointer hover:opacity-90 transition-opacity"
+              style={{ background: getBgColor(item.color) }}
+            >
+              <div className="flex items-center gap-3">
+                {getIcon(item.color)}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-[#1F2937] leading-[17px]">
+                    {item.title}
+                  </span>
+                  <span className="text-[12px] text-[#6B7280] leading-[15px]">
+                    {item.subtitle}
+                  </span>
+                </div>
+              </div>
+              <ArrowRightIcon />
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
