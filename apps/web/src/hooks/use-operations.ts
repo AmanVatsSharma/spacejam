@@ -18,7 +18,7 @@ import { useQuery, useMutation, useApolloClient, gql } from '@apollo/client';
 const GET_MEETING_ROOMS = gql`
   query GetMeetingRooms($filters: RoomFiltersInput) {
     meetingRooms(filters: $filters) {
-      id name type capacity status locationName floorId centerId
+      id name roomType capacity status locationName floorId centerId
       minBookingDuration maxBookingDuration amenities hourlyRate active
       createdAt updatedAt
     }
@@ -28,7 +28,7 @@ const GET_MEETING_ROOMS = gql`
 const GET_MEETING_ROOM = gql`
   query GetMeetingRoom($id: ID!) {
     meetingRoom(id: $id) {
-      id name type capacity status locationName floorId centerId
+      id name roomType capacity status locationName floorId centerId
       minBookingDuration maxBookingDuration amenities hourlyRate active
       center { id name }
       bookings { id title eventDate startTime endTime status }
@@ -39,7 +39,7 @@ const GET_MEETING_ROOM = gql`
 const GET_AVAILABLE_ROOMS = gql`
   query GetAvailableRooms($centerId: String, $capacity: Int) {
     availableRooms(centerId: $centerId, capacity: $capacity) {
-      id name type capacity status locationName amenities hourlyRate
+      id name roomType capacity status locationName amenities hourlyRate
     }
   }
 `;
@@ -47,7 +47,7 @@ const GET_AVAILABLE_ROOMS = gql`
 const GET_ROOM_AVAILABILITY = gql`
   query GetRoomAvailability($centerId: String!, $floorId: String!, $eventDate: String!, $startTime: String!, $endTime: String!) {
     roomAvailability(centerId: $centerId, floorId: $floorId, eventDate: $eventDate, startTime: $startTime, endTime: $endTime) {
-      id name type capacity status amenities hourlyRate
+      id name roomType capacity status amenities hourlyRate
     }
   }
 `;
@@ -57,7 +57,7 @@ const GET_EVENTS = gql`
     events(filters: $filters) {
       id centerId meetingRoomId requestedById title description company
       eventDate startTime endTime durationMinutes attendeesCount
-      type status specialRequests addons cost notes
+      eventType status specialRequests addons cost notes
       createdAt updatedAt
       meetingRoom { id name }
       requestedBy { id name email }
@@ -70,8 +70,8 @@ const GET_EVENT = gql`
     event(id: $id) {
       id centerId meetingRoomId requestedById title description company
       eventDate startTime endTime durationMinutes attendeesCount
-      type status specialRequests addons cost notes
-      meetingRoom { id name type capacity }
+      eventType status specialRequests addons cost notes
+      meetingRoom { id name roomType capacity }
       requestedBy { id name email }
     }
   }
@@ -88,7 +88,7 @@ const GET_EVENT_STATISTICS = gql`
 const GET_REQUESTS = gql`
   query GetRequests($filters: RequestFiltersInput) {
     requests(filters: $filters) {
-      id centerId requestedById assignedToId type title description
+      id centerId requestedById assignedToId requestType title description
       urgency status dueDate completedDate resolution cost attachedFile
       createdAt updatedAt
       requestedBy { id name }
@@ -100,7 +100,7 @@ const GET_REQUESTS = gql`
 const GET_REQUEST = gql`
   query GetRequest($id: ID!) {
     request(id: $id) {
-      id centerId requestedById assignedToId type title description
+      id centerId requestedById assignedToId requestType title description
       urgency status dueDate completedDate resolution cost attachedFile
       createdAt updatedAt
       requestedBy { id name }
@@ -124,7 +124,7 @@ const GET_REQUEST_STATISTICS = gql`
 const CREATE_MEETING_ROOM = gql`
   mutation CreateMeetingRoom($input: CreateMeetingRoomInput!) {
     createMeetingRoom(input: $input) {
-      id name type capacity status locationName floorId amenities hourlyRate active
+      id name roomType capacity status locationName floorId amenities hourlyRate active
     }
   }
 `;
@@ -132,7 +132,7 @@ const CREATE_MEETING_ROOM = gql`
 const UPDATE_MEETING_ROOM = gql`
   mutation UpdateMeetingRoom($id: ID!, $input: UpdateMeetingRoomInput!) {
     updateMeetingRoom(id: $id, input: $input) {
-      id name type capacity status locationName floorId amenities hourlyRate active
+      id name roomType capacity status locationName floorId amenities hourlyRate active
     }
   }
 `;
@@ -209,7 +209,7 @@ const DELETE_EVENT = gql`
 const CREATE_REQUEST = gql`
   mutation CreateRequest($input: CreateRequestInput!) {
     createRequest(input: $input) {
-      id title type urgency status dueDate cost
+      id title requestType urgency status dueDate cost
     }
   }
 `;
@@ -217,7 +217,7 @@ const CREATE_REQUEST = gql`
 const UPDATE_REQUEST = gql`
   mutation UpdateRequest($id: ID!, $input: UpdateRequestInput!) {
     updateRequest(id: $id, input: $input) {
-      id title type urgency status dueDate resolution cost
+      id title requestType urgency status dueDate resolution cost
     }
   }
 `;
@@ -226,6 +226,14 @@ const ASSIGN_REQUEST = gql`
   mutation AssignRequest($id: ID!, $assignedToId: String!) {
     assignRequest(id: $id, assignedToId: $assignedToId) {
       id title urgency status assignedTo { id name }
+    }
+  }
+`;
+
+const APPROVE_REQUEST = gql`
+  mutation ApproveRequest($id: ID!) {
+    approveRequest(id: $id) {
+      id title status requestType urgency
     }
   }
 `;
@@ -263,10 +271,10 @@ const DELETE_REQUEST = gql`
 // ═══════════════════════════════════════════════════════
 
 export type RoomStatus = 'AVAILABLE' | 'BOOKED' | 'OCCUPIED' | 'MAINTENANCE';
-export type EventStatusType = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
-export type EventTypeOption = 'MEETING_ROOM' | 'CONFERENCE' | 'WORKSHOP' | 'PRIVATE_EVENT';
+export type EventStatusType = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+export type EventTypeOption = 'MEETING' | 'CONFERENCE' | 'WORKSHOP' | 'TRAINING' | 'SOCIAL' | 'OTHER';
 export type RequestStatusType = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
-export type RequestTypeOption = 'MAINTENANCE' | 'INTERNET_SUPPORT' | 'PRINTER_ACCESS' | 'CLEANING' | 'SUPPLIES' | 'SECURITY' | 'FURNITURE_UPGRADE' | 'EVENT_BOOKING' | 'OTHER';
+export type RequestTypeOption = 'PRINTER' | 'UPGRADE' | 'SERVICES' | 'EVENTS' | 'MAINTENANCE' | 'CLEANING' | 'SECURITY' | 'OTHER';
 export type UrgencyType = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export interface RoomFilters {
@@ -465,6 +473,36 @@ export function useDeleteMeetingRoom() {
   }
 
   return { deleteRoom: remove, deleting };
+}
+
+export function useBookRoom() {
+  const client = useApolloClient();
+  const [booking, setBooking] = useState(false);
+
+  const [mutation] = useMutation(BOOK_ROOM, {
+    errorPolicy: 'all',
+  });
+
+  async function book(vars: {
+    roomId: string;
+    centerId: string;
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+    title: string;
+    requestedBy?: string;
+  }) {
+    setBooking(true);
+    try {
+      const result = await mutation({ variables: vars });
+      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetEvents'] });
+      return result.data?.bookRoom ?? null;
+    } finally {
+      setBooking(false);
+    }
+  }
+
+  return { book, booking };
 }
 
 // ═══════════════════════════════════════════════════════
@@ -733,6 +771,28 @@ export function useAssignRequest() {
   }
 
   return { assign, assigning };
+}
+
+export function useApproveRequest() {
+  const client = useApolloClient();
+  const [approving, setApproving] = useState(false);
+
+  const [mutation] = useMutation(APPROVE_REQUEST, {
+    errorPolicy: 'all',
+  });
+
+  async function approve(id: string) {
+    setApproving(true);
+    try {
+      const result = await mutation({ variables: { id } });
+      await client.refetchQueries({ include: ['GetRequests'] });
+      return result.data?.approveRequest ?? null;
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  return { approve, approving };
 }
 
 export function useCompleteRequest() {

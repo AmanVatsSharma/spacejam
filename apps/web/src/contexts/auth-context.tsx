@@ -41,7 +41,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: UserRole;
-  isActive: boolean;
+  active: boolean;
   emailVerified: boolean;
   avatar?: string | null;
   lastLoginAt?: string | null;
@@ -88,12 +88,35 @@ export interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Safe SSR default — returned when <AuthProvider> is not yet mounted
+// (e.g. during server rendering or before client hydration).
+// All consumers already guard on isLoading / user === null for redirects.
+const SSR_AUTH_DEFAULT: AuthContextValue = {
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  hasToken: false,
+  signin: async () => { throw new Error('AuthProvider not mounted'); },
+  signup: async () => { throw new Error('AuthProvider not mounted'); },
+  verifyTwoFactor: async () => { throw new Error('AuthProvider not mounted'); },
+  logout: async () => { throw new Error('AuthProvider not mounted'); },
+  requestPasswordReset: async () => false,
+  resetPassword: async () => false,
+  changePassword: async () => ({ ok: false, message: 'AuthProvider not mounted' }),
+  requestMagicLink: async () => ({ ok: false, message: 'AuthProvider not mounted' }),
+  verifyMagicLink: async () => { throw new Error('AuthProvider not mounted'); },
+  recoveryCodesRemaining: async () => 0,
+  regenerateRecoveryCodes: async () => [],
+  refresh: async () => {},
+  devSignIn: () => {},
+  isDevLoginAvailable: false,
+};
+
 export const useAuth = (): AuthContextValue => {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within an <AuthProvider>');
-  }
-  return ctx;
+  // Return safe SSR default instead of throwing — components already
+  // handle isLoading / user === null for login redirects.
+  return ctx ?? SSR_AUTH_DEFAULT;
 };
 
 interface AuthPayloadShape {
@@ -130,17 +153,17 @@ const applyAuthPayload = (payload: AuthPayloadResult) => {
 const DEV_USERS: Record<UserRole, AuthUser> = {
   ADMIN: {
     id: 'dev-admin', email: 'admin@dev.local', name: 'Dev Admin',
-    role: 'ADMIN', isActive: true, emailVerified: true,
+    role: 'ADMIN', active: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
   CENTER_MANAGER: {
     id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Manager',
-    role: 'CENTER_MANAGER', isActive: true, emailVerified: true,
+    role: 'CENTER_MANAGER', active: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
   MEMBER: {
     id: 'dev-member', email: 'member@dev.local', name: 'Dev Member',
-    role: 'MEMBER', isActive: true, emailVerified: true,
+    role: 'MEMBER', active: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
 };
@@ -193,7 +216,11 @@ function MeQueryClient({ client, hasToken, isDevLoginAvailable }: {
         }
       })
       .catch(() => {
-        // Silent catch - token might be invalid
+        // Token might be invalid. Still signal completion so the loading
+        // state clears instead of hanging forever.
+        if (!cancelled) {
+          window.dispatchEvent(new CustomEvent('me-queried', { detail: { me: null } }));
+        }
       });
 
     return () => { cancelled = true; };
@@ -232,6 +259,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleMeQueried = (e: CustomEvent) => {
       const data = e.detail as { me: AuthUser | null };
       if (data.me) setUser(data.me);
+      // Initial auth check is now complete — clear the loading state.
+      setIsLoading(false);
     };
     window.addEventListener('me-queried', handleMeQueried as EventListener);
     return () => window.removeEventListener('me-queried', handleMeQueried as EventListener);
@@ -251,18 +280,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth-error', handleAuthError as EventListener);
   }, [isDevLoginAvailable]);
 
-  // Fetch me query on mount if token exists
+  // Set initial auth state on mount.
+  // - If there's no token, we're done immediately (not loading).
+  // - If dev-login is available, MeQueryClient intentionally skips the
+  //   ME_QUERY, so clear loading here — dev users are restored via the
+  //   devSignIn flow / persisted dev auth, not the network query.
+  // - Otherwise (real token), stay loading until the ME_QUERY resolves;
+  //   the 'me-queried' event listener above clears it on completion.
+  // The previous implementation flipped isLoading to false after an
+  // arbitrary 100ms timer, racing the query and causing a flash of
+  // unauthenticated state.
   useEffect(() => {
-    setIsLoading(true);
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (typeof window !== 'undefined') {
-      setHasToken(!!getAccessToken());
-      timer = setTimeout(() => setIsLoading(false), 100);
-    } else {
+    if (typeof window === 'undefined') {
+      setIsLoading(false);
+      return;
+    }
+    const hasTokenNow = !!getAccessToken();
+    setHasToken(hasTokenNow);
+    if (!hasTokenNow || isDevLoginAvailable) {
       setIsLoading(false);
     }
-    return () => { if (timer) clearTimeout(timer); };
-  }, []);
+  }, [isDevLoginAvailable]);
 
   // Direct mutations are safe since they're only called by user actions
   const signin = useCallback(async (input: SigninInput) => {
@@ -346,7 +384,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mutation: CHANGE_PASSWORD,
       variables: { input: { currentPassword, newPassword } },
     });
-    return res.data?.changePassword ?? { ok: false, message: 'Unknown error' };
+    const ok = res.data?.changePassword === true;
+    return { ok, message: ok ? 'Password changed' : 'Failed to change password' };
   }, [apolloClient]);
 
   const requestMagicLink = useCallback(async (email: string) => {
@@ -355,7 +394,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mutation: REQUEST_MAGIC_LINK,
       variables: { input: { email } },
     });
-    return res.data?.requestMagicLink ?? { ok: false, message: 'Unknown error' };
+    const ok = res.data?.requestMagicLink === true;
+    return { ok, message: ok ? 'Magic link sent' : 'Failed to send magic link' };
   }, [apolloClient]);
 
   const verifyMagicLink = useCallback(async (token: string) => {
@@ -388,10 +428,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!apolloClient) return;
-    // Re-read token from storage
     setHasToken(!!getAccessToken());
-    // Force refresh me query
-    window.dispatchEvent(new CustomEvent('refresh-user'));
+    // Bypass the MeQueryClient/event-bus pattern and re-fetch the user
+    // directly. (Previously dispatched a 'refresh-user' CustomEvent that
+    // nothing listened to, so refresh was a silent no-op.)
+    try {
+      const res = await apolloClient.query<{ me: AuthUser | null }>({
+        query: ME_QUERY,
+        fetchPolicy: 'network-only',
+      });
+      if (res.data?.me) {
+        setUser(res.data.me);
+      }
+    } catch {
+      // Token might be invalid — leave current user state untouched.
+    }
   }, [apolloClient]);
 
   const devSignIn = useCallback((role: UserRole = 'ADMIN') => {
@@ -403,7 +454,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
-    isAuthenticated: !!user?.isActive,
+    isAuthenticated: !!user?.active,
     isLoading,
     hasToken,
     signin,
