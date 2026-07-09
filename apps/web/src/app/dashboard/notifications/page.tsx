@@ -26,36 +26,6 @@ const Icons = {
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
     </svg>
-  ),
-  trendDown: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-    </svg>
-  ),
-  rupee: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 4h6m-6 4h6M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
-    </svg>
-  ),
-  calendar: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  ),
-  users: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  ),
-  upload: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-    </svg>
-  ),
-  moreVert: (
-    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-    </svg>
   )
 };
 
@@ -135,264 +105,32 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {/* Critical Insight Alert */}
-      <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-[#FFE4D6] p-4 sm:p-5 flex flex-col gap-3 relative">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0">
-              {Icons.trendDown}
-            </div>
-            <span className="text-[12px] sm:text-[13px] font-bold text-[#FF6A2F] tracking-wide uppercase">CRITICAL INSIGHT</span>
+      {/* Live notification summary (derived from bookings + deposits) */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[#FFF2EA] flex items-center justify-center text-[#FF6A2F] shrink-0">
+            {Icons.bell}
           </div>
-          <span className="text-[11px] sm:text-[12px] text-gray-500">Updated 2 min ago</span>
-        </div>
-        <p className="text-[14px] sm:text-[16px] font-semibold text-[#101828]">Occupancy dropped 8% in Ludhiana due to 3 enterprise exits this week.</p>
-        <div>
-          <button className="text-[#FF6A2F] text-[13px] font-medium hover:underline flex items-center gap-1">
-            View Detailed Report
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          <div>
+            <p className="text-[14px] font-semibold text-[#101828]">
+              {notificationCount} active {notificationCount === 1 ? "item" : "items"}
+            </p>
+            <p className="text-[12px] sm:text-[13px] text-[#667085]">
+              Active bookings and pending deposits requiring attention.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 sm:gap-5">
-        <h3 className="text-[12px] font-bold text-gray-500 uppercase tracking-wider pl-1">TODAY</h3>
-
-        {/* Notification 1 */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6A2F]"></div>
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0 mt-0.5 sm:mt-0">
-              {Icons.rupee}
-            </div>
-            <div className="flex flex-col flex-1 gap-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] sm:text-[15px] font-semibold text-[#101828]">Deposit Release Approval</h4>
-                <button className="sm:hidden text-gray-400">{Icons.moreVert}</button>
-              </div>
-              <p className="text-[12px] sm:text-[13px] text-[#667085] leading-snug">
-                Tech Innovators Pvt Ltd • Security deposit release • ₹50,000 • Chandigarh • Requested by Rahul Sharma
-              </p>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-[11px] sm:text-[12px] font-medium text-[#FF6A2F] flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  5 min ago
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#FFF2EA] text-[#FF6A2F] border border-[#FFE4D6] text-[10px] sm:text-[11px] font-semibold">
-                  High
-                </span>
-              </div>
-            </div>
-            <button className="hidden sm:block mt-1">{Icons.moreVert}</button>
-          </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-auto self-start sm:self-end w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap pl-11 sm:pl-0">
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-[#10B981] text-white rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#059669] transition-colors">
-              {Icons.check} Approve
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-white border border-[#FECACA] text-[#EF4444] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#FEF2F2] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg> Reject
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-gray-200 text-[#344054] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 transition-colors">
-              View Details
-            </button>
-          </div>
+      {/* Empty state — no notification feed is backed by the API yet */}
+      <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-10 sm:p-16 flex flex-col items-center justify-center text-center gap-3">
+        <div className="w-14 h-14 rounded-full bg-[#FFF2EA] flex items-center justify-center text-[#FF6A2F]">
+          {Icons.bell}
         </div>
-
-        {/* Notification 2 */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6A2F]"></div>
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0 mt-0.5 sm:mt-0">
-              {Icons.calendar}
-            </div>
-            <div className="flex flex-col flex-1 gap-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] sm:text-[15px] font-semibold text-[#101828]">Invoice Overdue</h4>
-                <button className="sm:hidden text-gray-400">{Icons.moreVert}</button>
-              </div>
-              <p className="text-[12px] sm:text-[13px] text-[#667085] leading-snug">
-                DataStream Solutions • INV-2026-1234 • Payment overdue • ₹50,000 • Jalandhar
-              </p>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-[11px] sm:text-[12px] font-medium text-[#FF6A2F] flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  12 min ago
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#3B82F6] border border-[#DBEAFE] text-[10px] sm:text-[11px] font-semibold">
-                  Medium
-                </span>
-              </div>
-            </div>
-            <button className="hidden sm:block mt-1">{Icons.moreVert}</button>
-          </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-auto self-start sm:self-end w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap pl-11 sm:pl-0">
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#E55A20] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg> Review
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-[#344054] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 transition-colors">
-              {Icons.upload} Send Reminder
-            </button>
-          </div>
-        </div>
-
-        {/* Notification 3 */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent"></div>
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0 mt-0.5 sm:mt-0">
-              {Icons.rupee}
-            </div>
-            <div className="flex flex-col flex-1 gap-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] sm:text-[15px] font-semibold text-[#101828]">Pricing Override Request</h4>
-                <button className="sm:hidden text-gray-400">{Icons.moreVert}</button>
-              </div>
-              <p className="text-[12px] sm:text-[13px] text-[#667085] leading-snug">
-                Special discount requested • CloudScale Technologies • ₹2,40,000 revenue reduction • 12 months • 18 %
-              </p>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-[11px] sm:text-[12px] font-medium text-gray-500 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  28 min ago
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#3B82F6] border border-[#DBEAFE] text-[10px] sm:text-[11px] font-semibold">
-                  Medium
-                </span>
-              </div>
-            </div>
-            <button className="hidden sm:block mt-1">{Icons.moreVert}</button>
-          </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-auto self-start sm:self-end w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap pl-11 sm:pl-0">
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-[#10B981] text-white rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#059669] transition-colors">
-              {Icons.check} Approve
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-white border border-[#FECACA] text-[#EF4444] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#FEF2F2] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg> Reject
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-gray-200 text-[#344054] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 transition-colors">
-              Clarify
-            </button>
-          </div>
-        </div>
-
-        {/* Notification 4 */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent"></div>
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0 mt-0.5 sm:mt-0">
-              {Icons.users}
-            </div>
-            <div className="flex flex-col flex-1 gap-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] sm:text-[15px] font-semibold text-[#101828]">Occupancy Alert</h4>
-                <button className="sm:hidden text-gray-400">{Icons.moreVert}</button>
-              </div>
-              <p className="text-[12px] sm:text-[13px] text-[#667085] leading-snug">
-                Center occupancy dropped below threshold • 76% Occupancy • 120/158 seats
-              </p>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-[11px] sm:text-[12px] font-medium text-gray-500 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  1 hour ago
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#FFF2EA] text-[#FF6A2F] border border-[#FFE4D6] text-[10px] sm:text-[11px] font-semibold">
-                  High
-                </span>
-              </div>
-            </div>
-            <button className="hidden sm:block mt-1">{Icons.moreVert}</button>
-          </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-auto self-start sm:self-end w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap pl-11 sm:pl-0">
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#E55A20] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg> View Occupancy
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-gray-200 text-[#344054] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 transition-colors">
-              Clarify
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <div className="flex flex-col gap-4 sm:gap-5 mt-2">
-        <h3 className="text-[12px] font-bold text-gray-500 uppercase tracking-wider pl-1">YESTERDAY</h3>
-
-        {/* Notification 5 */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 relative overflow-hidden">
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#E5E7EB]"></div>
-          <div className="flex items-start gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FF6A2F] flex items-center justify-center text-white shrink-0 mt-0.5 sm:mt-0">
-              {Icons.users}
-            </div>
-            <div className="flex flex-col flex-1 gap-1 min-w-0">
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] sm:text-[15px] font-semibold text-[#101828]">Company Structure Change</h4>
-                <button className="sm:hidden text-gray-400">{Icons.moreVert}</button>
-              </div>
-              <p className="text-[12px] sm:text-[13px] text-[#667085] leading-snug">
-                Nexus Ventures • Approval of new seats • Effective date - 01 June 2026
-              </p>
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                <span className="text-[11px] sm:text-[12px] font-medium text-gray-500 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Yesterday
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#3B82F6] border border-[#DBEAFE] text-[10px] sm:text-[11px] font-semibold">
-                  Medium
-                </span>
-              </div>
-            </div>
-            <button className="hidden sm:block mt-1">{Icons.moreVert}</button>
-          </div>
-          <div className="flex items-center gap-2 mt-2 sm:mt-auto self-start sm:self-end w-full sm:w-auto justify-end flex-wrap sm:flex-nowrap pl-11 sm:pl-0">
-            <button className="flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-[#E55A20] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg> View Occupancy
-            </button>
-            <button className="flex flex-1 sm:flex-none justify-center px-4 py-2 bg-white border border-gray-200 text-[#344054] rounded-lg text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 transition-colors">
-              View Details
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4 sm:gap-0">
-        <p className="text-[13px] text-gray-500 text-center sm:text-left">
-          Showing <span className="font-semibold text-gray-900">1-7</span> of <span className="font-semibold text-gray-900">247</span> notifications
+        <h3 className="text-[16px] sm:text-[18px] font-semibold text-[#101828]">No notifications</h3>
+        <p className="text-[13px] sm:text-[14px] text-[#667085] max-w-[420px]">
+          There is no notification history to show yet. Once notifications are available from the backend, they will appear here.
         </p>
-        <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto justify-center">
-          <button className="px-3.5 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-50">Previous</button>
-          <button className="w-9 h-9 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shrink-0">1</button>
-          <button className="w-9 h-9 bg-white border border-gray-200 text-gray-600 rounded-lg text-[13px] font-semibold hover:bg-gray-50 shrink-0">2</button>
-          <button className="w-9 h-9 bg-white border border-gray-200 text-gray-600 rounded-lg text-[13px] font-semibold hover:bg-gray-50 shrink-0">3</button>
-          <button className="px-3.5 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-50">Next</button>
-        </div>
       </div>
 
       {/* Send Notification Dialog */}
@@ -493,17 +231,9 @@ function SendNotificationDialog({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </span>
-              {/* Customer Pill */}
-              <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-[12px] sm:text-[13px] font-medium text-gray-900">
-                Tech Innovators Pvt Ltd
-                <button className="text-gray-400 hover:text-gray-600">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
               <input
                 type="text"
+                placeholder="Search and select customers..."
                 className="flex-1 min-w-[50px] bg-transparent outline-none text-[13px] sm:text-[14px]"
               />
             </div>

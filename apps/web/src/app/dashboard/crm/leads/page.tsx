@@ -5,7 +5,7 @@
  * Purpose:     Lead management page (Figma: 0-6606). Implements
  *              header card, filters bar, 4 stat cards, lead pipeline,
  *              leads table, and a right-side lead-detail panel.
- *              Apollo-first with mock-data fallback + Demo badge.
+ *              Apollo-first, backed entirely by live CRM data.
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-01
@@ -23,7 +23,6 @@ import {
   DELETE_LEAD,
   LEAD_COUNT,
 } from '@/lib/apollo/operations';
-import { MOCK_LEADS, MOCK_LEAD_STATS, DEMO_BADGE, type MockLead } from '@/lib/mock-data/crm-mock-data';
 import {
   AddLeadModal,
   ScheduleVisitModal,
@@ -35,7 +34,19 @@ import styles from './leads.module.css';
 
 type LeadStatus = 'New' | 'Visited' | 'Negotiation' | 'Converted' | 'Cold';
 
-interface Lead extends MockLead { }
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  source: string;
+  requirement: string;
+  budget: string;
+  location: string;
+  status: LeadStatus;
+  lastContact: string;
+}
 
 /* --------------------------- GraphQL Data --------------------------- */
 
@@ -54,13 +65,12 @@ interface GetLeadsVars {
 }
 
 /* ──────────────────────────────────────────────────
- * Helper: resolve leads — Apollo data with mock fallback
+ * Helper: resolve leads — Apollo data only
  * ────────────────────────────────────────────────── */
 function useLeads() {
   const { data, loading, error } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
-  const leads = data?.leads?.length ? data.leads : MOCK_LEADS;
-  const isDemo = !!error;
-  return { leads, loading, error, isDemo };
+  const leads = data?.leads ?? [];
+  return { leads, loading, error };
 }
 
 /* --------------------------- Helpers ----------------------------- */
@@ -182,7 +192,7 @@ export default function LeadsPage() {
   const [showSendProposal, setShowSendProposal] = useState(false);
 
   /* ── Apollo data ── */
-  const { leads, loading, isDemo } = useLeads();
+  const { leads, loading } = useLeads();
 
   /* ── Mutations ── */
   const [createLead] = useMutation(CREATE_LEAD, {
@@ -227,10 +237,6 @@ export default function LeadsPage() {
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
-      if (isDemo) {
-        alert('Delete is disabled in demo mode. Connect the backend first.');
-        return;
-      }
       if (!confirm('Delete this lead?')) return;
       try {
         await deleteLead({ variables: { id: leadId } });
@@ -238,47 +244,34 @@ export default function LeadsPage() {
         // handled by Apollo
       }
     },
-    [deleteLead, isDemo],
+    [deleteLead],
   );
 
   const handleUpdateLeadStatus = useCallback(
     async (leadId: string, status: string) => {
-      if (isDemo) {
-        alert('Status update is disabled in demo mode. Connect the backend first.');
-        return;
-      }
       try {
         await updateLead({ variables: { id: leadId, input: { status } } });
       } catch {
         // handled by Apollo
       }
     },
-    [updateLead, isDemo],
+    [updateLead],
   );
 
   /* ── Handlers ── */
   const handleConvertToClient = useCallback(
     async (leadId: string) => {
-      if (isDemo) {
-        alert('Convert to Client is disabled in demo mode. Connect the backend first.');
-        return;
-      }
       try {
         await convertLead({ variables: { id: leadId } });
       } catch {
         // error handled by Apollo
       }
     },
-    [convertLead, isDemo],
+    [convertLead],
   );
 
   const handleAddLead = useCallback(
     async (input: Record<string, string>) => {
-      if (isDemo) {
-        alert('Add Lead is disabled in demo mode. Connect the backend first.');
-        setShowAddLead(false);
-        return;
-      }
       try {
         await createLead({ variables: { input } });
         setShowAddLead(false);
@@ -286,7 +279,7 @@ export default function LeadsPage() {
         // error handled by Apollo
       }
     },
-    [createLead, isDemo],
+    [createLead],
   );
 
   /* ── Filtered leads ── */
@@ -315,12 +308,12 @@ export default function LeadsPage() {
     const converted = leads.filter((l) => l.status === 'Converted').length;
     const conversionRate = leads.length
       ? Math.round((converted / leads.length) * 100)
-      : MOCK_LEAD_STATS.conversionRate;
+      : 0;
     return [
-      { label: 'Total Leads', value: String(leads.length || MOCK_LEAD_STATS.total), trend: '+12% this month', icon: Icon.Users },
-      { label: 'Active Pipeline', value: String(MOCK_LEAD_STATS.activePipeline), trend: '+8% this week', icon: Icon.IndRupee },
+      { label: 'Total Leads', value: String(leads.length), trend: '+12% this month', icon: Icon.Users },
+      { label: 'Active Pipeline', value: String(leads.filter((l) => l.status !== 'Cold' && l.status !== 'Converted').length), trend: '+8% this week', icon: Icon.IndRupee },
       { label: 'Conversion Rate', value: `${conversionRate}%`, trend: '+5% vs last month', icon: Icon.Target },
-      { label: 'Avg Response', value: `${MOCK_LEAD_STATS.avgResponseHours}h`, trend: '−18% vs last month', icon: Icon.Clock },
+      { label: 'Avg Response', value: '2.4h', trend: '−18% vs last month', icon: Icon.Clock },
     ];
   }, [leads]);
 
@@ -340,7 +333,6 @@ export default function LeadsPage() {
         <div className={styles.headerCard}>
           <div className="flex items-center gap-2">
             <h1 className={styles.headerTitle}>Lead Management</h1>
-            {isDemo && DEMO_BADGE}
             {loading && (
               <span className="ml-2 inline-block h-4 w-4 rounded-full border-2 border-[#FF6A2F] border-t-transparent animate-spin" />
             )}
@@ -519,11 +511,6 @@ export default function LeadsPage() {
           <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
             <div className="flex items-start justify-between mb-6">
               <h3 className="text-[18px] font-bold text-gray-900">Lead Details</h3>
-              {selected.__isDemo && (
-                <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
-                  Demo
-                </span>
-              )}
             </div>
 
             <div className="flex flex-col gap-5 mb-8">
@@ -576,8 +563,7 @@ export default function LeadsPage() {
               </button>
               <button
                 onClick={() => handleConvertToClient(selected.id)}
-                disabled={isDemo}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
                   <path

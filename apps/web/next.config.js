@@ -12,7 +12,10 @@ const nextConfig = {
   // @spacejam/ui is file:-linked and ships raw .ts/.tsx source; transpile it
   // through the Next/SWC pipeline so it bundles correctly during build.
   transpilePackages: ['@spacejam/ui'],
-  generateBuildId: () => 'custom-build-id',
+  // Unique build ID per deploy so the browser invalidates its RSC/router
+  // cache. A static build ID causes stale cached routes to persist across
+  // deploys (e.g. a route that previously 307-redirected stays cached).
+  generateBuildId: () => `build-${Date.now()}`,
   skipTrailingSlashRedirect: true,
   reactStrictMode: true,
   typescript: {

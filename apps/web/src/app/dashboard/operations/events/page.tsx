@@ -12,10 +12,64 @@
 
 
 
-import { useMemo, useState, useEffect } from "react";
-import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent } from "@/hooks/use-operations";
-import { DEMO_BADGE, FALLBACK_EVENTS, toEventRow, classifyByDate, type EventRow, type EventStatus } from "@/lib/mock-data/operations-mock-data";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent, type EventStatusType } from "@/hooks/use-operations";
+import { AddEventModal } from "../modals/add-event-modal";
 import styles from "./events.module.css";
+
+/* --------------- Local types & helpers (mirrors backend shapes) --------------- */
+
+type EventStatus = "confirmed" | "pending" | "completed";
+
+interface EventRow {
+  id: string;
+  title: string;
+  company: string;
+  date: string;
+  time: string;
+  duration: string;
+  room: string;
+  seats: number;
+  addons: string[];
+  notes: string;
+  status: EventStatus;
+}
+
+// Convert Apollo event data → UI row format
+const toEventRow = (e: any): EventRow => ({
+  id: e.id,
+  title: e.title,
+  company: e.company ?? (e.requestedBy?.name ?? "Unknown"),
+  date: e.eventDate,
+  time: e.startTime,
+  duration: `${e.durationMinutes} min`,
+  room: e.meetingRoom?.name ?? "—",
+  seats: e.attendeesCount ?? 0,
+  addons: e.addons ?? [],
+  notes: e.notes ?? "",
+  status: e.status?.toLowerCase() as EventStatus,
+});
+
+// Group events by date ranges
+const classifyByDate = (events: EventRow[], date: string) => {
+  const today = new Date(date).setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today).getTime();
+  return {
+    today: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate >= today && evDate < tomorrow;
+    }),
+    upcoming: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate >= tomorrow;
+    }),
+    past: events.filter((ev) => {
+      const evDate = new Date(ev.date).getTime();
+      return evDate < today;
+    }),
+  };
+};
 
 type FilterKey = "all" | "today" | "upcoming" | "past";
 
@@ -92,7 +146,7 @@ function StatusPill({ status }: { status: EventStatus }) {
   return <span className={`${styles.statusPill} ${styles.statusPending}`}>Pending</span>;
 }
 
-function EventRowItem({ event, selected, onSelect }: { event: EventRow; selected: boolean; onSelect: () => void }) {
+function EventRowItem({ event, selected, onSelect, onConfirm }: { event: EventRow; selected: boolean; onSelect: () => void; onConfirm?: (id: string) => void }) {
   return (
     <div className={`${styles.eventRow} ${selected ? styles.eventRowSelected : ""}`} onClick={onSelect} role="button" tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
@@ -113,7 +167,7 @@ function EventRowItem({ event, selected, onSelect }: { event: EventRow; selected
         <StatusPill status={event.status} />
         <div className={styles.eventActions}>
           {event.status === "pending" && (
-            <button type="button" className={styles.btnPrimary} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.btnPrimary} onClick={(e) => { e.stopPropagation(); onConfirm?.(event.id); }}>
               <CheckIcon /> Confirm Booking
             </button>
           )}
@@ -125,7 +179,7 @@ function EventRowItem({ event, selected, onSelect }: { event: EventRow; selected
   );
 }
 
-function SectionCard({ title, count, events, selectedId, onSelect, emptyLabel }: { title: string; count: number; events: EventRow[]; selectedId: string | null; onSelect: (id: string) => void; emptyLabel: string }) {
+function SectionCard({ title, count, events, selectedId, onSelect, onConfirm, emptyLabel }: { title: string; count: number; events: EventRow[]; selectedId: string | null; onSelect: (id: string) => void; onConfirm?: (id: string) => void; emptyLabel: string }) {
   return (
     <section className={styles.sectionCard}>
       <div className={styles.sectionHeader}>
@@ -137,7 +191,7 @@ function SectionCard({ title, count, events, selectedId, onSelect, emptyLabel }:
       ) : (
         <div className={styles.eventList}>
           {events.map((ev) => (
-            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} />
+            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} onConfirm={onConfirm} />
           ))}
         </div>
       )}
@@ -157,7 +211,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
   );
 }
 
-function EventDetailPanel({ event, onUpdateStatus, onCancel }: { event: EventRow; onUpdateStatus?: (id: string, status: string) => void; onCancel?: (id: string) => void }) {
+function EventDetailPanel({ event, onUpdateStatus, onCancel, onComplete }: { event: EventRow; onUpdateStatus?: (id: string, status: string) => void; onCancel?: (id: string) => void; onComplete?: (id: string) => void }) {
   return (
     <aside className={styles.detailPanel} aria-label="Event details panel">
       <div className={styles.detailHead}>
@@ -178,7 +232,7 @@ function EventDetailPanel({ event, onUpdateStatus, onCancel }: { event: EventRow
       <div className={styles.detailActions}>
         <button type="button" className={styles.btnEdit}>Edit Event</button>
         {event.status !== "completed" && (
-          <button type="button" className={styles.btnComplete}>
+          <button type="button" className={styles.btnComplete} onClick={() => onComplete?.(event.id)}>
             <CheckIcon color="#10B981" /> Mark as Completed
           </button>
         )}
@@ -211,39 +265,18 @@ function EmptySidePanel() {
 /* --------------- Page --------------- */
 
 export default function EventsPage() {
-  const [isDemo, setIsDemo] = useState(false);
+  const [showAddEvent, setShowAddEvent] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const { events, loading, error, data } = useEvents();
+  const { events, loading, error } = useEvents();
   const { event: _selectedEventDetail } = useEvent(selectedId ?? "");
   const { updateStatus } = useUpdateEventStatus();
   const { cancel } = useCancelEvent();
 
-  // Detect demo fallback: Apollo returns null/empty (backend unavailable)
-  useEffect(() => {
-    if (!loading && !error && !data?.events?.length && !isDemo) {
-      const timer = setTimeout(() => setIsDemo(true), 2000);
-      return () => clearTimeout(timer);
-    }
-    return;
-  }, [loading, error, data?.events?.length, isDemo]);
-
-  // After 3s of loading, fall back to mock data
-  useEffect(() => {
-    if (loading && !data?.events?.length) {
-      const timer = setTimeout(() => setIsDemo(true), 3000);
-      return () => clearTimeout(timer);
-    }
-    return;
-  }, [loading, data?.events?.length]);
-
-  // Build event list: backend data mapped, or fallback mock
-  const allEvents: EventRow[] = useMemo(() => {
-    if (isDemo) return FALLBACK_EVENTS;
-    return events.map(toEventRow);
-  }, [isDemo, events]);
+  // Build event list from backend data only (no mock fallback).
+  const allEvents: EventRow[] = useMemo(() => events.map(toEventRow), [events]);
 
   const matchesSearch = (ev: EventRow) => {
     if (!search.trim()) return true;
@@ -262,18 +295,49 @@ export default function EventsPage() {
     return null;
   }, [selectedId, allEvents]);
 
+  const handleConfirm = async (id: string) => {
+    try {
+      const result = await updateStatus(id, "CONFIRMED" as EventStatusType);
+      if (result?.success) {
+        toast.success("Event confirmed");
+      } else {
+        toast.error(result?.error ?? "Could not confirm event");
+      }
+    } catch (err) {
+      toast.error(`Failed to confirm: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  };
+
+  const handleComplete = async (id: string) => {
+    try {
+      const result = await updateStatus(id, "COMPLETED" as EventStatusType);
+      if (result?.success) {
+        toast.success("Event marked as completed");
+      } else {
+        toast.error(result?.error ?? "Could not complete event");
+      }
+    } catch (err) {
+      toast.error(`Failed to complete: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    const ok = await cancel(id);
+    if (ok) toast.success("Event cancelled");
+    else toast.error("Could not cancel event");
+  };
+
+  const hasEvents = allEvents.length > 0;
+
   return (
     <div className={styles.page}>
       {/* Hero */}
       <section className={styles.heroCard}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>
-            Events
-            {isDemo && DEMO_BADGE}
-          </h1>
+          <h1 className={styles.heroTitle}>Events</h1>
           <p className={styles.heroSubtitle}>Manage Booking and Workspace events</p>
         </div>
-        <button type="button" className={styles.heroAction}>
+        <button type="button" className={styles.heroAction} onClick={() => setShowAddEvent(true)}>
           <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1 }}>+</span>
           <span>Add Event</span>
         </button>
@@ -300,29 +364,44 @@ export default function EventsPage() {
       {/* Body */}
       <div className={styles.bodyGrid}>
         <div className={styles.eventsColumn}>
-          {showToday && (
-            <SectionCard title="Today's Events" count={todayEvts.length} events={todayEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No events scheduled for today." />
+          {loading && !hasEvents && <div className="text-center py-8 text-[#6A7282]">Loading events...</div>}
+          {error && !hasEvents && <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading events. Check connection.</div>}
+          {!loading && !error && !hasEvents && (
+            <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-200 rounded-2xl text-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                <CalendarIcon />
+              </div>
+              <p className="text-[15px] font-semibold text-gray-700">No events yet</p>
+              <p className="text-[13px] text-gray-500 max-w-[320px]">
+                There are no events scheduled. Click “Add Event” to create your first one.
+              </p>
+            </div>
           )}
-          {showUpcoming && (
-            <SectionCard title="Upcoming Events" count={upcomingEvts.length} events={upcomingEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No upcoming events." />
+          {hasEvents && showToday && (
+            <SectionCard title="Today's Events" count={todayEvts.length} events={todayEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No events scheduled for today." />
           )}
-          {showPast && (
-            <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} emptyLabel="No past events." />
+          {hasEvents && showUpcoming && (
+            <SectionCard title="Upcoming Events" count={upcomingEvts.length} events={upcomingEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No upcoming events." />
           )}
-          {loading && !isDemo && <div className="text-center py-8 text-[#6A7282]">Loading events...</div>}
-          {error && !isDemo && <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading events. Check connection.</div>}
+          {hasEvents && showPast && (
+            <SectionCard title="Past Events" count={pastEvts.length} events={pastEvts} selectedId={selectedId} onSelect={setSelectedId} onConfirm={handleConfirm} emptyLabel="No past events." />
+          )}
         </div>
 
         {selectedEvent ? (
           <EventDetailPanel
             event={selectedEvent}
             onUpdateStatus={(id, status) => updateStatus(id, status as any)}
-            onCancel={(id) => cancel(id)}
+            onCancel={handleCancel}
+            onComplete={handleComplete}
           />
         ) : (
           <EmptySidePanel />
         )}
       </div>
+
+      {/* Add Event Modal */}
+      <AddEventModal open={showAddEvent} onClose={() => setShowAddEvent(false)} />
     </div>
   );
 }

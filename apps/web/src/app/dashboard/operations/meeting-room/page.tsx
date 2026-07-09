@@ -12,6 +12,7 @@
 import { useMeetingRooms } from "@/hooks/use-operations";
 import { useState } from "react";
 import styles from "./meeting-room.module.css";
+import { BookRoomModal } from "../modals/book-room-modal";
 
 type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
 type BookingInfo = { label: string; title: string; time: string };
@@ -81,6 +82,8 @@ function RoomCard({ room, onBook, onExtend }: { room: RoomCard; onBook?: (room: 
 
 export default function MeetingRoomsPage() {
   const [view, setView] = useState<"layout" | "table">("layout");
+  const [showBookRoom, setShowBookRoom] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
   const { rooms, loading, error } = useMeetingRooms();
 
   const displayRooms: RoomCard[] = rooms.map((r: any) => ({
@@ -101,7 +104,7 @@ export default function MeetingRoomsPage() {
           <h1 className={styles.heroTitle}>Meeting Room status</h1>
           <p className={styles.heroSubtitle}>Monitor meeting room usage, availability and booking status</p>
         </div>
-        <button type="button" className={styles.heroAction}>
+        <button type="button" className={styles.heroAction} onClick={() => { setSelectedRoomId(undefined); setShowBookRoom(true); }}>
           <span className={styles.plusIcon}>+</span>
           <span>Book Room</span>
         </button>
@@ -119,7 +122,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>No. of Bookings</span>
           </div>
-          <div className={styles.statValue}>{displayRooms.length * 16}</div>
+          <div className={styles.statValue}>{displayRooms.length}</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -131,7 +134,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>Total Hours used</span>
           </div>
-          <div className={styles.statValue}>{displayRooms.length * 22} <span className={styles.statUnit}>hrs</span></div>
+          <div className={styles.statValue}>0 <span className={styles.statUnit}>hrs</span></div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -176,16 +179,32 @@ export default function MeetingRoomsPage() {
 
       {/* Rooms */}
       {view === "layout" ? (
-        <section className={styles.roomsGrid}>
-          {displayRooms.map((room) => (
-            <RoomCard
-              key={room.id}
-              room={room}
-              onBook={(r) => console.log("Book:", r.name)}
-              onExtend={(r) => console.log("Extend:", r.name)}
-            />
-          ))}
-        </section>
+        displayRooms.length === 0 ? (
+          <section className={styles.roomsGrid}>
+            <div className="col-span-full flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-200 rounded-2xl text-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-16 0H3" />
+                </svg>
+              </div>
+              <p className="text-[15px] font-semibold text-gray-700">No meeting rooms available</p>
+              <p className="text-[13px] text-gray-500 max-w-[320px]">
+                There are no meeting rooms configured yet. Add rooms from center setup to start booking.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <section className={styles.roomsGrid}>
+            {displayRooms.map((room) => (
+              <RoomCard
+                key={room.id}
+                room={room}
+                onBook={(r) => { setSelectedRoomId(r.id); setShowBookRoom(true); }}
+                onExtend={(r) => { setSelectedRoomId(r.id); setShowBookRoom(true); }}
+              />
+            ))}
+          </section>
+        )
       ) : (
         <section className={styles.tableCard}>
           <div className={styles.tableScroll}>
@@ -223,6 +242,13 @@ export default function MeetingRoomsPage() {
       {error && (
         <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading rooms. Check connection.</div>
       )}
+
+      {/* Book Room Modal */}
+      <BookRoomModal
+        open={showBookRoom}
+        onClose={() => setShowBookRoom(false)}
+        roomId={selectedRoomId}
+      />
     </div>
   );
 }
