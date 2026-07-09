@@ -4,16 +4,19 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_DEPOSITS,
   DELETE_DEPOSIT,
   RELEASE_DEPOSIT,
+  FREEZE_DEPOSIT,
 } from "@/lib/apollo/operations";
 import { ApproveReleaseModal } from "@/components/ui/dashboard/approve-release-modal";
 import { AddDepositModal } from "@/components/ui/dashboard/add-deposit-modal";
 import { SendReminderModal } from "@/components/ui/dashboard/send-reminder-modal";
 import { FreezeAccountModal } from "@/components/ui/dashboard/freeze-account-modal";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
+import { normalizeStatus, depositStatusLabel } from "@/lib/revenue-status";
 
 interface Deposit {
   id: string;
@@ -21,7 +24,7 @@ interface Deposit {
   customerName: string;
   centerId?: string;
   amount: number;
-  type?: string;
+  depositType?: string;
   status: string;
   referenceNumber?: string;
   receivedDate?: string;
@@ -52,12 +55,11 @@ function formatDate(dateStr?: string | null): string {
 }
 
 const statusStyles: Record<string, string> = {
-  Held: "bg-green-100 text-green-700",
-  Released: "bg-green-100 text-green-700",
-  Refunded: "bg-cyan-100 text-cyan-700",
-  Frozen: "bg-cyan-100 text-cyan-700",
-  Pending: "bg-orange-100 text-orange-700",
-  Active: "bg-green-100 text-green-700",
+  HELD: "bg-orange-100 text-orange-700",
+  RELEASED: "bg-green-100 text-green-700",
+  REFUNDED: "bg-cyan-100 text-cyan-700",
+  FROZEN: "bg-cyan-100 text-cyan-700",
+  RELEASE_REQUESTED: "bg-purple-100 text-purple-700",
 };
 
 export default function RevenueDepositsPage() {
@@ -84,6 +86,10 @@ export default function RevenueDepositsPage() {
     refetchQueries: [{ query: GET_DEPOSITS }],
   });
 
+  const [freezeDeposit] = useMutation(FREEZE_DEPOSIT, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+
   const deposits = data?.deposits ?? [];
 
   const filtered = useMemo(() => {
@@ -93,7 +99,7 @@ export default function RevenueDepositsPage() {
         q.length === 0 ||
         d.customerName?.toLowerCase().includes(q) ||
         d.referenceNumber?.toLowerCase().includes(q);
-      const matchesStatus = !statusFilter || d.status === statusFilter;
+      const matchesStatus = !statusFilter || normalizeStatus(d.status) === statusFilter;
       return matchesQuery && matchesStatus;
     });
   }, [deposits, search, statusFilter]);
@@ -101,21 +107,32 @@ export default function RevenueDepositsPage() {
   // Compute stats from live data
   const stats = useMemo(() => {
     const totalHeld = deposits
-      .filter((d) => d.status === "Held" || d.status === "Active")
+      .filter((d) => normalizeStatus(d.status) === "HELD")
       .reduce((sum, d) => sum + Number(d.amount), 0);
-    const pendingRelease = deposits.filter((d) => d.status === "Pending" || d.status === "Released");
+    const pendingRelease = deposits.filter((d) => normalizeStatus(d.status) === "RELEASED");
     const pendingAmount = pendingRelease.reduce((sum, d) => sum + Number(d.amount), 0);
-    const frozen = deposits.filter((d) => d.status === "Frozen");
-    const frozenAmount = frozen.reduce((sum, d) => sum + Number(d.amount), 0);
-    return { totalHeld, pendingCount: pendingRelease.length, pendingAmount, frozenAmount };
+    const refunded = deposits.filter((d) => normalizeStatus(d.status) === "REFUNDED");
+    const refundedAmount = refunded.reduce((sum, d) => sum + Number(d.amount), 0);
+    return { totalHeld, pendingCount: pendingRelease.length, pendingAmount, refundedAmount };
   }, [deposits]);
 
   const handleRelease = async (id: string) => {
     try {
       await releaseDeposit({ variables: { id } });
+      toast.success("Deposit released");
       setOpenActionMenu(null);
-    } catch {
-      // handled by Apollo
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to release deposit");
+    }
+  };
+
+  const handleFreeze = async (id: string) => {
+    try {
+      await freezeDeposit({ variables: { id } });
+      toast.success("Deposit frozen");
+      setOpenActionMenu(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to freeze deposit");
     }
   };
 
@@ -123,9 +140,10 @@ export default function RevenueDepositsPage() {
     if (!confirm('Delete this deposit?')) return;
     try {
       await deleteDeposit({ variables: { id } });
+      toast.success("Deposit deleted");
       setOpenActionMenu(null);
-    } catch {
-      // handled by Apollo
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete deposit");
     }
   };
 
@@ -172,11 +190,11 @@ export default function RevenueDepositsPage() {
               className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]"
             >
               <option value="">All Status</option>
-              <option value="Held">Held</option>
-              <option value="Released">Released</option>
-              <option value="Refunded">Refunded</option>
-              <option value="Frozen">Frozen</option>
-              <option value="Pending">Pending</option>
+              <option value="HELD">Held</option>
+              <option value="RELEASED">Released</option>
+              <option value="REFUNDED">Refunded</option>
+              <option value="FROZEN">Frozen</option>
+              <option value="RELEASE_REQUESTED">Release Requested</option>
             </select>
             <button
               className="px-4 py-2 bg-orange-50 text-[#FF6A2F] rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors"
@@ -215,8 +233,8 @@ export default function RevenueDepositsPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#101828]">{formatCurrency(stats.frozenAmount)}</h3>
-                <p className="text-sm text-gray-500 mt-1">Frozen Deposits</p>
+                <h3 className="text-2xl font-bold text-[#101828]">{formatCurrency(stats.refundedAmount)}</h3>
+                <p className="text-sm text-gray-500 mt-1">Refunded Deposits</p>
               </div>
             </div>
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
@@ -276,11 +294,11 @@ export default function RevenueDepositsPage() {
                         {deposit.customerName}
                       </td>
                       <td className="px-6 py-5 text-[#FF6A2F] font-semibold">{formatCurrency(Number(deposit.amount))}</td>
-                      <td className="px-6 py-5 text-gray-500">{deposit.type ?? "—"}</td>
+                      <td className="px-6 py-5 text-gray-500">{deposit.depositType ?? "—"}</td>
                       <td className="px-6 py-5 text-gray-500">{deposit.referenceNumber ?? "—"}</td>
                       <td className="px-6 py-5">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize flex items-center gap-1.5 w-fit ${statusStyles[deposit.status] ?? "bg-gray-100 text-gray-700"}`}>
-                          {deposit.status}
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize flex items-center gap-1.5 w-fit ${statusStyles[normalizeStatus(deposit.status)] ?? "bg-gray-100 text-gray-700"}`}>
+                          {depositStatusLabel[normalizeStatus(deposit.status)] ?? deposit.status}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-gray-500">{formatDate(deposit.receivedDate)}</td>
@@ -297,8 +315,17 @@ export default function RevenueDepositsPage() {
                         </button>
                         {openActionMenu === deposit.id && (
                           <div className="absolute right-10 top-10 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-10 py-2 text-left animate-in fade-in zoom-in duration-150">
-                            <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium">View Details</button>
-                            {deposit.status !== "Released" && (
+                            <button
+                              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                              onClick={() =>
+                                toast.info(
+                                  `${deposit.customerName} • ${formatCurrency(Number(deposit.amount))}\n${depositStatusLabel[normalizeStatus(deposit.status)] ?? deposit.status}\nRef: ${deposit.referenceNumber ?? "—"}\nReceived: ${formatDate(deposit.receivedDate)}`,
+                                )
+                              }
+                            >
+                              View Details
+                            </button>
+                            {normalizeStatus(deposit.status) !== "RELEASED" && (
                               <button
                                 onClick={() => handleRelease(deposit.id)}
                                 className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
@@ -306,7 +333,14 @@ export default function RevenueDepositsPage() {
                                 Release
                               </button>
                             )}
-                            <button className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium">Freeze</button>
+                            {normalizeStatus(deposit.status) !== "FROZEN" && (
+                              <button
+                                onClick={() => handleFreeze(deposit.id)}
+                                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                              >
+                                Freeze
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDelete(deposit.id)}
                               className="w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50 text-left font-medium"
