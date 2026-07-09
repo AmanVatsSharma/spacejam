@@ -87,32 +87,39 @@ export function MeetingRoomBookingGrid({
       </div>
 
       {/* Room grid 2x3 */}
-      <div className={styles.grid}>
-        {rooms.map((room) => {
-          const colors = statusColors[room.status];
-          return (
-            <div key={room.id} className={styles.roomCard}>
-              {/* Room name */}
-              <h4 className={styles.roomName}>{room.name}</h4>
-
-              {/* Status pill */}
-              <button className={styles.statusPill} style={{ background: colors.bg }}>
-                <StatusDot color={colors.dot} />
-                <span className={styles.statusLabel} style={{ color: colors.text }}>
-                  {room.status}
-                </span>
-                <ChevronDown color={colors.text} />
-              </button>
-
-              {/* Capacity */}
-              <div className={styles.capacity}>
-                <UserIcon color="#9CA3AF" />
-                <span className={styles.capacityText}>{room.capacity} people</span>
+      {rooms.length === 0 ? (
+        <div className="flex flex-col items-center justify-center p-6 mt-4 text-center bg-[#F9FAFB] rounded-[10px] border border-dashed border-[#E5E7EB] min-h-[160px]">
+          <span className="text-[14px] font-medium text-[#6B7280]">No meeting rooms available</span>
+          <span className="text-[12px] text-[#9CA3AF] mt-1">There are currently no meeting rooms to display.</span>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {rooms.map((room) => {
+            const colors = statusColors[room.status];
+            return (
+              <div key={room.id} className={styles.roomCard}>
+                {/* Room name */}
+                <h4 className={styles.roomName}>{room.name}</h4>
+  
+                {/* Status pill */}
+                <button className={styles.statusPill} style={{ background: colors.bg }}>
+                  <StatusDot color={colors.dot} />
+                  <span className={styles.statusLabel} style={{ color: colors.text }}>
+                    {room.status}
+                  </span>
+                  <ChevronDown color={colors.text} />
+                </button>
+  
+                {/* Capacity */}
+                <div className={styles.capacity}>
+                  <UserIcon color="#9CA3AF" />
+                  <span className={styles.capacityText}>{room.capacity} people</span>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
