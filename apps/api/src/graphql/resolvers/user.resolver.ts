@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-04
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Args, Context, ID, Int, Mutation, Query, Resolver, Boolean } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';

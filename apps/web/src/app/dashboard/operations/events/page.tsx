@@ -14,7 +14,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent, type EventStatusType } from "@/hooks/use-operations";
+import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent, type EventStatusType, type EventTypeOption } from "@/hooks/use-operations";
 import { AddEventModal } from "../modals/add-event-modal";
 import styles from "./events.module.css";
 
@@ -34,6 +34,15 @@ interface EventRow {
   addons: string[];
   notes: string;
   status: EventStatus;
+  // Raw backend enum values for filtering / editing.
+  rawStatus: string;
+  eventType?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  meetingRoomId?: string;
+  specialRequests?: string;
+  attendeesCount?: number;
 }
 
 // Convert Apollo event data → UI row format
@@ -49,6 +58,14 @@ const toEventRow = (e: any): EventRow => ({
   addons: e.addons ?? [],
   notes: e.notes ?? "",
   status: e.status?.toLowerCase() as EventStatus,
+  rawStatus: e.status ?? "",
+  eventType: e.eventType ?? undefined,
+  description: e.description ?? undefined,
+  startTime: e.startTime ?? undefined,
+  endTime: e.endTime ?? undefined,
+  meetingRoomId: e.meetingRoomId ?? undefined,
+  specialRequests: e.specialRequests ?? undefined,
+  attendeesCount: e.attendeesCount ?? undefined,
 });
 
 // Group events by date ranges
@@ -72,6 +89,24 @@ const classifyByDate = (events: EventRow[], date: string) => {
 };
 
 type FilterKey = "all" | "today" | "upcoming" | "past";
+
+// Type/Status filter options (values match the backend enums).
+const TYPE_OPTIONS: { value: EventTypeOption; label: string }[] = [
+  { value: "MEETING", label: "Meeting" },
+  { value: "CONFERENCE", label: "Conference" },
+  { value: "WORKSHOP", label: "Workshop" },
+  { value: "TRAINING", label: "Training" },
+  { value: "SOCIAL", label: "Social" },
+  { value: "OTHER", label: "Other" },
+];
+
+const STATUS_OPTIONS: { value: EventStatusType; label: string }[] = [
+  { value: "PENDING", label: "Pending" },
+  { value: "CONFIRMED", label: "Confirmed" },
+  { value: "COMPLETED", label: "Completed" },
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "REJECTED", label: "Rejected" },
+];
 
 const todayStr = new Date().toISOString().split('T')[0];
 
@@ -266,9 +301,12 @@ function EmptySidePanel() {
 
 export default function EventsPage() {
   const [showAddEvent, setShowAddEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<EventTypeOption | "">("");
+  const [statusFilter, setStatusFilter] = useState<EventStatusType | "">("");
 
   const { events, loading, error } = useEvents();
   const { event: _selectedEventDetail } = useEvent(selectedId ?? "");
@@ -284,7 +322,15 @@ export default function EventsPage() {
     return ev.title.toLowerCase().includes(q) || ev.company.toLowerCase().includes(q) || ev.room.toLowerCase().includes(q);
   };
 
-  const filtered = allEvents.filter(matchesSearch);
+  const matchesType = (ev: EventRow) =>
+    !typeFilter || (ev.eventType ?? "").toUpperCase() === typeFilter;
+
+  const matchesStatus = (ev: EventRow) =>
+    !statusFilter || (ev.rawStatus ?? "").toUpperCase() === statusFilter;
+
+  const filtered = allEvents.filter(
+    (ev) => matchesSearch(ev) && matchesType(ev) && matchesStatus(ev),
+  );
   const { today: todayEvts, upcoming: upcomingEvts, past: pastEvts } = classifyByDate(filtered, todayStr);
   const showToday = filter === "all" || filter === "today";
   const showUpcoming = filter === "all" || filter === "upcoming";
@@ -327,8 +373,24 @@ export default function EventsPage() {
     else toast.error("Could not cancel event");
   };
 
-  const handleEditEvent = (_id: string) => {
-    toast.info("Edit event coming soon");
+  const handleEditEvent = (id: string) => {
+    const raw = events.find((e: any) => e.id === id) ?? null;
+    if (!raw) {
+      toast.error("Could not load event for editing");
+      return;
+    }
+    setEditingEvent(raw);
+    setShowAddEvent(true);
+  };
+
+  const handleOpenAdd = () => {
+    setEditingEvent(null);
+    setShowAddEvent(true);
+  };
+
+  const handleCloseAddEvent = () => {
+    setShowAddEvent(false);
+    setEditingEvent(null);
   };
 
   const hasEvents = allEvents.length > 0;
@@ -341,7 +403,7 @@ export default function EventsPage() {
           <h1 className={styles.heroTitle}>Events</h1>
           <p className={styles.heroSubtitle}>Manage Booking and Workspace events</p>
         </div>
-        <button type="button" className={styles.heroAction} onClick={() => setShowAddEvent(true)}>
+        <button type="button" className={styles.heroAction} onClick={handleOpenAdd}>
           <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1 }}>+</span>
           <span>Add Event</span>
         </button>
@@ -360,9 +422,29 @@ export default function EventsPage() {
               onClick={() => setFilter(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
           ))}
         </div>
-        <button type="button" className={styles.dropdown} onClick={() => toast.info("Type filter coming soon")}><span>All types</span><span className={styles.dropdownCaret} /></button>
-        <button type="button" className={styles.dropdown} onClick={() => toast.info("Status filter coming soon")}><span>All Status</span><span className={styles.dropdownCaret} /></button>
-        <button type="button" className={styles.clearAll} onClick={() => { setSearch(""); setFilter("all"); }}>Clear All</button>
+        <select
+          className={styles.dropdown}
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as EventTypeOption | "")}
+          aria-label="Filter by event type"
+        >
+          <option value="">All types</option>
+          {TYPE_OPTIONS.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+        <select
+          className={styles.dropdown}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as EventStatusType | "")}
+          aria-label="Filter by event status"
+        >
+          <option value="">All Status</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+        <button type="button" className={styles.clearAll} onClick={() => { setSearch(""); setFilter("all"); setTypeFilter(""); setStatusFilter(""); }}>Clear All</button>
       </section>
 
       {/* Body */}
@@ -405,8 +487,8 @@ export default function EventsPage() {
         )}
       </div>
 
-      {/* Add Event Modal */}
-      <AddEventModal open={showAddEvent} onClose={() => setShowAddEvent(false)} />
+      {/* Add Event Modal (also used in EDIT mode) */}
+      <AddEventModal open={showAddEvent} onClose={handleCloseAddEvent} event={editingEvent ?? undefined} />
     </div>
   );
 }

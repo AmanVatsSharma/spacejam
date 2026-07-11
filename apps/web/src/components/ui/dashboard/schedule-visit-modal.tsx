@@ -1,14 +1,52 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { UPDATE_LEAD } from "@/lib/apollo/operations";
 
 interface ScheduleVisitModalProps {
   open: boolean;
   onClose: () => void;
+  /** Lead to schedule the visit against. If absent, submit is rejected with a toast. */
+  leadId?: string;
 }
 
-export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
+export function ScheduleVisitModal({ open, onClose, leadId }: ScheduleVisitModalProps) {
+  const [date, setDate] = useState("");
+  const [timeSlot, setTimeSlot] = useState("11:00 AM-12:00 PM");
+  const [saving, setSaving] = useState(false);
+
+  const [updateLead] = useMutation(UPDATE_LEAD);
+
   if (!open) return null;
+
+  const handleConfirm = async () => {
+    if (!leadId) {
+      toast.error("No lead selected");
+      return;
+    }
+    // Use the selected date (or now) as the lastContact timestamp.
+    const visitDate = date ? new Date(date) : new Date();
+    const isoDate = visitDate.toISOString();
+    const notes = `Visit scheduled: ${date || "today"} ${timeSlot}`.trim();
+    setSaving(true);
+    try {
+      const { errors } = await updateLead({
+        variables: { id: leadId, input: { lastContact: isoDate, notes } },
+      });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success("Visit scheduled");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule visit");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
@@ -28,12 +66,12 @@ export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Date</label>
-            <input type="text" placeholder="dd/mm/yyyy" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
+            <input type="date" placeholder="dd/mm/yyyy" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Time Slot</label>
-            <input type="text" defaultValue="11:00 AM-12:00 PM" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
+            <input type="text" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -64,14 +102,19 @@ export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
         </div>
 
         <div className="p-6 border-t border-gray-100 flex gap-4">
-          <button 
+          <button
             onClick={onClose}
-            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
+            disabled={saving}
+            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
-          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]">
-            Confirm Visit
+          <button
+            onClick={handleConfirm}
+            disabled={saving}
+            className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {saving ? "Scheduling..." : "Confirm Visit"}
           </button>
         </div>
       </div>

@@ -1,33 +1,66 @@
 "use client";
 
 import React, { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import styles from "./renew-membership-modal.module.css";
+import { RENEW_CONTRACT } from "@/lib/apollo/operations";
 
 interface RenewMembershipModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientName?: string;
   currentPlan?: string;
+  /** Contract to renew. If absent, submit is rejected with a toast. */
+  contractId?: string;
 }
 
-export function RenewMembershipModal({ 
-  isOpen, 
-  onClose, 
-  clientName = "Tech Innovations Ltd", 
-  currentPlan = "Dedicated Desk" 
+export function RenewMembershipModal({
+  isOpen,
+  onClose,
+  clientName,
+  currentPlan,
+  contractId,
 }: RenewMembershipModalProps) {
   const [duration, setDuration] = useState<number>(6);
-  
+  const [saving, setSaving] = useState(false);
+
+  const [renewContract] = useMutation(RENEW_CONTRACT);
+
   if (!isOpen) return null;
 
   const getAmount = (months: number) => {
-    // Mock logic for amount
-    const monthlyRate = 20000;
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
-    }).format(monthlyRate * months);
+    }).format(20000 * months);
+  };
+
+  const handleRenew = async () => {
+    if (!contractId) {
+      toast.error("No contract selected");
+      return;
+    }
+    // Compute the new end date: one year from today (ISO string).
+    const newEndDate = new Date();
+    newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+    setSaving(true);
+    try {
+      const { errors } = await renewContract({
+        variables: { id: contractId, newEndDate: newEndDate.toISOString() },
+      });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success("Membership renewed");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to renew membership");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -92,7 +125,13 @@ export function RenewMembershipModal({
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.generateBtn}>Generate Renewal Invoice</button>
+          <button
+            className={styles.generateBtn}
+            onClick={handleRenew}
+            disabled={saving}
+          >
+            {saving ? "Renewing..." : "Generate Renewal Invoice"}
+          </button>
         </div>
       </div>
     </div>

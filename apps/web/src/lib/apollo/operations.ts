@@ -982,6 +982,18 @@ export const CREATE_SEAT = gql`
   }
 `;
 
+export const CREATE_FLOOR = gql`
+  mutation CreateFloor($input: CreateFloorInput!) {
+    createFloor(input: $input) {
+      id
+      name
+      layout
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const UPDATE_SEAT = gql`
   mutation UpdateSeat($id: ID!, $input: UpdateSeatInput!) {
     updateSeat(id: $id, input: $input) {

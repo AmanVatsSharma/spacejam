@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation } from "@apollo/client";
 import { CHANGE_PASSWORD } from "@/lib/apollo/operations";
-import { useAuth } from "@/contexts/auth-context";
+import { useSettingsGroup } from "@/hooks/use-settings";
 import styles from "./security.module.css";
 
 const Icons = {
@@ -104,28 +104,26 @@ const Icons = {
 export default function SecuritySettingsPage() {
   const [activeTab, setActiveTab] = useState("Authentication");
 
-  // Authentication State
-  const [emailLogin, setEmailLogin] = useState(true);
-  const [otpLogin, setOtpLogin] = useState(true);
-  const [biometricLogin, setBiometricLogin] = useState(true);
-  const [autoLogout, setAutoLogout] = useState(true);
-  const [concurrentSessions, setConcurrentSessions] = useState(false);
-  const [requireOtpLogin, setRequireOtpLogin] = useState(true);
-  const [requireDeviceVerification, setRequireDeviceVerification] = useState(false);
-  const [ipRestriction, setIpRestriction] = useState(false);
-
-  // Verification Rules State
-  const [refundOtp, setRefundOtp] = useState(true);
-  const [depositOtp, setDepositOtp] = useState(true);
-  const [accountFreeze, setAccountFreeze] = useState(true);
-  const [adminRefunds, setAdminRefunds] = useState(true);
-  const [adminDeposits, setAdminDeposits] = useState(false);
-  const [multiStep, setMultiStep] = useState(true);
-  const [extraVerification, setExtraVerification] = useState(true);
-
-  // Device Management State
-  const [allowMultipleDevices, setAllowMultipleDevices] = useState(true);
-  const [requireVerificationNewDevices, setRequireVerificationNewDevices] = useState(true);
+  // Persisted via Center.settings.security (deep-merged on save).
+  const { draft, set, save, reset, saving } = useSettingsGroup("security", {
+    emailLogin: true,
+    otpLogin: true,
+    biometricLogin: true,
+    autoLogout: true,
+    concurrentSessions: false,
+    requireOtpLogin: true,
+    requireDeviceVerification: false,
+    ipRestriction: false,
+    refundOtp: true,
+    depositOtp: true,
+    accountFreeze: true,
+    adminRefunds: true,
+    adminDeposits: false,
+    multiStep: true,
+    extraVerification: true,
+    allowMultipleDevices: true,
+    requireVerificationNewDevices: true,
+  });
 
   return (
     <div className={styles.page}>
@@ -137,11 +135,11 @@ export default function SecuritySettingsPage() {
           <p className={styles.headerSubtitle}>Manage authentication, access control, and verification rules</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.resetBtn}>
+          <button className={styles.resetBtn} onClick={reset} disabled={saving}>
             {Icons.reset} Reset Default
           </button>
-          <button className={styles.saveBtn}>
-            {Icons.save} Save Rules
+          <button className={styles.saveBtn} onClick={save} disabled={saving}>
+            {Icons.save} {saving ? "Saving…" : "Save Rules"}
           </button>
         </div>
       </div>
@@ -185,8 +183,8 @@ export default function SecuritySettingsPage() {
                         <span className={styles.toggleSub}>Allow users to login with email and password</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!emailLogin ? styles.toggleSwitchOff : ''}`} onClick={() => setEmailLogin(!emailLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: emailLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.emailLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('emailLogin', !draft.emailLogin)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.emailLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -198,8 +196,8 @@ export default function SecuritySettingsPage() {
                         <span className={styles.toggleSub}>One-time password sent via SMS or email</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!otpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => setOtpLogin(!otpLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: otpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.otpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('otpLogin', !draft.otpLogin)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.otpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -211,8 +209,8 @@ export default function SecuritySettingsPage() {
                         <span className={styles.toggleSub}>Fingerprint or facial recognition on mobile devices</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!biometricLogin ? styles.toggleSwitchOff : ''}`} onClick={() => setBiometricLogin(!biometricLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: biometricLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.biometricLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('biometricLogin', !draft.biometricLogin)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.biometricLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -240,8 +238,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Auto Logout on Inactivity</span>
                       <span className={styles.toggleSub}>Automatically log out users after the timeout period</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!autoLogout ? styles.toggleSwitchOff : ''}`} onClick={() => setAutoLogout(!autoLogout)}>
-                      <div className={styles.toggleKnob} style={{ transform: autoLogout ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.autoLogout ? styles.toggleSwitchOff : ''}`} onClick={() => set('autoLogout', !draft.autoLogout)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.autoLogout ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -250,8 +248,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Allow Concurrent Sessions</span>
                       <span className={styles.toggleSub}>Users can be logged in on multiple devices simultaneously</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!concurrentSessions ? styles.toggleSwitchOff : ''}`} onClick={() => setConcurrentSessions(!concurrentSessions)}>
-                      <div className={styles.toggleKnob} style={{ transform: concurrentSessions ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.concurrentSessions ? styles.toggleSwitchOff : ''}`} onClick={() => set('concurrentSessions', !draft.concurrentSessions)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.concurrentSessions ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -274,8 +272,8 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Add an additional OTP verification step during login</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!requireOtpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => setRequireOtpLogin(!requireOtpLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: requireOtpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.requireOtpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireOtpLogin', !draft.requireOtpLogin)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.requireOtpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -284,8 +282,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Require Device Verification</span>
                       <span className={styles.toggleSub}>Verify new devices before allowing login</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!requireDeviceVerification ? styles.toggleSwitchOff : ''}`} onClick={() => setRequireDeviceVerification(!requireDeviceVerification)}>
-                      <div className={styles.toggleKnob} style={{ transform: requireDeviceVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.requireDeviceVerification ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireDeviceVerification', !draft.requireDeviceVerification)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.requireDeviceVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -294,8 +292,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>IP Restriction</span>
                       <span className={styles.toggleSub}>Restrict access to specific IP addresses or ranges</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!ipRestriction ? styles.toggleSwitchOff : ''}`} onClick={() => setIpRestriction(!ipRestriction)}>
-                      <div className={styles.toggleKnob} style={{ transform: ipRestriction ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.ipRestriction ? styles.toggleSwitchOff : ''}`} onClick={() => set('ipRestriction', !draft.ipRestriction)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.ipRestriction ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -322,8 +320,8 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require OTP verification for all refund transactions</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!refundOtp ? styles.toggleSwitchOff : ''}`} onClick={() => setRefundOtp(!refundOtp)}>
-                      <div className={styles.toggleKnob} style={{ transform: refundOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.refundOtp ? styles.toggleSwitchOff : ''}`} onClick={() => set('refundOtp', !draft.refundOtp)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.refundOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                   <div style={{ height: '1px', background: '#F3F4F6' }}></div>
@@ -333,8 +331,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Deposit Release OTP</span>
                       <span className={styles.toggleSub}>OTP verification required when releasing security deposits</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!depositOtp ? styles.toggleSwitchOff : ''}`} onClick={() => setDepositOtp(!depositOtp)}>
-                      <div className={styles.toggleKnob} style={{ transform: depositOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.depositOtp ? styles.toggleSwitchOff : ''}`} onClick={() => set('depositOtp', !draft.depositOtp)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.depositOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                   <div style={{ height: '1px', background: '#F3F4F6' }}></div>
@@ -344,8 +342,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Account Freeze Confirmation</span>
                       <span className={styles.toggleSub}>Require confirmation before freezing user accounts</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!accountFreeze ? styles.toggleSwitchOff : ''}`} onClick={() => setAccountFreeze(!accountFreeze)}>
-                      <div className={styles.toggleKnob} style={{ transform: accountFreeze ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.accountFreeze ? styles.toggleSwitchOff : ''}`} onClick={() => set('accountFreeze', !draft.accountFreeze)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.accountFreeze ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -365,8 +363,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Require Admin Approval for Refunds</span>
                       <span className={styles.toggleSub}>All refund requests must be approved by an admin</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!adminRefunds ? styles.toggleSwitchOff : ''}`} onClick={() => setAdminRefunds(!adminRefunds)}>
-                      <div className={styles.toggleKnob} style={{ transform: adminRefunds ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.adminRefunds ? styles.toggleSwitchOff : ''}`} onClick={() => set('adminRefunds', !draft.adminRefunds)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.adminRefunds ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                   <div style={{ height: '1px', background: '#F3F4F6' }}></div>
@@ -376,8 +374,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Require Admin Approval for Deposits</span>
                       <span className={styles.toggleSub}>Manual approval needed for deposit releases</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!adminDeposits ? styles.toggleSwitchOff : ''}`} onClick={() => setAdminDeposits(!adminDeposits)}>
-                      <div className={styles.toggleKnob} style={{ transform: adminDeposits ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.adminDeposits ? styles.toggleSwitchOff : ''}`} onClick={() => set('adminDeposits', !draft.adminDeposits)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.adminDeposits ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                   <div style={{ height: '1px', background: '#F3F4F6' }}></div>
@@ -390,8 +388,8 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require multiple verification steps for high-risk operations</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!multiStep ? styles.toggleSwitchOff : ''}`} onClick={() => setMultiStep(!multiStep)}>
-                      <div className={styles.toggleKnob} style={{ transform: multiStep ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.multiStep ? styles.toggleSwitchOff : ''}`} onClick={() => set('multiStep', !draft.multiStep)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.multiStep ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -420,8 +418,8 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require additional OTP and admin approval for high-value transactions</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!extraVerification ? styles.toggleSwitchOff : ''}`} onClick={() => setExtraVerification(!extraVerification)}>
-                      <div className={styles.toggleKnob} style={{ transform: extraVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.extraVerification ? styles.toggleSwitchOff : ''}`} onClick={() => set('extraVerification', !draft.extraVerification)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.extraVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -539,8 +537,8 @@ export default function SecuritySettingsPage() {
                       <span className={styles.toggleTitle}>Allow Multiple Devices</span>
                       <span className={styles.toggleSub}>Users can be logged in from multiple devices simultaneously</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!allowMultipleDevices ? styles.toggleSwitchOff : ''}`} onClick={() => setAllowMultipleDevices(!allowMultipleDevices)}>
-                      <div className={styles.toggleKnob} style={{ transform: allowMultipleDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.allowMultipleDevices ? styles.toggleSwitchOff : ''}`} onClick={() => set('allowMultipleDevices', !draft.allowMultipleDevices)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.allowMultipleDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                   <div style={{ height: '1px', background: '#F3F4F6' }}></div>
@@ -553,8 +551,8 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Send verification code when users login from unrecognized devices</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!requireVerificationNewDevices ? styles.toggleSwitchOff : ''}`} onClick={() => setRequireVerificationNewDevices(!requireVerificationNewDevices)}>
-                      <div className={styles.toggleKnob} style={{ transform: requireVerificationNewDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.requireVerificationNewDevices ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireVerificationNewDevices', !draft.requireVerificationNewDevices)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.requireVerificationNewDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>

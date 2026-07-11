@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { CREATE_FLOOR, GET_FLOORS } from "@/lib/apollo/operations";
 
 interface FloorSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Center the new floor belongs to. If absent, submit is rejected with a toast. */
+  centerId?: string;
 }
 
 // Simple icons
@@ -32,9 +37,9 @@ const CheckIcon = () => (
   </svg>
 );
 
-export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
+export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Step 1 State (Floor Setup)
   const [floors, setFloors] = useState([
     { id: 1, name: "Floor 1", status: "Active", expanded: false, units: 5, distributions: [
@@ -52,6 +57,13 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
       { id: 6, type: "Meeting Room", format: "SJ34-Meeting R-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" }
     ]}
   ]);
+  // Name of the floor being created (bound to the first floor's editable input).
+  const [floorName, setFloorName] = useState("Floor 1");
+  const [saving, setSaving] = useState(false);
+
+  const [createFloor] = useMutation(CREATE_FLOOR, {
+    refetchQueries: centerId ? [{ query: GET_FLOORS, variables: { centerId } }] : [{ query: GET_FLOORS }],
+  });
 
   // Step 2 State (Space Setup)
   const [activeFloorTab, setActiveFloorTab] = useState(3);
@@ -70,9 +82,37 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
 
   if (!isOpen && !show) return null;
 
-  const handleNext = () => {
-    if (currentStep < 3) setCurrentStep(c => c + 1);
-    else onClose();
+  const handleNext = async () => {
+    if (currentStep < 3) {
+      setCurrentStep(c => c + 1);
+      return;
+    }
+    // Step 3: persist the floor.
+    if (!centerId) {
+      toast.error("No center selected");
+      return;
+    }
+    const name = floorName.trim();
+    if (!name) {
+      toast.error("Floor name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { errors } = await createFloor({
+        variables: { input: { name, centerId } },
+      });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success("Floor created");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create floor");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleBack = () => {
@@ -168,7 +208,13 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-semibold text-gray-700">Floor Name</label>
-                      <input type="text" defaultValue={floor.name} className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+                      <input
+                        type="text"
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
+                        {...(floor.id === 1
+                          ? { value: floorName, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFloorName(e.target.value) }
+                          : { defaultValue: floor.name })}
+                      />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-semibold text-gray-700">Status</label>
@@ -624,9 +670,10 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
           </button>
           <button
             onClick={handleNext}
-            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150"
+            disabled={saving}
+            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {currentStep === 3 ? 'Setup Floor' : 'Continue'}
+            {currentStep === 3 ? (saving ? "Creating..." : "Setup Floor") : "Continue"}
           </button>
         </div>
 

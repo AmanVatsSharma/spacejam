@@ -4,6 +4,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery } from "@apollo/client";
+import { useRouter } from "next/navigation";
 import {
   GET_DASHBOARD_METRICS,
   GET_LEADS,
@@ -84,6 +85,7 @@ const Icons = {
 };
 
 export default function OccupancyOverviewPage() {
+  const router = useRouter();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
 
@@ -300,6 +302,28 @@ export default function OccupancyOverviewPage() {
               <span className={styles.cellText}>{formatDate(c.lastBooking)}</span>
               <div className={styles.cellAction} onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)}>
                 {Icons.moreVertical}
+                {openMenuId === c.id && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setOpenMenuId(null)}
+                    />
+                    <div className="absolute right-0 top-full mt-1 z-50 min-w-[160px] bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+                      <div
+                        className="px-4 py-2 text-sm text-[#101828] hover:bg-gray-50 cursor-pointer"
+                        onClick={() => { setOpenMenuId(null); router.push(`/dashboard/crm/leads/${c.id}`); }}
+                      >
+                        View Lead
+                      </div>
+                      <div
+                        className="px-4 py-2 text-sm text-[#101828] hover:bg-gray-50 cursor-pointer"
+                        onClick={() => { setOpenMenuId(null); router.push(`/dashboard/crm/customers/${c.id}`); }}
+                      >
+                        View Customer
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ))

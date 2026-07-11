@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 /**
  * File:        apps/web/src/app/dashboard/revenue/page.tsx
  * Module:      Web · Dashboard · Revenue
@@ -544,7 +546,7 @@ export default function RevenuePage() {
             ) : (
               <div className={styles.upcomingGrid}>
                 {upcomingInvoices.map((inv, idx) => (
-                  <div key={inv.id} className={`${styles.upcomingGridCard} ${styles.fadeInUp}`} style={{ '--i': idx }}>
+                  <div key={inv.id} className={`${styles.upcomingGridCard} ${styles.fadeInUp}`} style={{ '--i': idx } as CSSProperties}>
                     <div className={styles.upcomingClientName}>{inv.clientName}</div>
                     <div className={styles.upcomingCardRow}>
                       <span className={styles.upcomingCardAmount}>{formatINR(inv.amount)}</span>
@@ -607,7 +609,7 @@ export default function RevenuePage() {
                 </div>
               ) : (
                 renewalAlerts.map((item, idx) => (
-                  <div key={item.id} className={`${styles.asideInnerCard} ${styles.fadeInUp}`} style={{ '--i': idx }}>
+                  <div key={item.id} className={`${styles.asideInnerCard} ${styles.fadeInUp}`} style={{ '--i': idx } as CSSProperties}>
                     <div className={styles.asideInnerHeader}>
                       <span className={styles.asideInnerName}>{item.name}</span>
                       <span className={styles.daysLeftBadge}>{item.left}</span>

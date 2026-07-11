@@ -1,19 +1,51 @@
 "use client";
 
 import React, { useState } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import styles from "./plan-upgrade-modal.module.css";
+import { UPDATE_LEAD } from "@/lib/apollo/operations";
 
 interface PlanUpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   clientName?: string;
+  /** Lead to record the plan upgrade against. If absent, submit is rejected with a toast. */
+  leadId?: string;
 }
 
-export function PlanUpgradeModal({ isOpen, onClose, clientName = "Startup Ventures" }: PlanUpgradeModalProps) {
+export function PlanUpgradeModal({ isOpen, onClose, clientName, leadId }: PlanUpgradeModalProps) {
   const [duration, setDuration] = useState("3 months");
   const [plan, setPlan] = useState("Private Cabin");
+  const [saving, setSaving] = useState(false);
+
+  const [updateLead] = useMutation(UPDATE_LEAD);
 
   if (!isOpen) return null;
+
+  const handleConfirmUpgrade = async () => {
+    if (!leadId) {
+      toast.error("No lead selected");
+      return;
+    }
+    const notes = `Plan upgrade discussed: ${plan} for ${duration}`;
+    setSaving(true);
+    try {
+      const { errors } = await updateLead({
+        variables: { id: leadId, input: { status: "Negotiation", notes } },
+      });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success("Lead updated with plan upgrade");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update lead");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -127,7 +159,13 @@ export function PlanUpgradeModal({ isOpen, onClose, clientName = "Startup Ventur
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.generateBtn}>Confirm Upgrade & Generate Invoice</button>
+          <button
+            className={styles.generateBtn}
+            onClick={handleConfirmUpgrade}
+            disabled={saving}
+          >
+            {saving ? "Updating..." : "Confirm Upgrade & Generate Invoice"}
+          </button>
         </div>
       </div>
     </div>

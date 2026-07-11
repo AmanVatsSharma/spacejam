@@ -13,11 +13,29 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useCreateEvent, useMeetingRooms } from "@/hooks/use-operations";
+import { useCreateEvent, useUpdateEvent, useMeetingRooms } from "@/hooks/use-operations";
 
 export interface AddEventModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Optional event to edit. When provided, the modal opens in EDIT mode:
+   * the form is pre-filled with the event's data and submit calls
+   * useUpdateEvent().update(id, input) instead of create.
+   */
+  event?: {
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    company?: string | null;
+    eventDate?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    attendeesCount?: number | null;
+    eventType?: string | null;
+    meetingRoomId?: string | null;
+    specialRequests?: string | null;
+  };
 }
 
 const EVENT_TYPES: { value: string; label: string }[] = [
@@ -40,20 +58,39 @@ const emptyForm = {
   specialRequests: "",
 };
 
-export function AddEventModal({ open, onClose }: AddEventModalProps) {
+export function AddEventModal({ open, onClose, event }: AddEventModalProps) {
+  const isEdit = Boolean(event?.id);
   const [form, setForm] = useState(emptyForm);
   const [touched, setTouched] = useState(false);
 
-  const { create, saving } = useCreateEvent();
+  const { create, saving: creating } = useCreateEvent();
+  const { update: updateEvent, saving: updating } = useUpdateEvent();
+  const saving = isEdit ? updating : creating;
   const { rooms, loading: roomsLoading } = useMeetingRooms();
 
-  // Reset the form whenever the modal is closed.
+  // Reset on close, or pre-fill when opening in edit mode.
   useEffect(() => {
     if (!open) {
       setForm(emptyForm);
       setTouched(false);
+      return;
     }
-  }, [open]);
+    if (event) {
+      setForm({
+        title: event.title ?? "",
+        description: event.description ?? "",
+        company: event.company ?? "",
+        eventDate: event.eventDate ?? "",
+        startTime: event.startTime ?? "",
+        endTime: event.endTime ?? "",
+        attendeesCount:
+          event.attendeesCount != null ? String(event.attendeesCount) : "",
+        type: event.eventType ?? "MEETING",
+        meetingRoomId: event.meetingRoomId ?? "",
+        specialRequests: event.specialRequests ?? "",
+      });
+    }
+  }, [open, event]);
 
   if (!open) return null;
 
@@ -91,6 +128,19 @@ export function AddEventModal({ open, onClose }: AddEventModalProps) {
     if (form.specialRequests.trim()) input.specialRequests = form.specialRequests.trim();
 
     try {
+      // EDIT mode: call update with the existing event id.
+      if (isEdit && event?.id) {
+        const payload = await updateEvent(event.id, input);
+        if (payload?.success) {
+          toast.success("Event updated successfully");
+          onClose();
+        } else {
+          toast.error(payload?.error ?? "Failed to update event");
+        }
+        return;
+      }
+
+      // CREATE mode.
       const payload = await create(input);
 
       // useCreateEvent returns { success, event, error } | null
@@ -102,7 +152,9 @@ export function AddEventModal({ open, onClose }: AddEventModalProps) {
       }
     } catch (err) {
       toast.error(
-        `Failed to create event: ${err instanceof Error ? err.message : "Unknown error"}`,
+        `Failed to ${isEdit ? "update" : "create"} event: ${
+          err instanceof Error ? err.message : "Unknown error"
+        }`,
       );
     }
   };
@@ -122,8 +174,14 @@ export function AddEventModal({ open, onClose }: AddEventModalProps) {
         {/* Header */}
         <div className="p-6 border-b border-gray-100 flex items-start justify-between">
           <div>
-            <h2 className="text-[20px] font-bold text-gray-900">Add New Event</h2>
-            <p className="text-[14px] text-gray-500 mt-1">Schedule a new booking or workspace event.</p>
+            <h2 className="text-[20px] font-bold text-gray-900">
+              {isEdit ? "Edit Event" : "Add New Event"}
+            </h2>
+            <p className="text-[14px] text-gray-500 mt-1">
+              {isEdit
+                ? "Update the details of this event."
+                : "Schedule a new booking or workspace event."}
+            </p>
           </div>
           <button
             type="button"
@@ -303,7 +361,7 @@ export function AddEventModal({ open, onClose }: AddEventModalProps) {
                   <path d="M22 12a10 10 0 01-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               )}
-              {saving ? "Creating..." : "Create Event"}
+              {saving ? (isEdit ? "Updating..." : "Creating...") : isEdit ? "Update Event" : "Create Event"}
             </button>
           </div>
         </form>

@@ -403,7 +403,7 @@ export default function OnboardingPage() {
                           type="button"
                           className={styles.actionBtn}
                           title="Edit"
-                          onClick={() => toast.info("Edit coming soon")}
+                          onClick={() => router.push(`/dashboard/crm/leads/${lead.id}`)}
                         >
                           {Icon.Edit}
                         </button>

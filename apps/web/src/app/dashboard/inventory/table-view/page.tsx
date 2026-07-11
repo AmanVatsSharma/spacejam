@@ -3,10 +3,19 @@
 
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_SEATS, GET_FLOORS } from "@/lib/apollo/operations";
+import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import {
+  GET_SEATS,
+  GET_FLOORS,
+  GET_MY_CENTERS,
+  CREATE_SEAT,
+  UPDATE_SEAT,
+} from "@/lib/apollo/operations";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./table-view.module.css";
+
+const SEAT_TYPES = ["HOT_DESK", "DEDICATED", "CABIN"] as const;
 
 const Icons = {
   export: (
@@ -48,21 +57,51 @@ export default function TableViewPage() {
   const [showExport, setShowExport] = useState(false);
   const [search, setSearch] = useState("");
 
+  // Filter state — driven by live data where possible
+  const [locationId, setLocationId] = useState<string>("all");
+  const [floorId, setFloorId] = useState<string>("all");
+  const [product, setProduct] = useState<string>("all");
+  const [status, setStatus] = useState<string>("all");
+
+  // Live centers data (drives the Location filter options)
+  const { data: centersData } = useQuery<{ myCenters: any[] }>(GET_MY_CENTERS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const centers = centersData?.myCenters ?? [];
+
+  // Floors for the selected center (drives the Floor filter options)
+  const selectedCenter = centers.find((c: any) => c.id === locationId) ?? null;
+  const floorsForCenter = useMemo(() => {
+    if (locationId === "all") return [];
+    return selectedCenter?.floors ?? [];
+  }, [locationId, selectedCenter]);
+
   // Live seats data
   const { data: seatsData, loading, error } = useQuery(GET_SEATS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
+    variables: floorId !== "all" ? { floorId } : {},
   });
 
   const seats = seatsData?.seats ?? [];
 
-  // Map API seats to the table's expected shape
+  // Mutations
+  const [createSeat] = useMutation(CREATE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }],
+  });
+  const [updateSeat] = useMutation(UPDATE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }],
+  });
+
+  // Map API seats to the table's expected shape (preserve real seat id for mutations)
   const inventoryData = useMemo(() => {
-    return seats.map((seat: any, index: number) => ({
-      id: index + 1,
+    return seats.map((seat: any) => ({
+      id: seat.id,
       spaceName: seat.number ?? `Seat ${seat.id}`,
       location: seat.location ?? "—",
       floor: seat.floor?.name ?? "—",
+      floorId: seat.floor?.id ?? null,
       type: seat.seatType ?? "—",
       capacity: 1,
       price: seat.price ? formatCurrency(seat.price) : "—",
@@ -75,17 +114,139 @@ export default function TableViewPage() {
   }, [seats]);
 
   const filteredData = useMemo(() => {
-    if (!search.trim()) return inventoryData;
-    const q = search.toLowerCase();
-    return inventoryData.filter((item: any) =>
-      item.spaceName?.toLowerCase().includes(q) ||
-      item.type?.toLowerCase().includes(q) ||
-      item.status?.toLowerCase().includes(q)
-    );
-  }, [inventoryData, search]);
+    let result = inventoryData;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((item: any) =>
+        item.spaceName?.toLowerCase().includes(q) ||
+        item.type?.toLowerCase().includes(q) ||
+        item.status?.toLowerCase().includes(q)
+      );
+    }
+
+    if (locationId !== "all") {
+      const centerName = selectedCenter?.name?.toLowerCase();
+      result = result.filter((item: any) =>
+        item.location?.toLowerCase() === centerName ||
+        item.location?.toLowerCase().includes(centerName ?? "___")
+      );
+    }
+
+    if (floorId !== "all") {
+      result = result.filter((item: any) => item.floorId === floorId);
+    }
+
+    if (product !== "all") {
+      result = result.filter((item: any) => item.type === product);
+    }
+
+    if (status !== "all") {
+      result = result.filter((item: any) =>
+        String(item.status).toUpperCase() === status
+      );
+    }
+
+    return result;
+  }, [inventoryData, search, locationId, selectedCenter, floorId, product, status]);
+
+  const clearAllFilters = () => {
+    setLocationId("all");
+    setFloorId("all");
+    setProduct("all");
+    setStatus("all");
+    setSearch("");
+  };
 
   const toggleDropdown = (index: number) => {
     setActiveDropdown(activeDropdown === index ? null : index);
+  };
+
+  // Add Space: collect number + type + price, then call CREATE_SEAT.
+  // Uses window.prompt as a lightweight form — requires a floor context,
+  // so we fall back to the first floor of the selected center.
+  const handleAddSpace = async () => {
+    if (!centers.length) {
+      toast.error("No centers available to add a seat to.");
+      return;
+    }
+    const center = locationId !== "all"
+      ? selectedCenter
+      : centers[0];
+    const centerFloors = center?.floors ?? [];
+    if (!centerFloors.length) {
+      toast.error("Selected center has no floors. Add a floor first.");
+      return;
+    }
+
+    const number = window.prompt("Enter seat number (e.g. A-101):");
+    if (number == null) return;
+    if (!number.trim()) {
+      toast.error("Seat number is required.");
+      return;
+    }
+
+    const typeInput = window.prompt(
+      `Seat type (one of: ${SEAT_TYPES.join(", ")}):`,
+      "HOT_DESK"
+    );
+    if (typeInput == null) return;
+    const seatType = (SEAT_TYPES as readonly string[]).includes(typeInput.toUpperCase())
+      ? typeInput.toUpperCase()
+      : "HOT_DESK";
+
+    const priceInput = window.prompt("Monthly price (INR, optional):", "5000");
+    if (priceInput == null) return;
+    const price = Number(priceInput);
+    const pricePayload = Number.isFinite(price) && price > 0 ? price : undefined;
+
+    // Prefer the floor selected in the filter, else the center's first floor.
+    const targetFloorId =
+      floorId !== "all" && centerFloors.some((f: any) => f.id === floorId)
+        ? floorId
+        : centerFloors[0].id;
+
+    try {
+      await createSeat({
+        variables: {
+          input: {
+            floorId: targetFloorId,
+            number: number.trim(),
+            seatType,
+            status: "AVAILABLE",
+            ...(pricePayload != null ? { price: pricePayload } : {}),
+          },
+        },
+      });
+      toast.success("Seat added");
+      // Keep the floor filter in sync if we used the center's first floor.
+      if (floorId !== targetFloorId) setFloorId(targetFloorId);
+    } catch (err) {
+      console.error("Failed to create seat:", err);
+      toast.error("Could not add seat. Please try again.");
+    }
+  };
+
+  // Per-row status change via UPDATE_SEAT.
+  const handleStatusChange = async (seatId: string, newStatus: string) => {
+    setActiveDropdown(null);
+    try {
+      await updateSeat({
+        variables: {
+          id: seatId,
+          input: { status: newStatus },
+        },
+      });
+      toast.success("Status updated");
+    } catch (err) {
+      console.error("Failed to update seat status:", err);
+      toast.error("Could not update status. Please try again.");
+    }
+  };
+
+  const handleLocationChange = (value: string) => {
+    setLocationId(value);
+    setFloorId("all"); // reset floor when center changes
   };
 
   return (
@@ -108,7 +269,10 @@ export default function TableViewPage() {
           >
             {Icons.export} Export CSV
           </button>
-          <button className={`${styles.addSpaceBtn} active:scale-[0.97] transition-transform duration-150`}>
+          <button
+            onClick={handleAddSpace}
+            className={`${styles.addSpaceBtn} active:scale-[0.97] transition-transform duration-150`}
+          >
             {Icons.plus} Add Space
           </button>
         </div>
@@ -121,40 +285,59 @@ export default function TableViewPage() {
           <input type="text" placeholder="Search Space Name and Company" />
         </div>
 
-        <select className={styles.filterSelect} defaultValue="Location">
-          <option disabled>Location</option>
-          <option>Chandigarh</option>
-          <option>Mohali</option>
-          <option>Jalandhar</option>
+        <select
+          className={styles.filterSelect}
+          value={locationId}
+          onChange={(e) => handleLocationChange(e.target.value)}
+        >
+          <option value="all">Location</option>
+          {centers.map((center: any) => (
+            <option key={center.id} value={center.id}>{center.name}</option>
+          ))}
         </select>
 
-        <select className={styles.filterSelect} defaultValue="Sub-Location">
-          <option disabled>Sub-Location</option>
-          <option>All</option>
+        <select className={styles.filterSelect} value="all" disabled>
+          <option value="all">Sub-Location</option>
         </select>
 
-        <select className={styles.filterSelect} defaultValue="Floor">
-          <option disabled>Floor</option>
-          <option>1st Floor</option>
-          <option>2nd Floor</option>
-          <option>3rd Floor</option>
+        <select
+          className={styles.filterSelect}
+          value={floorId}
+          onChange={(e) => setFloorId(e.target.value)}
+          disabled={locationId === "all"}
+        >
+          <option value="all">Floor</option>
+          {floorsForCenter.map((floor: any) => (
+            <option key={floor.id} value={floor.id}>{floor.name}</option>
+          ))}
         </select>
 
-        <select className={styles.filterSelect} defaultValue="Product">
-          <option disabled>Product</option>
-          <option>Cabin</option>
-          <option>Desk</option>
-          <option>Meeting Room</option>
+        <select
+          className={styles.filterSelect}
+          value={product}
+          onChange={(e) => setProduct(e.target.value)}
+        >
+          <option value="all">Product</option>
+          <option value="HOT_DESK">Hot Desk</option>
+          <option value="DEDICATED">Dedicated Desk</option>
+          <option value="CABIN">Cabin</option>
         </select>
 
-        <select className={styles.filterSelect} defaultValue="Status">
-          <option disabled>Status</option>
-          <option>Occupied</option>
-          <option>Available</option>
-          <option>Maintenance</option>
+        <select
+          className={styles.filterSelect}
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
+          <option value="all">Status</option>
+          <option value="OCCUPIED">Occupied</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="MAINTENANCE">Maintenance</option>
         </select>
 
-        <button className={`${styles.clearBtn} active:scale-[0.97] transition-transform duration-150`}>
+        <button
+          onClick={clearAllFilters}
+          className={`${styles.clearBtn} active:scale-[0.97] transition-transform duration-150`}
+        >
           Clear All
         </button>
       </div>
@@ -236,9 +419,18 @@ export default function TableViewPage() {
                     </div>
                     {activeDropdown === index && (
                       <div className={styles.actionDropdown}>
-                        <div className={styles.dropdownItem}>Occupied</div>
-                        <div className={styles.dropdownItem}>Available</div>
-                        <div className={styles.dropdownItem}>Maintenance</div>
+                        <div
+                          className={styles.dropdownItem}
+                          onClick={() => handleStatusChange(row.id, "OCCUPIED")}
+                        >Occupied</div>
+                        <div
+                          className={styles.dropdownItem}
+                          onClick={() => handleStatusChange(row.id, "AVAILABLE")}
+                        >Available</div>
+                        <div
+                          className={styles.dropdownItem}
+                          onClick={() => handleStatusChange(row.id, "MAINTENANCE")}
+                        >Maintenance</div>
                       </div>
                     )}
                   </td>

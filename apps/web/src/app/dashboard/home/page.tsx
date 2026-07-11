@@ -1,116 +1,400 @@
 "use client";
 
+
 /**
- * File:        apps/web/src/app/dashboard/page.tsx
- * Module:      Web · Dashboard · Overview Page
- * Purpose:     Main dashboard with overview stats, KPI cards, and management sections
+ * File:        apps/web/src/app/dashboard/home/page.tsx
+ * Module:      Web · Dashboard · Home Screen
+ * Purpose:     Canonical wired home screen with quick actions, lead management,
+ *              and room overview. Wired to live dashboardMetrics, leadCount,
+ *              leads, deposits, requests, events + create mutations.
  *
- * Layout structure (matches dashboard_01.png):
- * - Welcome Header: greeting + subtitle (14px radius, subtle shadow)
- * - KPI Cards Row: 4 cards with equal widths, 21px gap
- * - 3-Column Grid:
- *   - Column 1: Total Lead (top) + Deposit Held + Event Today (bottom, side by side)
- *   - Column 2: Payment Health (full height)
- *   - Column 3: Tasks& Compliance (full height)
- * - Full Width: Approval Queue
+ * Design Reference: dashboard-design-hd.png
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-31
+ * Last-updated: 2026-07-12
  */
 
 
+import React, { useState, useMemo } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import { useAuth } from "@/contexts/auth-context";
+import { normalizeStatus } from "@/lib/revenue-status";
+import {
+  GET_DASHBOARD_METRICS,
+  GET_LEADS,
+  LEAD_COUNT,
+  GET_DEPOSITS,
+  GET_INVOICES,
+  CREATE_LEAD,
+  CREATE_CUSTOMER,
+} from "@/lib/apollo/operations";
+import { useRequests } from "@/hooks/use-operations";
+import { useMeetingRooms } from "@/hooks/use-operations";
+import { useEvents } from "@/hooks/use-operations";
+import {
+  StatCard,
+  RevenueIcon,
+  CustomersIcon,
+  DuesIcon,
+  BookingsIcon,
+} from "@/components/ui/stat-card";
+import {
+  TotalLeadCard,
+  ApprovalQueueCard,
+  PaymentHealthCard,
+  TasksComplianceCard,
+  RoomAvailabilityCircleCard,
+  MeetingRoomBookingGrid,
+  MetricCard,
+  AddLeadModal,
+  AddClientModal,
+} from "@/components/ui/dashboard";
 
-import { useState } from "react";
-import { StatCards } from "@/components/ui/stat-card";
-import { TotalLeadCardDemo } from "@/components/ui/dashboard/total-lead-card";
-import { PaymentHealthCardDemo } from "@/components/ui/dashboard/payment-health-card";
-import { DepositHeldCardDemo, EventTodayCardDemo } from "@/components/ui/dashboard/metric-cards";
-import { TasksComplianceCardDemo } from "@/components/ui/dashboard/tasks-compliance-card";
-import { ApprovalQueueCardDemo } from "@/components/ui/dashboard/approval-queue-card";
-import { RoomAvailabilityCircleCardDemo } from "@/components/ui/dashboard/room-availability-circle-card";
-import { MeetingRoomBookingGridDemo } from "@/components/ui/dashboard/meeting-room-booking-grid";
-import { AddLeadModal, AddClientModal } from "@/components/ui/dashboard";
+// Icons for MetricCards
+const DepositIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="12" height="12" rx="2" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M4 5h6M4 7h4" stroke="#FF6A2F" strokeWidth="1.33" strokeLinecap="round"/>
+  </svg>
+);
+
+const EventIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="12" height="12" rx="2" stroke="#FF6A2F" strokeWidth="1.33"/>
+    <path d="M7 4.5l1.35 1.35 2.15 0.3-1.55 1.5 0.35 2.1L7 8.1 4.7 9.75l0.35-2.1L3.5 6.15l2.15-0.3L7 4.5z" stroke="#FF6A2F" strokeWidth="1.33" strokeLinejoin="round"/>
+  </svg>
+);
+
+
+function formatCurrency(amount: number): string {
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+  return `₹${Math.round(amount)}`;
+}
+
 
 export default function DashboardPage() {
+  const { user } = useAuth() || { user: null };
+  const greetingName = user?.name?.split(" ")[0] || "User";
+
+  const [createLead] = useMutation(CREATE_LEAD, {
+    refetchQueries: [{ query: LEAD_COUNT }, { query: GET_LEADS }],
+  });
+
+  const [createCustomer] = useMutation(CREATE_CUSTOMER);
+
+  const handleAddLead = async (input: Record<string, string>) => {
+    try {
+      await createLead({ variables: { input } });
+      setShowAddLead(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddClient = async (input: Record<string, string>) => {
+    try {
+      await createCustomer({ variables: { input } });
+      setShowAddClient(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
 
+  // Live dashboard metrics
+  const { data: metricsData, loading: metricsLoading } = useQuery(GET_DASHBOARD_METRICS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live lead count
+  const { data: leadCountData } = useQuery(LEAD_COUNT, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live leads for the TotalLeadCard breakdown
+  const { data: leadsData } = useQuery(GET_LEADS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live deposits for deposit held stat + approvals
+  const { data: depositsData } = useQuery(GET_DEPOSITS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Live invoices (for overdue compliance items)
+  const { data: invoicesData } = useQuery(GET_INVOICES, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  // Pending service requests feed the Tasks & Compliance card.
+  const { requests } = useRequests({ pendingOnly: true });
+  // Meeting rooms + events for the booking grid and "Events today" metric.
+  const { rooms: rawRooms } = useMeetingRooms();
+  const { events } = useEvents();
+
+  // Map backend room status enums to the display strings the grid expects.
+  const rooms = useMemo(() => {
+    const statusMap: Record<string, "Occupied" | "Available" | "Booked" | "Maintenance"> = {
+      AVAILABLE: "Available",
+      OCCUPIED: "Occupied",
+      BOOKED: "Booked",
+      MAINTENANCE: "Maintenance",
+    };
+    return rawRooms.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      status: statusMap[r.status] ?? "Available",
+      capacity: r.capacity ?? 0,
+    }));
+  }, [rawRooms]);
+
+  const metrics = metricsData?.dashboardMetrics;
+  const leads = leadsData?.leads ?? [];
+  const deposits = depositsData?.deposits ?? [];
+  const invoices = invoicesData?.invoices ?? [];
+
+  // Compute lead breakdown from live data
+  const leadBreakdown = useMemo(() => {
+    const visited = leads.filter((l: any) => l.status === "Visited").length;
+    const inquiry = leads.filter((l: any) => l.status === "New").length;
+    const converted = leads.filter((l: any) => l.status === "Converted").length;
+    return { visited, inquiry, converted, total: leadCountData?.leadCount ?? leads.length };
+  }, [leads, leadCountData]);
+
+  // Compute deposit held total
+  const depositHeld = useMemo(() => {
+    return deposits
+      .filter((d: any) => normalizeStatus(d.status) === "HELD" || normalizeStatus(d.status) === "ACTIVE")
+      .reduce((sum: number, d: any) => sum + Number(d.amount ?? 0), 0);
+  }, [deposits]);
+
+  // Events today count
+  const eventsToday = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    return events.filter((e: any) => e.eventDate === today).length;
+  }, [events]);
+
+  // Tasks & Compliance items derived from live data.
+  const complianceItems = useMemo(() => {
+    const items: { id: string; title: string; subtitle: string; color: "red" | "orange" | "yellow" }[] = [];
+    const overdueInvoices = invoices.filter((i: any) => normalizeStatus(i.status) === "OVERDUE");
+    if (overdueInvoices.length > 0) {
+      items.push({
+        id: "overdue-invoices",
+        title: `${overdueInvoices.length} Overdue Invoice${overdueInvoices.length === 1 ? "" : "s"}`,
+        subtitle: "Follow up with clients",
+        color: "red",
+      });
+    }
+    const pendingDeposits = deposits.filter(
+      (d: any) => normalizeStatus(d.status) === "RELEASE_REQUESTED" || normalizeStatus(d.status) === "HELD",
+    );
+    if (pendingDeposits.length > 0) {
+      items.push({
+        id: "pending-deposits",
+        title: `${pendingDeposits.length} Deposit${pendingDeposits.length === 1 ? "" : "s"} Pending`,
+        subtitle: "Awaiting release/approval",
+        color: "orange",
+      });
+    }
+    requests.slice(0, 3).forEach((r: any) => {
+      items.push({
+        id: r.id,
+        title: r.title,
+        subtitle: `${r.requestType} · ${r.urgency}`,
+        color: r.urgency === "HIGH" ? "red" : "yellow",
+      });
+    });
+    return items;
+  }, [invoices, deposits, requests]);
+
+  // Approval queue: pending deposit releases + plan-upgrade requests.
+  const approvalItems = useMemo(() => {
+    const items: { id: string; title: string; subtitle: string; timeAgo: string; iconColor: string }[] = [];
+    deposits
+      .filter((d: any) => normalizeStatus(d.status) === "RELEASE_REQUESTED")
+      .forEach((d: any) => {
+        items.push({
+          id: d.id,
+          title: "Deposit Release",
+          subtitle: d.customerName ?? "Deposit",
+          timeAgo: d.releaseRequestedDate ? new Date(d.releaseRequestedDate).toLocaleDateString() : "",
+          iconColor: "#FF7847",
+        });
+      });
+    requests
+      .filter((r: any) => r.requestType === "UPGRADE")
+      .slice(0, 4)
+      .forEach((r: any) => {
+        items.push({
+          id: r.id,
+          title: "Plan Upgrade",
+          subtitle: r.title,
+          timeAgo: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "",
+          iconColor: "#EF4444",
+        });
+      });
+    return items;
+  }, [deposits, requests]);
+
+  const stats = [
+    {
+      label: "Revenue (MTD)",
+      value: metrics ? formatCurrency(metrics.totalRevenue) : "—",
+      icon: <RevenueIcon />,
+      changePercent: 12,
+      changeDirection: "up" as const,
+      className: "flex-1 min-w-0",
+    },
+    {
+      label: "Active Bookings",
+      value: metrics ? String(metrics.activeBookings) : "—",
+      icon: <CustomersIcon />,
+      changePercent: 5,
+      changeDirection: "up" as const,
+      className: "flex-1 min-w-0",
+    },
+    {
+      label: "Pending Payments",
+      value: metrics ? formatCurrency(metrics.pendingPayments) : "—",
+      icon: <DuesIcon />,
+      changePercent: 8,
+      changeDirection: "down" as const,
+      className: "flex-1 min-w-0",
+    },
+    {
+      label: "Available Seats",
+      value: metrics ? `${metrics.availableSeats}/${metrics.totalSeats}` : "—",
+      icon: <BookingsIcon />,
+      changePercent: 5,
+      changeDirection: "up" as const,
+      className: "flex-1 min-w-0",
+    },
+  ];
+
+  // Payment Health Calculation
+  const totalPayments = (metrics?.totalRevenue || 0) + (metrics?.pendingPayments || 0);
+  const paidPercent = totalPayments ? Math.round(((metrics?.totalRevenue || 0) / totalPayments) * 100) : 0;
+  const partialPercent = totalPayments ? Math.round(((metrics?.pendingPayments || 0) / totalPayments) * 100) : 0;
+  const paymentHealthPaid = { percent: paidPercent, amount: formatCurrency(metrics?.totalRevenue || 0) };
+  const paymentHealthPartial = { percent: partialPercent, amount: formatCurrency(metrics?.pendingPayments || 0) };
+
   return (
-    <div className="flex flex-col gap-6 p-2">
+    <div className="w-full flex flex-col gap-[24px] compact:gap-4 p-8 compact:p-4">
       {/* Welcome Header */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.05)] px-6 py-5 flex justify-between items-center border border-gray-100">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome Jhon Doe,
-          </h1>
-          <p className="text-[15px] text-gray-500">
+      <div className="bg-white rounded-[14px] shadow-sm border border-[#E5E7EB] px-6 py-5 flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[22px] font-semibold text-[#101828]">Welcome {greetingName},</h1>
+          <p className="text-sm text-[#4A5565]">
             Monitor meeting room usage , availability and booking status
           </p>
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={() => setShowAddLead(true)}
-            className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]"
+            className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7 0v4m2-2h-4M2 14v-1.5a3.5 3.5 0 0 1 3.5-3.5h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Add Lead
           </button>
-          <button 
+          <button
             onClick={() => setShowAddClient(true)}
-            className="flex items-center gap-2 bg-[#FF7A49] text-white px-5 py-2.5 rounded-[10px] font-medium text-sm transition-colors hover:bg-[#E56A39]"
+            className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7 0v4m2-2h-4M2 14v-1.5a3.5 3.5 0 0 1 3.5-3.5h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Add Client
           </button>
         </div>
       </div>
 
-      {/* Row 1: 4 KPI Cards */}
-      <StatCards />
+      {/* Row 1: KPI Cards */}
+      <div className="grid grid-cols-4 compact:grid-cols-2 gap-[24px] compact:gap-3">
+        {stats.map((stat, index) => (
+          <StatCard key={index} {...stat} />
+        ))}
+      </div>
 
-      {/* Middle Row (Payment Health, Tasks, Total Lead) */}
-      <div className="grid grid-cols-[1.3fr_1.4fr_1fr] gap-6 items-stretch">
-        <div className="flex flex-col gap-6 min-w-0">
-          <div className="flex-1 flex flex-col">
-            <TotalLeadCardDemo />
-          </div>
-          <div className="grid grid-cols-2 gap-6 flex-1">
-            <div className="flex flex-col h-full [&>div]:flex-1 [&>div]:h-full">
-              <DepositHeldCardDemo />
-            </div>
-            <div className="flex flex-col h-full [&>div]:flex-1 [&>div]:h-full">
-              <EventTodayCardDemo />
-            </div>
+      {/* Row 2: Lead & Health */}
+      <div className="flex gap-[24px] compact:flex-col items-stretch w-full">
+        {/* Left Column */}
+        <div className="flex flex-col gap-[24px] flex-shrink-0">
+          <TotalLeadCard
+            totalLeads={leadBreakdown.total}
+            visited={leadBreakdown.visited}
+            inquiry={leadBreakdown.inquiry}
+            converted={leadBreakdown.converted}
+          />
+          <div className="flex gap-[24px]">
+            <MetricCard
+              label="Deposit Held"
+              value={formatCurrency(depositHeld)}
+              icon={<DepositIcon />}
+              className="flex-1"
+            />
+            <MetricCard
+              label="Event Today"
+              value={String(eventsToday)}
+              icon={<EventIcon />}
+              className="flex-1"
+            />
           </div>
         </div>
 
-        <div className="flex flex-col min-w-0 [&>div]:flex-1 [&>div]:h-full">
-          <PaymentHealthCardDemo />
+        {/* Middle Column — stretches to match row height */}
+        <div className="flex-1 min-w-0 max-w-[420px]">
+          <PaymentHealthCard
+            total={formatCurrency(totalPayments)}
+            paid={paymentHealthPaid}
+            overdue={{ percent: 0, amount: "₹0" }}
+            partial={paymentHealthPartial}
+            className="h-full"
+          />
         </div>
 
-        <div className="flex flex-col min-w-0 [&>div]:flex-1 [&>div]:h-full">
-          <TasksComplianceCardDemo />
+        {/* Right Column */}
+        <div className="flex-1 min-w-0 w-full h-full">
+          <TasksComplianceCard items={complianceItems} badgeCount={complianceItems.length} />
         </div>
       </div>
 
-      {/* Bottom Row (Availability, Bookings, Approvals) */}
-      <div className="grid grid-cols-[1.3fr_1.4fr_1fr] gap-6 items-stretch">
-        <div className="flex flex-col min-w-0 [&>div]:flex-1 [&>div]:h-full">
-          <RoomAvailabilityCircleCardDemo />
-        </div>
-        
-        <div className="flex flex-col min-w-0 [&>div]:flex-1 [&>div]:h-full">
-          <MeetingRoomBookingGridDemo />
+      {/* Row 3: Rooms & Approvals */}
+      <div className="flex gap-[24px] compact:flex-col items-stretch w-full">
+        {/* Left Column */}
+        <div className="flex-shrink-0">
+          <RoomAvailabilityCircleCard
+            totalAvailable={metrics?.availableSeats || 0}
+            totalSeats={metrics?.totalSeats || 0}
+            subStats={[]}
+          />
         </div>
 
-        <div className="flex flex-col min-w-0 [&>div]:flex-1 [&>div]:h-full">
-          <ApprovalQueueCardDemo />
+        {/* Middle Column */}
+        <div className="flex-shrink-0">
+          <MeetingRoomBookingGrid rooms={rooms} />
+        </div>
+
+        {/* Right Column */}
+        <div className="flex-1 min-w-0 w-full">
+          <ApprovalQueueCard items={approvalItems} pendingCount={approvalItems.length} />
         </div>
       </div>
-      
+
       {/* Modals */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} />
-      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} />
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
+      <AddClientModal open={showAddClient} onClose={() => setShowAddClient(false)} onAdd={handleAddClient} />
     </div>
   );
 }

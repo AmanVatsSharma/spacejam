@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { CREATE_CENTER, GET_MY_CENTERS } from "@/lib/apollo/operations";
 
 interface SetUpCenterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Called with the newly created center after a successful create. */
+  onCreated?: (center: { id: string }) => void;
 }
 
 // Simple icons
@@ -32,8 +37,25 @@ const CheckIcon = () => (
   </svg>
 );
 
-export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
+export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Step 1 form fields (collected for CREATE_CENTER)
+  const [centerForm, setCenterForm] = useState({
+    city: "",
+    branch: "",
+    address: "",
+    state: "Punjab",
+    tradeName: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const [createCenter] = useMutation(CREATE_CENTER, {
+    refetchQueries: [{ query: GET_MY_CENTERS }],
+  });
+
+  const updateCenterField = (field: keyof typeof centerForm, value: string) =>
+    setCenterForm((prev) => ({ ...prev, [field]: value }));
   
   // Step 2 State
   const [products, setProducts] = useState([
@@ -68,9 +90,37 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
 
   if (!isOpen && !show) return null;
 
-  const handleNext = () => {
-    if (currentStep < 5) setCurrentStep(c => c + 1);
-    else onClose();
+  const handleNext = async () => {
+    if (currentStep < 5) {
+      setCurrentStep(c => c + 1);
+      return;
+    }
+    // Step 5: persist the center.
+    const name = centerForm.tradeName.trim() || centerForm.branch.trim() || centerForm.city.trim();
+    if (!name) {
+      toast.error("Enter a center name (Trade Name or Branch) before creating");
+      return;
+    }
+    const input: Record<string, unknown> = { name };
+    if (centerForm.address.trim()) input.address = centerForm.address.trim();
+    if (centerForm.city.trim()) input.city = centerForm.city.trim();
+    if (centerForm.state.trim()) input.state = centerForm.state.trim();
+    setSaving(true);
+    try {
+      const { data, errors } = await createCenter({ variables: { input } });
+      if (errors && errors.length) {
+        toast.error(errors[0].message);
+        return;
+      }
+      toast.success("Center created");
+      const centerId = data?.createCenter?.id;
+      if (centerId) onCreated?.({ id: centerId });
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create center");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleBack = () => {
@@ -124,19 +174,19 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">City</label>
-            <input type="text" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+            <input type="text" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" value={centerForm.city} onChange={(e) => updateCenterField("city", e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">Branch</label>
-            <input type="text" placeholder="e.g., Sector 17" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+            <input type="text" placeholder="e.g., Sector 17" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" value={centerForm.branch} onChange={(e) => updateCenterField("branch", e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5 col-span-2">
             <label className="text-[14px] font-medium text-gray-700">Full Address</label>
-            <textarea placeholder="Enter complete address" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F] h-20 resize-none"></textarea>
+            <textarea placeholder="Enter complete address" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F] h-20 resize-none" value={centerForm.address} onChange={(e) => updateCenterField("address", e.target.value)}></textarea>
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">State</label>
-            <input type="text" defaultValue="Punjab" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+            <input type="text" defaultValue="Punjab" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" value={centerForm.state} onChange={(e) => updateCenterField("state", e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">Country</label>
@@ -162,7 +212,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">Trade Name</label>
-            <input type="text" placeholder="Business name" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+            <input type="text" placeholder="Business name" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" value={centerForm.tradeName} onChange={(e) => updateCenterField("tradeName", e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-[14px] font-medium text-gray-700">GSTIN</label>
@@ -787,11 +837,12 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           >
             Back
           </button>
-          <button 
+          <button
             onClick={handleNext}
-            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150"
+            disabled={saving}
+            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {currentStep === 5 ? 'Create center' : 'Continue'}
+            {currentStep === 5 ? (saving ? "Creating..." : "Create center") : "Continue"}
           </button>
         </div>
 

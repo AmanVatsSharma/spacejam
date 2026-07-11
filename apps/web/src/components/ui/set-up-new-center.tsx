@@ -154,7 +154,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
 
   const renderPage1 = () => (
     <>
-      <div className={styles.sectionCard} style={{ "--i": index }}>
+      <div className={styles.sectionCard} style={{ "--i": 0 } as React.CSSProperties}>
         <h2 className={styles.sectionTitle}>Location</h2>
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
@@ -369,8 +369,8 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
                 No products added yet. Click &quot;Add Product Type&quot; to get started.
               </div>
             )}
-            {products.map((product) => (
-              <div key={product.id} className={styles.productRow} style={{ "--i": index }}>
+            {products.map((product, idx) => (
+              <div key={product.id} className={styles.productRow} style={{ "--i": idx } as React.CSSProperties}>
                 <span className={styles.productName}>{product.name}</span>
                 <span className={styles.productData}>INR{product.basePrice}</span>
                 <span className={styles.productData}>{product.gstPercent}%</span>

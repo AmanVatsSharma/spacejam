@@ -3,11 +3,18 @@
 
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   GET_REVENUE_REPORT,
   GET_INVOICES,
   GET_DEPOSITS,
+  MARK_INVOICE_PAID,
+  FREEZE_DEPOSIT,
+  APPROVE_DEPOSIT_RELEASE,
+  RENEW_CONTRACT,
+  SEND_DEPOSIT_REMINDER,
 } from "@/lib/apollo/operations";
 import {
   normalizeStatus,
@@ -98,9 +105,37 @@ function formatCurrency(amount: number): string {
 }
 
 export default function RevenueOverviewPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Invoices");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [centerFilter, setCenterFilter] = useState("All center");
+  const [periodFilter, setPeriodFilter] = useState("Last 30 days");
+  const [cmFilter, setCmFilter] = useState("CM All");
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setCenterFilter("All center");
+    setPeriodFilter("Last 30 days");
+    setCmFilter("CM All");
+  };
+
+  const [markPaid] = useMutation(MARK_INVOICE_PAID, {
+    refetchQueries: [{ query: GET_INVOICES }],
+  });
+  const [freezeDeposit] = useMutation(FREEZE_DEPOSIT, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+  const [approveRelease] = useMutation(APPROVE_DEPOSIT_RELEASE, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+  const [renewContract] = useMutation(RENEW_CONTRACT, {
+    refetchQueries: [{ query: GET_INVOICES }],
+  });
+  const [sendReminder] = useMutation(SEND_DEPOSIT_REMINDER, {
+    refetchQueries: [{ query: GET_INVOICES }, { query: GET_DEPOSITS }],
+  });
 
   // Live revenue report
   const { data: revenueData } = useQuery(GET_REVENUE_REPORT, {
@@ -186,14 +221,32 @@ export default function RevenueOverviewPage() {
   const depositStatusLabelText = (raw: string): string =>
     depositStatusLabel[normalizeStatus(raw)] || raw;
 
-  // Per-tab filtered lists
+  // Per-tab filtered lists (with client-side search + center filter applied)
+  const matchesSearch = (text: string | null | undefined): boolean => {
+    if (!searchQuery.trim()) return true;
+    return (text ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase());
+  };
+  const matchesCenter = (centerName: string | null | undefined): boolean => {
+    if (centerFilter === "All center") return true;
+    return (centerName ?? "").toLowerCase().includes(centerFilter.toLowerCase());
+  };
+
   const tabInvoices =
-    activeTab === 'Invoices'
+    (activeTab === 'Invoices'
       ? invoices
       : activeTab === 'Overdues'
         ? invoices.filter((i: any) => normalizeStatus(i.status) === 'OVERDUE')
-        : [];
-  const tabDeposits = activeTab === 'Deposits' ? deposits : [];
+        : []
+    ).filter((i: any) =>
+      matchesSearch(i.customerName) &&
+      matchesCenter(i.centerName ?? i.center?.name),
+    );
+  const tabDeposits = activeTab === 'Deposits'
+    ? deposits.filter((d: any) =>
+      matchesSearch(d.customerName) &&
+      matchesCenter(d.center?.name),
+    )
+    : [];
 
   const formatDate = (value?: string | null): string => {
     if (!value) return '—';
@@ -223,13 +276,42 @@ export default function RevenueOverviewPage() {
       <div className={styles.filterCard}>
         <div className={styles.searchBox}>
           <span className="text-gray-400">{Icons.search}</span>
-          <input type="text" placeholder="Search lead name, company, or phone" />
+          <input
+            type="text"
+            placeholder="Search lead name, company, or phone"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className={styles.dropdowns}>
-          <button className={styles.dropdown}>All center <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.dropdown}>Last 30 days <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.dropdown}>CM All <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.clearAllBtn}>Clear All</button>
+          <select
+            className={styles.dropdown}
+            value={centerFilter}
+            onChange={(e) => setCenterFilter(e.target.value)}
+          >
+            <option value="All center">All center</option>
+            <option value="Sector 34">Sector 34</option>
+            <option value="Sector 62">Sector 62</option>
+          </select>
+          <select
+            className={styles.dropdown}
+            value={periodFilter}
+            onChange={(e) => setPeriodFilter(e.target.value)}
+          >
+            <option value="Last 30 days">Last 30 days</option>
+            <option value="This week">This week</option>
+            <option value="This month">This month</option>
+          </select>
+          <select
+            className={styles.dropdown}
+            value={cmFilter}
+            onChange={(e) => setCmFilter(e.target.value)}
+          >
+            <option value="CM All">CM All</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Unassigned">Unassigned</option>
+          </select>
+          <button className={styles.clearAllBtn} onClick={resetFilters}>Clear All</button>
         </div>
       </div>
 
@@ -418,9 +500,41 @@ export default function RevenueOverviewPage() {
                   {Icons.moreVertical}
                   {openMenuId === inv.id && (
                     <div className={styles.actionMenu}>
-                      <div className={styles.actionMenuItem}>View Details</div>
-                      <div className={styles.actionMenuItem}>Edit</div>
-                      <div className={styles.actionMenuItem}>Delete</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); router.push("/dashboard/revenue/invoices"); }}>View Details</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await markPaid({ variables: { id: inv.id, paymentMethod: inv.paymentMethod ?? "UPI" } });
+                          toast.success("Invoice marked as paid");
+                        } catch {
+                          toast.error("Failed to mark invoice as paid");
+                        }
+                      }}>Mark Paid</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        const d = new Date();
+                        d.setFullYear(d.getFullYear() + 1);
+                        try {
+                          await renewContract({ variables: { id: inv.id, newEndDate: d.toISOString() } });
+                          toast.success("Contract renewed");
+                        } catch {
+                          toast.error("Failed to renew contract");
+                        }
+                      }}>Renew</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await sendReminder({ variables: { id: inv.id, reminderType: "EMAIL" } });
+                          toast.success("Reminder sent");
+                        } catch {
+                          toast.error("Failed to send reminder");
+                        }
+                      }}>Send Reminder</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); toast.info("Invoice editing not yet configured"); }}>Edit</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); toast.info("Delete is disabled in this view"); }}>Delete</div>
                     </div>
                   )}
                 </div>
@@ -449,8 +563,37 @@ export default function RevenueOverviewPage() {
                   {Icons.moreVertical}
                   {openMenuId === dep.id && (
                     <div className={styles.actionMenu}>
-                      <div className={styles.actionMenuItem}>Release</div>
-                      <div className={styles.actionMenuItem}>Freeze</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); router.push("/dashboard/crm/deposits"); }}>View Details</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await approveRelease({ variables: { id: dep.id } });
+                          toast.success("Deposit release approved");
+                        } catch {
+                          toast.error("Failed to approve deposit release");
+                        }
+                      }}>Release</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await freezeDeposit({ variables: { id: dep.id } });
+                          toast.success("Deposit frozen");
+                        } catch {
+                          toast.error("Failed to freeze deposit");
+                        }
+                      }}>Freeze</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await sendReminder({ variables: { id: dep.id, reminderType: "EMAIL" } });
+                          toast.success("Reminder sent");
+                        } catch {
+                          toast.error("Failed to send reminder");
+                        }
+                      }}>Send Reminder</div>
                     </div>
                   )}
                 </div>
@@ -479,9 +622,18 @@ export default function RevenueOverviewPage() {
                   {Icons.moreVertical}
                   {openMenuId === inv.id && (
                     <div className={styles.actionMenu}>
-                      <div className={styles.actionMenuItem}>Send Email</div>
-                      <div className={styles.actionMenuItem}>Send SMS</div>
-                      <div className={styles.actionMenuItem}>Mark Paid</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); toast.info("Email sending not yet configured"); }}>Send Email</div>
+                      <div className={styles.actionMenuItem} onClick={() => { setOpenMenuId(null); toast.info("SMS sending not yet configured"); }}>Send SMS</div>
+                      <div className={styles.actionMenuItem} onClick={async (e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(null);
+                        try {
+                          await markPaid({ variables: { id: inv.id, paymentMethod: inv.paymentMethod ?? "UPI" } });
+                          toast.success("Invoice marked as paid");
+                        } catch {
+                          toast.error("Failed to mark invoice as paid");
+                        }
+                      }}>Mark Paid</div>
                     </div>
                   )}
                 </div>

@@ -291,8 +291,8 @@ export default function LeadsPage() {
       const matchesQuery =
         q.length === 0 ||
         l.name.toLowerCase().includes(q) ||
-        l.email.toLowerCase().includes(q) ||
-        l.company.toLowerCase().includes(q);
+        (l.email?.toLowerCase().includes(q) ?? false) ||
+        (l.company?.toLowerCase().includes(q) ?? false);
       const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
       const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
       return matchesQuery && matchesStatus && matchesSource;

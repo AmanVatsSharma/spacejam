@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-11
  */
 
-import { ObjectType, Field, InputType, Int, Boolean } from '@nestjs/graphql';
+import { ObjectType, Field, InputType, Int, ID } from '@nestjs/graphql';
 import { NotificationType, NotificationPriority } from '../types/user.type';
 import {
   IsString,

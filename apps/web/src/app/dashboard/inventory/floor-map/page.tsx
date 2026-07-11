@@ -10,6 +10,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import {
   GET_CENTERS,
@@ -110,11 +111,17 @@ function seatTypeLabel(type: string): string {
 }
 
 export default function FloorMapPage() {
+  const router = useRouter();
+
   // Active center and floor selection
   const [activeCenterId, setActiveCenterId] = useState<string | null>(null);
   const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  // Search queries and zoom for the floor map
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [mapSearch, setMapSearch] = useState<string>("");
+  const [zoom, setZoom] = useState<number>(1);
 
   // Load centers to populate floor tabs
   const {
@@ -198,12 +205,48 @@ export default function FloorMapPage() {
     }
   }, [centersData, activeCenterId]);
 
-  // Filter seats by status
+  // Filter seats by status + the left-bar search query
   const filteredSeats = useMemo(() => {
-    if (activeFilter === "All") return seats;
-    const normalized = activeFilter.toUpperCase();
-    return seats.filter((s: any) => normalizeStatus(s.status) === normalized);
-  }, [seats, activeFilter]);
+    let result = seats;
+    if (activeFilter !== "All") {
+      const normalized = activeFilter.toUpperCase();
+      result = result.filter((s: any) => normalizeStatus(s.status) === normalized);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((s: any) =>
+        String(s.number ?? "").toLowerCase().includes(q) ||
+        seatTypeLabel(s.seatType).toLowerCase().includes(q) ||
+        String(s.location ?? "").toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [seats, activeFilter, searchQuery]);
+
+  // Seats actually rendered on the map (further narrowed by the map search box)
+  const mapSeats = useMemo(() => {
+    if (!mapSearch.trim()) return filteredSeats;
+    const q = mapSearch.toLowerCase();
+    return filteredSeats.filter((s: any) =>
+      String(s.number ?? "").toLowerCase().includes(q) ||
+      seatTypeLabel(s.seatType).toLowerCase().includes(q)
+    );
+  }, [filteredSeats, mapSearch]);
+
+  // Zoom controls, clamped to [0.5, 2]
+  const zoomIn = () => setZoom((z) => Math.min(2, +(z + 0.2).toFixed(2)));
+  const zoomOut = () => setZoom((z) => Math.max(0.5, +(z - 0.2).toFixed(2)));
+
+  const handleContinue = () => {
+    router.push("/dashboard/inventory/table-view");
+  };
+
+  const handleViewDetails = (seatId: string | null) => {
+    router.push("/dashboard/inventory/table-view");
+    // seatId could be used to deep-link to a specific seat; table-view does not
+    // yet accept a seat filter param, so we navigate to the list for now.
+    if (seatId) void seatId;
+  };
 
   // Stats from filtered seats (not dashboard metrics — those cover all centers)
   const seatStats = useMemo(() => {
@@ -226,7 +269,8 @@ export default function FloorMapPage() {
     const available = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length;
     const occupied = seats.filter((s: any) => normalizeStatus(s.status) === "OCCUPIED").length;
     const maintenance = seats.filter((s: any) => normalizeStatus(s.status) === "MAINTENANCE").length;
-    // Upcoming = seats with a future booking (not exposed in this query; use 0)
+    // Upcoming bookings per seat are not exposed by GET_SEATS. Intentionally 0
+    // (do not fabricate) until a bookings-by-seat query is wired in.
     const upcoming = 0;
     return { all, available, occupied, maintenance, upcoming };
   }, [seats]);
@@ -292,7 +336,12 @@ export default function FloorMapPage() {
         <div className={styles.filterBar}>
           <div className={styles.searchBox}>
             <div className={styles.searchBoxIcon}>{Icons.search}</div>
-            <input type="text" placeholder="Search" />
+            <input
+              type="text"
+              placeholder="Search seats, cabins, locations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <div className={styles.filterPills}>
             {["All", "Available", "Occupied", "Maintenance"].map(filter => (
@@ -406,7 +455,12 @@ export default function FloorMapPage() {
             <div className={styles.mapToolbarLeft}>
               <div className={styles.mapSearch}>
                 {Icons.search}
-                <input type="text" placeholder="cabin 1B" defaultValue="cabin 1B" />
+                <input
+                  type="text"
+                  placeholder="cabin 1B"
+                  value={mapSearch}
+                  onChange={(e) => setMapSearch(e.target.value)}
+                />
               </div>
               <div className={styles.mapFilterIcon}>{Icons.filter}</div>
 
@@ -446,7 +500,10 @@ export default function FloorMapPage() {
                 {Icons.calendar}
                 {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </div>
-              <button className={styles.mapContinueBtn}>Continue</button>
+              <button
+                className={styles.mapContinueBtn}
+                onClick={handleContinue}
+              >Continue</button>
             </div>
           </div>
 
@@ -463,19 +520,22 @@ export default function FloorMapPage() {
                   : "Select a center and floor to view the map."}
               </div>
             ) : (
-              <div className={styles.floorGrid}>
+              <div
+                className={styles.floorGrid}
+                style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', transition: 'transform 0.2s ease-out' }}
+              >
                 {/* Open Seats area */}
                 <div className={`${styles.roomBlock} ${styles.rOpenSeats} ${styles.bgGrey}`}>
                   <div className={styles.rHexagons}>
-                    {Array.from({ length: Math.min(filteredSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length, 4) }).map((_, i) => (
+                    {Array.from({ length: Math.min(mapSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length, 4) }).map((_, i) => (
                       <div key={i} className={styles.hexagon}></div>
                     ))}
                   </div>
                   <div style={{ position: 'absolute', left: '70px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {filteredSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length} Hexagon
+                    {mapSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length} Hexagon
                   </div>
                   <div style={{ position: 'absolute', right: '40px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {filteredSeats.filter((s: any) => s.seatType === "HOT_DESK" || s.seatType === "DEDICATED" || s.seatType?.toUpperCase().includes("OPEN") || s.seatType?.toUpperCase().includes("DESK")).length} Open Seats
+                    {mapSeats.filter((s: any) => s.seatType === "HOT_DESK" || s.seatType === "DEDICATED" || s.seatType?.toUpperCase().includes("OPEN") || s.seatType?.toUpperCase().includes("DESK")).length} Open Seats
                   </div>
                   <div className={styles.rOpenSeatsBox}>
                     Open Seats
@@ -483,7 +543,7 @@ export default function FloorMapPage() {
                 </div>
 
                 {/* Render each seat as a room card */}
-                {filteredSeats.map((seat: any, index: number) => {
+                {mapSeats.map((seat: any, index: number) => {
                   const status = normalizeStatus(seat.status);
                   const statusColor: Record<string, string> = {
                     AVAILABLE: styles.roomGreen,
@@ -521,8 +581,18 @@ export default function FloorMapPage() {
             )}
 
             <div className={styles.zoomControls}>
-              <button className={styles.zoomBtn}>{Icons.zoomIn}</button>
-              <button className={styles.zoomBtn}>{Icons.zoomOut}</button>
+              <button
+                className={styles.zoomBtn}
+                onClick={zoomIn}
+                disabled={zoom >= 2}
+                title="Zoom in"
+              >{Icons.zoomIn}</button>
+              <button
+                className={styles.zoomBtn}
+                onClick={zoomOut}
+                disabled={zoom <= 0.5}
+                title="Zoom out"
+              >{Icons.zoomOut}</button>
             </div>
           </div>
 
@@ -592,7 +662,10 @@ export default function FloorMapPage() {
             )}
 
             <div className={styles.panelActions}>
-              <button className={styles.btnSecondary}>View Details</button>
+              <button
+                className={styles.btnSecondary}
+                onClick={() => handleViewDetails(selectedSeat.id)}
+              >View Details</button>
               {normalizeStatus(selectedSeat.status) !== "AVAILABLE" && (
                 <button
                   className={styles.btnPrimary}

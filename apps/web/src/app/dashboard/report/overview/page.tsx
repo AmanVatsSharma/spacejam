@@ -16,6 +16,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_DASHBOARD_METRICS,
   GET_REVENUE_REPORT,
@@ -46,6 +47,7 @@ export default function OverviewPage() {
     errorPolicy: "all",
   });
   const { data: revenueData } = useQuery(GET_REVENUE_REPORT, {
+    variables: { period: selectedPeriod.toUpperCase() },
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
   });
@@ -148,7 +150,10 @@ export default function OverviewPage() {
                 </option>
               ))}
             </select>
-            <button className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-200 shadow-sm">
+            <button
+              onClick={() => { toast.info("Preparing report for export…"); window.print(); }}
+              className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-200 shadow-sm"
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M8 3V8L11 11" />
                 <circle cx="8" cy="8" r="5" />

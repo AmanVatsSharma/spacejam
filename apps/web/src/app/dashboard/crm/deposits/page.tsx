@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { GET_DEPOSITS, RELEASE_DEPOSIT, DELETE_DEPOSIT } from "@/lib/apollo/operations";
+import { GET_DEPOSITS, RELEASE_DEPOSIT, DELETE_DEPOSIT, EXPORT_DEPOSITS } from "@/lib/apollo/operations";
 
 /* ─── Backend Deposit shape ─── */
 interface BackendDeposit {
@@ -83,6 +83,25 @@ export default function CRMDepositsPage() {
     refetchQueries: [{ query: GET_DEPOSITS }],
   });
 
+  const [exportDeposits] = useMutation(EXPORT_DEPOSITS);
+
+  const handleExport = async () => {
+    try {
+      const { data } = await exportDeposits({ variables: { format: "csv" } });
+      const csv = data?.exportDeposits ?? "";
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "deposits.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Exported deposits.csv");
+    } catch {
+      toast.error("Export failed");
+    }
+  };
+
   /* ── Transform ── */
   const rawDeposits: UIDeposit[] = useMemo(() => {
     if (!data?.deposits?.length) return [];
@@ -142,7 +161,7 @@ export default function CRMDepositsPage() {
             <p className="text-sm text-gray-500 mt-1">Manage client deposits, refunds, and holds</p>
           </div>
           <button
-            onClick={() => toast.info("Export coming soon")}
+            onClick={handleExport}
             className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -324,7 +343,7 @@ export default function CRMDepositsPage() {
           <h2 className="text-lg font-semibold text-[#101828] mb-4">Quick Actions</h2>
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => { toast.info("Opening Approve Release Requests…"); goToRevenueDeposits(); }}
+              onClick={() => { toast.info("Opening deposit management…"); goToRevenueDeposits(); }}
               className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700 active:scale-[0.97]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -334,7 +353,7 @@ export default function CRMDepositsPage() {
               Approve Requests
             </button>
             <button
-              onClick={() => { toast.info("Opening Freeze Account…"); goToRevenueDeposits(); }}
+              onClick={() => { toast.info("Opening deposit management…"); goToRevenueDeposits(); }}
               className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700 active:scale-[0.97]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -343,7 +362,7 @@ export default function CRMDepositsPage() {
               Freeze Account
             </button>
             <button
-              onClick={() => { toast.info("Opening Add Deposit…"); goToRevenueDeposits(); }}
+              onClick={() => { toast.info("Opening deposit management…"); goToRevenueDeposits(); }}
               className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700 active:scale-[0.97]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -353,7 +372,7 @@ export default function CRMDepositsPage() {
               Add Deposit
             </button>
             <button
-              onClick={() => { toast.info("Opening Send Reminder…"); goToRevenueDeposits(); }}
+              onClick={() => { toast.info("Opening deposit management…"); goToRevenueDeposits(); }}
               className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700 active:scale-[0.97]"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">

@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 /**
  * File:        apps/web/src/app/dashboard/revenue/invoices/page.tsx
  * Module:      Web · Dashboard · Revenue · Invoices
@@ -280,7 +282,7 @@ export default function InvoicesPage() {
       {activeTab === "discounts" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {discounts.map((discount, idx) => (
-            <div key={discount.id} className={`bg-white rounded-2xl shadow-sm p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${styles.fadeInUp}`} style={{ '--i': idx }}>
+            <div key={discount.id} className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200" style={{ '--i': idx } as CSSProperties}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-[#101828] mb-1">{discount.code}</h3>
