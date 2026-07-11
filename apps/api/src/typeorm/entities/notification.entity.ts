@@ -18,7 +18,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { ObjectType, Field, ID, Boolean } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
 import { NotificationType, NotificationPriority } from '../../graphql/types/user.type';
