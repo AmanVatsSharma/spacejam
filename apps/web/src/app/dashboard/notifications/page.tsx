@@ -57,7 +57,7 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1000px] mx-auto pb-10 px-4 sm:px-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 transition-all duration-200">
         <div>
           <h1 className="text-[24px] sm:text-[28px] font-bold text-[#101828] leading-tight">Notifications</h1>
           <p className="text-xs sm:text-sm text-[#667085] mt-1">
@@ -67,11 +67,11 @@ export default function NotificationsPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowSendDialog(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] active:scale-[0.97] transition-all duration-200 shadow-sm w-full sm:w-auto"
           >
             {Icons.bell} Send Notification
           </button>
-          <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm w-full sm:w-auto">
+          <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 active:scale-[0.97] transition-all duration-200 shadow-sm w-full sm:w-auto">
             {Icons.check} Mark all as read
           </button>
         </div>
@@ -99,7 +99,7 @@ export default function NotificationsPage() {
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">{Icons.chevronDown}</span>
             </div>
           ))}
-          <button className="col-span-2 sm:col-span-1 px-4 py-2.5 sm:py-2 bg-white text-[#344054] border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors w-full sm:w-auto mt-2 sm:mt-0">
+          <button className="col-span-2 sm:col-span-1 px-4 py-2.5 sm:py-2 bg-white text-[#344054] border border-gray-200 rounded-lg text-[13px] font-medium hover:bg-gray-50 active:scale-[0.97] transition-all duration-200 w-full sm:w-auto mt-2 sm:mt-0">
             Clear All
           </button>
         </div>
@@ -198,7 +198,7 @@ function SendNotificationDialog({
           </div>
           <button
             type="button"
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1 self-start"
+            className="text-gray-400 hover:text-gray-600 active:scale-[0.97] transition-all duration-200 p-1 self-start"
             onClick={onClose}
             aria-label="Close dialog"
           >
@@ -284,7 +284,7 @@ function SendNotificationDialog({
         <footer className="px-4 sm:px-6 py-4 sm:py-5 border-t border-gray-100 flex items-center justify-end">
           <button
             type="button"
-            className="w-full sm:w-auto flex justify-center items-center gap-2 px-6 py-3 bg-[#FF6A2F] text-white text-[14px] sm:text-[15px] font-semibold rounded-xl hover:bg-[#E55A20] transition-colors shadow-sm"
+            className="w-full sm:w-auto flex justify-center items-center gap-2 px-6 py-3 bg-[#FF6A2F] text-white text-[14px] sm:text-[15px] font-semibold rounded-xl hover:bg-[#E55A20] active:scale-[0.97] transition-all duration-200 shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

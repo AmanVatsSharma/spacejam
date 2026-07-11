@@ -158,7 +158,7 @@ export default function RevenueDepositsPage() {
             <h1 className="text-2xl font-semibold text-[#101828]">Security Deposits</h1>
             <p className="text-sm text-gray-500 mt-1">Manage client deposits, refunds, and holds</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors" onClick={() => setIsExportModalOpen(true)}>
+          <button             className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all active:scale-[0.97] transition-transform duration-150" onClick={() => setIsExportModalOpen(true)}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -197,7 +197,7 @@ export default function RevenueDepositsPage() {
               <option value="RELEASE_REQUESTED">Release Requested</option>
             </select>
             <button
-              className="px-4 py-2 bg-orange-50 text-[#FF6A2F] rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors"
+                            className="px-4 py-2 bg-orange-50 text-[#FF6A2F] rounded-lg text-sm font-medium hover:bg-orange-100 transition-all active:scale-[0.97] transition-transform duration-150"
               onClick={() => { setSearch(""); setStatusFilter(""); }}
             >
               Clear All
@@ -205,7 +205,7 @@ export default function RevenueDepositsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
               <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6A2F]">
                 <span className="text-xl font-medium">₹</span>
               </div>
@@ -214,7 +214,7 @@ export default function RevenueDepositsPage() {
                 <p className="text-sm text-gray-500 mt-1">Total Deposits Held</p>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
               <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6A2F]">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -226,7 +226,7 @@ export default function RevenueDepositsPage() {
                 <p className="text-sm text-gray-500 mt-1">Pending Release ({stats.pendingCount})</p>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
               <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-[#FF6A2F]">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
@@ -237,7 +237,7 @@ export default function RevenueDepositsPage() {
                 <p className="text-sm text-gray-500 mt-1">Refunded Deposits</p>
               </div>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4">
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
@@ -289,7 +289,7 @@ export default function RevenueDepositsPage() {
                   </tr>
                 ) : (
                   filtered.map((deposit) => (
-                    <tr key={deposit.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={deposit.id} className="transition-colors duration-150 hover:bg-[#F9FAFB]">
                       <td className="px-6 py-5 font-medium text-[#101828]">
                         {deposit.customerName}
                       </td>
@@ -305,7 +305,7 @@ export default function RevenueDepositsPage() {
                       <td className="px-6 py-5 text-center relative">
                         <button
                           onClick={() => setOpenActionMenu(openActionMenu === deposit.id ? null : deposit.id)}
-                          className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors"
+                          className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-all active:scale-[0.97] transition-transform duration-150"
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="1" />
@@ -316,7 +316,7 @@ export default function RevenueDepositsPage() {
                         {openActionMenu === deposit.id && (
                           <div className="absolute right-10 top-10 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-10 py-2 text-left animate-in fade-in zoom-in duration-150">
                             <button
-                              className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                                                          className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
                               onClick={() =>
                                 toast.info(
                                   `${deposit.customerName} • ${formatCurrency(Number(deposit.amount))}\n${depositStatusLabel[normalizeStatus(deposit.status)] ?? deposit.status}\nRef: ${deposit.referenceNumber ?? "—"}\nReceived: ${formatDate(deposit.receivedDate)}`,
@@ -328,7 +328,7 @@ export default function RevenueDepositsPage() {
                             {normalizeStatus(deposit.status) !== "RELEASED" && (
                               <button
                                 onClick={() => handleRelease(deposit.id)}
-                                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                                                            className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
                               >
                                 Release
                               </button>
@@ -336,14 +336,14 @@ export default function RevenueDepositsPage() {
                             {normalizeStatus(deposit.status) !== "FROZEN" && (
                               <button
                                 onClick={() => handleFreeze(deposit.id)}
-                                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                                                            className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
                               >
                                 Freeze
                               </button>
                             )}
                             <button
                               onClick={() => handleDelete(deposit.id)}
-                              className="w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50 text-left font-medium"
+                                                          className="w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
                             >
                               Delete
                             </button>
@@ -364,27 +364,27 @@ export default function RevenueDepositsPage() {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-[#101828] mb-4">Quick Actions</h2>
           <div className="flex flex-col gap-3">
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700" onClick={() => setIsApproveModalOpen(true)}>
+            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.97] transition-transform duration-150 text-sm font-semibold text-gray-700" onClick={() => setIsApproveModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
               Approve Requests
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700" onClick={() => setIsFreezeModalOpen(true)}>
+            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.97] transition-transform duration-150 text-sm font-semibold text-gray-700" onClick={() => setIsFreezeModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
               </svg>
               Freeze Account
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700" onClick={() => setIsAddDepositModalOpen(true)}>
+            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.97] transition-transform duration-150 text-sm font-semibold text-gray-700" onClick={() => setIsAddDepositModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Add Deposit
             </button>
-            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-semibold text-gray-700" onClick={() => setIsReminderModalOpen(true)}>
+            <button className="flex items-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.97] transition-transform duration-150 text-sm font-semibold text-gray-700" onClick={() => setIsReminderModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" />

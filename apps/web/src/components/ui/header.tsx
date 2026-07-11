@@ -17,6 +17,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useQuery } from "@apollo/client";
+import { GET_DASHBOARD_METRICS, GET_DEPOSITS } from "@/lib/apollo/operations";
+import { normalizeStatus } from "@/lib/revenue-status";
 import Logo from "@/assets/logo.png";
 
 export interface HeaderTab {
@@ -65,41 +68,91 @@ const ROLE_LABEL: Record<string, string> = {
 
 export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, hideSetUpButton = false, user }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Deposit Release Approval",
-      desc: "Tech Innovators Pvt Ltd • ₹50,000",
-      time: "5 min ago",
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 4h6m-6 4h6M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
-        </svg>
-      )
-    },
-    {
-      id: 2,
-      title: "Invoice Overdue",
-      desc: "DataStream Solutions • INV-2026-1234",
-      time: "12 min ago",
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      )
-    },
-    {
-      id: 3,
-      title: "Occupancy Alert",
-      desc: "Center occupancy dropped to 76%",
-      time: "1 hour ago",
-      icon: (
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      )
+
+  // Derive real notifications from live data
+  const { data: metricsData } = useQuery(GET_DASHBOARD_METRICS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  const { data: depositsData } = useQuery(GET_DEPOSITS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
+  const metrics = metricsData?.dashboardMetrics;
+  const deposits = depositsData?.deposits ?? [];
+
+  const notifications = (() => {
+    const items: { id: string; title: string; desc: string; time: string; icon: React.ReactNode }[] = [];
+
+    // Pending deposit release requests
+    const releasePending = deposits.filter((d: any) => normalizeStatus(d.status) === "RELEASE_REQUESTED");
+    if (releasePending.length > 0) {
+      items.push({
+        id: "deposit-release",
+        title: "Deposit Release Approval",
+        desc: `${releasePending.length} pending • ${releasePending[0]?.customerName ?? ''}`,
+        time: "Requires action",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-6 4h6m-6 4h6M6 4h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z" />
+          </svg>
+        ),
+      });
     }
-  ]);
+
+    // Frozen deposits
+    const frozen = deposits.filter((d: any) => normalizeStatus(d.status) === "FROZEN");
+    if (frozen.length > 0) {
+      items.push({
+        id: "deposit-frozen",
+        title: "Frozen Deposits",
+        desc: `${frozen.length} deposit${frozen.length > 1 ? 's' : ''} frozen`,
+        time: "Review required",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        ),
+      });
+    }
+
+    // Pending payments alert
+    if (metrics?.pendingPayments > 0) {
+      items.push({
+        id: "pending-payments",
+        title: "Pending Payments",
+        desc: `₹${metrics.pendingPayments.toLocaleString('en-IN')} pending`,
+        time: "Follow up needed",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+          </svg>
+        ),
+      });
+    }
+
+    // Low occupancy alert
+    if (metrics?.totalSeats > 0) {
+      const occRate = Math.round(((metrics.totalSeats - metrics.availableSeats) / metrics.totalSeats) * 100);
+      if (occRate > 85) {
+        items.push({
+          id: "occupancy-high",
+          title: "High Occupancy Alert",
+          desc: `Center occupancy at ${occRate}%`,
+          time: "Near capacity",
+          icon: (
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          ),
+        });
+      }
+    }
+
+    return items;
+  })();
+
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const notifMenuRef = useRef<HTMLDivElement | null>(null);
@@ -173,7 +226,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
       {!hideSetUpButton && (
         <button
           onClick={onSetUpNewCenter}
-          className="flex items-center gap-2 px-4 py-2.5 compact:px-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 compact:px-2.5 bg-[#FF6A2F] text-white rounded-xl font-medium text-sm hover:bg-[#E55A26] transition-all duration-200 shadow-sm active:scale-[0.97]"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <line x1="8" y1="2" x2="8" y2="14" />
@@ -190,7 +243,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             aria-label="Notifications"
-            className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-colors"
+            className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4A5565" strokeWidth="1.5">
               <path d="M10 2C7.24 2 5 4.24 5 7V10L3 12V13H17V12L15 10V7C15 4.24 12.76 2 10 2Z" />
@@ -205,11 +258,11 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
             <div className="absolute right-0 top-14 w-80 rounded-2xl border border-[#E5E7EB] bg-white py-2 shadow-xl z-50">
               <div className="flex justify-between items-center px-4 py-3 border-b border-[#F3F4F6]">
                 <span className="font-bold text-[#1F2937] text-sm">Notifications</span>
-                <button 
-                  onClick={() => setNotifications([])} 
+                <button
+                  onClick={() => setShowNotifications(false)}
                   className="text-xs text-[#FF6A2F] hover:underline font-medium"
                 >
-                  Mark all read
+                  Dismiss
                 </button>
               </div>
               <div className="flex flex-col max-h-[320px] overflow-y-auto">
@@ -248,7 +301,7 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
           <button
             type="button"
             onClick={() => setShowUserMenu((v) => !v)}
-            className="flex items-center h-11 px-1 bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-colors"
+            className="flex items-center h-11 px-1 bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
             aria-haspopup="menu"
             aria-expanded={showUserMenu}
           >

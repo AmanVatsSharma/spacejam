@@ -63,9 +63,9 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-[800px] max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
+      <div
+        className="w-full max-w-[800px] max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all duration-200 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -90,19 +90,19 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Full Name</label>
-                <input type="text" placeholder="Enter full name" value={name} onChange={e => setName(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter full name" value={name} onChange={e => setName(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Phone Number</label>
-                <input type="text" placeholder="Enter phone number" value={phone} onChange={e => setPhone(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter phone number" value={phone} onChange={e => setPhone(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Email Address</label>
-                <input type="email" placeholder="Enter email address" value={email} onChange={e => setEmail(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="email" placeholder="Enter email address" value={email} onChange={e => setEmail(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Company Name</label>
-                <input type="text" placeholder="Enter company name" value={company} onChange={e => setCompany(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter company name" value={company} onChange={e => setCompany(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
             </div>
           </section>
@@ -145,11 +145,11 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Team Size</label>
-                <input type="text" placeholder="Enter team size" value={teamSize} onChange={e => setTeamSize(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter team size" value={teamSize} onChange={e => setTeamSize(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Contract Start Date</label>
-                <input type="date" value={contractStartDate} onChange={e => setContractStartDate(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="date" value={contractStartDate} onChange={e => setContractStartDate(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
             </div>
           </section>
@@ -173,7 +173,7 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Allocated Space</label>
-                <input type="text" placeholder="e.g. Office 4B" value={location} onChange={e => setLocation(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="e.g. Office 4B" value={location} onChange={e => setLocation(e.target.value)} className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
             </div>
           </section>
@@ -199,14 +199,14 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
         <div className="p-6 border-t border-gray-100 flex justify-end items-center gap-3 bg-gray-50/50">
           <button 
             onClick={onClose}
-            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
           >
             Cancel
           </button>
-          <button onClick={handleSaveDraft} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors">
+          <button onClick={handleSaveDraft} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
             Save as Draft
           </button>
-          <button onClick={handleSubmit} className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+          <button onClick={handleSubmit} className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]">
             Create Client
           </button>
         </div>

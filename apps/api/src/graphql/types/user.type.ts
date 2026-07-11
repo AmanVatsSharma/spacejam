@@ -46,6 +46,23 @@ export enum EventStatus {
   REJECTED = 'REJECTED',
 }
 
+// Notification Enums
+export enum NotificationType {
+  BOOKING = 'BOOKING',
+  PAYMENT = 'PAYMENT',
+  DEPOSIT = 'DEPOSIT',
+  LEAD = 'LEAD',
+  SYSTEM = 'SYSTEM',
+  REQUEST = 'REQUEST',
+  EVENT = 'EVENT',
+}
+
+export enum NotificationPriority {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+}
+
 // Request Enums
 export enum RequestType {
   PRINTER = 'PRINTER',
@@ -73,6 +90,8 @@ registerEnumType(EventType, { name: 'EventType' });
 registerEnumType(EventStatus, { name: 'EventStatus' });
 registerEnumType(RequestType, { name: 'RequestType' });
 registerEnumType(RequestStatus, { name: 'RequestStatus' });
+registerEnumType(NotificationType, { name: 'NotificationType' });
+registerEnumType(NotificationPriority, { name: 'NotificationPriority' });
 
 // Object Types
 export enum UserRole {

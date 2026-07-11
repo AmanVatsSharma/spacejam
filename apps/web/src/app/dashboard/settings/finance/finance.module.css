@@ -55,6 +55,9 @@
 .resetBtn:hover {
   background: #F9FAFB;
 }
+.resetBtn:active {
+  transform: scale(0.97);
+}
 .saveBtn {
   display: flex;
   align-items: center;
@@ -71,6 +74,9 @@
 }
 .saveBtn:hover {
   background: #E66A3D;
+}
+.saveBtn:active {
+  transform: scale(0.97);
 }
 
 /* ---------------- Sub Tabs ---------------- */
@@ -94,6 +100,9 @@
 .subTabActive {
   background: #FF7847;
   color: #FFFFFF;
+}
+.subTab:active {
+  transform: scale(0.97);
 }
 
 /* ---------------- Split Layout ---------------- */
@@ -124,6 +133,11 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  transition: all 0.2s ease;
+}
+.contentCard:hover {
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 .contentCardSmallPadding {
   background: #FFFFFF;
@@ -132,6 +146,11 @@
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  transition: all 0.2s ease;
+}
+.contentCardSmallPadding:hover {
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 /* ---------------- Form Content ---------------- */
@@ -671,4 +690,22 @@
   .toggleCardsRow {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------------- Animations ---------------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFadeIn {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 60ms);
 }

@@ -11,9 +11,9 @@ export function BookRoomModal({ open, onClose }: BookRoomModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-[500px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
+      <div
+        className="w-full max-w-[500px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all duration-200 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-100">
@@ -78,11 +78,11 @@ export function BookRoomModal({ open, onClose }: BookRoomModalProps) {
         <div className="p-6 border-t border-gray-100 flex gap-4">
           <button 
             onClick={onClose}
-            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all active:scale-[0.97]"
           >
             Cancel
           </button>
-          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all active:scale-[0.97]">
             Confirm Booking
           </button>
         </div>

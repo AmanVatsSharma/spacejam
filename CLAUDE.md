@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SpaceJam is a coworking space management system built as an Nx monorepo with:
 - **Frontend**: Next.js 16 (React 19) with Tailwind CSS v4 and CSS Modules
-- **Backend**: NestJS (apps/api/) - endpoints built as features are added
+- **Backend**: NestJS (apps/api/) - GraphQL API with TypeORM, Auth (JWT + 2FA), Redis caching
 - **Package manager**: npm (use `npm exec nx` or `npx nx` for Nx commands)
-- **Dev server**: Port 3000 (auto-selects next available: 3001, etc.), Turbopack enabled
+- **Dev server**: Port 3001 by default
 
 ---
 
@@ -16,9 +16,16 @@ SpaceJam is a coworking space management system built as an Nx monorepo with:
 
 ### Running the App
 ```sh
-npx nx dev web              # Start dev server
+npx nx dev web              # Start frontend dev server (port 3001)
+npx nx serve api            # Start backend dev server (port 4000)
 npx nx build web            # Production build
-npx nx start web            # Start production server
+npx nx build api            # Backend production build
+```
+
+### Testing
+```sh
+npx nx test web             # Run frontend unit tests (vitest)
+npx nx e2e web              # Run Playwright E2E tests
 ```
 
 ### Nx Workspace
@@ -28,74 +35,75 @@ npx nx list                 # List all projects
 npx nx sync                 # Sync TypeScript project references
 ```
 
-### Testing
-```sh
-npx nx test web             # Run unit tests
-npx nx e2e web              # Run E2E tests (Playwright)
-```
-
 ### Troubleshooting
 | Issue | Fix |
 |-------|-----|
 | Tailwind/PostCSS error | `npm install @tailwindcss/postcss --workspace=apps/web` |
 | Build cache issues | `rm -rf apps/web/.next` then rebuild |
-| Port 3000 occupied | Next.js auto-selects 3001, etc. |
+| Port occupied | Next.js auto-selects next available port |
 
 ---
 
-## Architecture
+## Frontend Architecture
 
-### Dashboard Layout Pattern
-
-The dashboard uses a nested layout system:
+### App Structure
 
 ```
-apps/web/src/app/
-├── layout.tsx                 # Root layout (fonts, globals)
-├── page.tsx                   # Redirects to /dashboard/inventory
-├── globals.css                # CSS variables, Tailwind imports
-├── dashboard/
-│   ├── layout.tsx             # Dashboard wrapper: Header + Sidebar (all /dashboard/* routes)
-│   ├── page.tsx               # Dashboard home
-│   ├── inventory/page.tsx      # Inventory management
-│   ├── bookings/page.tsx       # Full booking management
-│   ├── floors/page.tsx         # Floor/seat grid visualization
-│   ├── location/page.tsx        # Location management
-│   ├── crm/page.tsx            # CRM (partial)
-│   ├── revenue/page.tsx        # Revenue (partial)
-│   ├── report/page.tsx         # Reports
-│   ├── operations/page.tsx     # Operations (bookings table)
-│   └── settings/page.tsx       # Settings (partial)
-└── set-up-new-center/         # 5-step wizard modal component
+apps/web/src/
+├── app/                      # Next.js App Router
+│   ├── layout.tsx            # Root layout → wraps with Providers (Apollo + Auth)
+│   ├── page.tsx              # Root redirect
+│   ├── global-error.tsx      # Global error boundary
+│   ├── api/                  # Route handlers (GraphQL proxy endpoint)
+│   ├── dashboard/
+│   │   ├── layout.tsx        # Dashboard shell: Header + Sidebar + Content
+│   │   ├── page.tsx          # Dashboard home
+│   │   ├── home/             # Main dashboard (stats, charts)
+│   │   ├── crm/              # CRM: leads, customers, onboarding (nested routes)
+│   │   ├── revenue/          # Revenue: contracts, deposits, invoices
+│   │   ├── operations/       # Operations: bookings, requests, meeting rooms
+│   │   ├── inventory/        # Inventory management
+│   │   ├── floors/           # Floor/seat grid
+│   │   ├── location/         # Location management
+│   │   ├── report/           # Reports
+│   │   └── settings/         # Settings tabs
+│   └── set-up-new-center/    # 5-step wizard modal
+├── components/
+│   ├── ui/                   # Shared UI primitives (header, sidebar, cards)
+│   └── Providers.tsx          # ApolloProvider + AuthProvider wrapper
+├── contexts/
+│   ├── auth-context.tsx       # Auth state (user, tokens, signin/signup/2FA)
+│   └── apollo-provider-wrapper.tsx  # Client-side Apollo + Auth mount
+├── lib/
+│   ├── apollo/
+│   │   ├── client.ts          # Apollo Client instance (auth, refresh tokens)
+│   │   ├── operations.ts      # All GraphQL operations (queries + mutations)
+│   │   └── token-storage.ts   # Cookie-based token storage
+│   ├── api.ts                 # Convenience fetch wrapper (non-React contexts)
+│   ├── mock-data/             # Mock data per domain (crm, operations, revenue)
+│   └── constants/             # Shared constants
+├── hooks/
+│   └── use-operations.ts      # Domain-specific Apollo hooks (meeting rooms, events, etc.)
+├── proxy.ts                   # Next.js 16 route guard (auth, role checks)
+├── types/                     # Shared TypeScript types
+└── globals.css                # CSS variables, Tailwind imports
 ```
 
-### Sidebar Navigation
+### Data Flow
 
-The sidebar (`components/ui/sidebar.tsx`) uses `usePathname()` for active states. When adding new routes, update the sidebar links array to include the new page.
-
-Current routes:
-- `/dashboard` → Dashboard home
-- `/dashboard/crm` → CRM
-- `/dashboard/revenue` → Revenue
-- `/dashboard/operations` → Operations
-- `/dashboard/report` → Reports
-- `/dashboard/inventory` → Inventory
-- `/dashboard/settings` → Settings
-- `/dashboard/location` → Location Management
-- `/dashboard/floors` → Floor & Seats
-- `/dashboard/bookings` → Booking Management
+1. **GraphQL-first**: All data fetching uses Apollo Client (`@/lib/apollo/operations.ts`). Pages consume data via `useQuery`/`useMutation` hooks defined in domain-specific hook files (e.g., `hooks/use-operations.ts`).
+2. **Auth**: JWT access + refresh tokens stored in cookies. `auth-context.tsx` manages user state and auth mutations. Apollo client automatically attaches access tokens and handles silent refresh on 401.
+3. **Mock data**: Each domain has mock data files in `lib/mock-data/`. Pages fall back to mock data when no backend is wired. The pattern is `const { data, loading } = useQuery(...)` with mock fallback in the component.
+4. **Proxy (not middleware)**: `proxy.ts` is the Next.js 16 route guard. It checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes.
 
 ### Component Pattern
 
-```typescript
-'use client';  // Required for components with hooks/event handlers
+```tsx
+'use client';  // Required for any file using hooks/event handlers
 
 import styles from './ComponentName.module.css';
 
-interface Props {
-  active?: boolean;
-  onAction?: () => void;
-}
+interface Props { /* inline or imported */ }
 
 export default function ComponentName({ active, onAction }: Props) {
   return (
@@ -107,19 +115,15 @@ export default function ComponentName({ active, onAction }: Props) {
 }
 ```
 
-### CSS Module Pattern
+### Styling Rules
 
-Use CSS Modules for component-specific complex styles:
-```css
-.container { position: relative; padding: 16px; }
-.header { font-size: 18px; font-weight: 600; color: #1F1F1F; }
-```
+- **Tailwind**: layout, spacing, grid, flexbox
+- **CSS Modules**: component-specific styles, animations, complex selectors
+- **Responsive**: use the `compact:` variant (triggers at `max-width: 1023.98px`) for tablet layouts
+- **Tables**: always wrap in `overflow-x-auto` for horizontal scroll at compact width
 
----
+### Design Tokens
 
-## Design System
-
-### Colors
 | Purpose | Value |
 |---------|-------|
 | Primary orange | `#FF6A2F` (use consistently, not `#FF7847`) |
@@ -132,87 +136,87 @@ Use CSS Modules for component-specific complex styles:
 | Success | `#10B981` |
 | Error | `#EF4444` |
 
-### Typography
-- Headings: SemiBold/Medium, 18-24px
-- Body: Regular, 14-16px
-- Small/labels: 12-14px
+| Element | Style |
+|---------|-------|
+| Cards | `border-radius: 14px`, `padding: 16px 24px` |
+| Buttons | `border-radius: 10px`, `padding: 10px 20px` |
+| Table rows | `background: #F9FAFB`, `border-bottom: 1px solid #E5E7EB` |
 
-### Border Radius
-- Cards: 14px (`rounded-2xl`)
-- Buttons: 10-12px (`rounded-xl`)
-- Small elements: 8px (`rounded-lg`)
+### Path Alias
 
-### Component Styles
-```css
-/* Card */
-background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 14px; padding: 16px 24px;
-
-/* Primary button */
-background: #FF6A2F; color: white; border-radius: 10px; padding: 10px 20px;
-
-/* Table rows */
-background: #F9FAFB; border-bottom: 1px solid #E5E7EB; padding: 12px 20px;
-```
+`@/*` maps to `apps/web/src/*` (configured in `apps/web/tsconfig.json`).
 
 ---
 
-## Nx Workspace Configuration
+## Backend Architecture
 
-The workspace uses Nx plugins configured in `nx.json`:
-- `@nx/next/plugin` - Next.js apps (web)
-- `@nx/nest/plugin` - NestJS apps (api)
-- `@nx/js/typescript` - TypeScript library support
-- `@nx/playwright/plugin` - E2E testing
-
-Nx generators configured for `@nx/next`:
-```json
-"generators": {
-  "@nx/next": {
-    "application": { "style": "css", "linter": "none" }
-  }
-}
 ```
+apps/api/src/
+├── main.ts                    # NestJS bootstrap (CORS, validation, body parser)
+├── app/
+│   └── app.module.ts          # Root module
+├── auth/                      # Auth module (JWT, 2FA, magic link, password reset)
+├── user/                      # User entity + service
+├── crm/                       # Customer/lead management
+├── booking/                   # Booking entity + service
+├── meeting-room/              # Meeting room + events
+├── request/                   # Booking requests
+├── revenue/                   # Contracts, deposits, invoices
+├── center/                    # Center/location management
+├── event/                     # Events module
+├── analytics/                 # Analytics module
+├── health/                    # Health checks
+├── cache/                     # Redis caching layer
+├── observability/             # OpenTelemetry + Prometheus metrics
+├── config/                    # Configuration module
+├── graphql/
+│   ├── schema.graphql         # SDL schema (source of truth)
+│   ├── resolvers/             # GraphQL resolvers (one per domain)
+│   ├── inputs/                # GraphQL input types
+│   ├── types/                 # GraphQL output types
+│   ├── guards/                # GraphQL auth guards (field-level + global)
+│   ├── plugins/               # GraphQL plugins (rate limiting, complexity)
+│   ├── dataloaders/           # DataLoader batching for N+1 prevention
+│   └── pubsub/                # Subscription pub/sub (Redis-backed)
+├── typeorm/                    # TypeORM entities, migrations, connections
+└── prisma/                     # Legacy Prisma (migrated to TypeORM, being phased out)
+```
+
+### Key Backend Patterns
+
+- **GraphQL-first**: Schema defined in SDL (`graphql/schema.graphql`), code-first resolvers mirror it
+- **TypeORM**: Entities in `typeorm/` directory. Migrations run via TypeORM CLI.
+- **Auth**: Passport + JWT strategy. Access tokens (15m) + refresh tokens (7d). 2FA via TOTP. Guard pattern: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
+- **Caching**: Redis-backed with in-memory fallback. DataLoader pattern for batching entity lookups.
+- **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 
 ---
 
-## Deployment & Server
+## Environment Variables
 
-### AWS EC2 Instance Details
-- **Instance ID**: `i-040fe592978e19408 (CS_01)`
-- **Public DNS**: `ec2-98-130-45-181.ap-south-2.compute.amazonaws.com`
-- **SSH User**: `ubuntu`
-- **Key Location**: `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem`
+The backend reads from `.env` (root). Key vars:
+- `DATABASE_URL` - PostgreSQL connection
+- `JWT_SECRET` - JWT signing secret
+- `REDIS_HOST` / `REDIS_PORT` - Redis connection
+- `PORT` - Backend port (default 4000)
+- `FRONTEND_URL` - Frontend origin for CORS
+- `NODE_ENV` - environment mode
 
-### SSH Connection
-```sh
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
-```
+The frontend reads from `apps/web/.env.local`:
+- `NEXT_PUBLIC_GRAPHQL_HTTP_URL` - backend GraphQL endpoint
 
-### Application Management (PM2)
-The application is managed by PM2 on the server.
-```sh
-pm2 status                # Check application status
-pm2 restart spacejam-web  # Restart the application
-pm2 stop spacejam-web     # Stop the application
-pm2 logs spacejam-web     # View live logs
-```
+---
 
-### Update/Deployment Workflow
-To update the server with local changes:
-1. **Archive**: `git archive --format=tar.gz -o update.tar.gz HEAD`
-2. **Transfer**: `scp -i "..." update.tar.gz ubuntu@ec2...:/home/ubuntu/`
-3. **Extract & Build** (on server):
-   ```sh
-   sudo rm -rf spacejam && mkdir spacejam
-   tar -xzf update.tar.gz -C spacejam
-   cd spacejam && npm install && npx nx build web
-   pm2 restart spacejam-web
-   ```
+## Deployment
 
-### Server Configuration Notes
-- **Node.js**: Managed via NVM (v20 installed).
-- **Swap**: 2GB swap file enabled to support builds on low-RAM instance (`/swapfile`).
-- **Port**: App runs on port 3000.
+Production is a single EC2 instance (ap-south-2) running both frontend and backend behind nginx.
+- Frontend: PM2 process `spacejam-web`, port 3000
+- Backend: PM2 process `spacejam-api`, port 4000
+- Nginx: reverse proxy + SSL termination
+- Database: PostgreSQL (local or RDS)
+- Cache: Redis (local or ElastiCache)
+
+Update workflow: `git archive` → `scp` → extract on server → `npm install && npx nx build web` → `pm2 restart`
 
 ---
 
@@ -235,45 +239,15 @@ All TypeScript/TSX files should include this header:
 
 ## Commit Conventions
 
-- **No emoji** in commit messages
+- No emoji in commit messages
 - Use imperative mood: "Add feature" not "Added feature"
 - Reference issue numbers if applicable
 
 ---
 
-## Key Implementation Notes
-
-1. **Set Up New Center Modal**: Lives in `apps/web/src/app/set-up-new-center/` as a multi-step wizard. Steps 3-5 (Floor Setup, Space Setup, Review) are partial placeholders.
-
-2. **Mock Data Pattern**: All pages use mock data currently. Ready for NestJS backend integration as endpoints are built.
-
-3. **CSS Modules + Tailwind**: Pages use CSS Modules for component styles and Tailwind for layout/spacing. Avoid mixing patterns inconsistently.
-
-4. **Active State**: Sidebar uses `usePathname()` from `next/navigation` - no prop drilling needed.
-
-5. **Frontend-only Mode**: The app currently runs as a standalone frontend. NestJS backend in `apps/api/` is not yet connected to the frontend.
-
-6. **Compact Variant (Tablet)**: Tailwind variant `compact:` triggers at `@media (max-width: 1023.98px)` (defined in `apps/web/tailwind.config.js`). Use it to tighten padding, gaps, and grid columns below 1024px (e.g. `compact:px-2`, `compact:grid-cols-1`). Tables should be wrapped in `overflow-x-auto` so they scroll instead of overflowing at compact width.
-
----
-
-## Figma Design Reference
-
-URL: https://www.figma.com/design/9dp9Zo8fxieN6DLgMYdAhE/spacejam-Dv-Team-final--Copy-?node-id=0-1
-
-Design sections:
-1. Inventory - ✅ Complete
-2. Location Management - ✅ Complete
-3. Floor/Seats Overview - ✅ Complete
-4. Booking Management - ✅ Complete
-5. Revenue & Reports - ⚠️ Partial (needs real data)
-
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
+This project uses **bd (beads)** for issue tracking. Run `bd prime` for the full workflow reference.
 
 ```bash
 bd ready              # Find available work
@@ -282,43 +256,6 @@ bd update <id> --claim  # Claim work
 bd close <id>         # Complete work
 ```
 
-### Rules
-
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
-
-## Agent Context Profiles
-
-The managed Beads block is task-tracking guidance, not permission to override repository, user, or orchestrator instructions.
-
-- **Conservative (default)**: Use `bd` for task tracking. Do not run git commits, git pushes, or Dolt remote sync unless explicitly asked. At handoff, report changed files, validation, and suggested next commands.
-- **Minimal**: Keep tool instruction files as pointers to `bd prime`; use the same conservative git policy unless active instructions say otherwise.
-- **Team-maintainer**: Only when the repository explicitly opts in, agents may close beads, run quality gates, commit, and push as part of session close. A current "do not commit" or "do not push" instruction still wins.
-
-## Session Completion
-
-This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
-
-1. **File issues for remaining work** - Create beads for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **Handle git/sync by active profile**:
-   ```bash
-   # Conservative/minimal/default: report status and proposed commands; wait for approval.
-   git status
-
-   # Team-maintainer opt-in only, unless current instructions forbid it:
-   git pull --rebase
-   git push
-   git status
-   ```
-5. **Hand off** - Summarize changes, validation, issue status, and any blocked sync/commit/push step
-
-**Critical rules:**
-- Explicit user or orchestrator instructions override this Beads block.
-- Do not commit or push without clear authority from the active profile or the current user request.
-- If a required sync or push is blocked, stop and report the exact command and error.
-<!-- END BEADS INTEGRATION -->
+- Use `bd` for ALL task tracking -- do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- Use `bd remember` for persistent knowledge -- do NOT use MEMORY.md files
+- Issues live in a local Dolt DB; sync uses `refs/dolt/data` on the git remote; `.beads/issues.jsonl` is a passive export

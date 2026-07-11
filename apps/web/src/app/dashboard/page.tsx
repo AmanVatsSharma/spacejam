@@ -225,7 +225,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Row 2: Lead & Health */}
-      <div className="flex gap-[24px] compact:flex-col items-start w-full">
+      <div className="flex gap-[24px] compact:flex-col items-stretch w-full">
         {/* Left Column */}
         <div className="flex flex-col gap-[24px] flex-shrink-0">
           <TotalLeadCard
@@ -250,13 +250,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Middle Column */}
-        <div className="flex-shrink-0">
+        {/* Middle Column — stretches to match row height */}
+        <div className="flex-1 min-w-0 max-w-[420px]">
           <PaymentHealthCard
             total={formatCurrency(totalPayments)}
             paid={paymentHealthPaid}
             overdue={{ percent: 0, amount: "₹0" }}
             partial={paymentHealthPartial}
+            className="h-full"
           />
         </div>
 
@@ -267,7 +268,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Row 3: Rooms & Approvals */}
-      <div className="flex gap-[24px] compact:flex-col items-start w-full">
+      <div className="flex gap-[24px] compact:flex-col items-stretch w-full">
         {/* Left Column */}
         <div className="flex-shrink-0">
           <RoomAvailabilityCircleCard

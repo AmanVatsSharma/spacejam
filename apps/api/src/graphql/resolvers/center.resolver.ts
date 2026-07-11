@@ -34,6 +34,33 @@ export const CENTER_TRIGGERS = {
   floorUpdated: 'floor.updated',
 } as const;
 
+/**
+ * Recursively merge `incoming` into `target`. Plain object values are
+ * merged key-by-key (so updating settings.finance doesn't wipe
+ * settings.security); everything else is overwritten by the incoming value.
+ */
+function deepMergeSettings(
+  target: Record<string, any>,
+  incoming: Record<string, any>,
+): Record<string, any> {
+  const out: Record<string, any> = { ...target };
+  for (const [key, value] of Object.entries(incoming)) {
+    if (
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      out[key] &&
+      typeof out[key] === 'object' &&
+      !Array.isArray(out[key])
+    ) {
+      out[key] = deepMergeSettings(out[key], value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
 @Resolver(() => CenterEntity)
 export class CenterResolver {
   constructor(
@@ -126,12 +153,57 @@ export class CenterResolver {
     @Args('id', { type: () => ID }) id: string,
     @Context() context
   ): Promise<boolean> {
-    const userId = context.req.user?.id;
-    if (!userId) throw new UnauthorizedException('Unauthorized');
 
     await this.centerRepo.update(id, { status: CenterStatus.MAINTENANCE });
     await this.cache.invalidatePattern(`center:${id}`);
     return true;
+  }
+
+  /**
+   * Return the persisted center settings (jsonb), or an empty object when
+   * none exist yet. Used by every Settings page (finance, notifications,
+   * security, operations, permissions) to load their toggles.
+   */
+  @Query(() => String, { description: 'Center settings as a JSON string' })
+  async centerSettings(
+    @Args('centerId', { type: () => ID }) centerId: string,
+  ): Promise<string> {
+    const center = await this.centerRepo.findOne({ where: { id: centerId } });
+    return JSON.stringify(center?.settings ?? {});
+  }
+
+  /**
+   * Deep-merge a partial settings object into Center.settings and return
+   * the updated settings as a JSON string. Only the supplied keys are
+   * overwritten; existing sibling keys are preserved.
+   */
+  @Mutation(() => String, { description: 'Update center settings (JSON string), returns merged settings' })
+  async updateCenterSettings(
+    @Args('centerId', { type: () => ID }) centerId: string,
+    @Args('settings', { type: () => String }) settings: string,
+    @Context() context
+  ): Promise<string> {
+    const userId = context.req.user?.id;
+    if (!userId) throw new UnauthorizedException('Unauthorized');
+
+    const center = await this.centerRepo.findOne({ where: { id: centerId } });
+    if (!center) throw new NotFoundException('Center not found');
+
+    let incoming: Record<string, any> = {};
+    try {
+      incoming = settings ? JSON.parse(settings) : {};
+    } catch {
+      incoming = {};
+    }
+
+    const merged = deepMergeSettings(center.settings ?? {}, incoming);
+    await this.centerRepo.update(centerId, { settings: merged });
+    await this.cache.invalidatePattern(`center:${centerId}`);
+    await this.pubSub.publish(CENTER_TRIGGERS.centerUpdated, {
+      centerUpdated: { ...center, settings: merged },
+    });
+
+    return JSON.stringify(merged);
   }
 }
 

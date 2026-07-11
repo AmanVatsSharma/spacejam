@@ -69,7 +69,7 @@ export function ActionMenu({ items, trigger, align = "right" }: ActionMenuProps)
             setOpen((v) => !v);
           }
         }}
-        className="inline-flex cursor-pointer"
+        className="inline-flex cursor-pointer transition-transform duration-150 active:scale-[0.97]"
         aria-haspopup="menu"
         aria-expanded={open}
       >

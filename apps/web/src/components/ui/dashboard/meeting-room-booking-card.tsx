@@ -51,7 +51,7 @@ export function MeetingRoomBookingCard({
   onViewAll,
 }: MeetingRoomBookingCardProps) {
   return (
-    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px]">
+    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px] transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
@@ -75,7 +75,7 @@ export function MeetingRoomBookingCard({
           bookings.map((booking) => (
             <div
               key={booking.id}
-              className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl"
+              className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
             >
               {/* Room Icon */}
               <div className="w-10 h-10 bg-[#FFF7ED] rounded-lg flex items-center justify-center flex-shrink-0">

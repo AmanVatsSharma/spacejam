@@ -138,7 +138,9 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
 
   const navItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: DashboardIcon, href: "/dashboard" },
-    { id: "crm", label: "CRM", icon: CRMIcon, href: "/dashboard/crm" },
+    // Point directly to customers to avoid the /dashboard/crm → /dashboard/crm/customers
+    // redirect which gets cached by the browser's RSC cache across builds.
+    { id: "crm", label: "CRM", icon: CRMIcon, href: "/dashboard/crm/customers" },
     { id: "revenue", label: "Revenue", icon: RevenueIcon, href: "/dashboard/revenue" },
     { id: "operations", label: "Operations", icon: OperationsIcon, href: "/dashboard/operations" },
     { id: "report", label: "Report", icon: ReportIcon, href: "/dashboard/report" },
@@ -147,7 +149,12 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
   ];
 
   const getActiveFromPath = (href: string) => {
-    return pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+    if (pathname === href) return true;
+    // Special case: CRM link points to /dashboard/crm/customers but should
+    // stay active on all /dashboard/crm/* routes.
+    if (href === "/dashboard/crm/customers" && pathname.startsWith("/dashboard/crm")) return true;
+    if (href !== "/dashboard" && pathname.startsWith(href)) return true;
+    return false;
   };
 
   return (
@@ -161,9 +168,11 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
             <div key={item.id} className="flex flex-col items-center gap-1">
               <Link
                 href={item.href}
-                onClick={() => onTabChange?.(item.id)}
+                onClick={() => {
+                  onTabChange?.(item.id);
+                }}
                 className={`
-                  flex items-center justify-center w-[48px] h-[48px] compact:w-[40px] compact:h-[40px] rounded-2xl cursor-pointer transition-all duration-200 no-underline
+                  flex items-center justify-center w-[48px] h-[48px] compact:w-[40px] compact:h-[40px] rounded-2xl cursor-pointer transition-all duration-200 no-underline active:scale-[0.93]
                   ${isActive
                     ? "bg-[#FF7847] text-white"
                     : "bg-[#F3F4F6] text-[#4B5563] hover:bg-gray-200"

@@ -261,7 +261,7 @@ export default function OnboardingPage() {
             placeholder="Search leads..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 w-48 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+            className="h-8 w-48 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200"
           />
           <button
             type="button"
@@ -280,7 +280,7 @@ export default function OnboardingPage() {
                           : 'all',
               )
             }
-            className="h-8 px-3 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="h-8 px-3 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all active:scale-[0.97]"
           >
             {statusFilter === 'all' ? 'All Status' : statusFilter}
           </button>
@@ -291,7 +291,7 @@ export default function OnboardingPage() {
                 p === 'all' ? 'Website' : p === 'Website' ? 'Referral' : p === 'Referral' ? 'Walk-in' : p === 'Walk-in' ? 'Social' : p === 'Social' ? 'Email' : 'all',
               )
             }
-            className="h-8 px-3 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="h-8 px-3 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-all active:scale-[0.97]"
           >
             {sourceFilter === 'all' ? 'All Sources' : sourceFilter}
           </button>

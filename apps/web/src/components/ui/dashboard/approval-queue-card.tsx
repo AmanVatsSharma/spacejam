@@ -87,7 +87,7 @@ export function ApprovalQueueCard({
   };
 
   return (
-    <div className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col p-5 ${className}`}>
+    <div className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export function ApprovalQueueCard({
           defaultItems.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 p-3 rounded-[10px] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-colors"
+              className="flex items-center gap-3 p-3 rounded-[10px] bg-[#F9FAFB] cursor-pointer hover:bg-gray-100 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
             >
               {/* Icon */}
               <div
@@ -143,7 +143,7 @@ export function ApprovalQueueCard({
       {onViewAll && (
         <button
           onClick={onViewAll}
-          className="mt-4 w-full h-[40px] bg-white border border-[#E5E7EB] rounded-[10px] flex items-center justify-center gap-2 text-[14px] font-medium text-[#6B7280] hover:bg-gray-50 transition-colors"
+          className="mt-4 w-full h-[40px] bg-white border border-[#E5E7EB] rounded-[10px] flex items-center justify-center gap-2 text-[14px] font-medium text-[#6B7280] hover:bg-gray-50 transition-all active:scale-[0.97]"
         >
           View All Approvals
         </button>

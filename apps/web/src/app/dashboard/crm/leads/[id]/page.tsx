@@ -182,7 +182,7 @@ export default function LeadDetailsPage() {
           <p className="text-sm text-gray-400 mb-4">This lead may have been deleted or the link is invalid.</p>
           <button
             onClick={() => router.push("/dashboard/crm/leads")}
-            className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-medium hover:bg-[#E55A20]"
+            className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-medium hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]"
           >
             Back to Leads
           </button>
@@ -198,11 +198,11 @@ export default function LeadDetailsPage() {
       <div className="flex flex-col gap-6 flex-1 min-w-0">
 
         {/* Header Card */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-0">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 sm:gap-0 transition-all duration-200">
           <div className="flex items-start gap-4">
             <button
               onClick={() => router.push('/dashboard/crm/leads')}
-              className="mt-1 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors shrink-0"
+              className="mt-1 w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-all duration-200 active:scale-[0.97] shrink-0 active:scale-[0.97] transition-transform duration-150"
             >
               {Icons.arrowLeft}
             </button>
@@ -214,17 +214,17 @@ export default function LeadDetailsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto pl-14 sm:pl-0">
-            <button onClick={() => setShowEditLead(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+            <button onClick={() => setShowEditLead(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] shadow-sm">
               {Icons.edit} Edit Lead
             </button>
-            <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">
+            <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] shadow-sm">
               {Icons.userConvert} Convert to Client
             </button>
           </div>
         </div>
 
         {/* Basic Info Card */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 sm:gap-8 items-start">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 sm:gap-8 items-start transition-all duration-200">
           {/* Avatar */}
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#FF6A2F] text-white flex items-center justify-center text-[28px] sm:text-[32px] font-bold shrink-0">
             RS
@@ -275,7 +275,7 @@ export default function LeadDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           {/* Next Follow-up */}
-          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col h-full">
+          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col h-full transition-all duration-200">
             <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
               <span className="text-[#FF6A2F]">{Icons.clock}</span> Next Follow-up
             </h3>
@@ -297,7 +297,7 @@ export default function LeadDetailsPage() {
             </div>
 
             <div className="mt-auto">
-              <button onClick={() => setShowUpdateStatus(true)} className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm flex items-center justify-center gap-2">
+              <button onClick={() => setShowUpdateStatus(true)} className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
                 {Icons.clock}
                 Update Status
               </button>
@@ -305,7 +305,7 @@ export default function LeadDetailsPage() {
           </div>
 
           {/* Scheduled Visit */}
-          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col h-full">
+          <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col h-full transition-all duration-200">
             <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
               <span className="text-[#FBBF24]">{Icons.calendar}</span> Scheduled Visit
             </h3>
@@ -326,10 +326,10 @@ export default function LeadDetailsPage() {
             </div>
 
             <div className="mt-auto flex gap-3">
-              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-[#FBBF24] text-white rounded-lg text-sm font-semibold hover:bg-[#F59E0B] transition-colors shadow-sm flex items-center justify-center gap-2">
+              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-[#FBBF24] text-white rounded-lg text-sm font-semibold hover:bg-[#F59E0B] transition-all active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
                 {Icons.calendar} Reschedule
               </button>
-              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
                 {Icons.clock} Cancel Visit
               </button>
             </div>
@@ -338,7 +338,7 @@ export default function LeadDetailsPage() {
         </div>
 
         {/* Proposal Details */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col transition-all duration-200">
           <h3 className="text-[16px] font-bold text-gray-900 flex items-center gap-2 mb-5">
             <span className="text-[#06B6D4]">{Icons.document}</span> Proposal Details
           </h3>
@@ -363,10 +363,10 @@ export default function LeadDetailsPage() {
           </div>
 
           <div className="flex gap-3">
-            <button onClick={() => setShowSendProposal(true)} className="py-2.5 px-5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm flex items-center justify-center gap-2">
+            <button onClick={() => setShowSendProposal(true)} className="py-2.5 px-5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-all duration-200 active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
               {Icons.send} Send Proposal
             </button>
-            <button onClick={() => setShowAttachDocs(true)} className="py-2.5 px-5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+            <button onClick={() => setShowAttachDocs(true)} className="py-2.5 px-5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
               {Icons.paperclip} Attach Files
             </button>
           </div>
@@ -378,7 +378,7 @@ export default function LeadDetailsPage() {
       <div className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0">
 
         {/* Pipeline Status */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 transition-all duration-200">
           <h3 className="text-[16px] font-bold text-gray-900 mb-6">Lead Details</h3>
 
           <div className="flex flex-col gap-0 relative">
@@ -439,26 +439,26 @@ export default function LeadDetailsPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 transition-all duration-200">
           <h3 className="text-[16px] font-bold text-gray-900 mb-4">Quick Actions</h3>
           <div className="flex flex-col gap-2.5">
-            <button onClick={() => setShowCallLead(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={() => setShowCallLead(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
               <span className="text-[#FF6A2F] bg-[#FFF2EA] p-1.5 rounded-lg">{Icons.phone}</span> Call Lead
             </button>
-            <button onClick={() => setShowWhatsapp(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={() => setShowWhatsapp(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
               <span className="text-[#25D366] bg-[#DCF8C6] p-1.5 rounded-lg">{Icons.whatsapp}</span> Send WhatsApp
             </button>
-            <button onClick={() => setShowEmail(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={() => setShowEmail(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
               <span className="text-gray-600 bg-gray-100 p-1.5 rounded-lg">{Icons.mail}</span> Send Email
             </button>
-            <button onClick={() => setShowAddNote(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button onClick={() => setShowAddNote(true)} className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
               <span className="text-gray-600 bg-gray-100 p-1.5 rounded-lg">{Icons.box}</span> Add Note
             </button>
           </div>
         </div>
 
         {/* Recent Activities */}
-        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 transition-all duration-200">
           <h3 className="text-[16px] font-bold text-gray-900 mb-6">Recent Activities</h3>
 
           <div className="flex flex-col gap-5 relative">

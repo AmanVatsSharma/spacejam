@@ -84,8 +84,8 @@ export function FreezeAccountModal({
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={handleClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={`${styles.overlay} transition-opacity duration-200`} onClick={handleClose}>
+      <div className={`${styles.modal} transition-all duration-200`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerTitles}>
             <h2 className={styles.title}>Freeze Account</h2>

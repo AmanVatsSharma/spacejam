@@ -50,10 +50,11 @@
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
   white-space: nowrap;
 }
 .heroAction:hover { background: #E85A1F; }
+.heroAction:active { transform: scale(0.97); }
 
 /* ---------------- Filter bar ---------------- */
 
@@ -221,6 +222,11 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.sectionCard:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
 }
 .sectionHeader {
   display: flex;
@@ -258,10 +264,10 @@
   border: 1px solid #E5E7EB;
   border-radius: 12px;
   padding: 14px 16px;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s;
   cursor: pointer;
 }
-.eventRow:hover { background: #F3F4F6; border-color: #D1D5DB; }
+.eventRow:hover { background: #F3F4F6; border-color: #D1D5DB; transform: translateY(-1px); }
 .eventRowSelected {
   background: #FFF7F2;
   border-color: #FF6A2F;
@@ -341,9 +347,10 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 .btnPrimary:hover { background: #E85A1F; }
+.btnPrimary:active { transform: scale(0.97); }
 
 /* ---------------- Empty section ---------------- */
 
@@ -473,9 +480,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 .btnComplete:hover { background: #BBF5D3; }
+.btnComplete:active { transform: scale(0.97); }
 
 .btnCancelEvent {
   width: 100%;
@@ -487,9 +495,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 .btnCancelEvent:hover { background: #FEF2F2; }
+.btnCancelEvent:active { transform: scale(0.97); }
 
 /* ---------------- Compact (tablet) ---------------- */
 
@@ -514,4 +523,26 @@
     gap: 12px;
   }
   .heroAction { align-self: stretch; justify-content: center; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.eventItem {
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+  animation-delay: calc(var(--i) * 60ms);
 }

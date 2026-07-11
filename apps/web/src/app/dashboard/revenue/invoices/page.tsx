@@ -151,7 +151,7 @@ export default function InvoicesPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-all shadow-sm active:scale-[0.97] transition-transform duration-150"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M8 3V13M3 8H13" />
@@ -164,7 +164,7 @@ export default function InvoicesPage() {
       <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm w-fit">
         <button
           onClick={() => setActiveTab("invoices")}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "invoices"
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === "invoices"
               ? "bg-[#FF6A2F] text-white"
               : "text-[#4A5565] hover:bg-gray-100"
             }`}
@@ -173,7 +173,7 @@ export default function InvoicesPage() {
         </button>
         <button
           onClick={() => setActiveTab("discounts")}
-          className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "discounts"
+          className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === "discounts"
               ? "bg-[#FF6A2F] text-white"
               : "text-[#4A5565] hover:bg-gray-100"
             }`}
@@ -241,7 +241,7 @@ export default function InvoicesPage() {
                 </tr>
               ) : (
                 filtered.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
+                  <tr key={invoice.id} className="transition-colors duration-150 hover:bg-[#F9FAFB]">
                     <td className="px-6 py-4 text-sm font-medium text-[#101828]">{invoice.invoiceNumber}</td>
                     <td className="px-6 py-4 text-sm text-[#4A5565]">{invoice.customerName}</td>
                     <td className="px-6 py-4 text-sm font-medium text-[#101828]">{formatCurrency(invoice.totalAmount)}</td>
@@ -256,14 +256,14 @@ export default function InvoicesPage() {
                       {normalizeStatus(invoice.status) !== "PAID" && (
                         <button
                           onClick={() => handleMarkPaid(invoice.id)}
-                          className="text-green-600 text-sm font-medium hover:underline"
+                                                    className="text-green-600 text-sm font-medium hover:underline transition-all active:scale-[0.97] transition-transform duration-150"
                         >
                           Mark Paid
                         </button>
                       )}
                       <button
                         onClick={() => handleDelete(invoice.id)}
-                        className="text-red-500 text-sm font-medium hover:underline"
+                                                className="text-red-500 text-sm font-medium hover:underline transition-all active:scale-[0.97] transition-transform duration-150"
                       >
                         Delete
                       </button>
@@ -279,8 +279,8 @@ export default function InvoicesPage() {
       {/* Discounts Grid */}
       {activeTab === "discounts" && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {discounts.map((discount) => (
-            <div key={discount.id} className="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition-shadow">
+          {discounts.map((discount, idx) => (
+            <div key={discount.id} className={`bg-white rounded-2xl shadow-sm p-6 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${styles.fadeInUp}`} style={{ '--i': idx }}>
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-[#101828] mb-1">{discount.code}</h3>

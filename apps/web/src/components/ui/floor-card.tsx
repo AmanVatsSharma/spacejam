@@ -47,7 +47,7 @@ export function FloorCard({
   occupancy,
 }: FloorCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-[#EAEAEA] shadow-sm p-5 flex flex-col gap-4 w-[428px]">
+    <div className="bg-white rounded-2xl border border-[#EAEAEA] shadow-sm p-5 flex flex-col gap-4 w-[428px] transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1">
@@ -86,7 +86,7 @@ export function FloorCard({
       </div>
 
       {/* View Floor Map Button */}
-      <button className="w-full h-[38px] bg-white border border-[#EAEAEA] rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+      <button className="w-full h-[38px] bg-white border border-[#EAEAEA] rounded-xl flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="1" y="1" width="6" height="6" rx="1" />
           <rect x="9" y="1" width="6" height="6" rx="1" />

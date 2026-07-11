@@ -151,7 +151,7 @@ export default function ContractsPage() {
 
         {/* Search & Filters */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="relative flex-1 max-w-[280px]">
+          <div className="relative flex-1 max-w-[280px] transition-all duration-200 focus-within:ring-2 focus-within:ring-[#FF6A2F]/20">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               type="text"
@@ -175,7 +175,7 @@ export default function ContractsPage() {
           </select>
 
           <button
-            className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 font-medium hover:bg-gray-50"
+            className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-700 font-medium hover:bg-gray-50 transition-all active:scale-[0.97] transition-transform duration-150"
             onClick={() => { setSearch(""); setStatusFilter(""); }}
           >
             Clear Filters
@@ -183,7 +183,7 @@ export default function ContractsPage() {
 
           <button
             onClick={() => setShowAddContract(true)}
-            className="ml-auto px-5 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold flex items-center gap-2 hover:bg-[#E55A20] transition-colors shadow-sm"
+            className="ml-auto px-5 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold flex items-center gap-2 hover:bg-[#E55A20] transition-all shadow-sm active:scale-[0.97] transition-transform duration-150"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
             Add Contract
@@ -192,22 +192,22 @@ export default function ContractsPage() {
 
         {/* Top KPI Cards */}
         <div className="grid grid-cols-4 gap-4 mb-6 flex-shrink-0">
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
             <h3 className="text-[32px] font-bold text-gray-900 mb-1">{stats.activeCount}</h3>
             <p className="text-[13px] text-gray-500 mb-2">Total Active Contracts</p>
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
             <h3 className="text-[32px] font-bold text-gray-900 mb-1">{formatCurrency(stats.monthlyRevenue)}</h3>
             <p className="text-[13px] text-gray-500 mb-2">Monthly Revenue</p>
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
             <h3 className="text-[32px] font-bold text-gray-900 mb-1">{stats.expiring.length}</h3>
             <p className="text-[13px] text-gray-500 mb-2">Expiring This Month</p>
             {stats.expiring.length > 0 && (
               <span className="text-[13px] text-[#FF6A2F] font-medium">Action Required</span>
             )}
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 flex flex-col justify-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
             <h3 className="text-[32px] font-bold text-gray-900 mb-1">{stats.terminated.length}</h3>
             <p className="text-[13px] text-gray-500 mb-2">Contracts Terminated</p>
           </div>
@@ -224,7 +224,7 @@ export default function ContractsPage() {
             <button
               key={s.name}
               onClick={() => setStatusFilter(statusFilter === s.filter ? "" : s.filter)}
-              className={`flex-1 min-w-[120px] ${s.cls} ${statusFilter === s.filter ? "ring-2 ring-offset-2 ring-gray-400" : ""} text-white py-4 rounded-xl flex flex-col items-center justify-center transition-all shadow-sm opacity-90 hover:opacity-100`}
+              className={`flex-1 min-w-[120px] ${s.cls} ${statusFilter === s.filter ? "ring-2 ring-offset-2 ring-gray-400" : ""} text-white py-4 rounded-xl flex flex-col items-center justify-center transition-all shadow-sm opacity-90 hover:opacity-100 active:scale-[0.97] transition-transform duration-150`}
             >
               <span className="text-[14px] font-medium mb-1">{s.name}</span>
               <span className="text-[24px] font-bold">{s.count}</span>
@@ -271,7 +271,7 @@ export default function ContractsPage() {
                     <tr
                       key={contract.id}
                       onClick={() => setSelectedId(contract.id)}
-                      className={`group hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0 cursor-pointer ${selected?.id === contract.id ? "bg-[#FFF8F6]" : ""}`}
+                      className={`group hover:bg-gray-50/50 transition-colors duration-150 border-b border-gray-50 last:border-0 cursor-pointer ${selected?.id === contract.id ? "bg-[#FFF8F6]" : ""}`}
                     >
                       <td className="py-4 px-6 text-[14px] font-semibold text-gray-900 whitespace-nowrap">{contract.contractNumber}</td>
                       <td className="py-4 px-6 text-[14px] font-semibold text-gray-900 whitespace-nowrap">{contract.customerName}</td>
@@ -286,7 +286,7 @@ export default function ContractsPage() {
                       <td className="py-4 px-6 text-[14px] text-right">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleTerminate(contract.id); }}
-                          className="text-[#EF476F] font-medium hover:underline"
+                          className="text-[#EF476F] font-medium hover:underline transition-all active:scale-[0.97] transition-transform duration-150"
                         >
                           Terminate
                         </button>
@@ -403,7 +403,7 @@ export default function ContractsPage() {
               <button
                 onClick={() => handleRenew(selected.id)}
                 disabled={renewing}
-                className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.97] transition-transform duration-150"
               >
                 {renewing ? (
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -417,7 +417,7 @@ export default function ContractsPage() {
               </button>
               <button
                 onClick={() => handleTerminate(selected.id)}
-                className="w-full py-2.5 bg-white border border-[#EF476F] text-[#EF476F] rounded-xl text-[14px] font-semibold hover:bg-[#FFF0F3] transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-white border border-[#EF476F] text-[#EF476F] rounded-xl text-[14px] font-semibold hover:bg-[#FFF0F3] transition-all flex items-center justify-center gap-2 active:scale-[0.97] transition-transform duration-150"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 Terminate Contract

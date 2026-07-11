@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState } from "react";
+import styles from "./changelog.module.css";
 
 interface Commit {
   hash: string;
@@ -83,10 +84,11 @@ export default function DashboardChangelogPage() {
 
       {commits !== null && !error && commits.length > 0 && (
         <ul className="flex flex-col gap-3">
-          {commits.map((commit) => (
+          {commits.map((commit, index) => (
             <li
               key={commit.hash}
-              className="bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-sm"
+              className={`${styles.commitCard} bg-white border border-[#E5E7EB] rounded-2xl p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${styles.animateFadeIn}`}
+              style={{ '--i': index } as React.CSSProperties}
             >
               <div className="flex items-baseline gap-3 flex-wrap">
                 <code className="font-mono text-sm text-[#FF6A2F] font-semibold">

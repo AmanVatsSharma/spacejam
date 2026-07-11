@@ -80,7 +80,7 @@ export function EventTodayCard({
 }: EventTodayCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] relative ${className}`}
+      className={`bg-white rounded-[14px] relative transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}
       style={{
         width: `${width}px`,
         height: `${height}px`,

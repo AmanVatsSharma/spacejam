@@ -64,14 +64,14 @@ export function RoomAvailabilityCard({
   onViewAll,
 }: RoomAvailabilityCardProps) {
   return (
-    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px]">
+    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px] transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="text-sm text-[#FF6A3D] font-medium hover:text-[#e55a2b] transition-colors"
+            className="text-sm text-[#FF6A3D] font-medium hover:text-[#e55a2b] transition-all"
           >
             View All
           </button>
@@ -88,7 +88,7 @@ export function RoomAvailabilityCard({
           rooms.map((room) => (
             <div
               key={room.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
             >
               {/* Room Info */}
               <div className="flex items-center gap-3">
@@ -142,14 +142,14 @@ export function RoomAvailabilityGrid({
   const [activeView, setActiveView] = useState<"list" | "grid">("list");
 
   return (
-    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px]">
+    <div className="bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] p-5 flex flex-col gap-4 w-[428px] transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-800">{title}</h3>
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setActiveView("list")}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md transition-all duration-200 ${
               activeView === "list" ? "bg-white shadow-sm" : "hover:bg-gray-200"
             }`}
             aria-label="List view"
@@ -181,7 +181,7 @@ export function RoomAvailabilityGrid({
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#FFF7ED] rounded-lg flex items-center justify-center">
@@ -217,7 +217,7 @@ export function RoomAvailabilityGrid({
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="flex flex-col p-3 bg-gray-50 rounded-xl"
+              className="flex flex-col p-3 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-[#FFF7ED] rounded-lg flex items-center justify-center">
@@ -251,7 +251,7 @@ export function RoomAvailabilityGrid({
       {onViewAll && (
         <button
           onClick={onViewAll}
-          className="w-full h-[38px] bg-white border border-[#E5E7EB] rounded-[10px] flex items-center justify-center gap-2 text-sm font-medium text-[#4A5568] hover:bg-gray-50 transition-colors"
+          className="w-full h-[38px] bg-white border border-[#E5E7EB] rounded-[10px] flex items-center justify-center gap-2 text-sm font-medium text-[#4A5568] hover:bg-gray-50 transition-all active:scale-[0.97]"
         >
           View All Rooms
         </button>

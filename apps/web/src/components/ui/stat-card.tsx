@@ -111,7 +111,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col gap-2 p-5 ${className}`}
+      className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col gap-2 p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}
     >
       {/* Top Row - Icon and Trend */}
       <div className="flex items-center justify-between">

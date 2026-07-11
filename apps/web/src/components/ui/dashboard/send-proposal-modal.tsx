@@ -11,9 +11,9 @@ export function SendProposalModal({ open, onClose }: SendProposalModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-[600px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
+      <div
+        className="w-full max-w-[600px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all duration-200 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-100">
@@ -58,17 +58,17 @@ export function SendProposalModal({ open, onClose }: SendProposalModalProps) {
         </div>
 
         <div className="p-6 border-t border-gray-100 flex flex-col sm:flex-row gap-3">
-          <button className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+          <button className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
             Preview PDF
           </button>
           <div className="flex flex-1 gap-3">
             <button 
               onClick={onClose}
-              className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 py-3 px-4 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
             >
               Cancel
             </button>
-            <button className="flex-1 py-3 px-4 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2">
+            <button className="flex-1 py-3 px-4 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] flex items-center justify-center gap-2">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9 6 9-6" />

@@ -174,6 +174,11 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
+  transition: all 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 .cardHeader {
@@ -530,4 +535,23 @@
   .centerRow { flex-direction: column; align-items: flex-start; gap: 12px; }
   .centerMetrics { width: 100%; justify-content: space-between; }
   .cMetric { align-items: flex-start; }
+}
+
+/* ---------------- Animations ---------------- */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFadeIn {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 60ms);
 }

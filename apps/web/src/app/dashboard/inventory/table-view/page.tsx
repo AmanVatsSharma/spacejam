@@ -104,11 +104,11 @@ export default function TableViewPage() {
           </div>
           <button
             onClick={() => setShowExport(true)}
-            className={styles.exportBtn}
+            className={`${styles.exportBtn} active:scale-[0.97] transition-transform duration-150`}
           >
             {Icons.export} Export CSV
           </button>
-          <button className={styles.addSpaceBtn}>
+          <button className={`${styles.addSpaceBtn} active:scale-[0.97] transition-transform duration-150`}>
             {Icons.plus} Add Space
           </button>
         </div>
@@ -154,7 +154,7 @@ export default function TableViewPage() {
           <option>Maintenance</option>
         </select>
 
-        <button className={styles.clearBtn}>
+        <button className={`${styles.clearBtn} active:scale-[0.97] transition-transform duration-150`}>
           Clear All
         </button>
       </div>
@@ -199,7 +199,7 @@ export default function TableViewPage() {
               </tr>
             ) : (
               filteredData.map((row: any, index: number) => (
-                <tr key={row.id}>
+                <tr key={row.id} className="transition-colors duration-150 hover:bg-[#F9FAFB]" style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `calc(${index} * 50ms)` }}>
                   <td className={styles.colSpaceName}>
                     <div style={{ width: '120px', lineHeight: '1.4' }}>{row.spaceName}</div>
                   </td>

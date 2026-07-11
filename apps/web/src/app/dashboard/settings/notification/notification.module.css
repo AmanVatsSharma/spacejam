@@ -169,7 +169,14 @@
   gap: 16px;
   background: #FFFFFF;
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.02);
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+}
+.channelCard:hover {
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.channelCard:active {
+  transform: scale(0.97);
 }
 .channelCardActive {
   border-color: #FF7847;
@@ -250,7 +257,7 @@
   border-radius: 12px;
   padding: 2px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 .toggleSwitchOff {
@@ -548,6 +555,12 @@
   cursor: pointer;
   transition: all 0.2s;
 }
+.autoItem:hover {
+  box-shadow: 0px 2px 8px rgba(0,0,0,0.06);
+}
+.autoItem:active {
+  transform: scale(0.97);
+}
 .autoItemActive {
   background: #FF7847;
   border-color: #FF7847;
@@ -623,4 +636,22 @@
   .channelGrid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ---------------- Animations ---------------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFadeIn {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 60ms);
 }

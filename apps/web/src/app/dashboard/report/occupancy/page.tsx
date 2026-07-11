@@ -163,7 +163,7 @@ export default function OccupancyOverviewPage() {
         </div>
         <button
           onClick={() => setShowExport(true)}
-          className={styles.exportBtn}
+          className={`${styles.exportBtn} active:scale-[0.97] transition-transform duration-150`}
         >
           {Icons.download} Export Excel
         </button>
@@ -176,17 +176,17 @@ export default function OccupancyOverviewPage() {
           <input type="text" placeholder="Search lead name, company, or phone" />
         </div>
         <div className={styles.dropdowns}>
-          <button className={styles.dropdown}>All center <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.dropdown}>Last 30 days <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.dropdown}>CM All <span className={styles.dropdownCaret}></span></button>
-          <button className={styles.clearAllBtn}>Clear All</button>
+          <button className={`${styles.dropdown} active:scale-[0.97] transition-transform duration-150`}>All center <span className={styles.dropdownCaret}></span></button>
+          <button className={`${styles.dropdown} active:scale-[0.97] transition-transform duration-150`}>Last 30 days <span className={styles.dropdownCaret}></span></button>
+          <button className={`${styles.dropdown} active:scale-[0.97] transition-transform duration-150`}>CM All <span className={styles.dropdownCaret}></span></button>
+          <button className={`${styles.clearAllBtn} active:scale-[0.97] transition-transform duration-150`}>Clear All</button>
         </div>
       </div>
 
       {/* METRICS ROW */}
       <div className={styles.metricsRow}>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 0 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.users}
           </div>
@@ -197,7 +197,7 @@ export default function OccupancyOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 1 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.checkCircle}
           </div>
@@ -208,7 +208,7 @@ export default function OccupancyOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 2 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.logOut}
           </div>
@@ -219,7 +219,7 @@ export default function OccupancyOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 3 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.pause}
           </div>
@@ -253,7 +253,7 @@ export default function OccupancyOverviewPage() {
       </div>
 
       {/* DIRECTORY HEADER */}
-      <div className={styles.directoryHeaderCard}>
+      <div className={`${styles.directoryHeaderCard} transition-all duration-200 hover:shadow-md`}>
         <div className={styles.headerTitleWrap}>
           <h3 className={styles.headerTitle} style={{ fontSize: '18px' }}>Customer Directory</h3>
           <p className={styles.headerSubtitle}>Track all active occupancy allocations</p>
@@ -265,7 +265,7 @@ export default function OccupancyOverviewPage() {
       </div>
 
       {/* LIST TABLE */}
-      <div className={styles.listCard}>
+      <div className={`${styles.listCard} transition-all duration-200 hover:shadow-md`}>
 
         <div className={styles.tableHeader}>
           <div className={styles.checkbox}></div>
@@ -285,8 +285,8 @@ export default function OccupancyOverviewPage() {
             No customers found
           </div>
         ) : (
-          customers.map((c: any) => (
-            <div key={c.id} className={styles.listRow}>
+          customers.map((c: any, index: number) => (
+            <div key={c.id} className={`${styles.listRow} ${styles.animateFadeIn}`} style={{ '--i': index } as React.CSSProperties}>
               <div className={styles.checkbox}></div>
               <div className={styles.cellUser}>{c.name || '—'}</div>
               <span className={styles.cellAmount}>{c.totalSpent != null ? `₹${Number(c.totalSpent).toLocaleString('en-IN')}` : '—'}</span>

@@ -304,10 +304,15 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .cancelBtn:hover {
   background: #F9FAFB;
+}
+
+.cancelBtn:active {
+  transform: scale(0.97);
 }
 
 .processBtnActive,
@@ -320,6 +325,7 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .processBtnActive {
@@ -332,8 +338,17 @@
   background: #E55A25;
 }
 
+.processBtnActive:active {
+  transform: scale(0.97);
+}
+
 .processBtnDisabled {
   background: #D1D5DB;
   color: #4A5565;
   cursor: not-allowed;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

@@ -72,6 +72,12 @@ function decodeJwtClaims(
 /**
  * Pure route-decision function, exported for unit testing.
  * Returns null when the request should be allowed through.
+ *
+ * NOTE: Dashboard auth checks are intentionally REMOVED from the proxy.
+ * Auth tokens live in localStorage (client-side only) and are NOT visible
+ * to the Edge proxy. Dashboard access control is handled entirely by the
+ * client-side useAuth() context. The proxy only handles redirecting
+ * already-authenticated users away from auth pages.
  */
 export const decide = ({
   pathname,
@@ -83,32 +89,7 @@ export const decide = ({
   const isExpired =
     !accessToken || (typeof accessExp === 'number' && accessExp * 1000 <= Date.now());
 
-  if (pathname.startsWith('/dashboard')) {
-    if (!accessToken && !refreshToken) {
-      return {
-        pathname,
-        search,
-        redirectTo: `/signin?next=${encodeURIComponent(pathname + search)}`,
-        reason: 'unauth-dashboard',
-      };
-    }
-    if (isExpired && !refreshToken) {
-      return {
-        pathname,
-        search,
-        redirectTo: `/signin?next=${encodeURIComponent(pathname + search)}`,
-        reason: 'no-refresh',
-      };
-    }
-    if (ADMIN_ROUTES.some((p) => pathname.startsWith(p))) {
-      const role = accessToken ? decodeJwtClaims(accessToken)?.role : undefined;
-      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-        return { pathname, search, redirectTo: '/dashboard', reason: 'role-mismatch' };
-      }
-    }
-    return null;
-  }
-
+  // Only redirect already-authenticated users away from auth pages (signin/signup)
   if (PUBLIC_ROUTES.has(pathname) && accessToken && !isExpired) {
     return { pathname, search, redirectTo: '/dashboard', reason: 'already-signed-in' };
   }
@@ -118,6 +99,21 @@ export const decide = ({
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+
+  // The dashboard auth check is handled entirely client-side via useAuth()
+  // and the Apollo token in localStorage. The proxy (Edge) cannot read
+  // localStorage, so checking cookies here causes false 307 redirects on
+  // client-side RSC navigation. Only redirect for the initial full-page
+  // load (non-RSC document requests).
+  const isRscRequest =
+    req.headers.get('RSC') === '1' ||
+    req.headers.get('accept')?.includes('text/x-component') ||
+    !!req.headers.get('next-router-state-tree');
+
+  if (isRscRequest) {
+    return NextResponse.next();
+  }
+
   const accessToken = req.cookies.get(ACCESS_COOKIE)?.value ?? null;
   const refreshToken = req.cookies.get(REFRESH_COOKIE)?.value ?? null;
   const accessExp = accessToken ? decodeJwtClaims(accessToken)?.exp ?? null : null;

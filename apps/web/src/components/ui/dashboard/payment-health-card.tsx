@@ -1,16 +1,11 @@
 /**
  * File:        apps/web/src/components/ui/dashboard/payment-health-card.tsx
  * Module:      Web · UI · Dashboard · Payment Health Card
- * Purpose:     Card showing payment metrics with donut chart
- *
- * Design Reference: Exact Figma SVG export
- * - Card: 398x360px, 14px radius, soft shadow
- * - Donut: 250x250px SVG with Yellow, Teal, Orange segments
- * - Orange segment has blue drop shadow filter
- * - Legend: 3 rows with dot + label + percentage + amount
+ * Purpose:     Card showing payment metrics with a dynamic donut chart
+ *              whose arc segments are generated from real percentage data.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-05-31
+ * Last-updated: 2026-07-09
  */
 
 "use client";
@@ -26,83 +21,101 @@ interface PaymentHealthCardProps {
   className?: string;
 }
 
-// Exact Figma SVG donut chart
-const DonutChart = ({ total }: { total: string }) => {
+/**
+ * Generate an SVG arc path for a donut segment.
+ * Uses polar-to-cartesian conversion to draw a stroked arc.
+ */
+function describeArc(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+): string {
+  // Angles in degrees, 0 = top, clockwise
+  const startRad = ((startAngle - 90) * Math.PI) / 180;
+  const endRad = ((endAngle - 90) * Math.PI) / 180;
+
+  const x1 = cx + radius * Math.cos(startRad);
+  const y1 = cy + radius * Math.sin(startRad);
+  const x2 = cx + radius * Math.cos(endRad);
+  const y2 = cy + radius * Math.sin(endRad);
+
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+
+  return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
+}
+
+// Dynamic donut chart — generates arc segments from real percentages
+const DonutChart = ({
+  paidPercent,
+  overduePercent,
+  partialPercent,
+  total,
+}: {
+  paidPercent: number;
+  overduePercent: number;
+  partialPercent: number;
+  total: string;
+}) => {
+  const size = 250;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = 83;
+  const strokeWidth = 13;
+  const gap = 2; // small gap between segments in degrees
+
+  // Build segments in clockwise order starting from top
+  // Order: Paid (orange), Overdue (teal), Partial (yellow)
+  const segments: { label: string; percent: number; color: string }[] = [
+    { label: "Paid", percent: paidPercent, color: "#FF7847" },
+    { label: "Overdue", percent: overduePercent, color: "#00D1C6" },
+    { label: "Partial", percent: partialPercent, color: "#FBBF24" },
+  ];
+
+  let currentAngle = 0;
+  const totalPercent = segments.reduce((sum, s) => sum + s.percent, 0) || 1;
+
   return (
     <div
-      className="relative"
-      style={{
-        width: '250px',
-        height: '250px',
-        marginLeft: '51px',
-        marginTop: '-19px',
-      }}
+      className="relative flex items-center justify-center"
+      style={{ width: `${size}px`, height: `${size}px` }}
     >
-      <svg width="250" height="250" viewBox="0 0 250 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* Background track */}
-        <circle cx="125" cy="124.999" r="83.3132" stroke="#5B93FF" strokeOpacity="0.05" strokeWidth="12.4348"/>
+        <circle cx={cx} cy={cy} r={radius} stroke="#5B93FF" strokeOpacity="0.05" strokeWidth={strokeWidth} />
 
-        {/* Yellow segment - Partial (11%) */}
-        <path
-          d="M87.8572 195.259C85.2613 200.17 79.1364 202.091 74.5478 198.961C67.0428 193.842 60.3443 187.598 54.6952 180.434C46.9653 170.63 41.3712 159.319 38.2721 147.225C35.1729 135.131 34.6373 122.523 36.6996 110.21C38.2067 101.212 41.077 92.5166 45.1948 84.4186C47.7125 79.4675 54.0066 78.2063 58.6443 81.2632C63.282 84.32 64.4885 90.5359 62.1333 95.5664C59.4679 101.26 57.5815 107.303 56.5379 113.533C54.939 123.08 55.3543 132.855 57.7571 142.232C60.16 151.608 64.4973 160.379 70.4905 167.98C74.4019 172.94 78.9623 177.331 84.0373 181.041C88.5216 184.319 90.4532 190.349 87.8572 195.259Z"
-          fill="#FBBF24"
-        />
-
-        {/* Teal segment - Overdue (16%) */}
-        <path
-          d="M186.669 172.104C191.905 176.104 192.958 183.659 188.298 188.318C174.703 201.909 157.004 210.844 137.767 213.616C118.53 216.387 99.0287 212.812 82.1494 203.611C76.3644 200.457 75.2419 192.912 79.136 187.597C83.0301 182.282 90.4655 181.245 96.3964 184.114C108.102 189.778 121.317 191.879 134.365 190C147.413 188.12 159.497 182.374 169.127 173.636C174.007 169.209 181.433 168.105 186.669 172.104Z"
-          fill="#00D1C6"
-        />
-
-        {/* Orange segment - Paid (73%) with shadow filter */}
-        <g filter="url(#filter0_d_0_32323)">
-          <path
-            d="M56.6356 96.884C48.6619 93.6048 44.7484 84.3819 49.3612 77.098C53.8468 70.0152 59.3188 63.5755 65.633 57.9823C75.8568 48.9256 88.0171 42.3282 101.183 38.6949C114.349 35.0616 128.172 34.4888 141.594 37.0204C155.016 39.5519 167.68 45.1207 178.618 53.3005C189.556 61.4802 198.478 72.0541 204.7 84.2127C210.922 96.3714 214.28 109.792 214.517 123.449C214.753 137.105 211.862 150.634 206.065 163.001C202.485 170.639 197.854 177.708 192.328 184.013C186.646 190.497 176.693 189.35 171.293 182.628C165.894 175.907 167.188 166.163 172.241 159.178C174.377 156.225 176.239 153.07 177.795 149.749C181.571 141.695 183.454 132.884 183.3 123.99C183.146 115.096 180.959 106.355 176.906 98.4363C172.854 90.5177 167.044 83.6312 159.92 78.3039C152.796 72.9767 144.548 69.3499 135.807 67.7012C127.066 66.0525 118.063 66.4255 109.489 68.7917C100.914 71.158 92.9942 75.4547 86.3358 81.3531C83.5906 83.7848 81.0898 86.4623 78.8614 89.346C73.5896 96.1681 64.6093 100.163 56.6356 96.884Z"
-            fill="#FF7847"
-          />
-        </g>
-
-        <defs>
-          <filter id="filter0_d_0_32323" x="44.0742" y="35.4692" width="173.772" height="159.481" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-            <feFlood floodOpacity="0" result="BackgroundImageFix"/>
-            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-            <feOffset dy="3.31595"/>
-            <feGaussianBlur stdDeviation="1.65797"/>
-            <feColorMatrix type="matrix" values="0 0 0 0 0.356863 0 0 0 0 0.576471 0 0 0 0 1 0 0 0 0.24 0"/>
-            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_32323"/>
-            <feBlend mode="normal" in2="effect1_dropShadow_0_32323" result="shape"/>
-          </filter>
-        </defs>
+        {/* Segments */}
+        {segments.map((seg) => {
+          const sweep = (seg.percent / totalPercent) * 360;
+          if (sweep <= 0) return null;
+          const startAngle = currentAngle + (sweep > gap * 2 ? gap / 2 : 0);
+          const endAngle = currentAngle + sweep - (sweep > gap * 2 ? gap / 2 : 0);
+          currentAngle += sweep;
+          return (
+            <path
+              key={seg.label}
+              d={describeArc(cx, cy, radius, startAngle, endAngle)}
+              stroke={seg.color}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              fill="none"
+            />
+          );
+        })}
       </svg>
 
       {/* Center text overlay */}
-      <div
-        className="absolute flex flex-col items-center"
-        style={{
-          left: '91.19px',
-          top: '105.28px',
-        }}
-      >
+      <div className="absolute flex flex-col items-center">
         <span
-          className="font-extrabold"
-          style={{
-            fontSize: '19.8957px',
-            lineHeight: '24px',
-            color: '#030229',
-            fontFamily: 'Inter, sans-serif',
-          }}
+          className="font-extrabold text-[#030229]"
+          style={{ fontSize: '20px', lineHeight: '24px', fontFamily: 'Inter, sans-serif' }}
         >
           {total}
         </span>
         <span
-          style={{
-            fontSize: '13.2638px',
-            lineHeight: '16px',
-            color: '#030229',
-            opacity: 0.7,
-            fontFamily: 'Inter, sans-serif',
-            marginTop: '2px',
-          }}
+          className="text-[#030229] opacity-70"
+          style={{ fontSize: '13px', lineHeight: '16px', fontFamily: 'Inter, sans-serif', marginTop: '2px' }}
         >
           Total
         </span>
@@ -112,10 +125,10 @@ const DonutChart = ({ total }: { total: string }) => {
 };
 
 export function PaymentHealthCard({
-  total = "₹39.0L",
-  paid = { percent: 73, amount: "₹28.5L" },
-  overdue = { percent: 16, amount: "₹6.2L" },
-  partial = { percent: 11, amount: "₹4.3L" },
+  total = "₹0",
+  paid = { percent: 0, amount: "₹0" },
+  overdue = { percent: 0, amount: "₹0" },
+  partial = { percent: 0, amount: "₹0" },
   onViewDetails,
   className = "",
 }: PaymentHealthCardProps) {
@@ -127,100 +140,50 @@ export function PaymentHealthCard({
 
   return (
     <div
-      className={`bg-white rounded-[14px] flex flex-col p-5 ${className}`}
+      className={`bg-white rounded-[14px] flex flex-col p-5 h-full transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}
       style={{
-        width: '398px',
-        height: '360px',
+        minWidth: '340px',
         boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1)',
       }}
     >
-      {/* Header - left aligned */}
-      <div className="mb-3">
+      {/* Header */}
+      <div className="mb-2">
         <h2
-          style={{
-            fontSize: '16px',
-            fontWeight: 600,
-            lineHeight: '24px',
-            letterSpacing: '-0.3125px',
-            color: '#1F2937',
-            fontFamily: 'Inter, sans-serif',
-          }}
+          className="text-[#1F2937]"
+          style={{ fontSize: '16px', fontWeight: 600, lineHeight: '24px', letterSpacing: '-0.3px', fontFamily: 'Inter, sans-serif' }}
         >
           Payment Health
         </h2>
-        <p
-          style={{
-            fontSize: '12px',
-            lineHeight: '16px',
-            color: '#6B7280',
-            marginTop: '1.5px',
-            fontFamily: 'Inter, sans-serif',
-          }}
-        >
+        <p className="text-[#6B7280]" style={{ fontSize: '12px', lineHeight: '16px', fontFamily: 'Inter, sans-serif' }}>
           Total payment characteristics
         </p>
       </div>
 
-      {/* Donut Chart */}
-      <DonutChart total={total} />
+      {/* Dynamic Donut Chart */}
+      <div className="flex items-center justify-center flex-1">
+        <DonutChart
+          paidPercent={paid.percent}
+          overduePercent={overdue.percent}
+          partialPercent={partial.percent}
+          total={total}
+        />
+      </div>
 
-      {/* Legend - 3 rows */}
-      <div className="flex flex-col gap-3 mt-4">
+      {/* Legend */}
+      <div className="flex flex-col gap-2 mt-2">
         {legendItems.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center"
-            style={{
-              height: '20px',
-              justifyContent: 'space-between',
-            }}
-          >
-            {/* Left: Color dot + Label */}
+          <div key={item.label} className="flex items-center justify-between" style={{ height: '20px' }}>
             <div className="flex items-center gap-2">
-              <div
-                className="rounded-full"
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  backgroundColor: item.color,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  color: '#6B7280',
-                  letterSpacing: '-0.150391px',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
+              <div className="rounded-full" style={{ width: '12px', height: '12px', backgroundColor: item.color }} />
+              <span className="text-[#6B7280]" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                 {item.label}
               </span>
             </div>
-
-            {/* Right: Percentage + Amount */}
             <div className="flex items-center gap-3">
-              <span
-                style={{
-                  fontSize: '12px',
-                  lineHeight: '16px',
-                  color: '#6B7280',
-                  minWidth: '25px',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
+              <span className="text-[#6B7280]" style={{ fontSize: '12px', minWidth: '25px', fontFamily: 'Inter, sans-serif' }}>
                 {item.percent}%
               </span>
-              <span
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  fontWeight: 500,
-                  color: '#1F2937',
-                  letterSpacing: '-0.150391px',
-                  fontFamily: 'Inter, sans-serif',
-                }}
-              >
+              <span className="text-[#1F2937] font-medium" style={{ fontSize: '14px', fontFamily: 'Inter, sans-serif' }}>
                 {item.amount}
               </span>
             </div>

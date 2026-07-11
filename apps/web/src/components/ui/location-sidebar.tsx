@@ -47,7 +47,7 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
             {/* City Button */}
             <button
               onClick={() => toggleLocation(location.id)}
-              className="flex items-center gap-2 w-[272px] compact:w-full h-[40px] compact:h-[36px] px-3 compact:px-2 rounded-xl bg-[#FFF5F2] hover:bg-[#FFEDE6] transition-colors text-sm compact:text-xs"
+              className="flex items-center gap-2 w-[272px] compact:w-full h-[40px] compact:h-[36px] px-3 compact:px-2 rounded-xl bg-[#FFF5F2] hover:bg-[#FFEDE6] transition-all duration-200 text-sm compact:text-xs active:scale-[0.97]"
             >
               <svg
                 width="16"
@@ -64,7 +64,7 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
 
             {/* Centers (shown when expanded) */}
             {expandedLocations[location.id] && (
-              <div className="flex flex-col gap-1 pl-6">
+              <div className="flex flex-col gap-1 pl-6 transition-all duration-200 origin-top">
                 {location.centers.map((center) => (
                   <button
                     key={center.id}
@@ -90,7 +90,7 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
       </div>
 
       {/* Add Sub-location Button */}
-      <button className="flex items-center justify-center gap-2 w-full h-[50px] bg-white border border-[#EAEAEA] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+      <button className="flex items-center justify-center gap-2 w-full h-[50px] bg-white border border-[#EAEAEA] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M8 3V13M3 8H13" />
         </svg>

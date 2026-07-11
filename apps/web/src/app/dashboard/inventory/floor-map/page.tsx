@@ -279,7 +279,7 @@ export default function FloorMapPage() {
             <p className={styles.headerSubtitle}>Visualize space usage and real-time occupancy</p>
           </div>
           <button
-            className={styles.addSpaceBtn}
+            className={styles.addSpaceBtn + ' active:scale-[0.97] transition-transform duration-150'}
             onClick={handleAddSpace}
             disabled={!activeFloorId}
             title={!activeFloorId ? "Select a center and floor first" : "Add a new space"}
@@ -298,7 +298,7 @@ export default function FloorMapPage() {
             {["All", "Available", "Occupied", "Maintenance"].map(filter => (
               <div
                 key={filter}
-                className={`${styles.filterPill} ${activeFilter === filter ? styles.filterPillActive : ''}`}
+                className={`${styles.filterPill} ${activeFilter === filter ? styles.filterPillActive : ''} active:scale-[0.97] transition-transform duration-150`}
                 onClick={() => setActiveFilter(filter)}
               >
                 {filter}
@@ -312,7 +312,7 @@ export default function FloorMapPage() {
           {metricsLoading && !metrics ? (
             <>
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className={styles.statCard}>
+                <div key={i} className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `${i * 60}ms` }}>
                   <div className={styles.statIcon}>{Icons.chair}</div>
                   <div className={styles.statValue}>—</div>
                   <div className={styles.statLabel}>Loading…</div>
@@ -321,21 +321,21 @@ export default function FloorMapPage() {
             </>
           ) : metrics ? (
             <>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '0ms' }}>
                 <div className={styles.statIcon}>{Icons.chair}</div>
                 <div className={styles.statValue}>
                   {metrics.totalSeats ?? seatStats.total}
                 </div>
                 <div className={styles.statLabel}>Total Seats</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '80ms' }}>
                 <div className={styles.statIcon}>{Icons.circleCheck}</div>
                 <div className={styles.statValue}>
                   {metrics.availableSeats ?? seatStats.available}
                 </div>
                 <div className={styles.statLabel}>Available</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '160ms' }}>
                 <div className={styles.statIcon}>{Icons.target}</div>
                 <div className={styles.statValue}>
                   {(metrics.totalSeats && metrics.availableSeats)
@@ -344,7 +344,7 @@ export default function FloorMapPage() {
                 </div>
                 <div className={styles.statLabel}>Occupied</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '240ms' }}>
                 <div className={styles.statIcon}>{Icons.tools}</div>
                 <div className={styles.statValue}>{seatStats.maintenance}</div>
                 <div className={styles.statLabel}>Maintenance</div>
@@ -352,22 +352,22 @@ export default function FloorMapPage() {
             </>
           ) : (
             <>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '0ms' }}>
                 <div className={styles.statIcon}>{Icons.chair}</div>
                 <div className={styles.statValue}>{seatStats.total}</div>
                 <div className={styles.statLabel}>Total Seats</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '80ms' }}>
                 <div className={styles.statIcon}>{Icons.circleCheck}</div>
                 <div className={styles.statValue}>{seatStats.available}</div>
                 <div className={styles.statLabel}>Available</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '160ms' }}>
                 <div className={styles.statIcon}>{Icons.target}</div>
                 <div className={styles.statValue}>{seatStats.occupied}</div>
                 <div className={styles.statLabel}>Occupied</div>
               </div>
-              <div className={styles.statCard}>
+              <div className={styles.statCard} style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: '240ms' }}>
                 <div className={styles.statIcon}>{Icons.tools}</div>
                 <div className={styles.statValue}>{seatStats.maintenance}</div>
                 <div className={styles.statLabel}>Maintenance</div>
@@ -451,7 +451,7 @@ export default function FloorMapPage() {
           </div>
 
           {/* Map Canvas */}
-          <div className={styles.mapCanvas}>
+          <div className={styles.mapCanvas} style={{ transition: 'all 0.2s' }}>
             {isLoading && seats.length === 0 ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9CA3AF", fontSize: "14px" }}>
                 Loading floor data…
@@ -500,9 +500,9 @@ export default function FloorMapPage() {
                   return (
                     <div
                       key={seat.id}
-                      className={`${styles.roomBlock} ${colorClass}`}
+                      className={`${styles.roomBlock} ${colorClass} ${seat.id === selectedSeatId ? styles.roomActive : ''} active:scale-[0.95] transition-all duration-200`}
                       onClick={() => setSelectedSeatId(seat.id)}
-                      style={{ cursor: "pointer" }}
+                      style={{ cursor: "pointer", animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `${index * 60}ms` }}
                     >
                       <div className={styles.roomHeader}>
                         <div className={styles.roomName}>

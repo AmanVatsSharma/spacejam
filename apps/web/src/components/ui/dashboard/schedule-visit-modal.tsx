@@ -11,9 +11,9 @@ export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-[500px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
+      <div
+        className="w-full max-w-[500px] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all duration-200 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-100">
@@ -23,27 +23,27 @@ export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
         <div className="p-6 overflow-y-auto flex flex-col gap-5 max-h-[70vh]">
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Lead Name</label>
-            <input type="text" defaultValue="StartupX" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+            <input type="text" defaultValue="StartupX" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Date</label>
-            <input type="text" placeholder="dd/mm/yyyy" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+            <input type="text" placeholder="dd/mm/yyyy" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Time Slot</label>
-            <input type="text" defaultValue="11:00 AM-12:00 PM" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+            <input type="text" defaultValue="11:00 AM-12:00 PM" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Center</label>
-            <input type="text" defaultValue="Mumbai" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+            <input type="text" defaultValue="Mumbai" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-gray-700">Assigned Staff</label>
-            <input type="text" defaultValue="CM Rahul" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+            <input type="text" defaultValue="CM Rahul" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -66,11 +66,11 @@ export function ScheduleVisitModal({ open, onClose }: ScheduleVisitModalProps) {
         <div className="p-6 border-t border-gray-100 flex gap-4">
           <button 
             onClick={onClose}
-            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
           >
             Cancel
           </button>
-          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors">
+          <button className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]">
             Confirm Visit
           </button>
         </div>

@@ -146,9 +146,9 @@ function StatusPill({ status }: { status: EventStatus }) {
   return <span className={`${styles.statusPill} ${styles.statusPending}`}>Pending</span>;
 }
 
-function EventRowItem({ event, selected, onSelect, onConfirm, onEdit, onCancel }: { event: EventRow; selected: boolean; onSelect: () => void; onConfirm?: (id: string) => void; onEdit?: (id: string) => void; onCancel?: (id: string) => void }) {
+function EventRowItem({ event, selected, onSelect, onConfirm, onEdit, onCancel, style }: { event: EventRow; selected: boolean; onSelect: () => void; onConfirm?: (id: string) => void; onEdit?: (id: string) => void; onCancel?: (id: string) => void; style?: React.CSSProperties }) {
   return (
-    <div className={`${styles.eventRow} ${selected ? styles.eventRowSelected : ""}`} onClick={onSelect} role="button" tabIndex={0}
+    <div className={`${styles.eventRow} ${styles.eventItem} ${selected ? styles.eventRowSelected : ""}`} style={style} onClick={onSelect} role="button" tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(); } }}
     >
       <div className={styles.eventIcon}><ClockIcon /></div>
@@ -190,8 +190,8 @@ function SectionCard({ title, count, events, selectedId, onSelect, onConfirm, on
         <div className={styles.emptySection}>{emptyLabel}</div>
       ) : (
         <div className={styles.eventList}>
-          {events.map((ev) => (
-            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} onConfirm={onConfirm} onEdit={onEdit} onCancel={onCancel} />
+          {events.map((ev, idx) => (
+            <EventRowItem key={ev.id} event={ev} selected={selectedId === ev.id} onSelect={() => onSelect(ev.id)} onConfirm={onConfirm} onEdit={onEdit} onCancel={onCancel} style={{ '--i': idx } as React.CSSProperties} />
           ))}
         </div>
       )}
@@ -356,7 +356,7 @@ export default function EventsPage() {
         <div className={styles.filterTabs} role="tablist" aria-label="Filter by time">
           {(["all", "today", "upcoming", "past"] as FilterKey[]).map((tab) => (
             <button key={tab} type="button" role="tab" aria-selected={filter === tab}
-              className={`${styles.filterTab} ${filter === tab ? styles.filterTabActive : ""}`}
+              className={`${styles.filterTab} ${filter === tab ? styles.filterTabActive : ""} transition-all duration-200`}
               onClick={() => setFilter(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
           ))}
         </div>

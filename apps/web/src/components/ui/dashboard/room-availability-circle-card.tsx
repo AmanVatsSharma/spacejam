@@ -84,7 +84,7 @@ export function RoomAvailabilityCircleCard({
   };
 
   return (
-    <div className={`${styles.card} ${className}`}>
+    <div className={`${styles.card} ${className} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}>
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.titleSection}>
@@ -143,7 +143,7 @@ export function RoomAvailabilityCircleCard({
           {subStats.map((stat) => {
             const percent = stat.total > 0 ? (stat.available / stat.total) * 100 : 0;
             return (
-              <div key={stat.label} className={styles.subStat}>
+              <div key={stat.label} className={`${styles.subStat} transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5`}>
                 <div className={styles.subStatHeader}>
                   <span className={styles.subStatLabel}>{stat.label}</span>
                   <span className={styles.subStatValue}>

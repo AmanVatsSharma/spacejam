@@ -9,6 +9,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
 }
 
 .cardHeader {
@@ -76,4 +78,9 @@
   right: 20px;
   height: 0px;
   border: 1px solid #FF7847;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

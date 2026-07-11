@@ -73,7 +73,7 @@ export function TotalLeadCard({
   className = "",
 }: TotalLeadCardProps) {
   return (
-    <div className={`${styles.card} ${className}`}>
+    <div className={`${styles.card} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}>
       <div className={styles.header}>
         <h3 className={styles.title}>Total Lead</h3>
         <p className={styles.subtitle}>Total available room and seat</p>

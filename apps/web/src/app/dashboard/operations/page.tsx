@@ -133,7 +133,7 @@ export default function OperationsPage() {
           <p className="text-[#4A5565]">Manage bookings, check-ins, and space utilization</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-[#4A5565] px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors shadow-sm">
+          <button className="flex items-center gap-2 bg-white border border-gray-200 text-[#4A5565] px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-50 transition-all shadow-sm active:scale-[0.97] transition-transform duration-150">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="2" y="4" width="12" height="10" rx="2" />
               <path d="M5 2V4M11 2V4M2 8H14" />
@@ -142,7 +142,7 @@ export default function OperationsPage() {
           </button>
           <button 
             onClick={() => setShowBookRoom(true)}
-            className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-[#FF7847] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-all shadow-sm active:scale-[0.97] transition-transform duration-150"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V13M3 8H13" />
@@ -154,28 +154,28 @@ export default function OperationsPage() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Active Bookings</p>
           <p className="text-2xl font-bold text-[#101828]">
             {metricsLoading ? "—" : (metrics?.activeBookings ?? activeBookings.length)}
           </p>
           <span className="text-xs text-green-600 font-medium">Active today</span>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Checked In</p>
           <p className="text-2xl font-bold text-[#101828]">
             {metricsLoading ? "—" : (metrics?.occupancyRate != null ? `${metrics.occupancyRate}%` : "—")}
           </p>
           <span className="text-xs text-gray-400 font-medium">Currently in space</span>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Available Spaces</p>
           <p className="text-2xl font-bold text-[#101828]">
             {metricsLoading ? "—" : (metrics?.availableSeats ?? "—")}
           </p>
           <span className="text-xs text-green-600 font-medium">Open seats</span>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Today's Revenue</p>
           <p className="text-2xl font-bold text-[#101828]">
             {metricsLoading ? "—" : (metrics?.totalRevenue != null ? `₹${metrics.totalRevenue.toLocaleString()}` : "—")}
@@ -190,7 +190,7 @@ export default function OperationsPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeTab === tab.id
                 ? "bg-[#FF7847] text-white"
                 : "text-[#4A5565] hover:bg-gray-100"
@@ -203,7 +203,7 @@ export default function OperationsPage() {
 
       {/* Bookings Table */}
       {activeTab === "bookings" && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -234,7 +234,7 @@ export default function OperationsPage() {
                   const checkIn = new Date(booking.startDate);
                   const checkOut = new Date(booking.endDate);
                   return (
-                    <tr key={booking.id} className="hover:bg-gray-50">
+                    <tr key={booking.id} className="transition-colors duration-150 hover:bg-[#F9FAFB]">
                       <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm font-medium text-[#101828]">{booking.id.slice(0, 8)}…</td>
                       <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#4A5565]">{booking.user?.name ?? "Unknown"}</td>
                       <td className="px-6 py-4 compact:px-3 compact:py-2 text-sm text-[#101828] font-medium">{booking.seat?.number ?? booking.meetingRoom?.name ?? "—"}</td>
@@ -247,16 +247,16 @@ export default function OperationsPage() {
                       </td>
                       <td className="px-6 py-4 compact:px-3 compact:py-2 flex gap-2">
                         {booking.status === "CONFIRMED" && (
-                          <button onClick={() => handleCheckIn(booking.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">Check In</button>
+                          <button onClick={() => handleCheckIn(booking.id)} className="text-xs bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600 transition-all active:scale-[0.97]">Check In</button>
                         )}
                         {booking.status === "CHECKED_IN" && (
                           <>
-                            <button onClick={() => handleExtendBooking(booking.id)} className="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 mr-1">Extend</button>
-                            <button onClick={() => handleCheckOut(booking.id)} className="text-xs bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Check Out</button>
+                            <button onClick={() => handleExtendBooking(booking.id)} className="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-200 mr-1 transition-all active:scale-[0.97]">Extend</button>
+                            <button onClick={() => handleCheckOut(booking.id)} className="text-xs bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600 transition-all active:scale-[0.97]">Check Out</button>
                           </>
                         )}
                         {(booking.status === "CONFIRMED" || booking.status === "CHECKED_IN") && (
-                          <button onClick={() => handleCancelBooking(booking.id)} className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-lg hover:bg-red-200">Cancel</button>
+                          <button onClick={() => handleCancelBooking(booking.id)} className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-lg hover:bg-red-200 transition-all active:scale-[0.97]">Cancel</button>
                         )}
                       </td>
                     </tr>
@@ -271,7 +271,7 @@ export default function OperationsPage() {
       {/* Check-in/Out - Quick Actions */}
       {activeTab === "check-in" && (
         <div className="grid grid-cols-1 compact:grid-cols-2 gap-6 compact:gap-3">
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
             <h3 className="text-lg font-semibold text-[#101828] mb-4">Pending Check-ins</h3>
             <div className="space-y-4">
               {bookingsLoading ? (
@@ -284,12 +284,12 @@ export default function OperationsPage() {
                   .map((booking: any) => {
                     const checkIn = new Date(booking.startDate);
                     return (
-                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5">
                         <div>
                           <p className="font-medium text-[#101828]">{booking.user?.name ?? "Unknown"}</p>
                           <p className="text-sm text-[#4A5565]">{booking.seat?.number ?? "—"} &middot; {checkIn.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
-                        <button onClick={() => handleCheckIn(booking.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600">
+                        <button onClick={() => handleCheckIn(booking.id)} className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-600 transition-all active:scale-[0.97]">
                           Check In
                         </button>
                       </div>
@@ -298,7 +298,7 @@ export default function OperationsPage() {
               )}
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
             <h3 className="text-lg font-semibold text-[#101828] mb-4">Pending Check-outs</h3>
             <div className="space-y-4">
               {bookingsLoading ? (
@@ -311,12 +311,12 @@ export default function OperationsPage() {
                   .map((booking: any) => {
                     const checkOut = new Date(booking.endDate);
                     return (
-                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5">
                         <div>
                           <p className="font-medium text-[#101828]">{booking.user?.name ?? "Unknown"}</p>
                           <p className="text-sm text-[#4A5565]">{booking.seat?.number ?? "—"} &middot; {checkOut.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
-                        <button onClick={() => handleCheckOut(booking.id)} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600">
+                        <button onClick={() => handleCheckOut(booking.id)} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-all active:scale-[0.97]">
                           Check Out
                         </button>
                       </div>
@@ -330,7 +330,7 @@ export default function OperationsPage() {
 
       {/* Space Status */}
       {activeTab === "spaces" && (
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
           <h3 className="text-lg font-semibold text-[#101828] mb-4">Space Availability</h3>
           <div className="grid grid-cols-4 gap-4">
             {["Cabins", "Hot Desks", "Meeting Rooms", "Dedicated Desks"].map((type, i) => {
@@ -341,7 +341,7 @@ export default function OperationsPage() {
                 "Dedicated Desks": metrics?.totalSeats ? Math.floor(metrics.totalSeats * 0.20) : 0,
               };
               return (
-                <div key={type} className="bg-gray-50 rounded-xl p-4 text-center">
+                <div key={type} className="bg-gray-50 rounded-xl p-4 text-center transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
                   <div className="w-12 h-12 bg-[#FF7847] rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-xl">
                     {metricsLoading ? "—" : (counts[type] ?? "—")}
                   </div>
@@ -398,19 +398,19 @@ function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">No. of Rooms</p>
           <p className="text-2xl font-bold text-[#101828]">{roomsLoading ? "—" : rooms.length}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Occupied</p>
           <p className="text-2xl font-bold text-[#101828]">{roomsLoading ? "—" : occupiedCount}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Vacant Slot</p>
           <p className="text-2xl font-bold text-[#101828]">{roomsLoading ? "—" : availableCount}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="bg-white rounded-2xl shadow-sm p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <p className="text-sm text-gray-500 mb-2">Peak Usage Hrs</p>
           <p className="text-2xl font-bold text-[#101828]">10 AM – 4 PM</p>
         </div>
@@ -427,7 +427,7 @@ function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
             const style = ROOM_STATUS_STYLE[room.status] ?? ROOM_STATUS_STYLE["AVAILABLE"];
             const isActionable = room.status === "AVAILABLE" || room.status === "OCCUPIED";
             return (
-              <div key={room.id} className="bg-white rounded-2xl shadow-sm p-6">
+              <div key={room.id} className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-[#101828]">{room.name}</h3>
@@ -446,12 +446,12 @@ function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
                 {isActionable ? (
                   <button
                     onClick={() => onBookRoom?.()}
-                    className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D]"
+                    className="w-full py-2.5 rounded-xl text-sm font-medium bg-[#FF7847] text-white hover:bg-[#FF6A3D] transition-all active:scale-[0.97]"
                   >
                     {room.status === "OCCUPIED" ? "Extend" : "Book Now"}
                   </button>
                 ) : (
-                  <button className="w-full py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-[#4A5565] opacity-50 cursor-not-allowed" disabled>
+                  <button className="w-full py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-[#4A5565] opacity-50 cursor-not-allowed transition-all" disabled>
                     Unavailable
                   </button>
                 )}
@@ -462,7 +462,7 @@ function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
       </div>
 
       {/* Active Add-ons & Requests */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md">
         <h3 className="text-lg font-semibold text-[#101828] mb-4">Active Add-ons & Requests</h3>
         <div className="space-y-4">
           {requestsLoading ? (
@@ -471,7 +471,7 @@ function MeetingRoomsTab({ onBookRoom }: { onBookRoom?: () => void }) {
             <div className="text-sm text-gray-400">No active requests.</div>
           ) : (
             requests.map((req: any) => (
-              <div key={req.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div key={req.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5">
                 <div className="flex items-center gap-3">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-[#6A7282]">
                     <rect x="2" y="3" width="16" height="14" rx="2" />

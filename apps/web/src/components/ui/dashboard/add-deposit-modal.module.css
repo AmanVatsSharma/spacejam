@@ -10,6 +10,7 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  transition: opacity 200ms;
 }
 
 .modal {
@@ -22,6 +23,7 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
+  transition: all 200ms;
 }
 
 .header {
@@ -195,4 +197,49 @@
 
 .submitBtn:hover {
   background: #E55A25;
+}
+
+/* ── Micro-interaction polish ── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeInUp {
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+  animation-delay: calc(var(--i) * 60ms);
+}
+
+.closeBtn {
+  transition: color 150ms, transform 150ms;
+}
+
+.closeBtn:active {
+  transform: scale(0.97);
+}
+
+.cancelBtn {
+  transition: background-color 150ms, transform 150ms;
+}
+
+.cancelBtn:active {
+  transform: scale(0.97);
+}
+
+.submitBtn {
+  transition: background-color 150ms, transform 150ms;
+}
+
+.submitBtn:active {
+  transform: scale(0.97);
+}
+
+.formGroup {
+  transition: opacity 200ms;
+}
+
+.input, .textarea, .select, .inputWithPrefix {
+  transition: border-color 150ms, box-shadow 150ms, background-color 150ms;
 }

@@ -94,8 +94,8 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
 
           return (
             <React.Fragment key={step.num}>
-              <div className={`flex items-center gap-2 ${isActive ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-semibold
+              <div className={`flex items-center gap-2 transition-all duration-200 ${isActive ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all duration-200
                   ${isCompleted ? 'bg-[#FF6A2F] text-white' : isActive ? 'bg-[#FF6A2F] text-white' : 'bg-gray-200 text-gray-500'}`}
                 >
                   {isCompleted ? <CheckIcon /> : step.num}
@@ -213,9 +213,9 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex-shrink-0">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <span className="font-semibold text-gray-900">Product Catalog</span>
-          <button 
+          <button
             onClick={() => setProducts([...products, { id: Date.now(), type: "Open Desk", price: "0", gst: "18", tokens: 0 }])}
-            className="text-[#FF6A2F] text-[14px] font-semibold flex items-center gap-1"
+            className="text-[#FF6A2F] text-[14px] font-semibold flex items-center gap-1 active:scale-[0.97] transition-transform duration-150"
           >
             + Add Product Type
           </button>
@@ -304,7 +304,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           <h2 className="text-[18px] font-semibold text-gray-900">Floor Setup</h2>
           <p className="text-[14px] text-gray-500">Distribute your products across floors</p>
         </div>
-        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold">
+        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold active:scale-[0.97] transition-transform duration-150">
           + Add Floor
         </button>
       </div>
@@ -329,7 +329,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           {floors.map(floor => (
             <div key={floor.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               <div 
-                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all duration-200 active:bg-gray-100"
                 onClick={() => setFloors(floors.map(f => f.id === floor.id ? {...f, expanded: !f.expanded} : f))}
               >
                 <div className="flex items-center gap-3">
@@ -439,7 +439,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
         <div className="flex items-center gap-6 border-b border-gray-200 mt-6">
           <button 
             onClick={() => setActiveFloorTab(1)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-colors ${activeFloorTab === 1 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 1 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             Floor 1
           </button>
@@ -457,7 +457,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <span className="font-semibold text-gray-900">Floor Map</span>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 border border-[#FF6A2F] text-[#FF6A2F] rounded-lg text-[13px] font-semibold">
+              <button className="flex items-center gap-1.5 px-3 py-1.5 border border-[#FF6A2F] text-[#FF6A2F] rounded-lg text-[13px] font-semibold active:scale-[0.97] transition-all duration-150">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                 </svg>
@@ -503,9 +503,9 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <button 
+                      <button
                         onClick={() => setSelectedSpaceDetails(s.id)}
-                        className="bg-[#FF6A2F] text-white px-3 py-1.5 rounded-lg text-[13px] font-semibold shadow-sm"
+                        className="bg-[#FF6A2F] text-white px-3 py-1.5 rounded-lg text-[13px] font-semibold shadow-sm active:scale-[0.95] transition-all duration-150"
                       >
                         View Details
                       </button>
@@ -617,7 +617,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3"/></svg>
           </div>
@@ -630,7 +630,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
           </div>
@@ -641,7 +641,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12l10 5 10-5-10-5zM2 17l10 5 10-5M2 7l10 5 10-5"/></svg>
           </div>
@@ -653,7 +653,7 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
           </div>
@@ -759,9 +759,9 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
         
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex flex-col relative shrink-0">
-          <button 
+          <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 active:scale-[0.9] transition-all duration-150"
           >
             <CloseIcon />
           </button>
@@ -783,13 +783,13 @@ export function SetUpCenterModal({ isOpen, onClose }: SetUpCenterModalProps) {
         <div className="p-5 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
           <button 
             onClick={handleBack}
-            className={`px-6 py-2.5 border border-gray-300 rounded-xl text-[14px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+            className={`px-6 py-2.5 border border-gray-300 rounded-xl text-[14px] font-semibold text-gray-700 hover:bg-gray-50 active:scale-[0.97] transition-all duration-150 ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
           >
             Back
           </button>
           <button 
             onClick={handleNext}
-            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] transition-colors"
+            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150"
           >
             {currentStep === 5 ? 'Create center' : 'Continue'}
           </button>

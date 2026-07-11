@@ -62,6 +62,11 @@
 .viewPlanBtn:hover {
   background: #FFF5F2;
   border-color: #FFD8CC;
+  transform: translateY(-1px);
+}
+
+.viewPlanBtn:active {
+  transform: scale(0.97);
 }
 
 /* Chart section */
@@ -179,6 +184,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .subStatHeader {

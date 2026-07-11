@@ -94,10 +94,10 @@ export function MeetingRoomBookingGrid({
         </div>
       ) : (
         <div className={styles.grid}>
-          {rooms.map((room) => {
+          {rooms.map((room, idx) => {
             const colors = statusColors[room.status];
             return (
-              <div key={room.id} className={styles.roomCard}>
+              <div key={room.id} className={`${styles.roomCard}`} style={{ '--i': idx } as React.CSSProperties}>
                 {/* Room name */}
                 <h4 className={styles.roomName}>{room.name}</h4>
   

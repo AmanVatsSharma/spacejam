@@ -33,6 +33,7 @@ import { Deposit } from './entities/deposit.entity';
 import { Invoice } from './entities/invoice.entity';
 import { Contract } from './entities/contract.entity';
 import { Customer } from './entities/customer.entity';
+import { Notification } from './entities/notification.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -56,6 +57,7 @@ const ALL_ENTITIES = [
   Deposit,
   Invoice,
   Contract,
+  Notification,
 ];
 
 @Module({

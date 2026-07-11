@@ -122,7 +122,7 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
           <h2 className="text-[18px] font-semibold text-gray-900">Floor Setup</h2>
           <p className="text-[14px] text-gray-500">Distribute your products across floors</p>
         </div>
-        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors">
+        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] active:scale-[0.97] transition-all duration-150">
           + Add Floor
         </button>
       </div>
@@ -147,7 +147,7 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
           {floors.map(floor => (
             <div key={floor.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               <div 
-                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all duration-200 active:bg-gray-100"
                 onClick={() => setFloors(floors.map(f => f.id === floor.id ? {...f, expanded: !f.expanded} : f))}
               >
                 <div className="flex items-center gap-3">
@@ -255,21 +255,21 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
         <p className="text-[14px] text-gray-500">Configure auto-generated spaces from your floor distribution</p>
         
         <div className="flex items-center gap-6 border-b border-gray-200 mt-6">
-          <button 
+          <button
             onClick={() => setActiveFloorTab(1)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-colors ${activeFloorTab === 1 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 1 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             Floor 1
           </button>
           <button 
             onClick={() => setActiveFloorTab(2)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-colors ${activeFloorTab === 2 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 2 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             Floor 2
           </button>
           <button 
             onClick={() => setActiveFloorTab(3)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-colors ${activeFloorTab === 3 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 3 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
           >
             Floor 3
           </button>
@@ -596,9 +596,9 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
         
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex flex-col relative shrink-0">
-          <button 
+          <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"
+            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 active:scale-[0.9] transition-all duration-150"
           >
             <CloseIcon />
           </button>
@@ -618,13 +618,13 @@ export function FloorSetupModal({ isOpen, onClose }: FloorSetupModalProps) {
         <div className="p-5 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
           <button 
             onClick={handleBack}
-            className={`px-6 py-2.5 border border-gray-300 rounded-xl text-[14px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+            className={`px-6 py-2.5 border border-gray-300 rounded-xl text-[14px] font-semibold text-gray-700 hover:bg-gray-50 transition-all duration-200 active:bg-gray-100 ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
           >
             Back
           </button>
-          <button 
+          <button
             onClick={handleNext}
-            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] transition-colors"
+            className="px-6 py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold shadow-sm hover:bg-[#e55a20] active:scale-[0.97] transition-all duration-150"
           >
             {currentStep === 3 ? 'Setup Floor' : 'Continue'}
           </button>

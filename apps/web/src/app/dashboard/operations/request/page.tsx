@@ -162,7 +162,7 @@ export default function RequestsPage() {
         </div>
         <button
           onClick={() => setShowAddRequest(true)}
-          className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm shrink-0"
+          className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
             <path d="M8 3V13M3 8H13" strokeLinecap="round" />
@@ -203,11 +203,11 @@ export default function RequestsPage() {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
             </div>
 
-            <button onClick={handleClearAll} className="px-5 py-2.5 bg-[#FFECE5] text-[#FF6A2F] rounded-lg text-[14px] font-medium hover:bg-[#FFD9CC] transition-colors">Clear All</button>
+            <button onClick={handleClearAll} className="px-5 py-2.5 bg-[#FFECE5] text-[#FF6A2F] rounded-lg text-[14px] font-medium hover:bg-[#FFD9CC] transition-all active:scale-[0.97]">Clear All</button>
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-visible relative">
+          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-visible relative transition-all duration-200">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -250,7 +250,7 @@ export default function RequestsPage() {
                   </tr>
                 )}
                 {filtered.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={request.id} className="hover:bg-gray-50/50 transition-colors duration-150">
                     <td className="px-6 py-5 text-[14px] font-medium text-gray-900">{request.requestType}</td>
                     <td className="px-6 py-5 text-[14px] font-bold text-gray-900">{request.requestedBy}</td>
                     <td className="px-6 py-5 text-[14px] text-gray-500 max-w-[200px] leading-relaxed">{request.details}</td>
@@ -261,16 +261,16 @@ export default function RequestsPage() {
                         setOpenStatusMenu(openStatusMenu === request.id ? null : request.id);
                         setOpenActionMenu(null);
                       }}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium ${getStatusStyle(request.status)}`}>
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium ${getStatusStyle(request.status)} transition-all duration-200`}>
                         {request.status}
                         <svg className="w-3 h-3 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
                       {openStatusMenu === request.id && (
-                        <div className="absolute left-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden">
+                        <div className="absolute left-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden transition-all duration-200 origin-top">
                           {["Pending", "Approved", "Rejected"].map((opt) => (
-                            <button key={opt} className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                            <button key={opt} className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                               onClick={() => handleStatusChange(request.id, opt)}>
                               {opt}
                             </button>
@@ -279,7 +279,7 @@ export default function RequestsPage() {
                       )}
                     </td>
                     <td className="px-6 py-5 relative">
-                      <button className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                      <button className="p-1 rounded-md hover:bg-gray-100 transition-colors duration-150"
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenActionMenu(openActionMenu === request.id ? null : request.id);
@@ -288,13 +288,13 @@ export default function RequestsPage() {
                         {Icons.moreVertical}
                       </button>
                       {openActionMenu === request.id && (
-                        <div className="absolute right-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden">
-                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                        <div className="absolute right-6 top-[70%] z-20 w-32 bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-gray-100 py-1 overflow-hidden transition-all duration-200 origin-top">
+                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                             onClick={() => {
                               approve(request.id);
                               setOpenActionMenu(null);
                             }}>Approve</button>
-                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors"
+                          <button className="w-full text-left px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition-colors duration-150"
                             onClick={() => {
                               reject(request.id, "Rejected by admin");
                               setOpenActionMenu(null);
@@ -311,7 +311,7 @@ export default function RequestsPage() {
 
         {/* Sidebar */}
         <div className="w-[320px] flex flex-col gap-5 shrink-0">
-          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+          <div className="bg-white rounded-[16px] shadow-sm border border-gray-100 p-6 flex flex-col gap-4 transition-all duration-200 hover:shadow-md">
             <div className="flex items-center justify-between">
               <span className="text-[16px] font-bold text-gray-900">Total Requests</span>
               <span className="text-[18px] font-semibold text-gray-900">{stats.totalRequests ?? totalCount}</span>
@@ -329,7 +329,7 @@ export default function RequestsPage() {
               <span className="text-[16px] font-semibold text-gray-900">{stats.highUrgencyRequests ?? 0}</span>
             </div>
             <button onClick={() => setShowPendingModal(true)}
-              className="w-full mt-2 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">View Pending</button>
+              className="w-full mt-2 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">View Pending</button>
           </div>
 
           {/* Activities section removed - real data integration pending */}

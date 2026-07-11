@@ -620,3 +620,109 @@
   font-size: 11px;
   color: #6A7282;
 }
+
+/* ── Micro-interaction polish ── */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fadeInUp {
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+  animation-delay: calc(var(--i) * 60ms);
+}
+
+.card {
+  transition: box-shadow 200ms, transform 200ms;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.upcomingGridCard {
+  transition: box-shadow 200ms, transform 200ms;
+}
+
+.upcomingGridCard:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.invoiceRow {
+  transition: background-color 150ms;
+}
+
+.invoiceRow:hover {
+  background-color: #F9FAFB;
+}
+
+.statCard {
+  transition: box-shadow 200ms, transform 200ms;
+}
+
+.statCard:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.asideInnerCard {
+  transition: border-color 200ms, box-shadow 200ms, transform 200ms;
+}
+
+.asideInnerCard:hover {
+  border-color: #E5E7EB;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.actionMenuBtn {
+  transition: color 150ms, transform 150ms;
+}
+
+.actionMenuBtn:active {
+  transform: scale(0.97);
+}
+
+.notifyBtn {
+  transition: background-color 150ms, transform 150ms;
+}
+
+.notifyBtn:active {
+  transform: scale(0.97);
+}
+
+.renewBtn {
+  transition: background-color 150ms, transform 150ms;
+}
+
+.renewBtn:active {
+  transform: scale(0.97);
+}
+
+.clearAllBtn {
+  transition: background-color 150ms, color 150ms, transform 150ms;
+}
+
+.clearAllBtn:active {
+  transform: scale(0.97);
+}
+
+.exportBtn {
+  transition: background-color 150ms, border-color 150ms, transform 150ms;
+}
+
+.exportBtn:active {
+  transform: scale(0.97);
+}
+
+.createBtn {
+  transition: background-color 150ms, transform 150ms;
+}
+
+.createBtn:active {
+  transform: scale(0.97);
+}

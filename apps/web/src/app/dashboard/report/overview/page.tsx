@@ -130,7 +130,7 @@ export default function OverviewPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[#101828]">Reports Overview</h1>
@@ -140,7 +140,7 @@ export default function OverviewPage() {
             <select
               value={selectedPeriod}
               onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="bg-gray-100 border-0 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]"
+              className="bg-gray-100 border-0 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] transition-all duration-200"
             >
               {periods.map((period) => (
                 <option key={period.id} value={period.id}>
@@ -148,7 +148,7 @@ export default function OverviewPage() {
                 </option>
               ))}
             </select>
-            <button className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] transition-colors shadow-sm">
+            <button className="flex items-center gap-2 bg-[#FF6A2F] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-200 shadow-sm">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M8 3V8L11 11" />
                 <circle cx="8" cy="8" r="5" />
@@ -162,7 +162,11 @@ export default function OverviewPage() {
       {/* Revenue Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {revenueCards.map((card, index) => (
-          <div key={index} className="bg-white rounded-2xl shadow-sm p-6">
+          <div
+            key={index}
+            className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+            style={{ '--i': index } as React.CSSProperties}
+          >
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm text-[#6A7282]">{card.title}</span>
               <span className="text-2xl">{card.icon}</span>
@@ -182,7 +186,7 @@ export default function OverviewPage() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <h3 className="text-lg font-semibold text-[#101828] mb-4">Revenue Trend</h3>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
             {revenue?.byMonth && revenue.byMonth.length > 0 ? (
@@ -217,7 +221,7 @@ export default function OverviewPage() {
         </div>
 
         {/* Occupancy Chart */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
           <h3 className="text-lg font-semibold text-[#101828] mb-4">Space Utilization</h3>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-xl">
             {metrics && metrics.totalSeats ? (
@@ -266,7 +270,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Recent Transactions */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="bg-white rounded-2xl shadow-sm p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
         <h3 className="text-lg font-semibold text-[#101828] mb-4">Recent Transactions</h3>
         <div className="space-y-3">
           {recentInvoices.length === 0 ? (
@@ -277,7 +281,7 @@ export default function OverviewPage() {
             recentInvoices.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5 active:scale-[0.97] cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-100">

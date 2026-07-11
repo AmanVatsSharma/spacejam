@@ -114,7 +114,7 @@ export function TasksComplianceCard({
   };
 
   return (
-    <div className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col p-5 ${className}`}>
+    <div className={`bg-white rounded-[14px] shadow-[0px_0px_0px_0.5px_rgba(0,0,0,0.08),0px_2px_4px_-2px_rgba(0,0,0,0.05)] flex flex-col p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -137,7 +137,7 @@ export function TasksComplianceCard({
           defaultItems.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-3 rounded-[10px] cursor-pointer hover:opacity-90 transition-opacity"
+              className="flex items-center justify-between p-3 rounded-[10px] cursor-pointer hover:opacity-90 transition-all duration-200 hover:shadow-sm hover:-translate-y-0.5"
               style={{ background: getBgColor(item.color) }}
             >
               <div className="flex items-center gap-3">

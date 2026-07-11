@@ -9,6 +9,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
 }
 
 /* Header */
@@ -132,4 +134,22 @@
 /* Demo styling */
 .demo {
   max-width: 473px;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kpiTop {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-left-width: 1px;
+  border-left-style: solid;
+  padding-left: 12px;
+  transition: border-left-width 0.2s ease;
+}
+.kpiTop:hover {
+  border-left-width: 3px;
 }

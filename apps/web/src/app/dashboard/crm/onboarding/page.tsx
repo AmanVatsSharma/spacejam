@@ -6,13 +6,13 @@ import { CREATE_CUSTOMER } from "@/lib/apollo/operations";
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
 const STEPS = [
-  { id: 1, title: "Basic Information", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 2, title: "Employee & User details", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 3, title: "Membership & Space Allocation", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 4, title: "Finance & Deposits", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 5, title: "Additional Services", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 6, title: "Legal & Compliance", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
-  { id: 7, title: "Personalisation", desc: "Lorem Ipsum is simply dummy text of the printing and typesetting industry." },
+  { id: 1, title: "Basic Information", desc: "Enter the customer's basic contact and company details." },
+  { id: 2, title: "Employee & User details", desc: "Set up user accounts and assign team members." },
+  { id: 3, title: "Membership & Space Allocation", desc: "Choose a membership plan and allocate workspace." },
+  { id: 4, title: "Finance & Deposits", desc: "Configure billing, deposits, and payment terms." },
+  { id: 5, title: "Additional Services", desc: "Add any extra services or add-ons." },
+  { id: 6, title: "Legal & Compliance", desc: "Upload agreements and complete KYC verification." },
+  { id: 7, title: "Personalisation", desc: "Customize preferences and finalize onboarding." },
 ];
 
 export default function OnboardingWizardPage() {
@@ -133,7 +133,7 @@ export default function OnboardingWizardPage() {
               <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
               Apr 4, 2026
             </div>
-            <button onClick={() => setShowInteractiveMap(false)} className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm">Continue</button>
+            <button onClick={() => setShowInteractiveMap(false)} className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">Continue</button>
           </div>
         </div>
 
@@ -332,7 +332,7 @@ export default function OnboardingWizardPage() {
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
       {/* Header */}
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100">
+      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 transition-all duration-200">
         <div>
           <h1 className="text-[28px] font-bold text-[#101828] leading-tight">Onboarding</h1>
           <p className="text-sm text-[#667085] mt-1">Track potential clients, manage inquiries, and convert them into members.</p>
@@ -342,16 +342,16 @@ export default function OnboardingWizardPage() {
       {/* Main Layout */}
       <div className="flex gap-6 items-start">
         {/* Left Sidebar (Stepper) */}
-        <div className="w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col min-h-[700px]">
+        <div className="w-[380px] shrink-0 bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col min-h-[700px] transition-all duration-200">
           <h2 className="text-[18px] font-bold text-[#101828] mb-6">Onboarding Process</h2>
 
-          <div className="flex flex-col flex-1">
+          <div className="flex flex-col flex-1 transition-all duration-200">
             {STEPS.map((step, index) => {
               const isActive = step.id === currentStep;
               const isPast = step.id < currentStep;
 
               return (
-                <div key={step.id} className="flex gap-4 relative group cursor-pointer" onClick={() => setCurrentStep(step.id)}>
+                <div key={step.id} className="flex gap-4 relative group cursor-pointer transition-all duration-200 hover:-translate-y-0.5" onClick={() => setCurrentStep(step.id)}>
                   {/* Line connecting steps */}
                   {index !== STEPS.length - 1 && (
                     <div
@@ -361,7 +361,7 @@ export default function OnboardingWizardPage() {
                   )}
 
                   <div className="flex flex-col items-center z-10 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isActive || isPast
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${isActive || isPast
                       ? "bg-[#FF6A2F] text-white shadow-sm"
                       : "bg-gray-100 text-gray-400 group-hover:bg-gray-200"
                       }`}>
@@ -452,7 +452,7 @@ export default function OnboardingWizardPage() {
                 </p>
                 <button
                   onClick={handleNext}
-                  className="px-8 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[15px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+                  className="px-8 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[15px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
                 >
                   Go to next Step
                 </button>
@@ -540,7 +540,7 @@ export default function OnboardingWizardPage() {
                       <div className="flex justify-end mt-6">
                         <button
                           onClick={addUserRole}
-                          className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm flex items-center gap-1.5"
+                          className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm flex items-center gap-1.5"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -582,7 +582,7 @@ export default function OnboardingWizardPage() {
 
                       {employeeMode === "bulk" && (
                         <div className="border border-dashed border-gray-300 rounded-xl bg-white p-10 flex flex-col items-center justify-center relative min-h-[300px] hover:bg-gray-50 transition-colors cursor-pointer group">
-                          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 transition-all active:scale-[0.97]">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -627,7 +627,7 @@ export default function OnboardingWizardPage() {
                               </div>
                               <div>
                                 <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Assigned seat <span className="text-[#FF6A2F]">*</span></label>
-                                <div className="w-full h-12 bg-[#FF6A2F] rounded-lg flex items-center justify-center text-white font-semibold text-[14px] cursor-pointer hover:bg-[#E55A20] transition-colors shadow-sm">
+                                <div className="w-full h-12 bg-[#FF6A2F] rounded-lg flex items-center justify-center text-white font-semibold text-[14px] cursor-pointer hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">
                                   {ind.seat || "Select Seat"}
                                 </div>
                               </div>
@@ -637,7 +637,7 @@ export default function OnboardingWizardPage() {
                           <div className="flex justify-end mt-2">
                             <button
                               onClick={addIndividual}
-                              className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+                              className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
                             >
                               Add more
                             </button>
@@ -696,7 +696,7 @@ export default function OnboardingWizardPage() {
                             <p className="text-[12px] text-gray-500">Book conference spaces</p>
                           </div>
                           {bookingType === "Meeting Room Access" && (
-                            <button onClick={(e) => { e.preventDefault(); setShowRoomBooking(true); }} className="px-3 py-1.5 bg-[#FFF8F6] text-[#FF6A2F] text-[12px] font-bold rounded-lg hover:bg-[#FFEAE0] transition-colors">
+                            <button onClick={(e) => { e.preventDefault(); setShowRoomBooking(true); }} className="px-3 py-1.5 bg-[#FFF8F6] text-[#FF6A2F] text-[12px] font-bold rounded-lg hover:bg-[#FFEAE0] transition-all duration-200 active:scale-[0.97]">
                               Book Room
                             </button>
                           )}
@@ -905,39 +905,39 @@ export default function OnboardingWizardPage() {
                         <h3 className="text-[13px] font-medium text-gray-700 mb-3">Duration</h3>
                         <div className="flex gap-3 mb-6">
                           <button className="flex-1 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shadow-sm">1 Hour</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">2 Hours</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">4 Hours</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">Full Day</button>
+                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">2 Hours</button>
+                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">4 Hours</button>
+                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">Full Day</button>
                         </div>
 
                         <h3 className="text-[13px] font-medium text-gray-700 mb-3">Select Start Time</h3>
                         <div className="grid grid-cols-4 gap-3 mb-8">
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">09:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">10:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">11:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">12:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">13:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">09:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">10:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">11:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">12:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">13:00</button>
                           <button className="py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shadow-sm">14:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">15:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">16:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">17:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">18:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-colors">19:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">15:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">16:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">17:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">18:00</button>
+                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">19:00</button>
                         </div>
 
                         <h3 className="text-[13px] font-medium text-gray-700 mb-3">Number of People</h3>
                         <div className="flex gap-3 items-center">
-                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-colors">-</button>
+                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">-</button>
                           <div className="flex-1 h-12 border border-gray-200 rounded-lg flex items-center px-4 justify-between">
                             <span className="font-semibold text-[14px] text-gray-800">1</span>
                           </div>
-                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-colors">+</button>
+                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">+</button>
                         </div>
                         <p className="text-center text-[11px] text-gray-400 mt-3">Maximum capacity: 5 people</p>
                       </div>
 
                       <div className="flex gap-4 mt-10">
-                        <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+                        <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-all active:scale-[0.97] shadow-sm">
                           Cancel
                         </button>
                         <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold shadow-sm hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2">
@@ -1870,7 +1870,7 @@ export default function OnboardingWizardPage() {
                         </div>
                         <button
                           onClick={() => setShowSignatureModal(true)}
-                          className="px-6 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-medium hover:bg-[#E55A20] transition-colors"
+                          className="px-6 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-medium hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]"
                         >
                           {signatureSaved ? "View Signature" : "Sign Agreement"}
                         </button>
@@ -1999,7 +1999,7 @@ export default function OnboardingWizardPage() {
                   </button>
                   <button
                     onClick={handleNext}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
                   >
                     {currentStep === 9 ? "Next" : "Continue"}
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
@@ -2021,7 +2021,7 @@ export default function OnboardingWizardPage() {
               <h2 className="text-[18px] font-bold text-gray-900">Add Digital Signature</h2>
               <button
                 onClick={() => setShowSignatureModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors active:scale-[0.97] transition-transform duration-150"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>

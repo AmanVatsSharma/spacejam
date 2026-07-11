@@ -213,7 +213,7 @@ export default function RevenueOverviewPage() {
         </div>
         <button
           onClick={() => setShowExport(true)}
-          className={styles.exportBtn}
+          className={`${styles.exportBtn} active:scale-[0.97] transition-transform duration-150`}
         >
           {Icons.download} Export Excel
         </button>
@@ -236,7 +236,7 @@ export default function RevenueOverviewPage() {
       {/* METRICS ROW */}
       <div className={styles.metricsRow}>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 0 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.rupee}
           </div>
@@ -247,7 +247,7 @@ export default function RevenueOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 1 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.document}
           </div>
@@ -258,7 +258,7 @@ export default function RevenueOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 2 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.signIn}
           </div>
@@ -269,7 +269,7 @@ export default function RevenueOverviewPage() {
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div className={`${styles.metricCard} ${styles.animateFadeIn}`} style={{ '--i': 3 } as React.CSSProperties}>
           <div className={styles.metricIconWrapper} style={{ color: '#FF6A2F' }}>
             {Icons.alertCircle}
           </div>
@@ -360,19 +360,19 @@ export default function RevenueOverviewPage() {
       <div className={styles.tabsRow}>
         <div className={styles.tabsContainer}>
           <div
-            className={`${styles.tabItem} ${activeTab === 'Invoices' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Invoices' ? styles.tabLineActive : ''}`}
+            className={`${styles.tabItem} ${activeTab === 'Invoices' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Invoices' ? styles.tabLineActive : ''} transition-all duration-200`}
             onClick={() => setActiveTab('Invoices')}
           >
             Invoices
           </div>
           <div
-            className={`${styles.tabItem} ${activeTab === 'Deposits' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Deposits' ? styles.tabLineActive : ''}`}
+            className={`${styles.tabItem} ${activeTab === 'Deposits' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Deposits' ? styles.tabLineActive : ''} transition-all duration-200`}
             onClick={() => setActiveTab('Deposits')}
           >
             Deposits
           </div>
           <div
-            className={`${styles.tabItem} ${activeTab === 'Overdues' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Overdues' ? styles.tabLineActive : ''}`}
+            className={`${styles.tabItem} ${activeTab === 'Overdues' ? styles.tabActive : ''} ${styles.tabLine} ${activeTab === 'Overdues' ? styles.tabLineActive : ''} transition-all duration-200`}
             onClick={() => setActiveTab('Overdues')}
           >
             Overdues
@@ -402,8 +402,8 @@ export default function RevenueOverviewPage() {
               No invoices found
             </div>
           ) : (
-            tabInvoices.map((inv: any) => (
-              <div key={inv.id} className={styles.listRow}>
+            tabInvoices.map((inv: any, idx: number) => (
+              <div key={inv.id} className={`${styles.listRow} transition-colors duration-150 hover:bg-[#F9FAFB]`} style={{ '--i': idx } as React.CSSProperties}>
                 <div className={styles.checkbox}></div>
                 <div className={styles.cellUser}>{inv.customerName || '—'}</div>
                 <span className={styles.cellAmount}>₹{Math.round(Number(inv.totalAmount ?? inv.amount ?? 0)).toLocaleString('en-IN')}</span>
@@ -433,8 +433,8 @@ export default function RevenueOverviewPage() {
               No deposits found
             </div>
           ) : (
-            tabDeposits.map((dep: any) => (
-              <div key={dep.id} className={styles.listRow}>
+            tabDeposits.map((dep: any, idx: number) => (
+              <div key={dep.id} className={`${styles.listRow} transition-colors duration-150 hover:bg-[#F9FAFB]`} style={{ '--i': idx } as React.CSSProperties}>
                 <div className={styles.checkbox}></div>
                 <div className={styles.cellUser}>{dep.customerName || '—'}</div>
                 <span className={styles.cellAmount}>₹{Math.round(Number(dep.amount ?? 0)).toLocaleString('en-IN')}</span>
@@ -463,8 +463,8 @@ export default function RevenueOverviewPage() {
               No overdue invoices found
             </div>
           ) : (
-            tabInvoices.map((inv: any) => (
-              <div key={inv.id} className={styles.listRow}>
+            tabInvoices.map((inv: any, idx: number) => (
+              <div key={inv.id} className={`${styles.listRow} transition-colors duration-150 hover:bg-[#F9FAFB]`} style={{ '--i': idx } as React.CSSProperties}>
                 <div className={styles.checkbox}></div>
                 <div className={styles.cellUser}>{inv.customerName || '—'}</div>
                 <span className={styles.cellAmount}>₹{Math.round(Number(inv.totalAmount ?? inv.amount ?? 0)).toLocaleString('en-IN')}</span>

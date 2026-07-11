@@ -50,6 +50,9 @@
 .addUserBtn:hover {
   opacity: 0.9;
 }
+.addUserBtn:active {
+  transform: scale(0.97);
+}
 
 /* ---------------- Sub Pills ---------------- */
 .subTabs {
@@ -67,6 +70,9 @@
   background: #FFFFFF;
   color: #4B5563;
   transition: all 0.2s;
+}
+.subTab:active {
+  transform: scale(0.97);
 }
 .subTabActive {
   background: #FF7847;
@@ -225,6 +231,7 @@
   border-radius: 12px;
   position: relative;
   cursor: pointer;
+  transition: background 0.2s;
 }
 .toggleKnob {
   width: 20px;
@@ -233,6 +240,9 @@
   border-radius: 50%;
   position: absolute;
   top: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.15);
+}
   right: 2px; /* Active state */
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
@@ -255,6 +265,7 @@
   transition: opacity 0.2s;
 }
 .saveBtn:hover { opacity: 0.9; }
+.saveBtn:active { transform: scale(0.97); }
 
 .dangerActions {
   display: flex;
@@ -612,10 +623,28 @@
 /* ---------------- Responsive ---------------- */
 @media (max-width: 1024px) {
   .splitLayout { flex-direction: column; }
-  .rightCol { width: 100%; order: -1; } /* move list to top on smaller screens */
+  .rightCol { width: 100%; order: -1; }
   .formGrid { grid-template-columns: 1fr; }
   .formGroupFull { grid-column: 1; }
   .formActions { flex-direction: column; gap: 16px; align-items: stretch; }
   .saveBtn { width: 100%; }
   .dangerActions { display: grid; grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------------- Animations ---------------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFadeIn {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 60ms);
 }

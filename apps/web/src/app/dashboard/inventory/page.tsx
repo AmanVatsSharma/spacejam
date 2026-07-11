@@ -151,7 +151,7 @@ export default function InventoryPage() {
       {/* Main Content */}
       <div className="flex flex-col gap-6 compact:gap-3 flex-1 min-w-0">
         {/* Page Title Card */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between">
+        <div className="bg-white rounded-2xl shadow-sm p-5 flex items-center justify-between hover:shadow-md transition-all duration-200">
           <div className="flex flex-col gap-1">
             <h1 className="text-[22px] font-semibold text-[#101828]">Location Management</h1>
             <p className="text-sm text-[#4A5565]">
@@ -160,7 +160,7 @@ export default function InventoryPage() {
           </div>
           <button
             onClick={() => setShowSetupModal(true)}
-            className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
+            className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V13M3 8H13" />
@@ -179,7 +179,7 @@ export default function InventoryPage() {
             {selectedCenterId ? (
               <button
                 onClick={() => setShowFloorModal(true)}
-                className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M8 3V13M3 8H13" />
@@ -212,11 +212,11 @@ export default function InventoryPage() {
 
       {/* Right Sidebar - Location Tree */}
       {centersLoading && locations.length === 0 ? (
-        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px]">
+        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px] hover:shadow-md transition-all duration-200">
           <span className="text-sm text-[#9CA3AF]">Loading locations…</span>
         </aside>
       ) : centersError && locations.length === 0 ? (
-        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px]">
+        <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px] hover:shadow-md transition-all duration-200">
           <span className="text-sm text-red-400">Unable to load locations.</span>
         </aside>
       ) : (

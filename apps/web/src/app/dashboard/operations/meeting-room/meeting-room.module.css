@@ -390,7 +390,7 @@
   transition: opacity 0.15s, transform 0.05s;
 }
 .roomCardAction:hover { opacity: 0.92; }
-.roomCardAction:active { transform: translateY(1px); }
+.roomCardAction:active { transform: scale(0.97); }
 
 /* ---------------- Add-ons ---------------- */
 
@@ -424,6 +424,11 @@
   padding: 12px 16px;
   gap: 12px;
   min-height: 56px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.addonRow:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transform: translateY(-1px);
 }
 .addonLeft { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .addonIconWrap {
@@ -510,7 +515,11 @@
 /* Body row */
 .tableRow {
   display: contents;
+  transition: background 0.15s;
 }
+.tableRow:hover .td { background: #F9FAFB; }
+.tableRow:last-child .td { border-bottom: none; }
+
 .tableRow .td {
   font-size: 14px;
   color: #1F1F1F;
@@ -520,8 +529,8 @@
   display: flex;
   align-items: center;
   min-height: 64px;
+  transition: background 0.15s;
 }
-.tableRow:last-child .td { border-bottom: none; }
 
 .tdName { font-weight: 600; color: #1F1F1F; }
 .tdCapacity { gap: 6px; color: #4A5565; }

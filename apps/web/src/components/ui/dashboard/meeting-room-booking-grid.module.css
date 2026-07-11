@@ -40,7 +40,17 @@
   margin: 0;
 }
 
-/* Grid 2x3 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -60,12 +70,17 @@
   border-radius: 10px;
   min-height: 131px;
   position: relative;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+  animation-delay: calc(var(--i) * 60ms);
 }
 
 .roomCard:hover {
   border-color: #FFE4DA;
   background: #FFFBFA;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 
 .roomName {

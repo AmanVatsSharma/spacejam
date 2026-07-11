@@ -10,6 +10,7 @@
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  transition: opacity 0.2s;
 }
 
 .modal {
@@ -22,6 +23,7 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
+  transition: transform 0.2s, opacity 0.2s;
 }
 
 .header {
@@ -227,6 +229,10 @@
   background: #F9FAFB;
 }
 
+.submitBtn:active {
+  transform: scale(0.97);
+}
+
 .submitBtn {
   display: flex;
   align-items: center;
@@ -239,6 +245,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .submitBtn:hover {

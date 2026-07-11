@@ -154,7 +154,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
 
   const renderPage1 = () => (
     <>
-      <div className={styles.sectionCard}>
+      <div className={styles.sectionCard} style={{ "--i": index }}>
         <h2 className={styles.sectionTitle}>Location</h2>
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
@@ -339,7 +339,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
         <div className={styles.catalogHeader}>
           <h3>Product Catalog</h3>
           <button
-            className={styles.addProductBtn}
+            className={`${styles.addProductBtn} transition-all duration-150 active:scale-[0.97]`}
             onClick={() => setShowProductModal(true)}
           >
             <svg
@@ -370,7 +370,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
               </div>
             )}
             {products.map((product) => (
-              <div key={product.id} className={styles.productRow}>
+              <div key={product.id} className={styles.productRow} style={{ "--i": index }}>
                 <span className={styles.productName}>{product.name}</span>
                 <span className={styles.productData}>INR{product.basePrice}</span>
                 <span className={styles.productData}>{product.gstPercent}%</span>
@@ -390,7 +390,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
                   {product.tokenEnabled ? `INR${product.tokenValue}` : '-'}
                 </span>
                 <button
-                  className={styles.deleteBtn}
+                  className={`${styles.deleteBtn} transition-all duration-150 active:scale-[0.97]`}
                   onClick={() => handleDeleteProduct(product.id)}
                 >
                   x
@@ -410,7 +410,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
       </div>
 
       {showProductModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowProductModal(false)}>
+        <div className={`${styles.modalOverlay} transition-opacity duration-200`} onClick={() => setShowProductModal(false)}>
           <div className={styles.addProductModal} onClick={(e) => e.stopPropagation()}>
             <h3>Add Product Type</h3>
             <div className={styles.formGroup}>
@@ -479,12 +479,12 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
             )}
             <div className={styles.modalActions}>
               <button
-                className={styles.btnCancel}
+                className={`${styles.btnCancel} transition-all duration-150 active:scale-[0.97]`}
                 onClick={() => setShowProductModal(false)}
               >
                 Cancel
               </button>
-              <button className={styles.btnAdd} onClick={handleAddProduct}>
+              <button className={`${styles.btnAdd} transition-all duration-150 active:scale-[0.97]`} onClick={handleAddProduct}>
                 Add Product
               </button>
             </div>
@@ -523,7 +523,7 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
             <h1>Set Up New Center</h1>
             <p>Configure location, products, floors and spaces</p>
           </div>
-          <button className={styles.closeBtn} aria-label="Close" onClick={onClose} />
+          <button className={`${styles.closeBtn} transition-transform duration-150 active:scale-[0.9]`} aria-label="Close" onClick={onClose} />
         </div>
         {renderStepper()}
       </div>
@@ -532,14 +532,14 @@ export function SetUpNewCenter({ onClose }: SetUpNewCenterProps) {
 
       <div className={styles.modalFooter}>
         <button
-          className={styles.btnBack}
+          className={`${styles.btnBack} transition-all duration-150 active:scale-[0.97]`}
           onClick={handleBack}
           disabled={currentStep === 1}
         >
           Back
         </button>
         <button
-          className={styles.btnContinue}
+          className={`${styles.btnContinue} transition-all duration-150 active:scale-[0.97]`}
           onClick={currentStep === 5 ? () => alert('Center created!') : handleNext}
         >
           {currentStep === 5 ? 'Create Center' : 'Continue'}

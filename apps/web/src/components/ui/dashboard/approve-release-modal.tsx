@@ -177,8 +177,8 @@ export function ApproveReleaseModal({ isOpen, onClose }: ApproveReleaseModalProp
   if (!isOpen) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={`${styles.overlay} transition-opacity duration-200`} onClick={onClose}>
+      <div className={`${styles.modal} transition-all duration-200`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerTitles}>
             <h2 className={styles.title}>Approve Release Requests</h2>

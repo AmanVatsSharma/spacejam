@@ -26,6 +26,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.statCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 .statIconWrap {
   width: 40px;
@@ -66,6 +71,10 @@
   border-radius: 14px;
   box-shadow: 0 1px 1.5px rgba(0, 0, 0, 0.1), 0 1px 1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+.tableCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 .tableScroll {
   overflow-x: auto;
@@ -98,10 +107,10 @@
 }
 .table tbody tr {
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.15s ease;
 }
 .table tbody tr:hover {
-  background: #fafbfc;
+  background: #f9fafb;
 }
 .table tbody tr:last-child td {
   border-bottom: none;
@@ -227,3 +236,24 @@
     gap: 4px;
   }
 }
+
+/* ---------- Animations ---------- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.statCard {
+  animation: fadeInUp 0.4s ease-out forwards;
+  opacity: 0;
+}
+.statCard:nth-child(1) { animation-delay: calc(1 * 60ms); }
+.statCard:nth-child(2) { animation-delay: calc(2 * 60ms); }
+.statCard:nth-child(3) { animation-delay: calc(3 * 60ms); }
+.statCard:nth-child(4) { animation-delay: calc(4 * 60ms); }

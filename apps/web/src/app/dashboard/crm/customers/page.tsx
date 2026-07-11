@@ -211,13 +211,13 @@ export default function CustomersPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowExportDialog(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all active:scale-[0.97] shadow-sm"
           >
             {Icons.download} Export Excel
           </button>
           <button
             onClick={() => setShowAddClient(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
           >
             {Icons.userPlus} Add Client
           </button>
@@ -233,7 +233,7 @@ export default function CustomersPage() {
             placeholder="Search customers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent w-64 bg-white shadow-sm"
+            className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F] focus:border-transparent w-64 bg-white shadow-sm transition-all duration-200"
           />
         </div>
 
@@ -253,7 +253,7 @@ export default function CustomersPage() {
         </div>
 
         <button
-          className="px-5 py-2.5 bg-[#FFF2F0] text-[#D95D51] border border-[#FCEAE8] rounded-lg text-sm font-medium hover:bg-[#FCEAE8] transition-colors ml-2"
+          className="px-5 py-2.5 bg-[#FFF2F0] text-[#D95D51] border border-[#FCEAE8] rounded-lg text-sm font-medium hover:bg-[#FCEAE8] transition-all active:scale-[0.97] ml-2"
           onClick={() => { setSearchQuery(""); setStatusFilter(""); }}
         >
           Clear All
@@ -265,7 +265,7 @@ export default function CustomersPage() {
         {/* Left Side: 4 Stat Cards */}
         <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsData.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 flex flex-col justify-between min-h-[140px]">
+            <div key={index} className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 flex flex-col justify-between min-h-[140px] transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
               <div className="w-10 h-10 rounded-full bg-[#FFF2EA] flex items-center justify-center text-[#FF6A2F] mb-4">
                 {Icons[stat.icon]}
               </div>
@@ -318,7 +318,7 @@ export default function CustomersPage() {
                   <tr
                     key={customer.id}
                     onClick={() => router.push('/dashboard/crm/customers/' + customer.id)}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="border-b border-gray-50 transition-colors duration-150 hover:bg-[#F9FAFB] cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <Link href={`/dashboard/crm/customers/${customer.id}`} className="font-bold text-[#101828] hover:text-[#FF6A2F] transition-colors">
@@ -340,7 +340,7 @@ export default function CustomersPage() {
                       <div className="relative inline-block" ref={openDropdownId === customer.id ? dropdownRef : null}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === customer.id ? null : customer.id); }}
-                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                          className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-all active:scale-[0.97]"
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="1" />
@@ -412,12 +412,12 @@ function ExportToExcelDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full max-w-[500px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-[500px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden transition-all duration-200"
         role="dialog"
         aria-modal="true"
         aria-labelledby="export-excel-title"
@@ -503,13 +503,13 @@ function ExportToExcelDialog({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[15px] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[15px] font-medium rounded-lg hover:bg-gray-50 transition-all active:scale-[0.97]"
           >
             Cancel
           </button>
           <button
             type="button"
-            className="flex-1 py-3 bg-[#FF6A2F] text-white text-[15px] font-medium rounded-lg hover:bg-[#E55A20] transition-colors"
+            className="flex-1 py-3 bg-[#FF6A2F] text-white text-[15px] font-medium rounded-lg hover:bg-[#E55A20] transition-all active:scale-[0.97]"
           >
             Download
           </button>

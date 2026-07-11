@@ -26,9 +26,9 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="w-full max-w-[800px] max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm transition-opacity duration-200" onClick={onClose}>
+      <div
+        className="w-full max-w-[800px] max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all duration-200 scale-100 opacity-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -53,19 +53,19 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Full Name</label>
-                <input type="text" placeholder="Enter full name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={name} onChange={(e) => setName(e.target.value)} />
+                <input type="text" placeholder="Enter full name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Phone Number</label>
-                <input type="text" placeholder="Enter phone number" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <input type="text" placeholder="Enter phone number" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Email Address</label>
-                <input type="email" placeholder="Enter email address" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input type="email" placeholder="Enter email address" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Company Name</label>
-                <input type="text" placeholder="Enter company name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" value={company} onChange={(e) => setCompany(e.target.value)} />
+                <input type="text" placeholder="Enter company name" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" value={company} onChange={(e) => setCompany(e.target.value)} />
               </div>
             </div>
           </section>
@@ -102,11 +102,11 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Team Size</label>
-                <input type="text" placeholder="Enter team size" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="text" placeholder="Enter team size" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[13px] font-medium text-gray-700">Preferred Move-in Date</label>
-                <input type="date" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors" />
+                <input type="date" className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-all duration-200" />
               </div>
             </div>
           </section>
@@ -163,16 +163,16 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
         <div className="p-6 border-t border-gray-100 flex justify-end items-center gap-3 bg-gray-50/50">
           <button 
             onClick={onClose}
-            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
           >
             Cancel
           </button>
-          <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-colors">
+          <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
             Save as Draft
           </button>
           <button
             onClick={handleSubmit}
-            className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors"
+            className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]"
           >
             Create Lead
           </button>

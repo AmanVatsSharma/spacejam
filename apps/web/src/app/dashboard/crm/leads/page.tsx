@@ -37,15 +37,17 @@ type LeadStatus = 'New' | 'Visited' | 'Negotiation' | 'Converted' | 'Cold';
 interface Lead {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  company: string;
-  source: string;
-  requirement: string;
-  budget: string;
-  location: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  source?: string;
+  requirement?: string;
+  budget?: string;
+  location?: string;
   status: LeadStatus;
-  lastContact: string;
+  lastContact?: string;
+  teamSize?: string;
+  moveInDate?: string;
 }
 
 /* --------------------------- GraphQL Data --------------------------- */
@@ -402,7 +404,7 @@ export default function LeadsPage() {
             </div>
             <button
               type="button"
-              className={styles.clearBtn}
+              className={styles.clearBtn + " transition-all duration-200 active:scale-[0.97]"}
               onClick={() => {
                 setSearch('');
                 setStatusFilter('all');
@@ -413,7 +415,7 @@ export default function LeadsPage() {
             </button>
             <button
               type="button"
-              className={styles.addLeadBtn}
+              className={styles.addLeadBtn + " active:scale-[0.97] transition-transform duration-150"}
               onClick={() => setShowAddLead(true)}
             >
               {Icon.Plus} Add Lead
@@ -424,7 +426,7 @@ export default function LeadsPage() {
         {/* Stats */}
         <div className={styles.statsGrid}>
           {stats.map((s) => (
-            <div key={s.label} className={styles.statCard}>
+            <div key={s.label} className={`${styles.statCard} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}>
               <div className={styles.statIconWrap}>{s.icon}</div>
               <h3 className={styles.statValue}>{s.value}</h3>
               <p className={styles.statLabel}>{s.label}</p>
@@ -437,8 +439,8 @@ export default function LeadsPage() {
         <div className={styles.pipelineCard}>
           <h2 className={styles.pipelineTitle}>Lead Pipeline</h2>
           <div className={styles.pipelineGrid}>
-            {pipeline.map((p) => (
-              <div key={p.name} className={`${styles.pipelineTile} ${p.cls}`}>
+            {pipeline.map((p, i) => (
+              <div key={p.name} className={`${styles.pipelineTile} ${p.cls} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`} style={{animationDelay: `${i * 60}ms`}}>
                 <h4>{p.name}</h4>
                 <p>{p.count}</p>
               </div>
@@ -479,7 +481,7 @@ export default function LeadsPage() {
                     <tr
                       key={l.id}
                       onClick={() => setSelectedId(l.id)}
-                      className={l.id === selectedId ? styles.selectedRow : undefined}
+                      className={l.id === selectedId ? `${styles.selectedRow} transition-colors duration-150 hover:bg-[#F9FAFB]` : `transition-colors duration-150 hover:bg-[#F9FAFB] cursor-pointer`}
                       style={{ cursor: 'pointer' }}
                     >
                       <td className={styles.leadNameCell}>{l.name}</td>
@@ -521,10 +523,10 @@ export default function LeadsPage() {
                 { label: 'COMPANY', value: selected.company },
                 {
                   label: 'INTERESTED PLAN',
-                  value: selected.requirement.split('·')[0].trim(),
+                  value: selected.requirement ? String(selected.requirement).split('·')[0].trim() : '—',
                 },
-                { label: 'TEAM SIZE', value: '1 Person' },
-                { label: 'PREFERRED MOVE-IN DATE', value: '15 Mar 2026' },
+                { label: 'TEAM SIZE', value: selected.teamSize ?? '—' },
+                { label: 'PREFERRED MOVE-IN DATE', value: selected.moveInDate ?? '—' },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-1">
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
@@ -538,7 +540,7 @@ export default function LeadsPage() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => router.push('/dashboard/crm/leads/' + selected.id)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm active:scale-[0.97]"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
                   <path
@@ -553,7 +555,7 @@ export default function LeadsPage() {
               </button>
               <button
                 onClick={() => setShowSendProposal(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm active:scale-[0.97]"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
                   <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -563,7 +565,7 @@ export default function LeadsPage() {
               </button>
               <button
                 onClick={() => handleConvertToClient(selected.id)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#06B6D4] text-white rounded-lg text-sm font-semibold hover:bg-[#0891B2] transition-colors shadow-sm active:scale-[0.97]"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
                   <path
@@ -616,7 +618,7 @@ export default function LeadsPage() {
                 <button
                   key={label}
                   onClick={onClick}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors active:scale-[0.97]"
                 >
                   <span className="text-gray-500">{icon}</span>
                   {label}

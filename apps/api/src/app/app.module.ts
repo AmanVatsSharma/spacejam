@@ -28,6 +28,7 @@ import { MeetingRoomModule } from '../meeting-room/meeting-room.module';
 import { RequestModule } from '../request/request.module';
 import { UserModule } from '../user/user.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     RequestModule,
     UserModule,
     AnalyticsModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

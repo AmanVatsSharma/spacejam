@@ -543,8 +543,8 @@ export default function RevenuePage() {
               </div>
             ) : (
               <div className={styles.upcomingGrid}>
-                {upcomingInvoices.map((inv) => (
-                  <div key={inv.id} className={styles.upcomingGridCard}>
+                {upcomingInvoices.map((inv, idx) => (
+                  <div key={inv.id} className={`${styles.upcomingGridCard} ${styles.fadeInUp}`} style={{ '--i': idx }}>
                     <div className={styles.upcomingClientName}>{inv.clientName}</div>
                     <div className={styles.upcomingCardRow}>
                       <span className={styles.upcomingCardAmount}>{formatINR(inv.amount)}</span>
@@ -606,8 +606,8 @@ export default function RevenuePage() {
                   No upcoming renewals.
                 </div>
               ) : (
-                renewalAlerts.map((item) => (
-                  <div key={item.id} className={styles.asideInnerCard}>
+                renewalAlerts.map((item, idx) => (
+                  <div key={item.id} className={`${styles.asideInnerCard} ${styles.fadeInUp}`} style={{ '--i': idx }}>
                     <div className={styles.asideInnerHeader}>
                       <span className={styles.asideInnerName}>{item.name}</span>
                       <span className={styles.daysLeftBadge}>{item.left}</span>
@@ -622,7 +622,7 @@ export default function RevenuePage() {
                       {item.date}
                     </div>
                     <button
-                      className={styles.renewBtn}
+                      className={`${styles.renewBtn} active:scale-[0.97] transition-transform duration-150`}
                       onClick={() => { setSelectedRenewClient(item); setIsRenewModalOpen(true); }}
                     >
                       Renew

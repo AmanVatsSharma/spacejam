@@ -38,7 +38,7 @@ function RoomCard({ room, onBook, onExtend }: { room: RoomCard; onBook?: (room: 
   const showBooking = (room.status === "occupied" || room.status === "available") && room.booking;
 
   return (
-    <div className={styles.roomCard}>
+    <div className={`${styles.roomCard} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}>
       <div className={styles.roomCardHeader}>
         <h3 className={styles.roomCardTitle}>{room.name}</h3>
         <span className={styles.statusPill} style={{ color: pill.color, background: pill.bg }}>{pill.label}</span>
@@ -65,7 +65,7 @@ function RoomCard({ room, onBook, onExtend }: { room: RoomCard; onBook?: (room: 
       )}
       <button
         type="button"
-        className={styles.roomCardAction}
+        className={`${styles.roomCardAction} active:scale-[0.97]`}
         style={{ background: action.bg, color: action.color }}
         onClick={() => {
           if (room.status === "occupied") onExtend?.(room);
@@ -218,7 +218,7 @@ export default function MeetingRoomsPage() {
               {displayRooms.map((room) => {
                 const p = STATUS_PILL[room.status];
                 return (
-                  <div key={room.id} className={styles.tableRow} role="row">
+                  <div key={room.id} className={`${styles.roomCard} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`} role="row">
                     <div className={`${styles.td} ${styles.tdName}`} role="cell">{room.name}</div>
                     <div className={`${styles.td} ${styles.tdCapacity}`} role="cell">{room.capacity} people</div>
                     <div className={`${styles.td} ${styles.tdStatus}`} role="cell">
