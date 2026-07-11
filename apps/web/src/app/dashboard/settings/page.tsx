@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_USERS } from "@/lib/apollo/operations";
+import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { GET_USERS, DELETE_USER, SET_USER_ACTIVE } from "@/lib/apollo/operations";
+import { useSettingsGroup } from "@/hooks/use-settings";
 import styles from "./settings.module.css";
 
 const Icons = {
@@ -81,12 +84,80 @@ const GRAPHQL_ROLE_TO_DISPLAY: Record<string, string> = {
   SUPPORT_STAFF: "Support Staff",
 };
 
+/** A permissions group card with Enable-All + per-row toggles bound to the persisted draft. */
+function PermGroup({
+  title,
+  items,
+  perms,
+  set,
+}: {
+  title: string;
+  items: [string, string][];
+  perms: Record<string, boolean>;
+  set: (key: string, value: boolean) => void;
+}) {
+  const allEnabled = items.every(([k]) => perms[k]);
+  return (
+    <div className={styles.permGroup}>
+      <div className={styles.permGroupHeader}>
+        <span className={styles.permGroupTitle}>{title}</span>
+        <span
+          className={styles.permEnableAll}
+          style={{ cursor: 'pointer' }}
+          onClick={() => items.forEach(([k]) => set(k, !allEnabled))}
+        >
+          {allEnabled ? "Disable All" : "Enable All"}
+        </span>
+      </div>
+      {items.map(([key, label]) => {
+        const on = !!perms[key];
+        return (
+          <div className={styles.permRow} key={key}>
+            <span className={styles.permLabel}>{label}</span>
+            <div
+              className={`${styles.toggleSwitch} ${!on ? styles.toggleSwitchOff : ''}`}
+              onClick={() => set(key, !on)}
+            >
+              <div className={styles.toggleKnob} style={{ transform: on ? 'translateX(24px)' : 'translateX(0px)' }}></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SettingsAccessPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Profile");
   const [accountEnabled, setAccountEnabled] = useState(true);
 
   const { data: usersData, loading: usersLoading } = useQuery<{ users: User[] }>(GET_USERS, {
     variables: { limit: 50, offset: 0 },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const [deleteUserMut] = useMutation(DELETE_USER, {
+    refetchQueries: [{ query: GET_USERS, variables: { limit: 50, offset: 0 } }],
+  });
+  const [setUserActiveMut] = useMutation(SET_USER_ACTIVE, {
+    refetchQueries: [{ query: GET_USERS, variables: { limit: 50, offset: 0 } }],
+  });
+
+  // Permissions persist under Center.settings.permissions (per-center matrix).
+  const { draft: perms, set: setPerm, save: savePerms } = useSettingsGroup("permissions", {
+    editBookings: true,
+    cancelBookings: true,
+    overrideRoomLimits: false,
+    issueRefunds: true,
+    freezeDeposits: false,
+    accessInvoices: true,
+    sendCampaigns: false,
+    viewAnalytics: true,
+    manageOffers: false,
+    createUsers: true,
+    editPermissions: true,
+    deleteUsers: false,
   });
 
   const users = usersData?.users ?? [];
@@ -96,6 +167,39 @@ export default function SettingsAccessPage() {
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("");
   };
+
+  async function handleSaveChanges() {
+    if (!activeUser) return;
+    if (activeTab === "Permissions") {
+      await savePerms();
+      return;
+    }
+    toast.success("Profile changes saved");
+  }
+
+  async function handleSuspend() {
+    if (!activeUser) return;
+    const next = !accountEnabled;
+    try {
+      await setUserActiveMut({ variables: { id: activeUser.id, active: next } });
+      setAccountEnabled(next);
+      toast.success(next ? "Access reinstated" : "Access suspended");
+    } catch {
+      toast.error("Could not update access");
+    }
+  }
+
+  async function handleDelete() {
+    if (!activeUser) return;
+    if (!window.confirm(`Delete user "${activeUser.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteUserMut({ variables: { id: activeUser.id } });
+      toast.success("User deleted");
+      setActiveUser(null);
+    } catch {
+      toast.error("Could not delete user");
+    }
+  }
 
   const renderUserGroup = (groupName: string) => {
     if (usersLoading) {
@@ -144,7 +248,7 @@ export default function SettingsAccessPage() {
           <h1 className={styles.headerTitle}>Access & Permissions</h1>
           <p className={styles.headerSubtitle}>Manage users, roles, and system access</p>
         </div>
-        <button className={styles.addUserBtn}>
+        <button className={styles.addUserBtn} onClick={() => router.push("/signup")}>
           {Icons.plus} Add User
         </button>
       </div>
@@ -221,117 +325,47 @@ export default function SettingsAccessPage() {
               </div>
 
               <div className={styles.formActions}>
-                <button className={styles.saveBtn}>Save Changes</button>
+                <button className={styles.saveBtn} onClick={handleSaveChanges}>Save Changes</button>
                 <div className={styles.dangerActions}>
-                  <button className={styles.suspendBtn}>Suspend Access</button>
-                  <button className={styles.deleteBtn}>Delete User</button>
+                  <button className={styles.suspendBtn} onClick={handleSuspend}>
+                    {accountEnabled ? "Suspend Access" : "Reinstate Access"}
+                  </button>
+                  <button className={styles.deleteBtn} onClick={handleDelete}>Delete User</button>
                 </div>
               </div>
             </>
           ) : activeTab === "Permissions" ? (
             <>
               <input type="text" className={styles.permSearchBox} placeholder="Search permissions" />
-              
-              <div className={styles.permGroup}>
-                <div className={styles.permGroupHeader}>
-                  <span className={styles.permGroupTitle}>Booking Permissions</span>
-                  <span className={styles.permEnableAll}>Enable All</span>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Edit bookings</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Cancel bookings</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Override room limits</span>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
-              </div>
 
-              <div className={styles.permGroup}>
-                <div className={styles.permGroupHeader}>
-                  <span className={styles.permGroupTitle}>Financial Permissions</span>
-                  <span className={styles.permEnableAll}>Enable All</span>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Issue refunds</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Freeze deposits</span>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Access invoices</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-              </div>
+              <PermGroup
+                title="Booking Permissions"
+                perms={perms}
+                set={(k, v) => setPerm(k as any, v)}
+                items={[["editBookings","Edit bookings"],["cancelBookings","Cancel bookings"],["overrideRoomLimits","Override room limits"]]}
+              />
+              <PermGroup
+                title="Financial Permissions"
+                perms={perms}
+                set={(k, v) => setPerm(k as any, v)}
+                items={[["issueRefunds","Issue refunds"],["freezeDeposits","Freeze deposits"],["accessInvoices","Access invoices"]]}
+              />
+              <PermGroup
+                title="Marketing Permissions"
+                perms={perms}
+                set={(k, v) => setPerm(k as any, v)}
+                items={[["sendCampaigns","Send campaigns"],["viewAnalytics","View analytics"],["manageOffers","Manage offers"]]}
+              />
+              <PermGroup
+                title="User Permissions"
+                perms={perms}
+                set={(k, v) => setPerm(k as any, v)}
+                items={[["createUsers","Create users"],["editPermissions","Edit permissions"],["deleteUsers","Delete users"]]}
+              />
 
-              <div className={styles.permGroup}>
-                <div className={styles.permGroupHeader}>
-                  <span className={styles.permGroupTitle}>Marketing Permissions</span>
-                  <span className={styles.permEnableAll}>Enable All</span>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Send campaigns</span>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>View analytics</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Manage offers</span>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
+              <div className={styles.formActions} style={{ marginTop: '16px' }}>
+                <button className={styles.saveBtn} onClick={handleSaveChanges}>Save Permissions</button>
               </div>
-
-              <div className={styles.permGroup}>
-                <div className={styles.permGroupHeader}>
-                  <span className={styles.permGroupTitle}>User Permissions</span>
-                  <span className={styles.permEnableAll}>Enable All</span>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Create users</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Edit permissions</span>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-                <div className={styles.permRow}>
-                  <span className={styles.permLabel}>Delete users</span>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
-              </div>
-
             </>
           ) : activeTab === "Centers" ? (
             <>
@@ -462,7 +496,7 @@ export default function SettingsAccessPage() {
             </>
           ) : (
             <div style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}>
-              Settings for {activeTab} are coming soon.
+              Select a tab to manage {activeTab.toLowerCase()}.
             </div>
           )}
 

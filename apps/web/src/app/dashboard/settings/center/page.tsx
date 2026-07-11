@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import { GET_MY_CENTERS, UPDATE_CENTER } from "@/lib/apollo/operations";
 import styles from "./center.module.css";
 
@@ -112,6 +113,18 @@ export default function CenterSettingsPage() {
   // Operational Defaults State
   const [emergencyOverride, setEmergencyOverride] = useState(false);
 
+  // Hydrate toggles from persisted Center.settings once the center loads.
+  const savedOps = (primaryCenter?.settings as Record<string, any> | null)?.operations ?? null;
+  useEffect(() => {
+    if (!savedOps) return;
+    if (typeof savedOps.lastMinuteBooking === 'boolean') setLastMinuteBooking(savedOps.lastMinuteBooking);
+    if (typeof savedOps.overbooking === 'boolean') setOverbooking(savedOps.overbooking);
+    if (typeof savedOps.autoAssign === 'boolean') setAutoAssign(savedOps.autoAssign);
+    if (typeof savedOps.seatSwitching === 'boolean') setSeatSwitching(savedOps.seatSwitching);
+    if (typeof savedOps.realTimeOccupancy === 'boolean') setRealTimeOccupancy(savedOps.realTimeOccupancy);
+    if (typeof savedOps.emergencyOverride === 'boolean') setEmergencyOverride(savedOps.emergencyOverride);
+  }, [savedOps?.lastMinuteBooking, savedOps?.overbooking, savedOps?.autoAssign, savedOps?.seatSwitching, savedOps?.realTimeOccupancy, savedOps?.emergencyOverride]);
+
   const handleSave = async () => {
     if (!primaryCenter) return;
     setSaving(true);
@@ -121,21 +134,39 @@ export default function CenterSettingsPage() {
           id: primaryCenter.id,
           input: {
             settings: {
-              lastMinuteBooking,
-              overbooking,
-              autoAssign,
-              seatSwitching,
-              realTimeOccupancy,
-              emergencyOverride,
+              operations: {
+                lastMinuteBooking,
+                overbooking,
+                autoAssign,
+                seatSwitching,
+                realTimeOccupancy,
+                emergencyOverride,
+              },
             },
           },
         },
       });
+      toast.success("Center defaults saved");
     } catch {
-      // handled by Apollo
+      toast.error("Could not save center defaults");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleReset = () => {
+    if (!savedOps) {
+      setLastMinuteBooking(true); setOverbooking(false); setAutoAssign(false);
+      setSeatSwitching(true); setRealTimeOccupancy(true); setEmergencyOverride(false);
+    } else {
+      setLastMinuteBooking(savedOps.lastMinuteBooking ?? true);
+      setOverbooking(savedOps.overbooking ?? false);
+      setAutoAssign(savedOps.autoAssign ?? false);
+      setSeatSwitching(savedOps.seatSwitching ?? true);
+      setRealTimeOccupancy(savedOps.realTimeOccupancy ?? true);
+      setEmergencyOverride(savedOps.emergencyOverride ?? false);
+    }
+    toast.info("Reverted to saved defaults");
   };
 
   return (
@@ -148,7 +179,7 @@ export default function CenterSettingsPage() {
           <p className={styles.headerSubtitle}>Set global operational rules applied across all centers</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.resetBtn}>
+          <button className={styles.resetBtn} onClick={handleReset} disabled={saving || !primaryCenter}>
             {Icons.reset} Reset Default
           </button>
           <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !primaryCenter}>

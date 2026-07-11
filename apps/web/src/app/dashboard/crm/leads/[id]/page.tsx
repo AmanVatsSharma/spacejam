@@ -3,12 +3,13 @@
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_LEAD,
+  GET_LEADS,
   UPDATE_LEAD,
   CONVERT_LEAD,
   DELETE_LEAD,
-  CREATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 
 // Icons
@@ -129,26 +130,80 @@ export default function LeadDetailsPage() {
     refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
   });
   const [convertLead] = useMutation(CONVERT_LEAD, {
-    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
+    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }, { query: GET_LEADS }],
   });
-  const [deleteLead] = useMutation(DELETE_LEAD);
+  const [deleteLead] = useMutation(DELETE_LEAD, {
+    refetchQueries: [{ query: GET_LEADS }],
+  });
 
   const handleConvertToClient = async () => {
     try {
       await convertLead({ variables: { id: leadId } });
+      toast.success("Lead converted to client");
       setShowConvertClient(false);
     } catch (err) {
       console.error("Failed to convert lead:", err);
+      toast.error("Could not convert lead");
     }
   };
 
   const handleUpdateLead = async (input: Record<string, unknown>) => {
     try {
       await updateLead({ variables: { id: leadId, input } });
+      toast.success("Lead updated");
       setShowEditLead(false);
-      setShowUpdateStatus(false);
     } catch (err) {
       console.error("Failed to update lead:", err);
+      toast.error("Could not update lead");
+    }
+  };
+
+  const handleUpdateStatus = async (status: string, notes: string) => {
+    try {
+      await updateLead({ variables: { id: leadId, input: { status, notes } } });
+      toast.success(`Status updated to ${status}`);
+      setShowUpdateStatus(false);
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      toast.error("Could not update status");
+    }
+  };
+
+  const handleAddNote = async (note: string) => {
+    const existing = lead?.notes ? `${lead.notes}\n\n` : "";
+    try {
+      await updateLead({ variables: { id: leadId, input: { notes: `${existing}${new Date().toLocaleDateString()}: ${note}` } } });
+      toast.success("Note added");
+      setShowAddNote(false);
+    } catch (err) {
+      console.error("Failed to add note:", err);
+      toast.error("Could not add note");
+    }
+  };
+
+  const handleScheduleVisit = async (input: { date: string; timeSlot: string; notes: string }) => {
+    try {
+      const visitSummary = `Visit scheduled for ${input.date}${input.timeSlot ? ` (${input.timeSlot})` : ""}${input.notes ? ` — ${input.notes}` : ""}`;
+      const existing = lead?.notes ? `${lead.notes}\n\n` : "";
+      await updateLead({ variables: { id: leadId, input: { notes: `${existing}${visitSummary}`, lastContact: input.date } } });
+      toast.success("Visit scheduled");
+      setShowScheduleVisit(false);
+    } catch (err) {
+      console.error("Failed to schedule visit:", err);
+      toast.error("Could not schedule visit");
+    }
+  };
+
+  const handleSendProposal = async (input: { template: string; pricing: string; duration: string; notes: string }) => {
+    try {
+      const proposalSummary = `Proposal sent: ${input.template || "Custom"} — ₹${input.pricing}/month for ${input.duration} months${input.notes ? ` (${input.notes})` : ""}`;
+      const existing = lead?.notes ? `${lead.notes}\n\n` : "";
+      await updateLead({ variables: { id: leadId, input: { notes: `${existing}${proposalSummary}`, budget: input.pricing } } });
+      toast.success("Proposal recorded on lead");
+      setShowSendProposal(false);
+    } catch (err) {
+      console.error("Failed to send proposal:", err);
+      toast.error("Could not record proposal");
     }
   };
 
@@ -227,46 +282,46 @@ export default function LeadDetailsPage() {
         <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-5 sm:p-6 flex flex-col sm:flex-row gap-6 sm:gap-8 items-start transition-all duration-200">
           {/* Avatar */}
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#FF6A2F] text-white flex items-center justify-center text-[28px] sm:text-[32px] font-bold shrink-0">
-            RS
+            {(lead.name || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
           </div>
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8 w-full">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.users} LEAD NAME</span>
-              <span className="text-[15px] font-semibold text-gray-900">Rahul Sharma</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.name}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.phone} PHONE NUMBER</span>
-              <span className="text-[15px] font-semibold text-gray-900">+91 98765 43210</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.phone || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.mail} EMAIL</span>
-              <span className="text-[15px] font-semibold text-gray-900">rahul@example.com</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.email}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.building} COMPANY NAME</span>
-              <span className="text-[15px] font-semibold text-gray-900">Freelancer</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.company || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.globe} LEAD SOURCE</span>
-              <span className="text-[15px] font-semibold text-gray-900">Website</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.source || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.box} INTERESTED PLAN</span>
-              <span className="text-[15px] font-semibold text-gray-900">Hot Desk</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.box} REQUIREMENT</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.requirement || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.users} TEAM SIZE</span>
-              <span className="text-[15px] font-semibold text-gray-900">1 Person</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.location} LOCATION</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.location || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.calendar} PREFERRED MOVE-IN DATE</span>
-              <span className="text-[15px] font-semibold text-gray-900">15 Mar 2026</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.calendar} LAST CONTACT</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.lastContact ? new Date(lead.lastContact).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.location} ASSIGNED CENTER MANAGER</span>
-              <span className="text-[15px] font-semibold text-gray-900">CM Rahul</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.assignedTo?.name || "Unassigned"}</span>
             </div>
           </div>
         </div>
@@ -280,19 +335,19 @@ export default function LeadDetailsPage() {
               <span className="text-[#FF6A2F]">{Icons.clock}</span> Next Follow-up
             </h3>
 
-            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex flex-col gap-4 mb-6">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">NEXT FOLLOW-UP DATE</span>
-                <span className="text-[14px] font-semibold text-gray-900">15 Mar 2026, 10:00 AM</span>
+                <span className="text-[14px] font-semibold text-gray-900">{lead.lastContact ? new Date(lead.lastContact).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "Not scheduled"}</span>
               </div>
               <div className="flex flex-col gap-1.5 items-start">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">LEAD STAGE</span>
                 <span className="px-2.5 py-1 rounded-full bg-[#FFF2EA] text-[#FF6A2F] text-[12px] font-medium border border-[#FFE4D6]">
-                  Negotiation
+                  {lead.status}
                 </span>
               </div>
               <p className="text-[13.5px] text-gray-600 leading-relaxed">
-                Follow up on pricing discussion. Client interested in flexible desk options.
+                {lead.notes?.split("\n").pop() || "No recent notes. Add a note or update the status to track this lead."}
               </p>
             </div>
 
@@ -313,15 +368,15 @@ export default function LeadDetailsPage() {
             <div className="flex flex-col gap-4 mb-6">
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">VISIT DATE</span>
-                <span className="text-[14px] font-semibold text-gray-900">14 Mar 2026, 2:00 PM</span>
+                <span className="text-[14px] font-semibold text-gray-900">{lead.lastContact ? new Date(lead.lastContact).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "No visit scheduled"}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">VISIT TYPE</span>
-                <span className="text-[14px] font-semibold text-gray-900">Center Tour</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">CENTER</span>
+                <span className="text-[14px] font-semibold text-gray-900">{lead.center?.name || "Unassigned"}</span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ASSIGNED STAFF</span>
-                <span className="text-[14px] font-semibold text-gray-900">CM Rahul</span>
+                <span className="text-[14px] font-semibold text-gray-900">{lead.assignedTo?.name || "Unassigned"}</span>
               </div>
             </div>
 
@@ -345,20 +400,20 @@ export default function LeadDetailsPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PLAN TYPE</span>
-              <span className="text-[14px] font-semibold text-gray-900">Hot Desk</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">REQUIREMENT</span>
+              <span className="text-[14px] font-semibold text-gray-900">{lead.requirement || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">INTERESTED SEATS</span>
-              <span className="text-[14px] font-semibold text-gray-900">1 Seat</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">LOCATION</span>
+              <span className="text-[14px] font-semibold text-gray-900">{lead.location || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">EXPECTED BUDGET</span>
-              <span className="text-[14px] font-semibold text-gray-900">₹8,000/month</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">BUDGET</span>
+              <span className="text-[14px] font-semibold text-gray-900">{lead.budget || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">DURATION</span>
-              <span className="text-[14px] font-semibold text-gray-900">6 Months</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">SOURCE</span>
+              <span className="text-[14px] font-semibold text-gray-900">{lead.source || "—"}</span>
             </div>
           </div>
 
@@ -385,54 +440,60 @@ export default function LeadDetailsPage() {
             {/* Timeline line */}
             <div className="absolute left-[15px] top-[20px] bottom-[20px] w-0.5 bg-gray-100 -z-10"></div>
 
-            {/* Inquiry */}
-            <div className="flex items-start gap-4 pb-6 relative">
-              <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] flex items-center justify-center shrink-0 bg-white z-10 relative">
-                {Icons.checkCircle}
+            {(() => {
+              const PIPELINE = ["New", "Visited", "Negotiation", "Converted"];
+              const currentIdx = PIPELINE.indexOf(lead.status);
+              return PIPELINE.map((stage) => {
+                const idx = PIPELINE.indexOf(stage);
+                const done = currentIdx > idx;
+                const current = currentIdx === idx;
+                const isConverted = lead.status === "Converted" && stage === "Converted";
+                const reached = done || current || isConverted || (lead.status === "Cold" && stage === "New");
+                if (current) {
+                  return (
+                    <div className="flex items-start gap-4 pb-6 relative" key={stage}>
+                      <div className="w-8 h-8 rounded-full bg-[#FFF2EA] border border-[#FFD9D4] text-[#FF6A2F] flex items-center justify-center shrink-0 bg-white z-10 relative">
+                        {Icons.clock}
+                      </div>
+                      <div className="pt-1.5 flex justify-between items-center w-full">
+                        <span className="text-[14px] font-semibold text-[#FF6A2F]">{stage}</span>
+                        <span className="text-[11px] font-semibold text-[#FF6A2F] bg-[#FFF2EA] px-2 py-0.5 rounded-full">Current</span>
+                      </div>
+                    </div>
+                  );
+                }
+                if (reached) {
+                  return (
+                    <div className="flex items-start gap-4 pb-6 relative" key={stage}>
+                      <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] flex items-center justify-center shrink-0 bg-white z-10 relative">
+                        {Icons.checkCircle}
+                      </div>
+                      <div className="pt-1.5 flex justify-between items-center w-full">
+                        <span className="text-[14px] font-semibold text-[#10B981]">{stage}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex items-start gap-4 pb-6 opacity-50 relative" key={stage}>
+                    <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center shrink-0 bg-white z-10 relative">
+                      <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
+                    </div>
+                    <div className="pt-1.5 flex justify-between items-center w-full">
+                      <span className="text-[14px] font-medium text-gray-500">{stage}</span>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+            {/* Dropped — always last, only highlighted if status is Cold */}
+            <div className={`flex items-start gap-4 relative ${lead.status === "Cold" ? "" : "opacity-50"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-white z-10 relative ${lead.status === "Cold" ? "bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981]" : "bg-gray-100 border border-gray-200 text-gray-400"}`}>
+                {lead.status === "Cold" ? Icons.checkCircle : <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>}
               </div>
               <div className="pt-1.5 flex justify-between items-center w-full">
-                <span className="text-[14px] font-semibold text-[#10B981]">Inquiry</span>
-              </div>
-            </div>
-
-            {/* Visited */}
-            <div className="flex items-start gap-4 pb-6 relative">
-              <div className="w-8 h-8 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#10B981] flex items-center justify-center shrink-0 bg-white z-10 relative">
-                {Icons.checkCircle}
-              </div>
-              <div className="pt-1.5 flex justify-between items-center w-full">
-                <span className="text-[14px] font-semibold text-[#10B981]">Visited</span>
-              </div>
-            </div>
-
-            {/* Negotiation (Current) */}
-            <div className="flex items-start gap-4 pb-6 relative">
-              <div className="w-8 h-8 rounded-full bg-[#FFF2EA] border border-[#FFD9D4] text-[#FF6A2F] flex items-center justify-center shrink-0 bg-white z-10 relative">
-                {Icons.clock}
-              </div>
-              <div className="pt-1.5 flex justify-between items-center w-full">
-                <span className="text-[14px] font-semibold text-[#FF6A2F]">Negotiation</span>
-                <span className="text-[11px] font-semibold text-[#FF6A2F] bg-[#FFF2EA] px-2 py-0.5 rounded-full">Current</span>
-              </div>
-            </div>
-
-            {/* Converted */}
-            <div className="flex items-start gap-4 pb-6 opacity-50 relative">
-              <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center shrink-0 bg-white z-10 relative">
-                <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
-              </div>
-              <div className="pt-1.5 flex justify-between items-center w-full">
-                <span className="text-[14px] font-medium text-gray-500">Converted</span>
-              </div>
-            </div>
-
-            {/* Dropped */}
-            <div className="flex items-start gap-4 opacity-50 relative">
-              <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 text-gray-400 flex items-center justify-center shrink-0 bg-white z-10 relative">
-                <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
-              </div>
-              <div className="pt-1.5 flex justify-between items-center w-full">
-                <span className="text-[14px] font-medium text-gray-500">Dropped</span>
+                <span className={`text-[14px] font-medium ${lead.status === "Cold" ? "text-[#10B981] font-semibold" : "text-gray-500"}`}>Dropped</span>
+                {lead.status === "Cold" && <span className="text-[11px] font-semibold text-[#10B981] bg-[#ECFDF5] px-2 py-0.5 rounded-full">Current</span>}
               </div>
             </div>
           </div>
@@ -464,53 +525,43 @@ export default function LeadDetailsPage() {
           <div className="flex flex-col gap-5 relative">
             <div className="absolute left-[3px] top-[10px] bottom-[10px] w-[1.5px] bg-gray-100 -z-10"></div>
 
-            <div className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-semibold text-gray-900">Proposal sent</span>
-                <span className="text-[12px] text-[#FF6A2F]">2h ago</span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-semibold text-gray-900">Follow-up call scheduled</span>
-                <span className="text-[12px] text-[#FF6A2F]">5h ago</span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-semibold text-gray-900">Email sent</span>
-                <span className="text-[12px] text-[#FF6A2F]">1d ago</span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] font-semibold text-gray-900">Note added</span>
-                <span className="text-[12px] text-[#FF6A2F]">2d ago</span>
-              </div>
-            </div>
+            {(() => {
+              const activities = (lead.notes || "")
+                .split("\n")
+                .map((n: string) => n.trim())
+                .filter(Boolean);
+              if (activities.length === 0) {
+                return (
+                  <p className="text-[13px] text-gray-400 py-2">
+                    No activities yet. Notes, visits, and proposals will appear here as a timeline.
+                  </p>
+                );
+              }
+              return activities.slice(-8).reverse().map((act: string, i: number) => (
+                <div className="flex items-start gap-4" key={i}>
+                  <div className="w-2 h-2 rounded-full bg-[#FF6A2F] mt-1.5 shrink-0 ml-[-0.5px]"></div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[14px] font-semibold text-gray-900">{act}</span>
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         </div>
 
       </div>
 
       {/* Render All Dialogs */}
-      <EditLeadDialog open={showEditLead} onClose={() => setShowEditLead(false)} />
-      <ConvertClientDialog open={showConvertClient} onClose={() => setShowConvertClient(false)} />
-      <UpdateStatusDialog open={showUpdateStatus} onClose={() => setShowUpdateStatus(false)} />
-      <ScheduleVisitDialog open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
-      <SendProposalDialog open={showSendProposal} onClose={() => setShowSendProposal(false)} />
+      <EditLeadDialog open={showEditLead} onClose={() => setShowEditLead(false)} lead={lead} onSubmit={handleUpdateLead} />
+      <ConvertClientDialog open={showConvertClient} onClose={() => setShowConvertClient(false)} lead={lead} onConfirm={handleConvertToClient} />
+      <UpdateStatusDialog open={showUpdateStatus} onClose={() => setShowUpdateStatus(false)} lead={lead} onSubmit={handleUpdateStatus} />
+      <ScheduleVisitDialog open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} lead={lead} onSubmit={handleScheduleVisit} />
+      <SendProposalDialog open={showSendProposal} onClose={() => setShowSendProposal(false)} lead={lead} onSubmit={handleSendProposal} />
       <AttachDocsDialog open={showAttachDocs} onClose={() => setShowAttachDocs(false)} />
-      <CallLeadDialog open={showCallLead} onClose={() => setShowCallLead(false)} />
-      <WhatsappDialog open={showWhatsapp} onClose={() => setShowWhatsapp(false)} />
-      <EmailDialog open={showEmail} onClose={() => setShowEmail(false)} />
-      <AddNoteDialog open={showAddNote} onClose={() => setShowAddNote(false)} />
+      <CallLeadDialog open={showCallLead} onClose={() => setShowCallLead(false)} lead={lead} />
+      <WhatsappDialog open={showWhatsapp} onClose={() => setShowWhatsapp(false)} lead={lead} />
+      <EmailDialog open={showEmail} onClose={() => setShowEmail(false)} lead={lead} />
+      <AddNoteDialog open={showAddNote} onClose={() => setShowAddNote(false)} lead={lead} onSubmit={handleAddNote} />
     </div>
   );
 }

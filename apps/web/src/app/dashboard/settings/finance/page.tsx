@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/auth-context";
+import { useSettingsGroup } from "@/hooks/use-settings";
 import styles from "./finance.module.css";
 
 const Icons = {
@@ -90,22 +90,26 @@ const Icons = {
 };
 
 export default function FinanceSettingsPage() {
-  const [activeTab, setActiveTab] = useState("Wallet Rules"); // Defaulting to Wallet Rules based on prompt context, although usually Deposits
+  const [activeTab, setActiveTab] = useState("Wallet Rules");
 
-  // Toggles for Deposit Settings
-  const [verificationRequired, setVerificationRequired] = useState(true);
-  const [otpRequired, setOtpRequired] = useState(true);
-
-  // Toggles for Wallet Rules
-  const [transferable, setTransferable] = useState(false);
-  const [refundableTokens, setRefundableTokens] = useState(true);
-  const [nextMonthTopup, setNextMonthTopup] = useState(true);
-
-  // Toggles for Refund Policies
-  const [partialRefund, setPartialRefund] = useState(true);
-
-  // Toggles for Invoice Defaults
-  const [autoSendInvoices, setAutoSendInvoices] = useState(true);
+  // Persisted via Center.settings.finance (deep-merged on save).
+  const { draft, set, save, reset, saving } = useSettingsGroup("finance", {
+    verificationRequired: true,
+    otpRequired: true,
+    transferable: false,
+    refundableTokens: true,
+    nextMonthTopup: true,
+    partialRefund: true,
+    autoSendInvoices: true,
+    minDepositAmount: "Monthly Rent x 2",
+    tokenAllocation: "50",
+    tokenExpiry: "",
+    topupThreshold: "10",
+    freeCancellationHours: "24",
+    gracePeriodDays: "3",
+    invoicePrefix: "SJ",
+    gstPercent: "18",
+  });
 
   return (
     <div className={styles.page}>
@@ -117,11 +121,11 @@ export default function FinanceSettingsPage() {
           <p className={styles.headerSubtitle}>Configure system-wide financial policies and behaviors</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.resetBtn}>
+          <button className={styles.resetBtn} onClick={reset} disabled={saving}>
             {Icons.reset} Reset Default
           </button>
-          <button className={styles.saveBtn}>
-            {Icons.save} Save Rules
+          <button className={styles.saveBtn} onClick={save} disabled={saving}>
+            {Icons.save} {saving ? "Saving…" : "Save Rules"}
           </button>
         </div>
       </div>
@@ -155,7 +159,7 @@ export default function FinanceSettingsPage() {
               <div className={styles.inputGrid}>
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Minimum Deposit Amount</label>
-                  <input type="text" className={styles.inputBox} defaultValue="Monthly Rent x 2" />
+                  <input type="text" className={styles.inputBox} value={draft.minDepositAmount} onChange={(e) => set('minDepositAmount', e.target.value)} />
                   <span className={styles.inputSub}>Applicable to All center Booking</span>
                 </div>
                 <div className={styles.inputGroup}>
@@ -185,8 +189,8 @@ export default function FinanceSettingsPage() {
                     <span className={styles.toggleTitle}>Verification Required</span>
                     <span className={styles.toggleSub}>Require admin verification for deposit release</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${!verificationRequired ? styles.toggleSwitchOff : ''}`} onClick={() => setVerificationRequired(!verificationRequired)}>
-                    <div className={styles.toggleKnob} style={{ transform: verificationRequired ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                  <div className={`${styles.toggleSwitch} ${!draft.verificationRequired ? styles.toggleSwitchOff : ''}`} onClick={() => set('verificationRequired', !draft.verificationRequired)}>
+                    <div className={styles.toggleKnob} style={{ transform: draft.verificationRequired ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
 
@@ -195,8 +199,8 @@ export default function FinanceSettingsPage() {
                     <span className={styles.toggleTitle}>OTP Approval Required</span>
                     <span className={styles.toggleSub}>Send OTP via WhatsApp for final approval</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${!otpRequired ? styles.toggleSwitchOff : ''}`} onClick={() => setOtpRequired(!otpRequired)}>
-                    <div className={styles.toggleKnob} style={{ transform: otpRequired ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                  <div className={`${styles.toggleSwitch} ${!draft.otpRequired ? styles.toggleSwitchOff : ''}`} onClick={() => set('otpRequired', !draft.otpRequired)}>
+                    <div className={styles.toggleKnob} style={{ transform: draft.otpRequired ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -236,14 +240,14 @@ export default function FinanceSettingsPage() {
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Monthly Token Allocation</label>
                     <div className={styles.inputWithSuffix}>
-                      <input type="text" className={styles.inputBox} defaultValue="50" />
+                          <input type="text" className={styles.inputBox} value={draft.tokenAllocation} onChange={(e) => set('tokenAllocation', e.target.value)} />
                       <span className={styles.inputSuffix}>tokens</span>
                     </div>
                     <span className={styles.inputSub}>Default allocation per member</span>
                   </div>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Token Expiry Duration</label>
-                    <input type="text" className={styles.inputBox} defaultValue="" />
+                    <input type="text" className={styles.inputBox} value={draft.tokenExpiry} onChange={(e) => set('tokenExpiry', e.target.value)} />
                     <span className={styles.inputSub}>How long tokens remain valid</span>
                   </div>
                 </div>
@@ -254,8 +258,8 @@ export default function FinanceSettingsPage() {
                       <span className={styles.toggleTitle}>Token Transferability</span>
                       <span className={styles.toggleSub}>Allow members to transfer tokens</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!transferable ? styles.toggleSwitchOff : ''}`} onClick={() => setTransferable(!transferable)}>
-                      <div className={styles.toggleKnob} style={{ transform: transferable ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.transferable ? styles.toggleSwitchOff : ''}`} onClick={() => set('transferable', !draft.transferable)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.transferable ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -264,8 +268,8 @@ export default function FinanceSettingsPage() {
                       <span className={styles.toggleTitle}>Refundable Tokens</span>
                       <span className={styles.toggleSub}>Tokens can be refunded to cash</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!refundableTokens ? styles.toggleSwitchOff : ''}`} onClick={() => setRefundableTokens(!refundableTokens)}>
-                      <div className={styles.toggleKnob} style={{ transform: refundableTokens ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.refundableTokens ? styles.toggleSwitchOff : ''}`} onClick={() => set('refundableTokens', !draft.refundableTokens)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.refundableTokens ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -291,8 +295,8 @@ export default function FinanceSettingsPage() {
                       <span className={styles.toggleTitle}>Next Month Top-up</span>
                       <span className={styles.toggleSub}>Automatically refill tokens when below threshold</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!nextMonthTopup ? styles.toggleSwitchOff : ''}`} onClick={() => setNextMonthTopup(!nextMonthTopup)}>
-                      <div className={styles.toggleKnob} style={{ transform: nextMonthTopup ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div className={`${styles.toggleSwitch} ${!draft.nextMonthTopup ? styles.toggleSwitchOff : ''}`} onClick={() => set('nextMonthTopup', !draft.nextMonthTopup)}>
+                      <div className={styles.toggleKnob} style={{ transform: draft.nextMonthTopup ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                     </div>
                   </div>
 
@@ -300,7 +304,7 @@ export default function FinanceSettingsPage() {
                     <span className={styles.toggleTitle}>Threshold Trigger</span>
                     <div className={styles.inlineInputGroup}>
                       <span className={styles.inputSub}>Trigger when balance falls below</span>
-                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} defaultValue="10" />
+                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} value={draft.topupThreshold} onChange={(e) => set('topupThreshold', e.target.value)} />
                       <span className={styles.inputSub}>tokens</span>
                     </div>
                     <span className={styles.inputSub}>System will automatically allocate monthly tokens when member's balance drops below this threshold</span>
@@ -329,7 +333,7 @@ export default function FinanceSettingsPage() {
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <span className={styles.inputLabel}>Free Cancellation Window</span>
                   <div className={styles.inlineInputGroup}>
-                    <input type="text" className={styles.inputBox} style={{ width: '80px' }} defaultValue="24" />
+                    <input type="text" className={styles.inputBox} style={{ width: '80px' }} value={draft.freeCancellationHours} onChange={(e) => set('freeCancellationHours', e.target.value)} />
                     <span className={styles.inputSub}>hours before booking start</span>
                   </div>
                   <span className={styles.inputSub}>No cancellation fee if cancelled within this window</span>
@@ -381,8 +385,8 @@ export default function FinanceSettingsPage() {
                     <span className={styles.toggleTitle}>Partial Refund</span>
                     <span className={styles.toggleSub}>Allow partial refunds for late cancellations</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${!partialRefund ? styles.toggleSwitchOff : ''}`} onClick={() => setPartialRefund(!partialRefund)}>
-                    <div className={styles.toggleKnob} style={{ transform: partialRefund ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                  <div className={`${styles.toggleSwitch} ${!draft.partialRefund ? styles.toggleSwitchOff : ''}`} onClick={() => set('partialRefund', !draft.partialRefund)}>
+                    <div className={styles.toggleKnob} style={{ transform: draft.partialRefund ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -404,7 +408,7 @@ export default function FinanceSettingsPage() {
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <span className={styles.inputLabel}>Grace Period</span>
                   <div className={styles.inlineInputGroup}>
-                    <input type="text" className={styles.inputBox} style={{ width: '80px' }} defaultValue="3" />
+                    <input type="text" className={styles.inputBox} style={{ width: '80px' }} value={draft.gracePeriodDays} onChange={(e) => set('gracePeriodDays', e.target.value)} />
                     <span className={styles.inputSub}>days after due date</span>
                   </div>
                   <span className={styles.inputSub}>No penalty applied within grace period</span>
@@ -424,12 +428,12 @@ export default function FinanceSettingsPage() {
                 <div className={styles.inputGrid}>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Invoice Prefix</label>
-                    <input type="text" className={styles.inputBox} defaultValue="SJ" />
+                    <input type="text" className={styles.inputBox} value={draft.invoicePrefix} onChange={(e) => set('invoicePrefix', e.target.value)} />
                     <span className={styles.inputSub}>Example: SJ-000123</span>
                   </div>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>GST %</label>
-                    <input type="text" className={styles.inputBox} defaultValue="18" />
+                    <input type="text" className={styles.inputBox} value={draft.gstPercent} onChange={(e) => set('gstPercent', e.target.value)} />
                     <span className={styles.inputSub}>Applied to all invoices</span>
                   </div>
                 </div>
@@ -464,8 +468,8 @@ export default function FinanceSettingsPage() {
                     <span className={styles.toggleTitle}>Auto-send Invoices</span>
                     <span className={styles.toggleSub}>Automatically send invoices to members via email</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${!autoSendInvoices ? styles.toggleSwitchOff : ''}`} onClick={() => setAutoSendInvoices(!autoSendInvoices)}>
-                    <div className={styles.toggleKnob} style={{ transform: autoSendInvoices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                  <div className={`${styles.toggleSwitch} ${!draft.autoSendInvoices ? styles.toggleSwitchOff : ''}`} onClick={() => set('autoSendInvoices', !draft.autoSendInvoices)}>
+                    <div className={styles.toggleKnob} style={{ transform: draft.autoSendInvoices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
 

@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-04
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Args, Context, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Mutation, Query, Resolver, Boolean } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -96,6 +96,16 @@ export class UserResolver {
     @Args('role', { type: () => UserRole }) role: UserRole,
   ): Promise<boolean> {
     const updated = await this.userRepo.update(id, { role: toEntityRole(role) });
+    return !!updated;
+  }
+
+  @Mutation(() => Boolean, { description: 'Suspend (active=false) or reinstate (active=true) a user (admin only)' })
+  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN)
+  async setUserActive(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('active', { type: () => Boolean }) active: boolean,
+  ): Promise<boolean> {
+    const updated = await this.userRepo.update(id, { active });
     return !!updated;
   }
 }

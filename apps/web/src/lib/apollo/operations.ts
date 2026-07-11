@@ -1230,3 +1230,217 @@ export const GET_USERS = gql`
     }
   }
 `;
+
+/* ========================= Users — mutations ========================= */
+
+export const UPDATE_PROFILE = gql`
+  mutation UpdateProfile($name: String) {
+    updateProfile(name: $name) {
+      id
+      name
+      email
+      role
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_USER = gql`
+  mutation DeleteUser($id: ID!) {
+    deleteUser(id: $id)
+  }
+`;
+
+export const SET_USER_ROLE = gql`
+  mutation SetUserRole($id: ID!, $role: UserRole!) {
+    setUserRole(id: $id, role: $role)
+  }
+`;
+
+export const SET_USER_ACTIVE = gql`
+  mutation SetUserActive($id: ID!, $active: Boolean!) {
+    setUserActive(id: $id, active: $active)
+  }
+`;
+
+/* ========================= Events (today/upcoming) ========================= */
+
+export const GET_TODAY_EVENTS = gql`
+  query GetTodayEvents($centerId: String) {
+    todayEvents(centerId: $centerId) {
+      id
+      centerId
+      meetingRoomId
+      title
+      description
+      company
+      eventDate
+      startTime
+      endTime
+      durationMinutes
+      attendeesCount
+      eventType
+      status
+      cost
+      notes
+      createdAt
+      updatedAt
+      meetingRoom { id name }
+      requestedBy { id name email }
+    }
+  }
+`;
+
+export const GET_UPCOMING_EVENTS = gql`
+  query GetUpcomingEvents($centerId: String) {
+    upcomingEvents(centerId: $centerId) {
+      id
+      centerId
+      meetingRoomId
+      title
+      eventDate
+      startTime
+      endTime
+      eventType
+      status
+      meetingRoom { id name }
+    }
+  }
+`;
+
+/* ========================= Center Settings ========================= */
+
+export const GET_CENTER_SETTINGS = gql`
+  query GetCenterSettings($centerId: ID!) {
+    centerSettings(centerId: $centerId)
+  }
+`;
+
+export const UPDATE_CENTER_SETTINGS = gql`
+  mutation UpdateCenterSettings($centerId: ID!, $settings: String!) {
+    updateCenterSettings(centerId: $centerId, settings: $settings)
+  }
+`;
+
+/* ========================= Notifications ========================= */
+
+export const GET_NOTIFICATIONS = gql`
+  query GetNotifications($filters: NotificationFiltersInput) {
+    notifications(filters: $filters) {
+      id
+      userId
+      centerId
+      title
+      message
+      type
+      priority
+      read
+      actionUrl
+      metadata
+      createdAt
+      updatedAt
+      user { id name email }
+      center { id name }
+    }
+  }
+`;
+
+export const GET_NOTIFICATION = gql`
+  query GetNotification($id: ID!) {
+    notification(id: $id) {
+      id
+      userId
+      centerId
+      title
+      message
+      type
+      priority
+      read
+      actionUrl
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const NOTIFICATION_STATS = gql`
+  query NotificationStats($userId: ID, $centerId: ID) {
+    notificationStats(userId: $userId, centerId: $centerId) {
+      total
+      unread
+      booking
+      payment
+      deposit
+      lead
+      request
+      event
+      system
+    }
+  }
+`;
+
+export const MY_NOTIFICATIONS = gql`
+  query MyNotifications($unreadOnly: Boolean, $limit: Int) {
+    myNotifications(unreadOnly: $unreadOnly, limit: $limit) {
+      id
+      userId
+      centerId
+      title
+      message
+      type
+      priority
+      read
+      actionUrl
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_NOTIFICATION = gql`
+  mutation CreateNotification($input: CreateNotificationInput!) {
+    createNotification(input: $input) {
+      id
+      userId
+      centerId
+      title
+      message
+      type
+      priority
+      read
+      actionUrl
+      metadata
+      createdAt
+    }
+  }
+`;
+
+export const SEND_NOTIFICATION = gql`
+  mutation SendNotification($input: SendNotificationInput!) {
+    sendNotification(input: $input)
+  }
+`;
+
+export const MARK_NOTIFICATION_READ = gql`
+  mutation MarkNotificationRead($id: ID!, $read: Boolean) {
+    markNotificationRead(id: $id, read: $read) {
+      id
+      read
+      updatedAt
+    }
+  }
+`;
+
+export const MARK_ALL_NOTIFICATIONS_READ = gql`
+  mutation MarkAllNotificationsRead($userId: ID, $centerId: ID) {
+    markAllNotificationsRead(userId: $userId, centerId: $centerId)
+  }
+`;
+
+export const DELETE_NOTIFICATION = gql`
+  mutation DeleteNotification($id: ID!) {
+    deleteNotification(id: $id)
+  }
+`;

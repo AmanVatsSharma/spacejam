@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { useSettingsGroup } from "@/hooks/use-settings";
+import { toast } from "sonner";
 import styles from "./notification.module.css";
 
 const Icons = {
@@ -93,19 +95,44 @@ const Icons = {
 export default function NotificationSettingsPage() {
   const [activeTab, setActiveTab] = useState("Channels");
 
-  // Channels State
-  const [channels, setChannels] = useState([
-    { id: 'whatsapp', name: 'WhatsApp', icon: Icons.whatsapp, active: true, connected: true },
-    { id: 'email', name: 'Email', icon: Icons.email, active: true, connected: true },
-    { id: 'push', name: 'Push Notifications', icon: Icons.push, active: false, connected: false },
-    { id: 'sms', name: 'SMS', icon: Icons.sms, active: true, connected: true },
-  ]);
+  // Persisted via Center.settings.notifications (deep-merged on save).
+  const { draft, set, save, reset, saving } = useSettingsGroup("notifications", {
+    whatsappEnabled: true,
+    emailEnabled: true,
+    pushEnabled: false,
+    smsEnabled: true,
+    whatsappApiKey: "sk_live_...",
+    whatsappSenderId: "+1234567890",
+    whatsappBusinessAccountId: "BA_12345",
+    pushFirebaseServerKey: "Alza...",
+    pushSenderId: "123456789",
+    pushAppId: "com.spacejam.app",
+    smsTwilioAccountSid: "AC...",
+    smsAuthToken: "**********",
+    smsPhoneNumber: "+1234567890",
+  });
 
-  const [activeChannelConfig, setActiveChannelConfig] = useState<string | null>(null);
+  // Static channel metadata (icons/labels) — persisted enable flags live in draft.
+  const channels = [
+    { id: 'whatsapp', name: 'WhatsApp', icon: Icons.whatsapp, connected: draft.whatsappEnabled },
+    { id: 'email', name: 'Email', icon: Icons.email, connected: draft.emailEnabled },
+    { id: 'push', name: 'Push Notifications', icon: Icons.push, connected: draft.pushEnabled },
+    { id: 'sms', name: 'SMS', icon: Icons.sms, connected: draft.smsEnabled },
+  ];
+
+  const channelKeyMap: Record<string, string> = {
+    whatsapp: 'whatsappEnabled',
+    email: 'emailEnabled',
+    push: 'pushEnabled',
+    sms: 'smsEnabled',
+  };
 
   const toggleChannel = (id: string) => {
-    setChannels(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c));
+    const key = channelKeyMap[id] as keyof typeof draft;
+    if (key) set(key, !draft[key]);
   };
+
+  const [activeChannelConfig, setActiveChannelConfig] = useState<string | null>(null);
 
   // Automations State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -134,17 +161,17 @@ export default function NotificationSettingsPage() {
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>API Key</label>
-            <input type="text" className={styles.formInput} defaultValue="sk_live_..." />
+            <input type="text" className={styles.formInput} value={draft.whatsappApiKey} onChange={(e) => set('whatsappApiKey', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Sender ID</label>
-            <input type="text" className={styles.formInput} defaultValue="+1234567890" />
+            <input type="text" className={styles.formInput} value={draft.whatsappSenderId} onChange={(e) => set('whatsappSenderId', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Business Account ID</label>
-            <input type="text" className={styles.formInput} defaultValue="BA_12345" />
+            <input type="text" className={styles.formInput} value={draft.whatsappBusinessAccountId} onChange={(e) => set('whatsappBusinessAccountId', e.target.value)} />
           </div>
-          <button className={styles.testBtn}>
+          <button className={styles.testBtn} onClick={() => toast.info("Test WhatsApp notification queued — external gateway not configured")}>
             {Icons.send} Send Test Message
           </button>
         </div>
@@ -160,17 +187,17 @@ export default function NotificationSettingsPage() {
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Firebase Server Key</label>
-            <input type="text" className={styles.formInput} defaultValue="Alza..." />
+            <input type="text" className={styles.formInput} value={draft.pushFirebaseServerKey} onChange={(e) => set('pushFirebaseServerKey', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Sender ID</label>
-            <input type="text" className={styles.formInput} defaultValue="123456789" />
+            <input type="text" className={styles.formInput} value={draft.pushSenderId} onChange={(e) => set('pushSenderId', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>App ID</label>
-            <input type="text" className={styles.formInput} defaultValue="com.spacejam.app" />
+            <input type="text" className={styles.formInput} value={draft.pushAppId} onChange={(e) => set('pushAppId', e.target.value)} />
           </div>
-          <button className={styles.testBtn}>
+          <button className={styles.testBtn} onClick={() => toast.info("Test Push notification queued — external gateway not configured")}>
             {Icons.send} Send Test Message
           </button>
         </div>
@@ -186,17 +213,17 @@ export default function NotificationSettingsPage() {
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Twilio Account SID</label>
-            <input type="text" className={styles.formInput} defaultValue="AC..." />
+            <input type="text" className={styles.formInput} value={draft.smsTwilioAccountSid} onChange={(e) => set('smsTwilioAccountSid', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Auth Token</label>
-            <input type="text" className={styles.formInput} defaultValue="**********" />
+            <input type="text" className={styles.formInput} value={draft.smsAuthToken} onChange={(e) => set('smsAuthToken', e.target.value)} />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Phone Number</label>
-            <input type="text" className={styles.formInput} defaultValue="+1234567890" />
+            <input type="text" className={styles.formInput} value={draft.smsPhoneNumber} onChange={(e) => set('smsPhoneNumber', e.target.value)} />
           </div>
-          <button className={styles.testBtn}>
+          <button className={styles.testBtn} onClick={() => toast.info("Test SMS notification queued — external gateway not configured")}>
             {Icons.send} Send Test Message
           </button>
           <p style={{ fontSize: '12px', color: '#6B7280', textAlign: 'center', marginTop: '8px' }}>
@@ -219,11 +246,11 @@ export default function NotificationSettingsPage() {
           <p className={styles.headerSubtitle}>Manage communication channels, templates, and automated messaging</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.resetBtn}>
+          <button className={styles.resetBtn} onClick={reset} disabled={saving}>
             {Icons.reset} Reset Default
           </button>
-          <button className={styles.saveBtn}>
-            {Icons.save} Save Rules
+          <button className={styles.saveBtn} onClick={save} disabled={saving}>
+            {Icons.save} {saving ? "Saving…" : "Save Rules"}
           </button>
         </div>
       </div>
@@ -261,14 +288,14 @@ export default function NotificationSettingsPage() {
                 {channels.map(channel => (
                   <div key={channel.id} className={`${styles.channelCard} ${activeChannelConfig === channel.id ? styles.channelCardActive : ''}`}>
                     <div className={styles.channelCardHeader}>
-                      <div className={`${styles.channelIcon} ${!channel.active ? styles.channelIconGrey : ''}`}>
+                      <div className={`${styles.channelIcon} ${!channel.connected ? styles.channelIconGrey : ''}`}>
                         {channel.icon}
                       </div>
                       <div
-                        className={`${styles.toggleSwitch} ${!channel.active ? styles.toggleSwitchOff : ''}`}
+                        className={`${styles.toggleSwitch} ${!channel.connected ? styles.toggleSwitchOff : ''}`}
                         onClick={() => toggleChannel(channel.id)}
                       >
-                        <div className={styles.toggleKnob} style={{ transform: channel.active ? 'translateX(24px)' : 'translateX(0px)' }}></div>
+                        <div className={styles.toggleKnob} style={{ transform: channel.connected ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                       </div>
                     </div>
 
@@ -410,7 +437,7 @@ export default function NotificationSettingsPage() {
                     <button className={styles.testBtn} style={{ marginTop: 0 }}>
                       {Icons.preview} Show Preview
                     </button>
-                    <button className={styles.testBtn} style={{ marginTop: 0 }}>
+                    <button className={styles.testBtn} style={{ marginTop: 0 }} onClick={() => toast.info("Test Email notification queued — external gateway not configured")}>
                       {Icons.send} Send Test
                     </button>
                   </div>
@@ -431,9 +458,9 @@ export default function NotificationSettingsPage() {
               </div>
 
               <div className={styles.actionRow}>
-                <button className={styles.saveBtn} style={{ padding: '12px 24px' }}>Save Automation</button>
+                <button className={styles.saveBtn} style={{ padding: '12px 24px' }} onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Automation"}</button>
                 <div className={styles.rightActions}>
-                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}>
+                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }} onClick={() => toast.info("Test Email notification queued — external gateway not configured")}>
                     {Icons.send} Send Test
                   </button>
                   <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}>
