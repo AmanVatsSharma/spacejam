@@ -153,6 +153,26 @@ export default function RevenueDepositsPage() {
     }
   };
 
+  const handleUnfreeze = async (id: string) => {
+    try {
+      await unfreezeDeposit({ variables: { id } });
+      toast.success("Deposit unfrozen");
+      setOpenActionMenu(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to unfreeze deposit");
+    }
+  };
+
+  const handleRequestRelease = async (id: string) => {
+    try {
+      await requestDepositRelease({ variables: { id } });
+      toast.success("Release requested");
+      setOpenActionMenu(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to request release");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this deposit?')) return;
     try {
@@ -263,7 +283,7 @@ export default function RevenueDepositsPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-[#101828]">0</h3>
+                <h3 className="text-2xl font-bold text-[#101828]">{stats.overdueCount}</h3>
                 <p className="text-sm text-gray-500 mt-1">Overdue Refunds</p>
               </div>
             </div>
@@ -356,6 +376,22 @@ export default function RevenueDepositsPage() {
                                                             className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
                               >
                                 Freeze
+                              </button>
+                            )}
+                            {normalizeStatus(deposit.status) === "FROZEN" && (
+                              <button
+                                onClick={() => handleUnfreeze(deposit.id)}
+                                                            className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
+                              >
+                                Unfreeze
+                              </button>
+                            )}
+                            {normalizeStatus(deposit.status) === "HELD" && (
+                              <button
+                                onClick={() => handleRequestRelease(deposit.id)}
+                                                            className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium transition-all active:scale-[0.97] transition-transform duration-150"
+                              >
+                                Request Release
                               </button>
                             )}
                             <button
