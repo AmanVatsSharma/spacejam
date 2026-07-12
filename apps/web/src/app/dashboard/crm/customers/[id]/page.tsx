@@ -13,6 +13,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery } from "@apollo/client";
+import { toast } from "sonner";
 import { GET_CUSTOMER } from "@/lib/apollo/operations";
 import styles from "./customer-detail.module.css";
 
@@ -399,7 +400,14 @@ export default function CustomerDetailPage() {
         </div>
 
         <div className={styles.profileActions}>
-          <button type="button" className={styles.actionBtnOutline}>
+          <button
+            type="button"
+            className={styles.actionBtnOutline}
+            onClick={() => {
+              toast.info("Redirecting to invoices...");
+              router.push("/dashboard/revenue/invoices");
+            }}
+          >
             {Icons.receipt}
             Generate Invoice
           </button>
@@ -503,7 +511,11 @@ export default function CustomerDetailPage() {
 
         {/* Right column */}
         <aside className={styles.rightCol}>
-          <button type="button" className={styles.alertsCard}>
+          <button
+            type="button"
+            className={styles.alertsCard}
+            onClick={() => toast.info("Notification center coming soon")}
+          >
             {Icons.bell}
             <span className={styles.cardTitle}>Send Alerts &amp; Notifications</span>
           </button>
@@ -514,7 +526,11 @@ export default function CustomerDetailPage() {
               <ActionButton icon={Icons.arrowUp} label="Upgrade Plan" onClick={() => setShowUpgradeDialog(true)} />
               <ActionButton icon={Icons.refresh} label="Renew Membership" onClick={() => setShowRenewDialog(true)} />
               <ActionButton icon={Icons.snowflake} label="Freeze Account" onClick={() => setShowFreezeDialog(true)} />
-              <ActionButton icon={Icons.logOut} label="Initiate Exit" />
+              <ActionButton
+                icon={Icons.logOut}
+                label="Initiate Exit"
+                onClick={() => toast.info(`Exit process initiated for ${displayName}`)}
+              />
             </div>
           </section>
 
@@ -542,7 +558,18 @@ export default function CustomerDetailPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
-            <button type="button" className={styles.saveNoteBtn}>
+            <button
+              type="button"
+              className={styles.saveNoteBtn}
+              onClick={() => {
+                if (!note.trim()) {
+                  toast.error("Note cannot be empty");
+                  return;
+                }
+                toast.success("Note saved");
+                setNote("");
+              }}
+            >
               Save Note
             </button>
           </section>
@@ -557,6 +584,7 @@ export default function CustomerDetailPage() {
 
       <SendReminderDialog
         open={showReminderDialog}
+        customerName={displayName}
         onClose={() => setShowReminderDialog(false)}
       />
 
@@ -651,7 +679,11 @@ function EmployeesList({ employees }: { employees: Employee[] }) {
     <section className={styles.employeesCard}>
       <header className={styles.employeesHeader}>
         <h2 className={styles.employeesTitle}>Team Members ({employees.length})</h2>
-        <button type="button" className={styles.addEmployeeBtn}>
+        <button
+          type="button"
+          className={styles.addEmployeeBtn}
+          onClick={() => toast.info("Employee management coming soon")}
+        >
           {Icons.userPlus}
           <span>Add Employee</span>
         </button>
@@ -757,7 +789,11 @@ function DocumentsList({ documents }: { documents: Document[] }) {
     <section className={styles.documentsCard}>
       <header className={styles.documentsHeader}>
         <h2 className={styles.documentsTitle}>Uploaded Documents</h2>
-        <button type="button" className={styles.documentsUploadBtn}>
+        <button
+          type="button"
+          className={styles.documentsUploadBtn}
+          onClick={() => toast.info("Document upload coming soon")}
+        >
           {Icons.upload}
           <span>Upload Document</span>
         </button>
@@ -1006,7 +1042,14 @@ function PlanUpgradeDialog({
 
         {/* Footer */}
         <footer className={styles.dialogFooter}>
-          <button type="button" className={styles.upgradeConfirmBtn}>
+          <button
+            type="button"
+            className={styles.upgradeConfirmBtn}
+            onClick={() => {
+              toast.success("Upgrade request submitted. Invoice will be generated.");
+              onClose();
+            }}
+          >
             Confirm Upgrade &amp; Generate Invoice
           </button>
         </footer>
@@ -1030,9 +1073,11 @@ const REMINDER_METHODS = [
 
 function SendReminderDialog({
   open,
+  customerName,
   onClose,
 }: {
   open: boolean;
+  customerName: string;
   onClose: () => void;
 }) {
   const [reminderType, setReminderType] = useState("Payment Due Reminder");
@@ -1177,7 +1222,14 @@ function SendReminderDialog({
             >
               Cancel
             </button>
-            <button type="button" className={styles.reminderSendBtn}>
+            <button
+              type="button"
+              className={styles.reminderSendBtn}
+              onClick={() => {
+                toast.success(`Reminder sent to ${customerName}`);
+                onClose();
+              }}
+            >
               <span className={styles.reminderSendIcon} aria-hidden="true">
                 {Icons.send}
               </span>
@@ -1351,7 +1403,14 @@ function FreezeAccountDialog({
           >
             Cancel
           </button>
-          <button type="button" className={styles.freezeConfirmBtn}>
+          <button
+            type="button"
+            className={styles.freezeConfirmBtn}
+            onClick={() => {
+              toast.success("Account freeze request submitted");
+              onClose();
+            }}
+          >
             <span className={styles.freezeConfirmIcon} aria-hidden="true">
               {Icons.send}
             </span>
@@ -1468,6 +1527,10 @@ function RenewMembershipDialog({
           <button
             type="button"
             className="w-full py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors shadow-sm"
+            onClick={() => {
+              toast.success("Renewal invoice generation started");
+              onClose();
+            }}
           >
             Generate Renewal Invoice
           </button>

@@ -64,6 +64,9 @@ export default function ContractsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [renewingId, setRenewingId] = useState<string | null>(null);
+  const [renewEndDate, setRenewEndDate] = useState("");
 
   const { data, loading, error } = useQuery<{ contracts: Contract[] }>(GET_CONTRACTS, {
     fetchPolicy: 'cache-and-network',
@@ -118,26 +121,32 @@ export default function ContractsPage() {
     }
   };
 
-  const handleRenew = async (id: string) => {
-    const input = window.prompt('Enter new end date (YYYY-MM-DD):');
-    if (!input) return;
-    // Accept YYYY-MM-DD and convert to an ISO datetime the backend expects.
-    const parsed = new Date(input);
+  const openRenewDialog = (id: string) => {
+    setRenewingId(id);
+    setRenewEndDate("");
+    setShowRenewDialog(true);
+  };
+
+  const handleRenewConfirm = async () => {
+    if (!renewingId || !renewEndDate) return;
+    const parsed = new Date(renewEndDate);
     if (Number.isNaN(parsed.getTime())) {
-      toast.error('Invalid date. Please use the YYYY-MM-DD format.');
+      toast.error("Invalid date.");
       return;
     }
     try {
       const { errors } = await renewContract({
-        variables: { id, newEndDate: parsed.toISOString() },
+        variables: { id: renewingId, newEndDate: parsed.toISOString() },
       });
       if (errors && errors.length) {
         toast.error(errors[0].message);
         return;
       }
-      toast.success('Contract renewed successfully');
+      toast.success("Contract renewed successfully");
+      setShowRenewDialog(false);
+      setRenewingId(null);
     } catch (err) {
-      toast.error(`Failed to renew: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(`Failed to renew: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
 
@@ -401,7 +410,7 @@ export default function ContractsPage() {
             {/* Bottom Actions */}
             <div className="space-y-3 pt-8 mt-auto">
               <button
-                onClick={() => handleRenew(selected.id)}
+                onClick={() => openRenewDialog(selected.id)}
                 disabled={renewing}
                 className="w-full py-2.5 bg-[#FF6A2F] text-white rounded-xl text-[14px] font-semibold hover:bg-[#E55A20] transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.97] transition-transform duration-150"
               >
@@ -433,6 +442,53 @@ export default function ContractsPage() {
 
       {/* Modals */}
       <AddContractModal open={showAddContract} onClose={() => setShowAddContract(false)} />
+
+      {/* Renew Contract Dialog */}
+      {showRenewDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+          onClick={() => setShowRenewDialog(false)}
+        >
+          <div
+            className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-[18px] font-bold text-gray-900">Renew Contract</h2>
+              <p className="text-[13px] text-gray-500 mt-1">
+                Set the new end date for this contract.
+              </p>
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13px] font-medium text-gray-700">New End Date</label>
+                <input
+                  type="date"
+                  className="px-4 py-3 bg-[#F9FAFB] rounded-lg text-[14px] text-gray-900 outline-none border border-transparent focus:border-[#FF6A2F] transition-colors w-full"
+                  value={renewEndDate}
+                  onChange={(e) => setRenewEndDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 p-6 pt-0">
+              <button
+                onClick={() => setShowRenewDialog(false)}
+                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenewConfirm}
+                disabled={!renewEndDate || renewing}
+                className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {renewing ? "Renewing…" : "Confirm Renewal"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

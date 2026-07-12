@@ -118,7 +118,7 @@ export default function LeadDetailsPage() {
   const leadId = params?.id as string;
 
   /* ── Apollo: fetch lead ── */
-  const { data, loading } = useQuery(GET_LEAD, {
+  const { data, loading, error } = useQuery(GET_LEAD, {
     variables: { id: leadId },
     skip: !leadId,
     fetchPolicy: "cache-and-network",
@@ -135,6 +135,18 @@ export default function LeadDetailsPage() {
   const [deleteLead] = useMutation(DELETE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
   });
+
+  const handleDeleteLead = async () => {
+    if (!confirm(`Delete lead "${lead?.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteLead({ variables: { id: leadId } });
+      toast.success("Lead deleted");
+      router.push("/dashboard/crm/leads");
+    } catch (err) {
+      console.error("Failed to delete lead:", err);
+      toast.error("Could not delete lead");
+    }
+  };
 
   const handleConvertToClient = async () => {
     try {
@@ -160,7 +172,13 @@ export default function LeadDetailsPage() {
 
   const handleUpdateStatus = async (status: string, notes: string) => {
     try {
-      await updateLead({ variables: { id: leadId, input: { status, notes } } });
+      // Only update status; preserve existing notes. Append the notes if provided.
+      const input: Record<string, unknown> = { status };
+      if (notes && notes.trim()) {
+        const existing = lead?.notes ? `${lead.notes}\n\n` : "";
+        input.notes = `${existing}${new Date().toLocaleDateString()}: ${notes.trim()}`;
+      }
+      await updateLead({ variables: { id: leadId, input } });
       toast.success(`Status updated to ${status}`);
       setShowUpdateStatus(false);
     } catch (err) {
@@ -195,6 +213,14 @@ export default function LeadDetailsPage() {
   };
 
   const handleSendProposal = async (input: { template: string; pricing: string; duration: string; notes: string }) => {
+    if (!input.pricing?.trim()) {
+      toast.error("Please enter a pricing amount");
+      return;
+    }
+    if (!input.duration?.trim()) {
+      toast.error("Please enter a duration");
+      return;
+    }
     try {
       const proposalSummary = `Proposal sent: ${input.template || "Custom"} — ₹${input.pricing}/month for ${input.duration} months${input.notes ? ` (${input.notes})` : ""}`;
       const existing = lead?.notes ? `${lead.notes}\n\n` : "";
@@ -224,6 +250,23 @@ export default function LeadDetailsPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-2 border-[#FF6A2F] border-t-transparent animate-spin" />
           <span className="text-sm text-gray-400">Loading lead details…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !lead) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-700 mb-2">Failed to load lead</p>
+          <p className="text-sm text-gray-400 mb-4">{error.message}</p>
+          <button
+            onClick={() => router.push("/dashboard/crm/leads")}
+            className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-sm font-medium hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]"
+          >
+            Back to Leads
+          </button>
         </div>
       </div>
     );
@@ -275,6 +318,13 @@ export default function LeadDetailsPage() {
             <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] shadow-sm">
               {Icons.userConvert} Convert to Client
             </button>
+            <button
+              onClick={handleDeleteLead}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-50 transition-all duration-200 active:scale-[0.97] shadow-sm"
+              title="Delete lead"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>
           </div>
         </div>
 
@@ -297,7 +347,7 @@ export default function LeadDetailsPage() {
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.mail} EMAIL</span>
-              <span className="text-[15px] font-semibold text-gray-900">{lead.email}</span>
+              <span className="text-[15px] font-semibold text-gray-900">{lead.email || "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">{Icons.building} COMPANY NAME</span>
@@ -382,11 +432,25 @@ export default function LeadDetailsPage() {
 
             <div className="mt-auto flex gap-3">
               <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-[#FBBF24] text-white rounded-lg text-sm font-semibold hover:bg-[#F59E0B] transition-all active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
-                {Icons.calendar} Reschedule
+                {Icons.calendar} Schedule Visit
               </button>
-              <button onClick={() => setShowScheduleVisit(true)} className="flex-1 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] shadow-sm flex items-center justify-center gap-2">
-                {Icons.clock} Cancel Visit
-              </button>
+              {lead.lastContact && (
+                <button
+                  onClick={async () => {
+                    if (!confirm("Cancel this visit? This will clear the visit date.")) return;
+                    try {
+                      const existing = lead?.notes ? `${lead.notes}\n\n` : "";
+                      await updateLead({ variables: { id: leadId, input: { notes: `${existing}Visit cancelled on ${new Date().toLocaleDateString()}`, lastContact: null } } });
+                      toast.success("Visit cancelled");
+                    } catch {
+                      toast.error("Could not cancel visit");
+                    }
+                  }}
+                  className="flex-1 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-50 transition-all duration-200 active:scale-[0.97] shadow-sm flex items-center justify-center gap-2"
+                >
+                  {Icons.clock} Cancel Visit
+                </button>
+              )}
             </div>
           </div>
 
@@ -443,10 +507,12 @@ export default function LeadDetailsPage() {
             {(() => {
               const PIPELINE = ["New", "Visited", "Negotiation", "Converted"];
               const currentIdx = PIPELINE.indexOf(lead.status);
+              // If status is not in pipeline, treat as "New" for display purposes
+              const effectiveIdx = currentIdx === -1 ? 0 : currentIdx;
               return PIPELINE.map((stage) => {
                 const idx = PIPELINE.indexOf(stage);
-                const done = currentIdx > idx;
-                const current = currentIdx === idx;
+                const done = effectiveIdx > idx;
+                const current = effectiveIdx === idx;
                 const isConverted = lead.status === "Converted" && stage === "Converted";
                 const reached = done || current || isConverted || (lead.status === "Cold" && stage === "New");
                 if (current) {

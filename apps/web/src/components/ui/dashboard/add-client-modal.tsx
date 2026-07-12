@@ -6,7 +6,7 @@ import { toast } from "sonner";
 interface AddClientModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd?: (data: Record<string, string>) => void;
+  onAdd?: (data: Record<string, string>) => void | Promise<void>;
 }
 
 export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
@@ -21,6 +21,7 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
   const [baseCenter, setBaseCenter] = useState('');
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
 
@@ -30,36 +31,48 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
     setLocation(''); setNotes('');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim()) {
       toast.error("Full name is required");
       return;
     }
-    if (onAdd) {
-      onAdd({
+    if (!onAdd) return;
+    setSubmitting(true);
+    try {
+      await onAdd({
         name, phone, email, company, clientType, assignedPlan, teamSize,
         contractStartDate, baseCenter, location, notes,
       });
+      toast.success("Client created");
+      resetForm();
+      onClose();
+    } catch {
+      toast.error("Failed to create client");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Client created");
-    onClose();
-    resetForm();
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!name.trim()) {
       toast.error("Full name is required to save a draft");
       return;
     }
-    if (onAdd) {
-      onAdd({
+    if (!onAdd) return;
+    setSubmitting(true);
+    try {
+      await onAdd({
         name, phone, email, company, clientType, assignedPlan, teamSize,
         contractStartDate, baseCenter, location, notes, status: "DRAFT",
       });
+      toast.success("Saved as draft");
+      resetForm();
+      onClose();
+    } catch {
+      toast.error("Failed to save draft");
+    } finally {
+      setSubmitting(false);
     }
-    toast.success("Saved as draft");
-    onClose();
-    resetForm();
   };
 
   return (
@@ -197,17 +210,26 @@ export function AddClientModal({ open, onClose, onAdd }: AddClientModalProps) {
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 flex justify-end items-center gap-3 bg-gray-50/50">
-          <button 
+          <button
             onClick={onClose}
-            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]"
+            disabled={submitting}
+            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
-          <button onClick={handleSaveDraft} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
-            Save as Draft
+          <button
+            onClick={handleSaveDraft}
+            disabled={submitting}
+            className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-[14px] font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Saving…" : "Save as Draft"}
           </button>
-          <button onClick={handleSubmit} className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97]">
-            Create Client
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="px-5 py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Creating…" : "Create Client"}
           </button>
         </div>
       </div>

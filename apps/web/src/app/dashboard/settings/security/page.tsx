@@ -123,6 +123,7 @@ export default function SecuritySettingsPage() {
     extraVerification: true,
     allowMultipleDevices: true,
     requireVerificationNewDevices: true,
+    highValueTransactionThreshold: "10000",
   });
 
   return (
@@ -405,7 +406,12 @@ export default function SecuritySettingsPage() {
 
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>High-Value Transaction Threshold</label>
-                  <input type="text" className={styles.inputBox} defaultValue="₹ 10000" />
+                  <input
+                    type="text"
+                    className={styles.inputBox}
+                    value={draft.highValueTransactionThreshold ?? "10000"}
+                    onChange={e => set('highValueTransactionThreshold', e.target.value)}
+                  />
                   <span className={styles.inputSub}>Transactions above this amount are flagged as high-value</span>
                 </div>
 

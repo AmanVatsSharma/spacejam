@@ -104,14 +104,29 @@ export default function CenterSettingsPage() {
   // Booking Defaults State
   const [lastMinuteBooking, setLastMinuteBooking] = useState(true);
   const [overbooking, setOverbooking] = useState(false);
+  const [bookingCutoffTime, setBookingCutoffTime] = useState("30 minutes before slot");
+  const [cancellationWindow, setCancellationWindow] = useState("2");
+  const [roomBufferDuration, setRoomBufferDuration] = useState("15");
+  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState("5");
 
   // Workspace Defaults State
   const [autoAssign, setAutoAssign] = useState(false);
   const [seatSwitching, setSeatSwitching] = useState(true);
   const [realTimeOccupancy, setRealTimeOccupancy] = useState(true);
+  const [seatVisibility, setSeatVisibility] = useState("Public - All seats visible to everyone");
+  const [roomNamingFormat, setRoomNamingFormat] = useState("Centre code + type + floor + number");
+  const [defaultAvailabilityStatus, setDefaultAvailabilityStatus] = useState("Available - Ready for booking");
 
   // Operational Defaults State
   const [emergencyOverride, setEmergencyOverride] = useState(false);
+  const [openingTime, setOpeningTime] = useState("9:00 AM");
+  const [closingTime, setClosingTime] = useState("8:00 PM");
+  const [workingDays, setWorkingDays] = useState<string[]>(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+  const [meetingRoomLimit, setMeetingRoomLimit] = useState("3");
+  const [eventDurationLimit, setEventDurationLimit] = useState("2");
+  const [maintenanceWindowStart, setMaintenanceWindowStart] = useState("10:00 PM");
+  const [maintenanceWindowEnd, setMaintenanceWindowEnd] = useState("6:00 AM");
+  const [cleaningBufferDuration, setCleaningBufferDuration] = useState("30");
 
   // Hydrate toggles from persisted Center.settings once the center loads.
   const savedOps = (primaryCenter?.settings as Record<string, any> | null)?.operations ?? null;
@@ -123,7 +138,25 @@ export default function CenterSettingsPage() {
     if (typeof savedOps.seatSwitching === 'boolean') setSeatSwitching(savedOps.seatSwitching);
     if (typeof savedOps.realTimeOccupancy === 'boolean') setRealTimeOccupancy(savedOps.realTimeOccupancy);
     if (typeof savedOps.emergencyOverride === 'boolean') setEmergencyOverride(savedOps.emergencyOverride);
-  }, [savedOps?.lastMinuteBooking, savedOps?.overbooking, savedOps?.autoAssign, savedOps?.seatSwitching, savedOps?.realTimeOccupancy, savedOps?.emergencyOverride]);
+    // Booking Defaults
+    if (savedOps.bookingCutoffTime) setBookingCutoffTime(savedOps.bookingCutoffTime);
+    if (savedOps.cancellationWindow) setCancellationWindow(savedOps.cancellationWindow);
+    if (savedOps.roomBufferDuration) setRoomBufferDuration(savedOps.roomBufferDuration);
+    if (savedOps.maxBookingsPerDay) setMaxBookingsPerDay(savedOps.maxBookingsPerDay);
+    // Workspace Defaults
+    if (savedOps.seatVisibility) setSeatVisibility(savedOps.seatVisibility);
+    if (savedOps.roomNamingFormat) setRoomNamingFormat(savedOps.roomNamingFormat);
+    if (savedOps.defaultAvailabilityStatus) setDefaultAvailabilityStatus(savedOps.defaultAvailabilityStatus);
+    // Operational Defaults
+    if (savedOps.openingTime) setOpeningTime(savedOps.openingTime);
+    if (savedOps.closingTime) setClosingTime(savedOps.closingTime);
+    if (Array.isArray(savedOps.workingDays)) setWorkingDays(savedOps.workingDays);
+    if (savedOps.meetingRoomLimit) setMeetingRoomLimit(savedOps.meetingRoomLimit);
+    if (savedOps.eventDurationLimit) setEventDurationLimit(savedOps.eventDurationLimit);
+    if (savedOps.maintenanceWindowStart) setMaintenanceWindowStart(savedOps.maintenanceWindowStart);
+    if (savedOps.maintenanceWindowEnd) setMaintenanceWindowEnd(savedOps.maintenanceWindowEnd);
+    if (savedOps.cleaningBufferDuration) setCleaningBufferDuration(savedOps.cleaningBufferDuration);
+  }, [savedOps]);
 
   const handleSave = async () => {
     if (!primaryCenter) return;
@@ -134,13 +167,32 @@ export default function CenterSettingsPage() {
           id: primaryCenter.id,
           input: {
             settings: {
-              operations: {
+              bookingDefaults: {
                 lastMinuteBooking,
                 overbooking,
+                bookingCutoffTime,
+                cancellationWindow,
+                roomBufferDuration,
+                maxBookingsPerDay,
+              },
+              workspaceDefaults: {
                 autoAssign,
                 seatSwitching,
                 realTimeOccupancy,
+                seatVisibility,
+                roomNamingFormat,
+                defaultAvailabilityStatus,
+              },
+              operations: {
                 emergencyOverride,
+                openingTime,
+                closingTime,
+                workingDays,
+                meetingRoomLimit,
+                eventDurationLimit,
+                maintenanceWindowStart,
+                maintenanceWindowEnd,
+                cleaningBufferDuration,
               },
             },
           },
@@ -158,6 +210,16 @@ export default function CenterSettingsPage() {
     if (!savedOps) {
       setLastMinuteBooking(true); setOverbooking(false); setAutoAssign(false);
       setSeatSwitching(true); setRealTimeOccupancy(true); setEmergencyOverride(false);
+      setBookingCutoffTime("30 minutes before slot");
+      setCancellationWindow("2"); setRoomBufferDuration("15"); setMaxBookingsPerDay("5");
+      setSeatVisibility("Public - All seats visible to everyone");
+      setRoomNamingFormat("Centre code + type + floor + number");
+      setDefaultAvailabilityStatus("Available - Ready for booking");
+      setOpeningTime("9:00 AM"); setClosingTime("8:00 PM");
+      setWorkingDays(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+      setMeetingRoomLimit("3"); setEventDurationLimit("2");
+      setMaintenanceWindowStart("10:00 PM"); setMaintenanceWindowEnd("6:00 AM");
+      setCleaningBufferDuration("30");
     } else {
       setLastMinuteBooking(savedOps.lastMinuteBooking ?? true);
       setOverbooking(savedOps.overbooking ?? false);
@@ -165,6 +227,21 @@ export default function CenterSettingsPage() {
       setSeatSwitching(savedOps.seatSwitching ?? true);
       setRealTimeOccupancy(savedOps.realTimeOccupancy ?? true);
       setEmergencyOverride(savedOps.emergencyOverride ?? false);
+      setBookingCutoffTime(savedOps.bookingCutoffTime ?? "30 minutes before slot");
+      setCancellationWindow(savedOps.cancellationWindow ?? "2");
+      setRoomBufferDuration(savedOps.roomBufferDuration ?? "15");
+      setMaxBookingsPerDay(savedOps.maxBookingsPerDay ?? "5");
+      setSeatVisibility(savedOps.seatVisibility ?? "Public - All seats visible to everyone");
+      setRoomNamingFormat(savedOps.roomNamingFormat ?? "Centre code + type + floor + number");
+      setDefaultAvailabilityStatus(savedOps.defaultAvailabilityStatus ?? "Available - Ready for booking");
+      setOpeningTime(savedOps.openingTime ?? "9:00 AM");
+      setClosingTime(savedOps.closingTime ?? "8:00 PM");
+      setWorkingDays(savedOps.workingDays ?? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+      setMeetingRoomLimit(savedOps.meetingRoomLimit ?? "3");
+      setEventDurationLimit(savedOps.eventDurationLimit ?? "2");
+      setMaintenanceWindowStart(savedOps.maintenanceWindowStart ?? "10:00 PM");
+      setMaintenanceWindowEnd(savedOps.maintenanceWindowEnd ?? "6:00 AM");
+      setCleaningBufferDuration(savedOps.cleaningBufferDuration ?? "30");
     }
     toast.info("Reverted to saved defaults");
   };
@@ -218,15 +295,20 @@ export default function CenterSettingsPage() {
                 <div className={styles.inputGrid}>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Booking Cutoff Time</label>
-                    <select className={`${styles.inputBox} ${styles.selectBox}`}>
+                    <select className={`${styles.inputBox} ${styles.selectBox}`} value={bookingCutoffTime} onChange={e => setBookingCutoffTime(e.target.value)}>
                       <option>30 minutes before slot</option>
+                      <option>1 hour before slot</option>
+                      <option>2 hours before slot</option>
+                      <option>4 hours before slot</option>
+                      <option>12 hours before slot</option>
+                      <option>24 hours before slot</option>
                     </select>
                     <span className={styles.inputSub}>Latest time users can book a room before the slot starts</span>
                   </div>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Cancellation Window</label>
                     <div className={styles.inputWithSuffix}>
-                      <input type="text" className={styles.inputBox} defaultValue="2" />
+                      <input type="text" className={styles.inputBox} value={cancellationWindow} onChange={e => setCancellationWindow(e.target.value)} />
                       <span className={styles.inputSuffix}>hours</span>
                     </div>
                     <span className={styles.inputSub}>Users must cancel at least this many hours before booking</span>
@@ -236,7 +318,7 @@ export default function CenterSettingsPage() {
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Room Buffer Duration</label>
                   <div className={styles.inlineInputGroup}>
-                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} defaultValue="15" />
+                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} value={roomBufferDuration} onChange={e => setRoomBufferDuration(e.target.value)} />
                     <span className={styles.inputSub}>minutes between bookings</span>
                   </div>
                   <span className={styles.inputSub}>Buffer time added between consecutive bookings for cleaning and setup</span>
@@ -252,7 +334,7 @@ export default function CenterSettingsPage() {
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Max Bookings Per User Per Day</label>
                   <div className={styles.inlineInputGroup}>
-                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} defaultValue="5" />
+                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} value={maxBookingsPerDay} onChange={e => setMaxBookingsPerDay(e.target.value)} />
                     <span className={styles.inputSub}>bookings</span>
                   </div>
                   <span className={styles.inputSub}>Maximum number of active bookings a user can have in a single day</span>
@@ -293,24 +375,31 @@ export default function CenterSettingsPage() {
 
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Seat Visibility</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`}>
+                  <select className={`${styles.inputBox} ${styles.selectBox}`} value={seatVisibility} onChange={e => setSeatVisibility(e.target.value)}>
                     <option>Public - All seats visible to everyone</option>
+                    <option>Private - Seats visible to admin only</option>
+                    <option>Team Only - Seats visible to team members only</option>
                   </select>
                   <span className={styles.inputSub}>Controls who can view and select seats across all centers</span>
                 </div>
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Room Naming Format</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`}>
+                  <select className={`${styles.inputBox} ${styles.selectBox}`} value={roomNamingFormat} onChange={e => setRoomNamingFormat(e.target.value)}>
                     <option>Centre code + type + floor + number</option>
+                    <option>Type + floor + number only</option>
+                    <option>Custom name per room</option>
+                    <option>Floor + room number only</option>
                   </select>
                   <span className={styles.inputSub}>Examples: SJ34- desk-A-1</span>
                 </div>
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Default Availability Status</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`}>
+                  <select className={`${styles.inputBox} ${styles.selectBox}`} value={defaultAvailabilityStatus} onChange={e => setDefaultAvailabilityStatus(e.target.value)}>
                     <option>Available - Ready for booking</option>
+                    <option>Maintenance - Under maintenance</option>
+                    <option>Reserved - Reserved for specific use</option>
                   </select>
                   <span className={styles.inputSub}>Initial status applied to all newly created workspaces</span>
                 </div>
@@ -368,24 +457,33 @@ export default function CenterSettingsPage() {
                 <div className={styles.inputGrid}>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Opening Time</label>
-                    <input type="text" className={styles.inputBox} />
+                    <input type="text" className={styles.inputBox} value={openingTime} onChange={e => setOpeningTime(e.target.value)} />
                   </div>
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Closing Time</label>
-                    <input type="text" className={styles.inputBox} />
+                    <input type="text" className={styles.inputBox} value={closingTime} onChange={e => setClosingTime(e.target.value)} />
                   </div>
                 </div>
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Working Days</label>
                   <div className={styles.pillGroup}>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Mon</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Tue</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Wed</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Thu</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Fri</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>Sat</div>
-                    <div className={styles.pill}>Sun</div>
+                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(day => {
+                      const active = workingDays.includes(day);
+                      return (
+                        <div
+                          key={day}
+                          className={`${styles.pill} ${active ? styles.pillActive : ''}`}
+                          onClick={() => {
+                            setWorkingDays(prev =>
+                              active ? prev.filter(d => d !== day) : [...prev, day]
+                            );
+                          }}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
                   </div>
                   <span className={styles.inputSub}>Select days when centers are operational</span>
                 </div>
@@ -401,7 +499,7 @@ export default function CenterSettingsPage() {
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Meeting Room Limits Per User</label>
                     <div className={styles.inlineInputGroup}>
-                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} defaultValue="3" />
+                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} value={meetingRoomLimit} onChange={e => setMeetingRoomLimit(e.target.value)} />
                       <span className={styles.inputSub}>per week</span>
                     </div>
                     <span className={styles.inputSub}>Maximum weekly meeting room bookings per user</span>
@@ -409,7 +507,7 @@ export default function CenterSettingsPage() {
                   <div className={styles.inputGroup}>
                     <label className={styles.inputLabel}>Event Duration Limits</label>
                     <div className={styles.inlineInputGroup}>
-                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} defaultValue="2" />
+                      <input type="text" className={styles.inputBox} style={{ width: '80px' }} value={eventDurationLimit} onChange={e => setEventDurationLimit(e.target.value)} />
                       <span className={styles.inputSub}>hours max</span>
                     </div>
                     <span className={styles.inputSub}>Maximum duration for event bookings</span>
@@ -428,11 +526,11 @@ export default function CenterSettingsPage() {
                   <div className={styles.inputGrid} style={{ gap: '16px' }}>
                     <div className={styles.inputGroup}>
                       <span className={styles.inputSub} style={{ fontSize: '13px', color: '#6B7280' }}>Start Time</span>
-                      <input type="text" className={styles.inputBox} />
+                      <input type="text" className={styles.inputBox} value={maintenanceWindowStart} onChange={e => setMaintenanceWindowStart(e.target.value)} />
                     </div>
                     <div className={styles.inputGroup}>
                       <span className={styles.inputSub} style={{ fontSize: '13px', color: '#6B7280' }}>End Time</span>
-                      <input type="text" className={styles.inputBox} />
+                      <input type="text" className={styles.inputBox} value={maintenanceWindowEnd} onChange={e => setMaintenanceWindowEnd(e.target.value)} />
                     </div>
                   </div>
                   <span className={styles.inputSub}>Scheduled maintenance and system updates window</span>
@@ -441,7 +539,7 @@ export default function CenterSettingsPage() {
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Cleaning Buffer Duration</label>
                   <div className={styles.inlineInputGroup}>
-                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} defaultValue="30" />
+                    <input type="text" className={styles.inputBox} style={{ width: '120px' }} value={cleaningBufferDuration} onChange={e => setCleaningBufferDuration(e.target.value)} />
                     <span className={styles.inputSub}>minutes</span>
                   </div>
                   <span className={styles.inputSub}>Time allocated for deep cleaning between events</span>

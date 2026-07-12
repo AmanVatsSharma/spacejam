@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@apollo/client";
 import { useAuth } from "@/contexts/auth-context";
 import { useSettingsGroup } from "@/hooks/use-settings";
+import { SEND_NOTIFICATION } from "@/lib/apollo/operations";
 import { toast } from "sonner";
 import styles from "./notification.module.css";
 
@@ -96,7 +98,7 @@ export default function NotificationSettingsPage() {
   const [activeTab, setActiveTab] = useState("Channels");
 
   // Persisted via Center.settings.notifications (deep-merged on save).
-  const { draft, set, save, reset, saving } = useSettingsGroup("notifications", {
+  const { draft, set, save, reset, saving, centerId } = useSettingsGroup("notifications", {
     whatsappEnabled: true,
     emailEnabled: true,
     pushEnabled: false,
@@ -111,6 +113,36 @@ export default function NotificationSettingsPage() {
     smsAuthToken: "**********",
     smsPhoneNumber: "+1234567890",
   });
+
+  const [sendTestNotification] = useMutation(SEND_NOTIFICATION);
+
+  const handleSendTest = async (channel: string) => {
+    if (!centerId) {
+      toast.error("No active center found");
+      return;
+    }
+    const messages: Record<string, string> = {
+      whatsapp: "Test WhatsApp notification — external gateway not configured",
+      email: "Test Email notification — external gateway not configured",
+      push: "Test Push notification — external gateway not configured",
+      sms: "Test SMS notification — external gateway not configured",
+    };
+    try {
+      await sendTestNotification({
+        variables: {
+          input: {
+            title: `Test ${channel} notification`,
+            message: messages[channel] || "Test notification",
+            centerId,
+            type: "SYSTEM",
+          },
+        },
+      });
+      toast.success(`${channel.charAt(0).toUpperCase() + channel.slice(1)} test notification sent`);
+    } catch {
+      toast.error(`Failed to send ${channel} test notification`);
+    }
+  };
 
   // Static channel metadata (icons/labels) — persisted enable flags live in draft.
   const channels = [
@@ -171,7 +203,7 @@ export default function NotificationSettingsPage() {
             <label className={styles.formLabel}>Business Account ID</label>
             <input type="text" className={styles.formInput} value={draft.whatsappBusinessAccountId} onChange={(e) => set('whatsappBusinessAccountId', e.target.value)} />
           </div>
-          <button className={styles.testBtn} onClick={() => toast.info("Test WhatsApp notification queued — external gateway not configured")}>
+          <button className={styles.testBtn} onClick={() => handleSendTest('whatsapp')}>
             {Icons.send} Send Test Message
           </button>
         </div>
@@ -197,7 +229,7 @@ export default function NotificationSettingsPage() {
             <label className={styles.formLabel}>App ID</label>
             <input type="text" className={styles.formInput} value={draft.pushAppId} onChange={(e) => set('pushAppId', e.target.value)} />
           </div>
-          <button className={styles.testBtn} onClick={() => toast.info("Test Push notification queued — external gateway not configured")}>
+          <button className={styles.testBtn} onClick={() => handleSendTest('push')}>
             {Icons.send} Send Test Message
           </button>
         </div>
@@ -223,7 +255,7 @@ export default function NotificationSettingsPage() {
             <label className={styles.formLabel}>Phone Number</label>
             <input type="text" className={styles.formInput} value={draft.smsPhoneNumber} onChange={(e) => set('smsPhoneNumber', e.target.value)} />
           </div>
-          <button className={styles.testBtn} onClick={() => toast.info("Test SMS notification queued — external gateway not configured")}>
+          <button className={styles.testBtn} onClick={() => handleSendTest('sms')}>
             {Icons.send} Send Test Message
           </button>
           <p style={{ fontSize: '12px', color: '#6B7280', textAlign: 'center', marginTop: '8px' }}>
@@ -437,7 +469,7 @@ export default function NotificationSettingsPage() {
                     <button className={styles.testBtn} style={{ marginTop: 0 }}>
                       {Icons.preview} Show Preview
                     </button>
-                    <button className={styles.testBtn} style={{ marginTop: 0 }} onClick={() => toast.info("Test Email notification queued — external gateway not configured")}>
+                    <button className={styles.testBtn} style={{ marginTop: 0 }} onClick={() => handleSendTest('email')}>
                       {Icons.send} Send Test
                     </button>
                   </div>
@@ -460,7 +492,7 @@ export default function NotificationSettingsPage() {
               <div className={styles.actionRow}>
                 <button className={styles.saveBtn} style={{ padding: '12px 24px' }} onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Automation"}</button>
                 <div className={styles.rightActions}>
-                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }} onClick={() => toast.info("Test Email notification queued — external gateway not configured")}>
+                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }} onClick={() => handleSendTest('email')}>
                     {Icons.send} Send Test
                   </button>
                   <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}>

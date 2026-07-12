@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client";
-import { CREATE_CUSTOMER } from "@/lib/apollo/operations";
+import { toast } from "sonner";
+import { CREATE_CUSTOMER, GET_CUSTOMERS } from "@/lib/apollo/operations";
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
 const STEPS = [
@@ -16,11 +18,27 @@ const STEPS = [
 ];
 
 export default function OnboardingWizardPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [createCustomer] = useMutation(CREATE_CUSTOMER);
+  const [createCustomer] = useMutation(CREATE_CUSTOMER, {
+    refetchQueries: [{ query: GET_CUSTOMERS }],
+  });
+
+  // Form State - Step 1 (Basic Information) — kept controlled so data
+  // isn't lost when navigating between steps and so it can drive the
+  // final submission.
+  const [basicInfo, setBasicInfo] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    altContact: "",
+    dob: "",
+    company: "",
+    gst: "",
+  });
 
   const [userRoles, setUserRoles] = useState([
     { id: 1, role: "Head User/HR", name: "", phone: "" },
@@ -92,7 +110,23 @@ export default function OnboardingWizardPage() {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureMode, setSignatureMode] = useState<"Draw" | "Upload">("Draw");
 
+  const validateStep = (step: number): string | null => {
+    if (step === 1) {
+      if (!basicInfo.name?.trim()) return "Super User name is required";
+      if (!basicInfo.phone?.trim()) return "Phone number is required";
+      if (!basicInfo.email?.trim()) return "Email address is required";
+      if (!basicInfo.company?.trim()) return "Company name is required";
+    }
+    // Steps 2-7 are optional for now (complex nested forms)
+    return null;
+  };
+
   const handleNext = () => {
+    const error = validateStep(currentStep);
+    if (error) {
+      toast.error(error);
+      return;
+    }
     if (currentStep === 2 && employeeMode === "bulk" && !uploadSuccess) {
       setUploadSuccess(true);
       return;
@@ -107,6 +141,43 @@ export default function OnboardingWizardPage() {
       return;
     }
     if (currentStep > 1) setCurrentStep((p) => p - 1);
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      await createCustomer({
+        variables: {
+          input: {
+            name: basicInfo.name || "New Client",
+            email: basicInfo.email || "",
+            phone: basicInfo.phone || "",
+            company: basicInfo.company || "",
+            status: "Active",
+          },
+        },
+      });
+      toast.success("Customer onboarded successfully!");
+      router.push("/dashboard/crm/customers");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create customer. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    try {
+      localStorage.setItem(
+        "onboarding_draft",
+        JSON.stringify({ basicInfo, currentStep, paymentMode, billingCycle })
+      );
+      toast.success("Draft saved");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save draft");
+    }
   };
 
   if (showInteractiveMap) {
@@ -414,10 +485,33 @@ export default function OnboardingWizardPage() {
         <div className="flex-1 flex flex-col h-full min-h-[700px]">
           {/* Header */}
           <div className="mb-6">
-            <p className="text-[#FF6A2F] text-[13px] font-bold mb-1 tracking-wide uppercase">Step {currentStep} of 7</p>
-            <h2 className="text-[28px] font-bold text-[#101828] mb-2">
-              {STEPS[currentStep - 1].title}
-            </h2>
+            {(() => {
+              // Steps 1-7 use the numeric counter; steps 8-10 are the
+              // post-fill stages (Review / Agreement / Complete) and are
+              // shown as labels instead of "Step N of 7".
+              const stepLabel =
+                currentStep === 8
+                  ? "Review"
+                  : currentStep === 9
+                    ? "Agreement"
+                    : currentStep === 10
+                      ? "Complete"
+                      : `Step ${currentStep} of 7`;
+              const stepTitle =
+                currentStep === 8
+                  ? "Review & Confirm"
+                  : currentStep === 9
+                    ? "Agreement & Signing"
+                    : currentStep === 10
+                      ? "Onboarding Complete"
+                      : STEPS[currentStep - 1]?.title ?? "";
+              return (
+                <>
+                  <p className="text-[#FF6A2F] text-[13px] font-bold mb-1 tracking-wide uppercase">{stepLabel}</p>
+                  <h2 className="text-[28px] font-bold text-[#101828] mb-2">{stepTitle}</h2>
+                </>
+              );
+            })()}
             <p className="text-[#667085] text-[15px]">
               {currentStep === 1 && "Let's begin with the basic information about your client. We'll use this to prepare their workspace and plan allocation."}
               {currentStep === 2 && "Add team member details to manage access and stay connected."}
@@ -467,24 +561,24 @@ export default function OnboardingWizardPage() {
                       <div className="flex flex-col gap-4">
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Super User <span className="text-[#FF6A2F]">*</span></label>
-                          <input type="text" placeholder="John Doe" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="John Doe" value={basicInfo.name} onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Phone Number <span className="text-[#FF6A2F]">*</span></label>
-                          <input type="text" placeholder="+91 9876543210" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="+91 9876543210" value={basicInfo.phone} onChange={(e) => setBasicInfo({ ...basicInfo, phone: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Email Address <span className="text-[#FF6A2F]">*</span></label>
-                          <input type="email" placeholder="john.doe@gmail.com" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="email" placeholder="john.doe@gmail.com" value={basicInfo.email} onChange={(e) => setBasicInfo({ ...basicInfo, email: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Alternate Contact (optional)</label>
-                          <input type="text" placeholder="+91 9876543210" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="+91 9876543210" value={basicInfo.altContact} onChange={(e) => setBasicInfo({ ...basicInfo, altContact: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Date of Birth <span className="text-[#FF6A2F]">*</span></label>
                           <div className="relative">
-                            <input type="text" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" />
+                            <input type="text" value={basicInfo.dob} onChange={(e) => setBasicInfo({ ...basicInfo, dob: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" />
                             <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
@@ -501,11 +595,11 @@ export default function OnboardingWizardPage() {
                       <div className="flex flex-col gap-4">
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Company Name <span className="text-[#FF6A2F]">*</span></label>
-                          <input type="text" placeholder="Tech Solutions Inc." className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="Tech Solutions Inc." value={basicInfo.company} onChange={(e) => setBasicInfo({ ...basicInfo, company: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Gst Number <span className="text-[#FF6A2F]">*</span></label>
-                          <input type="text" placeholder="GNT34586G" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <input type="text" placeholder="GNT34586G" value={basicInfo.gst} onChange={(e) => setBasicInfo({ ...basicInfo, gst: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -1900,25 +1994,7 @@ export default function OnboardingWizardPage() {
                       </p>
 
                       <button
-                        onClick={async () => {
-                          if (isSubmitting) return;
-                          setIsSubmitting(true);
-                          try {
-                            await createCustomer({
-                              variables: {
-                                input: {
-                                  name: "New Client",
-                                  email: "client@example.com",
-                                  status: "Active",
-                                },
-                              },
-                            });
-                          } catch (err) {
-                            console.error("Failed to create customer:", err);
-                          } finally {
-                            setIsSubmitting(false);
-                          }
-                        }}
+                        onClick={handleSubmit}
                         disabled={isSubmitting}
                         className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm disabled:opacity-50"
                       >
@@ -1994,7 +2070,10 @@ export default function OnboardingWizardPage() {
                 </button>
 
                 <div className="flex items-center gap-3">
-                  <button className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+                  <button
+                    onClick={handleSaveDraft}
+                    className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+                  >
                     Save as Draft
                   </button>
                   <button

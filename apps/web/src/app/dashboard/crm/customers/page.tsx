@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_CUSTOMERS,
   DELETE_CUSTOMER,
@@ -382,6 +383,8 @@ export default function CustomersPage() {
         <ExportToExcelDialog
           open={showExportDialog}
           onClose={() => setShowExportDialog(false)}
+          customers={customers}
+          filteredCustomers={filteredCustomers}
         />
       )}
     </div>
@@ -392,9 +395,13 @@ export default function CustomersPage() {
 function ExportToExcelDialog({
   open,
   onClose,
+  customers,
+  filteredCustomers,
 }: {
   open: boolean;
   onClose: () => void;
+  customers: Customer[];
+  filteredCustomers: Customer[];
 }) {
   const [exportType, setExportType] = useState<"all" | "filtered">("filtered");
   const [fileFormat, setFileFormat] = useState<"excel" | "csv">("excel");
@@ -510,6 +517,30 @@ function ExportToExcelDialog({
           <button
             type="button"
             className="flex-1 py-3 bg-[#FF6A2F] text-white text-[15px] font-medium rounded-lg hover:bg-[#E55A20] transition-all active:scale-[0.97]"
+            onClick={() => {
+              const data = exportType === 'filtered' ? filteredCustomers : customers;
+              const headers = ['Name', 'Email', 'Phone', 'Company', 'Status', 'Total Spent'];
+              const rows = data.map(c => [
+                c.name,
+                c.email || '',
+                c.phone || '',
+                c.company || '',
+                c.status,
+                c.totalSpent || 0,
+              ]);
+              const csv = [headers, ...rows]
+                .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'customers.csv';
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Exported ${data.length} customers`);
+              onClose();
+            }}
           >
             Download
           </button>

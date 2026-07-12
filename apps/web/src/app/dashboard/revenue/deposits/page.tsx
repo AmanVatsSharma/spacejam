@@ -10,6 +10,8 @@ import {
   DELETE_DEPOSIT,
   RELEASE_DEPOSIT,
   FREEZE_DEPOSIT,
+  REQUEST_DEPOSIT_RELEASE,
+  UNFREEZE_DEPOSIT,
 } from "@/lib/apollo/operations";
 import { ApproveReleaseModal } from "@/components/ui/dashboard/approve-release-modal";
 import { AddDepositModal } from "@/components/ui/dashboard/add-deposit-modal";
@@ -90,6 +92,14 @@ export default function RevenueDepositsPage() {
     refetchQueries: [{ query: GET_DEPOSITS }],
   });
 
+  const [requestDepositRelease] = useMutation(REQUEST_DEPOSIT_RELEASE, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+
+  const [unfreezeDeposit] = useMutation(UNFREEZE_DEPOSIT, {
+    refetchQueries: [{ query: GET_DEPOSITS }],
+  });
+
   const deposits = data?.deposits ?? [];
 
   const filtered = useMemo(() => {
@@ -113,7 +123,14 @@ export default function RevenueDepositsPage() {
     const pendingAmount = pendingRelease.reduce((sum, d) => sum + Number(d.amount), 0);
     const refunded = deposits.filter((d) => normalizeStatus(d.status) === "REFUNDED");
     const refundedAmount = refunded.reduce((sum, d) => sum + Number(d.amount), 0);
-    return { totalHeld, pendingCount: pendingRelease.length, pendingAmount, refundedAmount };
+    // Overdue refunds: deposits that were released/refunded but the release happened > 30 days after request
+    const overdueCount = deposits.filter((d) => {
+      if (normalizeStatus(d.status) !== "RELEASED" && normalizeStatus(d.status) !== "REFUNDED") return false;
+      if (!d.updatedAt) return false;
+      const diff = Date.now() - new Date(d.updatedAt).getTime();
+      return diff > 30 * 24 * 60 * 60 * 1000;
+    }).length;
+    return { totalHeld, pendingCount: pendingRelease.length, pendingAmount, refundedAmount, overdueCount };
   }, [deposits]);
 
   const handleRelease = async (id: string) => {
