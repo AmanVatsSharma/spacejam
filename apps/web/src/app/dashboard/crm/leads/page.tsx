@@ -15,6 +15,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
+import { toast } from 'sonner';
 import {
   GET_LEADS,
   CREATE_LEAD,
@@ -242,8 +243,9 @@ export default function LeadsPage() {
       if (!confirm('Delete this lead?')) return;
       try {
         await deleteLead({ variables: { id: leadId } });
+        toast.success('Lead deleted');
       } catch {
-        // handled by Apollo
+        toast.error('Failed to delete lead');
       }
     },
     [deleteLead],
@@ -253,8 +255,9 @@ export default function LeadsPage() {
     async (leadId: string, status: string) => {
       try {
         await updateLead({ variables: { id: leadId, input: { status } } });
+        toast.success('Lead status updated');
       } catch {
-        // handled by Apollo
+        toast.error('Failed to update lead status');
       }
     },
     [updateLead],
@@ -265,8 +268,9 @@ export default function LeadsPage() {
     async (leadId: string) => {
       try {
         await convertLead({ variables: { id: leadId } });
+        toast.success('Lead converted to client');
       } catch {
-        // error handled by Apollo
+        toast.error('Failed to convert lead');
       }
     },
     [convertLead],
@@ -276,9 +280,10 @@ export default function LeadsPage() {
     async (input: Record<string, string>) => {
       try {
         await createLead({ variables: { input } });
+        toast.success('Lead created');
         setShowAddLead(false);
       } catch {
-        // error handled by Apollo
+        toast.error('Failed to create lead');
       }
     },
     [createLead],
@@ -286,7 +291,7 @@ export default function LeadsPage() {
 
   /* ── Filtered leads ── */
   const filtered = useMemo(() => {
-    return leads.filter((l) => {
+    let result = leads.filter((l) => {
       const q = search.trim().toLowerCase();
       const matchesQuery =
         q.length === 0 ||
@@ -297,7 +302,21 @@ export default function LeadsPage() {
       const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
       return matchesQuery && matchesStatus && matchesSource;
     });
-  }, [leads, search, statusFilter, sourceFilter]);
+
+    // Apply sort
+    if (sort === 'Name') {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === 'Budget') {
+      result = [...result].sort(
+        (a, b) =>
+          parseFloat(b.budget?.replace(/[^0-9]/g, '') || '0') -
+          parseFloat(a.budget?.replace(/[^0-9]/g, '') || '0'),
+      );
+    }
+    // 'Recent' keeps the default (backend) order
+
+    return result;
+  }, [leads, search, statusFilter, sourceFilter, sort]);
 
   /* ── Selected lead ── */
   const selected = useMemo(
@@ -359,10 +378,22 @@ export default function LeadsPage() {
 
           <div className={styles.filtersRight}>
             <div className={styles.select}>
-              <button type="button" className={styles.selectBtn}>
-                {statusFilter === 'all' ? 'All Status' : statusFilter}
+              <div className={styles.selectBtn}>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as 'all' | LeadStatus)}
+                  className="appearance-none bg-transparent outline-none cursor-pointer text-inherit"
+                  aria-label="Filter by status"
+                >
+                  <option value="all">All Status</option>
+                  <option value="New">New</option>
+                  <option value="Visited">Visited</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Converted">Converted</option>
+                  <option value="Cold">Cold</option>
+                </select>
                 {Icon.Caret}
-              </button>
+              </div>
             </div>
             <div className={styles.select}>
               <button
@@ -632,7 +663,7 @@ export default function LeadsPage() {
       {/* Dialogs */}
       <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
       <ScheduleVisitModal open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
-      <SendProposalModal open={showSendProposal} onClose={() => setShowSendProposal(false)} />
+      <SendProposalModal open={showSendProposal} onClose={() => setShowSendProposal(false)} leadId={selected?.id} />
     </div>
   );
 }
