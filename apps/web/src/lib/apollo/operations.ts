@@ -1040,6 +1040,11 @@ export const GET_BOOKINGS = gql`
         id
         name
       }
+      meetingRoom {
+        id
+        name
+        type
+      }
       payment {
         id
         status
@@ -1081,6 +1086,11 @@ export const GET_BOOKING = gql`
       center {
         id
         name
+      }
+      meetingRoom {
+        id
+        name
+        type
       }
       payment {
         id
@@ -1144,6 +1154,11 @@ export const CREATE_BOOKING = gql`
       center {
         id
         name
+      }
+      meetingRoom {
+        id
+        name
+        type
       }
       payment {
         id
