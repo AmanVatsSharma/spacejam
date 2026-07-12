@@ -29,6 +29,7 @@ import { MagicLinkToken } from './entities/magic-link-token.entity';
 import { MeetingRoom } from './entities/meeting-room.entity';
 import { Event } from './entities/event.entity';
 import { Request } from './entities/request.entity';
+import { Discount } from './entities/discount.entity';
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -58,6 +59,7 @@ export const dataSource = new DataSource({
     MeetingRoom,
     Event,
     Request,
+    Discount,
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.NODE_ENV !== 'production',

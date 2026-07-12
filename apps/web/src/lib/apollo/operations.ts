@@ -698,6 +698,102 @@ export const RENEW_CONTRACT = gql`
   }
 `;
 
+/* ========================= Revenue — Discounts ========================= */
+
+export const GET_DISCOUNTS = gql`
+  query GetDiscounts($centerId: ID) {
+    discounts(centerId: $centerId) {
+      id
+      code
+      percentage
+      maxAmount
+      description
+      isActive
+      validFrom
+      validUntil
+      minOrderAmount
+      usageLimit
+      usedCount
+      applicableTo
+      centerId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_DISCOUNT = gql`
+  query GetDiscount($id: ID!) {
+    discount(id: $id) {
+      id
+      code
+      percentage
+      maxAmount
+      description
+      isActive
+      validFrom
+      validUntil
+      minOrderAmount
+      usageLimit
+      usedCount
+      applicableTo
+      centerId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_DISCOUNT = gql`
+  mutation CreateDiscount($input: CreateDiscountInput!) {
+    createDiscount(input: $input) {
+      id
+      code
+      percentage
+      maxAmount
+      description
+      isActive
+      validFrom
+      validUntil
+      minOrderAmount
+      usageLimit
+      usedCount
+      applicableTo
+      centerId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_DISCOUNT = gql`
+  mutation UpdateDiscount($id: ID!, $input: UpdateDiscountInput!) {
+    updateDiscount(id: $id, input: $input) {
+      id
+      code
+      percentage
+      maxAmount
+      description
+      isActive
+      validFrom
+      validUntil
+      minOrderAmount
+      usageLimit
+      usedCount
+      applicableTo
+      centerId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_DISCOUNT = gql`
+  mutation DeleteDiscount($id: ID!) {
+    deleteDiscount(id: $id)
+  }
+`;
+
 /* ========================= CRM — Customers ========================= */
 
 export const GET_CUSTOMERS = gql`

@@ -15,13 +15,15 @@ import { RevenueService } from './revenue.service';
 import { InvoiceResolver } from '../graphql/resolvers/revenue.resolver';
 import { DepositResolver } from '../graphql/resolvers/revenue.resolver';
 import { ContractResolver } from '../graphql/resolvers/revenue.resolver';
+import { DiscountResolver } from '../graphql/resolvers/discount.resolver';
 import { Invoice } from '../typeorm/entities/invoice.entity';
 import { Deposit } from '../typeorm/entities/deposit.entity';
 import { Contract } from '../typeorm/entities/contract.entity';
+import { Discount } from '../typeorm/entities/discount.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Invoice, Deposit, Contract]),
+    TypeOrmModule.forFeature([Invoice, Deposit, Contract, Discount]),
     CacheModule,
   ],
   controllers: [RevenueController],
@@ -30,6 +32,7 @@ import { Contract } from '../typeorm/entities/contract.entity';
     InvoiceResolver,
     DepositResolver,
     ContractResolver,
+    DiscountResolver,
   ],
   exports: [RevenueService],
 })
