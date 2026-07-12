@@ -14,7 +14,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useEvents, useEvent, useUpdateEventStatus, useCancelEvent, type EventStatusType, type EventTypeOption } from "@/hooks/use-operations";
+import { useEvents, useEventStats, useUpdateEventStatus, useCancelEvent, type EventStatusType, type EventTypeOption } from "@/hooks/use-operations";
 import { AddEventModal } from "../modals/add-event-modal";
 import styles from "./events.module.css";
 
@@ -309,7 +309,7 @@ export default function EventsPage() {
   const [statusFilter, setStatusFilter] = useState<EventStatusType | "">("");
 
   const { events, loading, error } = useEvents();
-  const { event: _selectedEventDetail } = useEvent(selectedId ?? "");
+  const { stats, loading: statsLoading } = useEventStats();
   const { updateStatus } = useUpdateEventStatus();
   const { cancel } = useCancelEvent();
 

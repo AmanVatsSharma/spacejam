@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@apollo/client";
-import { CHANGE_PASSWORD } from "@/lib/apollo/operations";
+import { useQuery, useMutation } from "@apollo/client";
+import {
+  CHANGE_PASSWORD,
+  GET_USER_SESSIONS,
+  LOGOUT_DEVICE,
+  LOGOUT_ALL_DEVICES,
+} from "@/lib/apollo/operations";
 import { useSettingsGroup } from "@/hooks/use-settings";
+import { toast } from "sonner";
 import styles from "./security.module.css";
 
 const Icons = {
@@ -435,99 +441,134 @@ export default function SecuritySettingsPage() {
 
           {activeTab === "Device Management" && (
             <>
-              <div className={styles.contentCard}>
-                <div className={styles.formHeader}>
-                  <div className={styles.formHeaderLeft}>
-                    <div className={styles.formIcon}>{Icons.monitor}</div>
-                    <h2 className={styles.formTitle}>Active Devices</h2>
-                    <span className={styles.inputSub} style={{ marginLeft: '8px' }}>3 devices currently active</span>
-                  </div>
-                  <div className={styles.formHeaderRight}>
-                    {Icons.logOut} Logout All Devices
-                  </div>
-                </div>
+              {(() => {
+                const { data: sessionsData, loading: sessionsLoading, refetch: refetchSessions } = useQuery(GET_USER_SESSIONS);
+                const [logoutDevice] = useMutation(LOGOUT_DEVICE);
+                const [logoutAllDevices, { loading: logoutAllLoading }] = useMutation(LOGOUT_ALL_DEVICES);
+                const sessions = sessionsData?.myActiveSessions ?? [];
 
-                <div className={styles.deviceList}>
+                const handleLogoutDevice = async (sessionId: string) => {
+                  try {
+                    await logoutDevice({ variables: { id: sessionId } });
+                    toast.success('Device logged out');
+                    refetchSessions();
+                  } catch {
+                    toast.error('Failed to logout device');
+                  }
+                };
 
-                  <div className={styles.deviceCard}>
-                    <div className={styles.deviceInfoLeft}>
-                      <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
-                        {Icons.monitor}
+                const handleLogoutAll = async () => {
+                  try {
+                    const count = await logoutAllDevices();
+                    toast.success(`Logged out ${count} device(s)`);
+                    refetchSessions();
+                  } catch {
+                    toast.error('Failed to logout all devices');
+                  }
+                };
+
+                const parseUserAgent = (ua: string | null | undefined): { device: string; browser: string; os: string } => {
+                  if (!ua) return { device: 'Unknown', browser: 'Unknown', os: 'Unknown' };
+                  const lower = ua.toLowerCase();
+                  let device = 'Desktop';
+                  let browser = 'Unknown';
+                  let os = 'Unknown';
+
+                  if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) device = 'Mobile';
+                  else if (lower.includes('tablet') || lower.includes('ipad')) device = 'Tablet';
+
+                  if (lower.includes('chrome') && !lower.includes('edg')) browser = 'Chrome';
+                  else if (lower.includes('safari') && !lower.includes('chrome')) browser = 'Safari';
+                  else if (lower.includes('firefox')) browser = 'Firefox';
+                  else if (lower.includes('edg')) browser = 'Edge';
+
+                  if (lower.includes('windows')) os = 'Windows';
+                  else if (lower.includes('mac os') || lower.includes('macintosh')) os = 'macOS';
+                  else if (lower.includes('linux')) os = 'Linux';
+                  else if (lower.includes('android')) os = 'Android';
+                  else if (lower.includes('iphone') || lower.includes('ipad')) os = 'iOS';
+
+                  return { device, browser, os };
+                };
+
+                const formatLastActive = (iso: string): string => {
+                  const date = new Date(iso);
+                  const now = new Date();
+                  const diffMs = now.getTime() - date.getTime();
+                  const diffMins = Math.floor(diffMs / 60000);
+                  if (diffMins < 1) return 'Just now';
+                  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                  const diffHrs = Math.floor(diffMins / 60);
+                  if (diffHrs < 24) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
+                  const diffDays = Math.floor(diffHrs / 24);
+                  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                  return date.toLocaleDateString();
+                };
+
+                return (
+                  <>
+                    <div className={styles.contentCard}>
+                      <div className={styles.formHeader}>
+                        <div className={styles.formHeaderLeft}>
+                          <div className={styles.formIcon}>{Icons.monitor}</div>
+                          <h2 className={styles.formTitle}>Active Devices</h2>
+                          <span className={styles.inputSub} style={{ marginLeft: '8px' }}>
+                            {sessionsLoading ? 'Loading...' : `${sessions.length} device${sessions.length !== 1 ? 's' : ''} currently active`}
+                          </span>
+                        </div>
+                        <div
+                          className={styles.formHeaderRight}
+                          onClick={handleLogoutAll}
+                          style={{ cursor: logoutAllLoading ? 'not-allowed' : 'pointer', opacity: logoutAllLoading ? 0.6 : 1 }}
+                        >
+                          {Icons.logOut} Logout All Devices
+                        </div>
                       </div>
-                      <div className={styles.deviceInfoText}>
-                        <div className={styles.deviceNameWrap}>
-                          <span className={styles.deviceName}>MacBook Pro</span>
-                          <span className={styles.deviceTagOrange}>Current Device</span>
-                        </div>
-                        <div className={styles.deviceMeta}>
-                          <span className={styles.deviceMetaItem}>🌐 Chrome 120</span>
-                          <span className={styles.deviceMetaItem}>📍 Mumbai, Maharashtra</span>
-                          <span className={styles.deviceMetaItem}>🕒 Last active: 2 hours ago</span>
-                        </div>
+
+                      <div className={styles.deviceList}>
+                        {sessionsLoading && (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>Loading devices...</div>
+                        )}
+                        {!sessionsLoading && sessions.length === 0 && (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>No active devices found.</div>
+                        )}
+                        {sessions.map((session: any, idx: number) => {
+                          const { device, browser, os } = parseUserAgent(session.userAgent);
+                          const isCurrentSession = idx === 0 && session.isActive;
+                          return (
+                            <div className={styles.deviceCard} key={session.id}>
+                              <div className={styles.deviceInfoLeft}>
+                                <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
+                                  {device === 'Mobile' ? Icons.smartphone : device === 'Tablet' ? Icons.smartphone : Icons.monitor}
+                                </div>
+                                <div className={styles.deviceInfoText}>
+                                  <div className={styles.deviceNameWrap}>
+                                    <span className={styles.deviceName}>{`${os} ${device}`}</span>
+                                    {isCurrentSession && <span className={styles.deviceTagOrange}>Current Device</span>}
+                                  </div>
+                                  <div className={styles.deviceMeta}>
+                                    <span className={styles.deviceMetaItem}>{`🌐 ${browser}`}</span>
+                                    <span className={styles.deviceMetaItem}>{`📍 ${session.ipAddress ?? 'Unknown location'}`}</span>
+                                    <span className={styles.deviceMetaItem}>{`🕒 Last active: ${formatLastActive(session.createdAt)}`}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {isCurrentSession ? (
+                                <button className={styles.deviceLogoutBtn} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>{Icons.logOut} Current</button>
+                              ) : (
+                                <button
+                                  className={styles.deviceLogoutBtn}
+                                  onClick={() => handleLogoutDevice(session.id)}
+                                >{Icons.logOut} Logout</button>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
-
-                  <div className={styles.deviceCard}>
-                    <div className={styles.deviceInfoLeft}>
-                      <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
-                        {Icons.smartphone}
-                      </div>
-                      <div className={styles.deviceInfoText}>
-                        <div className={styles.deviceNameWrap}>
-                          <span className={styles.deviceName}>iPhone 14 Pro</span>
-                        </div>
-                        <div className={styles.deviceMeta}>
-                          <span className={styles.deviceMetaItem}>🌐 Safari Mobile</span>
-                          <span className={styles.deviceMetaItem}>📍 Delhi, Delhi</span>
-                          <span className={styles.deviceMetaItem}>🕒 Last active: 1 day ago</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className={styles.deviceLogoutBtn}>{Icons.logOut} Logout</button>
-                  </div>
-
-                  <div className={styles.deviceCard}>
-                    <div className={styles.deviceInfoLeft}>
-                      <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
-                        {Icons.monitor}
-                      </div>
-                      <div className={styles.deviceInfoText}>
-                        <div className={styles.deviceNameWrap}>
-                          <span className={styles.deviceName}>iPad Pro</span>
-                        </div>
-                        <div className={styles.deviceMeta}>
-                          <span className={styles.deviceMetaItem}>🌐 Safari</span>
-                          <span className={styles.deviceMetaItem}>📍 Bangalore, Karnataka</span>
-                          <span className={styles.deviceMetaItem}>🕒 Last active: 3 days ago</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className={styles.deviceLogoutBtn}>{Icons.logOut} Logout</button>
-                  </div>
-
-                  <div className={styles.deviceCard}>
-                    <div className={styles.deviceInfoLeft}>
-                      <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`} style={{ color: '#9CA3AF', background: '#F3F4F6' }}>
-                        {Icons.monitor}
-                      </div>
-                      <div className={styles.deviceInfoText}>
-                        <div className={styles.deviceNameWrap}>
-                          <span className={styles.deviceName}>Windows PC</span>
-                          <span className={styles.deviceTagGrey}>Expired</span>
-                        </div>
-                        <div className={styles.deviceMeta}>
-                          <span className={styles.deviceMetaItem}>🌐 Edge 119</span>
-                          <span className={styles.deviceMetaItem}>📍 Pune, Maharashtra</span>
-                          <span className={styles.deviceMetaItem}>🕒 Last active: 2 weeks ago</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className={styles.deviceLogoutBtn}>{Icons.logOut} Logout</button>
-                  </div>
-
-                </div>
-              </div>
+                  </>
+                );
+              })()}
 
               <div className={styles.contentCard}>
                 <div className={styles.formHeader}>

@@ -56,6 +56,50 @@
 .heroAction:hover { background: #E85A1F; }
 .heroAction:active { transform: scale(0.97); }
 
+/* ---------------- Stats row ---------------- */
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.statCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.statIconWrap {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFEBE0;
+  border-radius: 8px;
+}
+.statLabel {
+  font-size: 12px;
+  color: #4A5565;
+  font-weight: 500;
+}
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.statUnit { font-size: 18px; font-weight: 700; color: #101828; }
+
 /* ---------------- Filter bar ---------------- */
 
 .filterBar {

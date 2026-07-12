@@ -17,7 +17,9 @@ import { UserRole as EntityUserRole } from '../../auth/roles.enum';
 import { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
+import { UserSession } from '../../typeorm/entities/user-session.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
+import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
 import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
 
@@ -42,6 +44,7 @@ function toEntityRole(role: GraphqlUserRole): EntityUserRole {
 export class UserResolver {
   constructor(
     private readonly userRepo: UserRepository,
+    private readonly sessionRepo: UserSessionRepository,
   ) {}
 
   @Query(() => UserEntity, { description: 'The currently signed-in user' })
@@ -107,5 +110,37 @@ export class UserResolver {
   ): Promise<boolean> {
     const updated = await this.userRepo.update(id, { active });
     return !!updated;
+  }
+
+  // ─── Session / Device Management ──────────────────────────────────────────
+
+  @Query(() => [UserSession], {
+    description: 'List all active sessions (devices) for the current user',
+  })
+  async myActiveSessions(@CurrentUser() current: JwtPayload): Promise<UserSession[]> {
+    return this.sessionRepo.findActiveByUserId(current.sub);
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Log out a single device/session by id',
+  })
+  async logoutDevice(
+    @CurrentUser() current: JwtPayload,
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<boolean> {
+    const session = await this.sessionRepo.findById(id, current.sub);
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    return this.sessionRepo.deactivate(id);
+  }
+
+  @Mutation(() => Int, {
+    description: 'Log out all active sessions for the current user (returns count of deactivated sessions)',
+  })
+  async logoutAllDevices(@CurrentUser() current: JwtPayload): Promise<number> {
+    // Deactivate all except the current session if available
+    const currentSessionId = current.sid;
+    return this.sessionRepo.deactivateAllForUser(current.sub, currentSessionId);
   }
 }

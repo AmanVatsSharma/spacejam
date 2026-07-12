@@ -186,6 +186,33 @@ export const REGENERATE_RECOVERY_CODES = gql`
   }
 `;
 
+/* ========================= Security — Session Management ========================= */
+
+export const GET_USER_SESSIONS = gql`
+  query GetUserSessions {
+    myActiveSessions {
+      id
+      ipAddress
+      userAgent
+      isActive
+      expiresAt
+      createdAt
+    }
+  }
+`;
+
+export const LOGOUT_DEVICE = gql`
+  mutation LogoutDevice($id: ID!) {
+    logoutDevice(id: $id)
+  }
+`;
+
+export const LOGOUT_ALL_DEVICES = gql`
+  mutation LogoutAllDevices {
+    logoutAllDevices
+  }
+`;
+
 /* ========================= CRM — Leads ========================= */
 
 export const GET_LEAD = gql`
