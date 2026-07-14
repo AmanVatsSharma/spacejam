@@ -3,7 +3,7 @@
 /**
  * File:        apps/web/src/app/dashboard/operations/events/page.tsx
  * Module:      Web · Dashboard · Operations · Events
- * Purpose:     Events page — Apollo-wired with mock fallback.
+ * Purpose:     Events page — Apollo-wired, fully backend-driven.
  *              Three-section view (Today / Upcoming / Past) + side detail panel.
  *
  * Author:      AmanVatsSharma

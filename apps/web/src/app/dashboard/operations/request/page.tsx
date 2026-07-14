@@ -4,7 +4,7 @@
 /**
  * File:        apps/web/src/app/dashboard/operations/request/page.tsx
  * Module:      Web · Dashboard · Operations · Requests
- * Purpose:     Requests & Registration page — Apollo-wired with mock fallback.
+ * Purpose:     Requests & Registration page — Apollo-wired, fully backend-driven.
  *              Table view, filters, inline status management, side panel.
  *
  * Author:      AmanVatsSharma

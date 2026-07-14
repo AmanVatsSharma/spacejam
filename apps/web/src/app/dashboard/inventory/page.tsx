@@ -231,6 +231,7 @@ export default function InventoryPage() {
       <FloorSetupModal
         isOpen={showFloorModal}
         onClose={() => setShowFloorModal(false)}
+        centerId={selectedCenterId ?? undefined}
       />
     </div>
   );

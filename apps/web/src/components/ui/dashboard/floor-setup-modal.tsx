@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useMutation } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { CREATE_FLOOR, GET_FLOORS } from "@/lib/apollo/operations";
+import { CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS } from "@/lib/apollo/operations";
 
 interface FloorSetupModalProps {
   isOpen: boolean;
@@ -40,23 +40,16 @@ const CheckIcon = () => (
 export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Step 1 State (Floor Setup)
-  const [floors, setFloors] = useState([
-    { id: 1, name: "Floor 1", status: "Active", expanded: false, units: 5, distributions: [
-      { id: 1, type: "Open Desk", format: "SJ34-desk-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 2, type: "Hexagon Seat", format: "SJ34-hex-A-1", count: 1, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 3, type: "Cabin (2 Seater)", format: "SJ34-Cabin(2s)-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" }
-    ]},
-    { id: 2, name: "Floor 2", status: "Active", expanded: false, units: 2, distributions: [] },
-    { id: 3, name: "Floor 3", status: "Active", expanded: true, units: 5, distributions: [
-      { id: 1, type: "Open Desk", format: "SJ34-desk-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 2, type: "Hexagon Seat", format: "SJ34-hex-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 3, type: "Cabin (2 Seater)", format: "SJ34-Cabin(2s)-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 4, type: "Cabin (4 Seater)", format: "SJ34-Cabin(4s)-A-1", count: 2, amenities: ["WiFi", "CCTV", "Parking", "AC", "Pantry"], availability: "Available" },
-      { id: 5, type: "Cabin (6 Seater)", format: "SJ34-Cabin(6s)-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 6, type: "Meeting Room", format: "SJ34-Meeting R-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" }
-    ]}
-  ]);
+  // Fetch floors from backend when centerId is provided
+  const { data: floorsData, loading: floorsLoading } = useQuery(GET_FLOORS, {
+    variables: { centerId },
+    skip: !centerId,
+  });
+
+  // Step 1 State (Floor Setup) — populated from backend via GET_FLOORS
+  const [floors, setFloors] = useState<
+    { id: number; name: string; status: string; expanded: boolean; units: number; distributions: { id: number; type: string; format: string; count: number; amenities: string[]; availability: string }[] }[]
+  >([]);
   // Name of the floor being created (bound to the first floor's editable input).
   const [floorName, setFloorName] = useState("Floor 1");
   const [saving, setSaving] = useState(false);
@@ -79,6 +72,20 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
       setTimeout(() => setShow(false), 300);
     }
   }, [isOpen]);
+
+  // Populate floors from backend when data arrives
+  useEffect(() => {
+    if (floorsData?.floors) {
+      setFloors(floorsData.floors.map((f: any) => ({
+        ...f,
+        expanded: false,
+        distributions: (f.distributions || []).map((d: any) => ({
+          ...d,
+          amenities: d.amenities || [],
+        })),
+      })));
+    }
+  }, [floorsData]);
 
   if (!isOpen && !show) return null;
 

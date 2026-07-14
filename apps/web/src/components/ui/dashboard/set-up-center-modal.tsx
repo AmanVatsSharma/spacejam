@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
-import { CREATE_CENTER, GET_MY_CENTERS } from "@/lib/apollo/operations";
+import { CREATE_CENTER, CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS } from "@/lib/apollo/operations";
 
 interface SetUpCenterModalProps {
   isOpen: boolean;
@@ -53,26 +53,23 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
   const [createCenter] = useMutation(CREATE_CENTER, {
     refetchQueries: [{ query: GET_MY_CENTERS }],
   });
+  const [createdCenterId, setCreatedCenterId] = useState<string | null>(null);
+  const [createFloor] = useMutation(CREATE_FLOOR, {
+    refetchQueries: [{ query: GET_FLOORS, variables: { centerId: createdCenterId ?? undefined } }],
+  });
 
   const updateCenterField = (field: keyof typeof centerForm, value: string) =>
     setCenterForm((prev) => ({ ...prev, [field]: value }));
   
-  // Step 2 State
-  const [products, setProducts] = useState([
-    { id: 1, type: "Open Desk", price: "6500", gst: "18", tokens: 65 },
-    { id: 2, type: "Hexagon Seat", price: "7500", gst: "18", tokens: 75 },
-    { id: 3, type: "Cabin (4 Seater)", price: "28000", gst: "18", tokens: 280 }
-  ]);
+  // Step 2 State (starts empty — populated from backend product types)
+  const [products, setProducts] = useState<
+    { id: number; type: string; price: string; gst: string; tokens: number }[]
+  >([]);
 
-  // Step 3 State
-  const [floors, setFloors] = useState([
-    { id: 1, name: "Floor 1", status: "Active", expanded: true, units: 5, distributions: [
-      { id: 1, type: "Open Desk", format: "SJ34-desk-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 2, type: "Hexagon Seat", format: "SJ34-hex-A-1", count: 1, amenities: ["WiFi", "CCTV"], availability: "Available" },
-      { id: 3, type: "Cabin (2 Seater)", format: "SJ34-Cabin(2s)-A-1", count: 2, amenities: ["WiFi", "CCTV"], availability: "Available" }
-    ]},
-    { id: 2, name: "Floor 2", status: "Active", expanded: false, units: 2, distributions: [] }
-  ]);
+  // Step 3 State (starts empty — loaded from backend via GET_FLOORS)
+  const [floors, setFloors] = useState<
+    { id: number; name: string; status: string; expanded: boolean; units: number; distributions: { id: number; type: string; count: number; amenities: string[]; availability: string }[] }[]
+  >([]);
 
   // Step 4 State
   const [activeFloorTab, setActiveFloorTab] = useState(1);
@@ -114,7 +111,10 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
       }
       toast.success("Center created");
       const centerId = data?.createCenter?.id;
-      if (centerId) onCreated?.({ id: centerId });
+      if (centerId) {
+        setCreatedCenterId(centerId);
+        onCreated?.({ id: centerId });
+      }
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create center");
@@ -419,9 +419,8 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
                               <input type="text" defaultValue={dist.type} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
                             </div>
                             <div className="flex flex-col gap-1">
-                              <label className="text-[12px] text-gray-500 font-medium">Space Code Format</label>
-                              <input type="text" defaultValue={dist.format} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
-                              <span className="text-[11px] text-gray-400">Use for Space code</span>
+                              <label className="text-[12px] text-gray-500 font-medium">Space Type</label>
+                              <input type="text" defaultValue={dist.type} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Count</label>
