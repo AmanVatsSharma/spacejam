@@ -96,7 +96,9 @@ export default function CenterSettingsPage() {
     errorPolicy: 'all',
   });
 
-  const [updateCenter] = useMutation(UPDATE_CENTER);
+  const [updateCenter] = useMutation(UPDATE_CENTER, {
+    refetchQueries: [{ query: GET_MY_CENTERS }],
+  });
 
   const centers = centersData?.myCenters ?? [];
   const primaryCenter = centers[0];
