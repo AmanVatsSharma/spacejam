@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start"
   },
   "dependencies": {
@@ -16,7 +16,7 @@
     "@tailwindcss/postcss": "^4.3.0",
     "graphql": "^16.9.0",
     "graphql-ws": "^5.16.0",
-    "next": "~16.1.6",
+    "next": "^16.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.7"

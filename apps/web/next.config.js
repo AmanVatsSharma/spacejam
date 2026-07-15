@@ -21,9 +21,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   /**
    * Proxy /api/graphql requests to the NestJS backend.
    * In development the backend runs on port 3001; in production

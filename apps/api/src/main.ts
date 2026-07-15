@@ -38,10 +38,20 @@ async function bootstrap() {
     }),
   );
 
+  // Security headers via Helmet
+  if (process.env.NODE_ENV === 'production') {
+    const helmet = await import('helmet');
+    app.use(helmet.default({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }));
+  }
+
   // CORS configuration
   const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
   app.enableCors({
-    origin: process.env.NODE_ENV === 'production' ? [corsOrigin] : '*',
+    origin: process.env.NODE_ENV === 'production' ? [corsOrigin] : true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Apollo-Operation-Name'],

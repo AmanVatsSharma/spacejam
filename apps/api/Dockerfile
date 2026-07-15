@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package*.json ./apps/api/
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (needs devDeps for webpack-cli build)
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -26,13 +26,11 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 spacejam
 
-# Copy built application
+# Copy built application and production dependencies from builder
 COPY --from=builder --chown=spacejam:nodejs /app/apps/api/dist/ ./dist
-COPY --from=builder --chown=spacejam:nodejs /app/apps/api/prisma ./prisma
-
-# Install production dependencies only
-COPY apps/api/package.json ./
-RUN npm ci --only=production && npm cache clean --force
+COPY --from=builder --chown=spacejam:nodejs /app/apps/api/node_modules ./node_modules
+COPY --from=builder --chown=spacejam:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=spacejam:nodejs /app/package.json ./package.json
 
 # Create upload directory
 RUN mkdir -p /app/uploads && chown spacejam:nodejs /app/uploads

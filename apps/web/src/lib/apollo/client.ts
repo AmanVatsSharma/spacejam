@@ -132,8 +132,10 @@ const refreshLink = onError(({ graphQLErrors, operation, forward }) => {
   });
 });
 
+const API_BASE = process.env.NEXT_PUBLIC_GRAPHQL_HTTP_URL ?? '/api/graphql';
+
 const httpLink = new HttpLink({
-  uri: '/api/graphql',
+  uri: API_BASE,
   credentials: 'include',
 });
 

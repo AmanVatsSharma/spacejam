@@ -19,7 +19,7 @@ const API_SERVER_URL =
 export async function GET(request: NextRequest) {
   // GET is used by the Apollo DevTools / GraphQL playground for introspection.
   // The NestJS server exposes GraphQL at /api/graphql (global prefix 'api').
-  const response = await fetch(`${API_SERVER_URL}/api/graphql`, {
+  const response = await fetch(`${API_SERVER_URL}/graphql`, {
     method: 'GET',
     headers: {
       'Host': API_SERVER_URL.replace(/^https?:\/\//, ''),
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   const { query, variables, operationName } = JSON.parse(body);
 
   // NestJS has a global API prefix, so the GraphQL endpoint is /api/graphql.
-  const response = await fetch(`${API_SERVER_URL}/api/graphql`, {
+  const response = await fetch(`${API_SERVER_URL}/graphql`, {
     method: 'POST',
     headers: {
       'Host': API_SERVER_URL.replace(/^https?:\/\//, ''),
