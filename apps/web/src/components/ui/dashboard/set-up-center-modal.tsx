@@ -114,6 +114,26 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
       if (centerId) {
         setCreatedCenterId(centerId);
         onCreated?.({ id: centerId });
+
+        // Create floors that the user added in step 3
+        if (floors.length > 0) {
+          let floorCount = 0;
+          for (const floor of floors) {
+            try {
+              const { errors: floorErrors } = await createFloor({
+                variables: { input: { name: floor.name, centerId } },
+              });
+              if (!floorErrors || floorErrors.length === 0) {
+                floorCount++;
+              }
+            } catch {
+              // individual floor creation error — continue with others
+            }
+          }
+          if (floorCount > 0) {
+            toast.success(`${floorCount} floor${floorCount > 1 ? 's' : ''} created`);
+          }
+        }
       }
       onClose();
     } catch (err) {
@@ -354,7 +374,23 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
           <h2 className="text-[18px] font-semibold text-gray-900">Floor Setup</h2>
           <p className="text-[14px] text-gray-500">Distribute your products across floors</p>
         </div>
-        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold active:scale-[0.97] transition-transform duration-150">
+        <button
+          onClick={() => {
+            const newFloorNum = floors.length + 1;
+            setFloors([
+              ...floors,
+              {
+                id: Date.now(),
+                name: `Floor ${newFloorNum}`,
+                status: "active",
+                expanded: true,
+                units: 0,
+                distributions: [],
+              },
+            ]);
+          }}
+          className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold active:scale-[0.97] transition-transform duration-150"
+        >
           + Add Floor
         </button>
       </div>
@@ -378,7 +414,7 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
 
           {floors.map(floor => (
             <div key={floor.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <div 
+              <div
                 className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all duration-200 active:bg-gray-100"
                 onClick={() => setFloors(floors.map(f => f.id === floor.id ? {...f, expanded: !f.expanded} : f))}
               >
@@ -388,7 +424,12 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
                 </div>
                 <div className="flex items-center gap-4 text-gray-400">
                   <span className="text-[14px] text-gray-500">{floor.units} units configured</span>
-                  <TrashIcon />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFloors(floors.filter(f => f.id !== floor.id)); }}
+                    className="hover:text-red-500 transition-colors"
+                  >
+                    <TrashIcon />
+                  </button>
                   <div className={`transform transition-transform ${floor.expanded ? 'rotate-180' : ''}`}>
                     <ChevronDownIcon />
                   </div>
@@ -400,7 +441,12 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
                   <div className="grid grid-cols-2 gap-6 mb-6">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-semibold text-gray-700">Floor Name</label>
-                      <input type="text" defaultValue={floor.name} className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+                      <input
+                        type="text"
+                        value={floor.name}
+                        onChange={(e) => setFloors(floors.map(f => f.id === floor.id ? { ...f, name: e.target.value } : f))}
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
+                      />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-semibold text-gray-700">Status</label>
