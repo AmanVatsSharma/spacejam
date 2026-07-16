@@ -11,6 +11,7 @@ import {
   CREATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 
 // Icons
@@ -128,7 +129,7 @@ export default function CustomersPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Apollo query
-  const { data, loading, error } = useQuery<{ customers: Customer[] }>(GET_CUSTOMERS, {
+  const { data, loading, error, refetch } = useQuery<{ customers: Customer[] }>(GET_CUSTOMERS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
@@ -144,9 +145,10 @@ export default function CustomersPage() {
   const handleAddClient = async (input: Record<string, string>) => {
     try {
       await createCustomer({ variables: { input } });
+      toast.success("Client added successfully");
       setShowAddClient(false);
     } catch (err) {
-      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Failed to add client");
     }
   };
 
@@ -195,9 +197,10 @@ export default function CustomersPage() {
     if (!confirm('Delete this customer?')) return;
     try {
       await deleteCustomer({ variables: { id } });
+      toast.success("Customer deleted");
       setOpenDropdownId(null);
-    } catch {
-      // handled by Apollo
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete customer");
     }
   };
 
@@ -298,20 +301,20 @@ export default function CustomersPage() {
             <tbody>
               {loading && filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
-                    Loading customers…
+                  <td colSpan={8} className="px-6 py-12">
+                    <QueryLoading message="Loading customers…" />
                   </td>
                 </tr>
               ) : error && filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
-                    Unable to load customers. Please try again.
+                  <td colSpan={8} className="px-6 py-12">
+                    <QueryError message="Unable to load customers." onRetry={() => refetch()} />
                   </td>
                 </tr>
               ) : filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
-                    No customers found.
+                  <td colSpan={8} className="px-6 py-12">
+                    <QueryEmpty message="No customers found" hint="Add your first client to get started." />
                   </td>
                 </tr>
               ) : (

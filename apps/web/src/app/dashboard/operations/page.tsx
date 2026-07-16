@@ -16,8 +16,10 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";
 import { GET_BOOKINGS, GET_DASHBOARD_METRICS, CREATE_BOOKING, UPDATE_BOOKING, CHECK_IN_BOOKING, CHECK_OUT_BOOKING, CANCEL_BOOKING } from "@/lib/apollo/operations";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 import { useMeetingRooms, useRequests } from "@/hooks/use-operations";
 
 /** Booking statuses as returned by the backend */
@@ -85,17 +87,19 @@ export default function OperationsPage() {
 
   const handleCheckIn = async (id: string) => {
     try {
-      await checkInBooking({ variables: { id } });
+      await checkInBooking({ variables: { id }, refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }] });
+      toast.success("Guest checked in successfully");
     } catch (err) {
-      console.error("Failed to check in:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to check in");
     }
   };
 
   const handleCheckOut = async (id: string) => {
     try {
-      await checkOutBooking({ variables: { id } });
+      await checkOutBooking({ variables: { id }, refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }] });
+      toast.success("Guest checked out successfully");
     } catch (err) {
-      console.error("Failed to check out:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to check out");
     }
   };
 
@@ -110,17 +114,20 @@ export default function OperationsPage() {
           id,
           input: { endDate: newEndDate.toISOString() },
         },
+        refetchQueries: [{ query: GET_BOOKINGS }],
       });
+      toast.success("Booking extended by 7 days");
     } catch (err) {
-      console.error("Failed to extend booking:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to extend booking");
     }
   };
 
   const handleCancelBooking = async (id: string) => {
     try {
-      await cancelBooking({ variables: { id } });
+      await cancelBooking({ variables: { id }, refetchQueries: [{ query: GET_BOOKINGS }, { query: GET_DASHBOARD_METRICS }] });
+      toast.success("Booking cancelled");
     } catch (err) {
-      console.error("Failed to cancel booking:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to cancel booking");
     }
   };
 
@@ -217,9 +224,17 @@ export default function OperationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {bookingsLoading ? (
+              {bookingsLoading && bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-400">Loading bookings…</td>
+                  <td colSpan={7} className="px-6 py-12">
+                    <QueryLoading message="Loading bookings…" />
+                  </td>
+                </tr>
+              ) : bookingsData?.error && bookings.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12">
+                    <QueryError message="Unable to load bookings." onRetry={() => refetchBookings()} />
+                  </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>

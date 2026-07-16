@@ -50,15 +50,21 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
   const [floors, setFloors] = useState<
     { id: number; name: string; status: string; expanded: boolean; units: number; distributions: { id: number; type: string; format: string; count: number; amenities: string[]; availability: string }[] }[]
   >([]);
-  // Name of the floor being created (bound to the first floor's editable input).
   const [floorName, setFloorName] = useState("Floor 1");
   const [saving, setSaving] = useState(false);
+  const [pendingFloors, setPendingFloors] = useState<string[]>([]);
 
   const [createFloor] = useMutation(CREATE_FLOOR, {
     refetchQueries: centerId ? [{ query: GET_FLOORS, variables: { centerId } }] : [{ query: GET_FLOORS }],
   });
 
-  // Step 2 State (Space Setup)
+  // Add Floor: creates a new local floor entry in the wizard
+  const handleAddFloor = () => {
+    const name = floorName.trim() || `Floor ${floors.length + pendingFloors.length + 1}`;
+    setPendingFloors(prev => [...prev, name]);
+    setFloorName(`Floor ${floors.length + pendingFloors.length + 2}`);
+  };
+
   const [activeFloorTab, setActiveFloorTab] = useState(3);
   const [selectedSpaceDetails, setSelectedSpaceDetails] = useState<string | null>(null);
 
@@ -94,29 +100,37 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
       setCurrentStep(c => c + 1);
       return;
     }
-    // Step 3: persist the floor.
+    // Step 3: persist any queued floors. The wizard collects names into
+    // pendingFloors; we create them in order, then close on success.
     if (!centerId) {
       toast.error("No center selected");
       return;
     }
-    const name = floorName.trim();
-    if (!name) {
-      toast.error("Floor name is required");
+    const queued = pendingFloors.length > 0
+      ? pendingFloors
+      : (floorName.trim() ? [floorName.trim()] : []);
+    if (queued.length === 0) {
+      toast.error("Add at least one floor before finishing");
       return;
     }
     setSaving(true);
+    let created = 0;
     try {
-      const { errors } = await createFloor({
-        variables: { input: { name, centerId } },
-      });
-      if (errors && errors.length) {
-        toast.error(errors[0].message);
-        return;
+      for (const name of queued) {
+        const { errors } = await createFloor({
+          variables: { input: { name, centerId } },
+        });
+        if (errors && errors.length) {
+          toast.error(errors[0].message);
+          return;
+        }
+        created += 1;
       }
-      toast.success("Floor created");
+      setPendingFloors([]);
+      toast.success(`${created} floor${created > 1 ? 's' : ''} created`);
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create floor");
+      toast.error(err instanceof Error ? err.message : "Failed to create floors");
     } finally {
       setSaving(false);
     }
@@ -169,7 +183,7 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
           <h2 className="text-[18px] font-semibold text-gray-900">Floor Setup</h2>
           <p className="text-[14px] text-gray-500">Distribute your products across floors</p>
         </div>
-        <button className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] active:scale-[0.97] transition-all duration-150">
+        <button onClick={handleAddFloor} className="bg-[#FF6A2F] text-white px-4 py-2 rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] active:scale-[0.97] transition-all duration-150">
           + Add Floor
         </button>
       </div>

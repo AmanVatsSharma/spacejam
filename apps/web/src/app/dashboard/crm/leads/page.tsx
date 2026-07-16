@@ -29,6 +29,7 @@ import {
   ScheduleVisitModal,
   SendProposalModal,
 } from '@/components/ui/dashboard';
+import { QueryLoading, QueryError, QueryEmpty } from '@/components/ui/query-status';
 import styles from './leads.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -71,9 +72,9 @@ interface GetLeadsVars {
  * Helper: resolve leads — Apollo data only
  * ────────────────────────────────────────────────── */
 function useLeads() {
-  const { data, loading, error } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
+  const { data, loading, error, refetch } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
   const leads = data?.leads ?? [];
-  return { leads, loading, error };
+  return { leads, loading, error, refetch };
 }
 
 /* --------------------------- Helpers ----------------------------- */
@@ -195,7 +196,7 @@ export default function LeadsPage() {
   const [showSendProposal, setShowSendProposal] = useState(false);
 
   /* ── Apollo data ── */
-  const { leads, loading } = useLeads();
+  const { leads, loading, error, refetch } = useLeads();
 
   /* ── Mutations ── */
   const [createLead] = useMutation(CREATE_LEAD, {
@@ -497,14 +498,20 @@ export default function LeadsPage() {
               <tbody>
                 {loading && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
-                      Loading leads…
+                    <td colSpan={7} className="text-center py-12">
+                      <QueryLoading message="Loading leads…" />
+                    </td>
+                  </tr>
+                ) : error && filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12">
+                      <QueryError message="Unable to load leads." onRetry={() => refetch()} />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
-                      No leads found.
+                    <td colSpan={7} className="text-center py-12">
+                      <QueryEmpty message="No leads found" hint="Add your first lead to get started." />
                     </td>
                   </tr>
                 ) : (

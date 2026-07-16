@@ -19,6 +19,7 @@ import { useQuery } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { GET_LEADS } from '@/lib/apollo/operations';
+import { QueryLoading, QueryError, QueryEmpty } from '@/components/ui/query-status';
 import styles from './onboarding.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -177,7 +178,7 @@ export default function OnboardingPage() {
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
 
   /* ── Apollo data ── */
-  const { data, loading, error } = useQuery<{ leads: BackendLead[] }>(GET_LEADS, {
+  const { data, loading, error, refetch } = useQuery<{ leads: BackendLead[] }>(GET_LEADS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
@@ -326,10 +327,22 @@ export default function OnboardingPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading && filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-12 text-gray-400 text-sm">
-                    No onboarding leads found
+                  <td colSpan={9} className="text-center py-12">
+                    <QueryLoading message="Loading onboarding leads…" />
+                  </td>
+                </tr>
+              ) : error && filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-12">
+                    <QueryError message="Unable to load onboarding leads." onRetry={() => refetch()} />
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-12">
+                    <QueryEmpty message="No onboarding leads found" hint="Onboarded clients will appear here." />
                   </td>
                 </tr>
               ) : (

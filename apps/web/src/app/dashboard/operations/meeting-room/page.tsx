@@ -13,6 +13,7 @@ import { useMeetingRooms } from "@/hooks/use-operations";
 import { useState } from "react";
 import styles from "./meeting-room.module.css";
 import { BookRoomModal } from "../modals/book-room-modal";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
 type BookingInfo = { label: string; title: string; time: string };
@@ -84,7 +85,7 @@ export default function MeetingRoomsPage() {
   const [view, setView] = useState<"layout" | "table">("layout");
   const [showBookRoom, setShowBookRoom] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
-  const { rooms, loading, error } = useMeetingRooms();
+  const { rooms, loading, error, refetch } = useMeetingRooms();
 
   const displayRooms: RoomCard[] = rooms.map((r: any) => ({
     id: r.id,
@@ -178,7 +179,17 @@ export default function MeetingRoomsPage() {
       </section>
 
       {/* Rooms */}
-      {view === "layout" ? (
+      {loading && (
+        <div className="col-span-full flex items-center justify-center py-12">
+          <QueryLoading message="Loading meeting rooms…" />
+        </div>
+      )}
+      {error && !loading && (
+        <div className="col-span-full flex items-center justify-center py-12">
+          <QueryError message="Unable to load meeting rooms." onRetry={() => refetch()} />
+        </div>
+      )}
+      {!loading && !error && view === "layout" ? (
         displayRooms.length === 0 ? (
           <section className={styles.roomsGrid}>
             <div className="col-span-full flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-200 rounded-2xl text-center gap-3">
@@ -233,14 +244,6 @@ export default function MeetingRoomsPage() {
             </div>
           </div>
         </section>
-      )}
-
-      {/* Loading / Error states */}
-      {loading && (
-        <div className="text-center py-8 text-[#6A7282]">Loading meeting rooms...</div>
-      )}
-      {error && (
-        <div className="text-center py-4 text-red-500 bg-red-50 rounded-xl">Error loading rooms. Check connection.</div>
       )}
 
       {/* Book Room Modal */}

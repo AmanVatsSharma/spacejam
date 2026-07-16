@@ -14,6 +14,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_MY_CENTERS,
   GET_FLOORS,
@@ -24,6 +25,7 @@ import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
 import { SetUpCenterModal, FloorSetupModal } from "@/components/ui/dashboard";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 interface CenterLocation {
   id: string;
@@ -136,9 +138,10 @@ export default function InventoryPage() {
     setCreating(true);
     try {
       await createCenter({ variables: { input } });
+      toast.success("Center created successfully");
       setShowSetupModal(false);
     } catch (err) {
-      console.error("Failed to create center:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to create center");
     } finally {
       setCreating(false);
     }
@@ -160,7 +163,8 @@ export default function InventoryPage() {
           </div>
           <button
             onClick={() => setShowSetupModal(true)}
-            className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm"
+            disabled={isLoading}
+            className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M8 3V13M3 8H13" />
@@ -179,7 +183,8 @@ export default function InventoryPage() {
             {selectedCenterId ? (
               <button
                 onClick={() => setShowFloorModal(true)}
-                className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm"
+                disabled={isLoading}
+                className="flex items-center gap-2 bg-[#FF7847] text-white px-4 py-2 rounded-xl font-medium text-sm h-[36px] hover:bg-[#FF6A3D] active:scale-[0.97] transition-all duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M8 3V13M3 8H13" />
@@ -190,19 +195,15 @@ export default function InventoryPage() {
           </div>
           {isLoading && floors.length === 0 ? (
             <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-[#EAEAEA]">
-              <span className="text-sm text-[#9CA3AF]">Loading floors…</span>
+              <QueryLoading message="Loading floors…" />
             </div>
           ) : floorsError ? (
             <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-red-100">
-              <span className="text-sm text-red-400">Unable to load floors. Please try again.</span>
+              <QueryError message="Unable to load floors." onRetry={() => window.location.reload()} />
             </div>
           ) : floors.length === 0 ? (
             <div className="flex items-center justify-center h-40 bg-white rounded-2xl border border-[#EAEAEA]">
-              <span className="text-sm text-[#9CA3AF]">
-                {selectedCenterId
-                  ? "No floors found for this center."
-                  : "Select a center from the sidebar to view floors."}
-              </span>
+              <QueryEmpty message="No floors found" hint={selectedCenterId ? "Add a new floor to get started." : "Select a center from the sidebar to view floors."} />
             </div>
           ) : (
             <FloorCardGrid floors={floors} />
@@ -213,11 +214,11 @@ export default function InventoryPage() {
       {/* Right Sidebar - Location Tree */}
       {centersLoading && locations.length === 0 ? (
         <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px] hover:shadow-md transition-all duration-200">
-          <span className="text-sm text-[#9CA3AF]">Loading locations…</span>
+          <QueryLoading message="Loading locations…" />
         </aside>
       ) : centersError && locations.length === 0 ? (
         <aside className="flex flex-col items-start py-6 px-6 bg-white rounded-2xl shadow-sm w-[320px] h-[859px] hover:shadow-md transition-all duration-200">
-          <span className="text-sm text-red-400">Unable to load locations.</span>
+          <QueryError message="Unable to load locations." onRetry={() => window.location.reload()} />
         </aside>
       ) : (
         <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />

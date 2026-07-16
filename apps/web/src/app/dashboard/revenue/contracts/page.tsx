@@ -12,6 +12,7 @@ import {
 } from "@/lib/apollo/operations";
 import { AddContractModal } from "./modals/add-contract-modal";
 import { normalizeStatus, contractStatusLabel } from "@/lib/revenue-status";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 interface Contract {
   id: string;
@@ -68,7 +69,7 @@ export default function ContractsPage() {
   const [renewingId, setRenewingId] = useState<string | null>(null);
   const [renewEndDate, setRenewEndDate] = useState("");
 
-  const { data, loading, error } = useQuery<{ contracts: Contract[] }>(GET_CONTRACTS, {
+  const { data, loading, error, refetch } = useQuery<{ contracts: Contract[] }>(GET_CONTRACTS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
@@ -259,20 +260,20 @@ export default function ContractsPage() {
               <tbody>
                 {loading && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
-                      Loading contracts…
+                    <td colSpan={7} className="py-12">
+                      <QueryLoading message="Loading contracts…" />
                     </td>
                   </tr>
                 ) : error && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
-                      Unable to load contracts. Please try again.
+                    <td colSpan={7} className="py-12">
+                      <QueryError message="Unable to load contracts." onRetry={() => refetch()} />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
-                      No contracts found.
+                    <td colSpan={7} className="py-12">
+                      <QueryEmpty message="No contracts found" hint="Create a new contract to get started." />
                     </td>
                   </tr>
                 ) : (

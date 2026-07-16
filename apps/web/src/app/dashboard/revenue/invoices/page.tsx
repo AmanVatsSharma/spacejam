@@ -14,6 +14,7 @@ import {
 } from "@/lib/apollo/operations";
 import { normalizeStatus, invoiceStatusLabel } from "@/lib/revenue-status";
 import { GenerateInvoiceModal } from "@/components/ui/dashboard/generate-invoice-modal";
+import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 interface Invoice {
   id: string;
@@ -103,12 +104,12 @@ export default function InvoicesPage() {
     applicableTo: "",
   });
 
-  const { data: invoiceData, loading: invoiceLoading, error: invoiceError } = useQuery<{ invoices: Invoice[] }>(GET_INVOICES, {
+  const { data: invoiceData, loading: invoiceLoading, error: invoiceError, refetch: refetchInvoices } = useQuery<{ invoices: Invoice[] }>(GET_INVOICES, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
 
-  const { data: discountData, loading: discountLoading, refetch: refetchDiscounts } = useQuery<{ discounts: Discount[] }>(GET_DISCOUNTS, {
+  const { data: discountData, loading: discountLoading, error: discountError, refetch: refetchDiscounts } = useQuery<{ discounts: Discount[] }>(GET_DISCOUNTS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
@@ -340,20 +341,20 @@ export default function InvoicesPage() {
               <tbody className="divide-y divide-gray-100">
                 {invoiceLoading && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
-                      Loading invoices…
+                    <td colSpan={7} className="px-6 py-12">
+                      <QueryLoading message="Loading invoices…" />
                     </td>
                   </tr>
                 ) : invoiceError && filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
-                      Unable to load invoices. Please try again.
+                    <td colSpan={7} className="px-6 py-12">
+                      <QueryError message="Unable to load invoices." onRetry={() => refetchInvoices()} />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
-                      No invoices found.
+                    <td colSpan={7} className="px-6 py-12">
+                      <QueryEmpty message="No invoices found" hint="Create a new invoice to get started." />
                     </td>
                   </tr>
                 ) : (
@@ -413,12 +414,16 @@ export default function InvoicesPage() {
           </div>
 
           {discountLoading && discounts.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center text-gray-400">
-              Loading discounts…
+            <div className="bg-white rounded-2xl shadow-sm">
+              <QueryLoading message="Loading discounts…" />
+            </div>
+          ) : discountError && discounts.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm">
+              <QueryError message="Unable to load discounts." onRetry={() => refetchDiscounts()} />
             </div>
           ) : discounts.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center text-gray-400">
-              No discounts found. Click "Add Discount" to create one.
+            <div className="bg-white rounded-2xl shadow-sm">
+              <QueryEmpty message="No discounts found" hint="Click 'Add Discount' to create one." />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
