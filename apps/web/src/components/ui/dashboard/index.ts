@@ -24,7 +24,6 @@ export { TasksComplianceCard, TasksComplianceCardDemo } from "./tasks-compliance
 // Room Management Cards
 export {
   MeetingRoomBookingCard,
-  MeetingRoomBookingCardDemo,
   type BookingStatus,
 } from "./meeting-room-booking-card";
 

@@ -29,16 +29,18 @@ export default function GlobalError({
   };
 
   return (
-    <div
-      style={{
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        padding: '2rem',
-        maxWidth: '600px',
-        margin: '0 auto',
-        background: '#fafafa',
-        minHeight: '100vh',
-      }}
-    >
+    <html>
+      <body>
+        <div
+          style={{
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            padding: '2rem',
+            maxWidth: '600px',
+            margin: '0 auto',
+            background: '#fafafa',
+            minHeight: '100vh',
+          }}
+        >
       <h2 style={{ color: '#101828', marginBottom: '0.5rem' }}>
         Something went wrong!
       </h2>
@@ -75,5 +77,7 @@ export default function GlobalError({
         Try again
       </button>
     </div>
+      </body>
+    </html>
   );
 }
