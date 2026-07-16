@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -164,6 +164,16 @@ export default function SettingsAccessPage() {
   const defaultUser = users.length > 0 ? users.find((u) => u.role === "CENTER_MANAGER") ?? users[0] : null;
   const [activeUser, setActiveUser] = useState<User | null>(defaultUser);
 
+  // Profile tab: editable name draft synced when user changes
+  const [editingName, setEditingName] = useState(defaultUser?.name ?? "");
+  useEffect(() => {
+    if (activeUser) setEditingName(activeUser.name);
+  }, [activeUser?.id]);
+
+  // Settings groups: persisted via Center.settings JSONB
+  const { draft: secDraft, set: setSec, save: saveSec } = useSettingsGroup("security", { otpRequired: true, biometricLogin: false, sessionTimeout: 30 });
+  const { draft: notifDraft, set: setNotif, save: saveNotif } = useSettingsGroup("notifications", { whatsapp: true, email: true, push: false, emailDigest: "none", sms: true });
+
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("");
   };
@@ -292,7 +302,7 @@ export default function SettingsAccessPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroupFull}>
                   <label className={styles.formLabel}>Full Name</label>
-                  <input type="text" className={styles.formInput} value={activeUser!.name} readOnly />
+                  <input type="text" className={styles.formInput} value={editingName} onChange={(e) => setEditingName(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Email</label>
@@ -392,14 +402,17 @@ export default function SettingsAccessPage() {
             <>
               <div className={styles.secGroup}>
                 <h3 className={styles.secGroupTitle}>Authentication</h3>
-                
+
                 <div className={styles.secRow}>
                   <div className={styles.secRowInfo}>
                     <span className={styles.secRowTitle}>OTP Required</span>
                     <span className={styles.secRowSub}>Require OTP for login</span>
                   </div>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!secDraft.otpRequired ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setSec("otpRequired", !secDraft.otpRequired)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: secDraft.otpRequired ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                   </div>
                 </div>
 
@@ -408,37 +421,46 @@ export default function SettingsAccessPage() {
                     <span className={styles.secRowTitle}>Biometric Login</span>
                     <span className={styles.secRowSub}>Allow fingerprint/face ID</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!secDraft.biometricLogin ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setSec("biometricLogin", !secDraft.biometricLogin)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: secDraft.biometricLogin ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                   </div>
                 </div>
 
                 <div className={styles.secInputGroup}>
-                  <span className={styles.secRowTitle}>Session Timeout</span>
-                  <input type="text" className={styles.secInput} defaultValue="30" />
+                  <span className={styles.secRowTitle}>Session Timeout (minutes)</span>
+                  <input
+                    type="number"
+                    className={styles.secInput}
+                    value={secDraft.sessionTimeout ?? 30}
+                    onChange={(e) => setSec("sessionTimeout", Number(e.target.value))}
+                    min={5}
+                    max={480}
+                  />
                 </div>
               </div>
 
-              <div className={styles.secGroup}>
-                <h3 className={styles.secGroupTitle}>Device Management</h3>
-
-                <div style={{ padding: '32px', textAlign: 'center', color: '#6B7280' }}>
-                  No active device sessions to display.
-                </div>
+              <div className={styles.formActions}>
+                <button className={styles.saveBtn} onClick={async () => { await saveSec(); }}>Save Security Settings</button>
               </div>
             </>
           ) : activeTab === "Notifications" ? (
             <>
               <div className={styles.secGroup}>
                 <h3 className={styles.secGroupTitle}>Notification Channels</h3>
-                
+
                 <div className={styles.secRow}>
                   <div className={styles.secRowInfo}>
                     <span className={styles.secRowTitle}>WhatsApp</span>
                     <span className={styles.secRowSub}>{activeUser?.phone || "Not configured"}</span>
                   </div>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!notifDraft.whatsapp ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setNotif("whatsapp", !notifDraft.whatsapp)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: notifDraft.whatsapp ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                   </div>
                 </div>
 
@@ -447,51 +469,56 @@ export default function SettingsAccessPage() {
                     <span className={styles.secRowTitle}>Email</span>
                     <span className={styles.secRowSub}>{activeUser?.email || "Not configured"}</span>
                   </div>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!notifDraft.email ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setNotif("email", !notifDraft.email)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: notifDraft.email ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                   </div>
                 </div>
 
                 <div className={styles.secRow}>
                   <div className={styles.secRowInfo}>
                     <span className={styles.secRowTitle}>Push Notifications</span>
-                    <span className={styles.secRowSub}>Mobile & web app</span>
+                    <span className={styles.secRowSub}>In-app and browser push</span>
                   </div>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!notifDraft.push ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setNotif("push", !notifDraft.push)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: notifDraft.push ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                   </div>
+                </div>
+
+                <div className={styles.secRow}>
+                  <div className={styles.secRowInfo}>
+                    <span className={styles.secRowTitle}>SMS</span>
+                    <span className={styles.secRowSub}>Text message alerts</span>
+                  </div>
+                  <div
+                    className={`${styles.toggleSwitch} ${!notifDraft.sms ? styles.toggleSwitchOff : ''}`}
+                    onClick={() => setNotif("sms", !notifDraft.sms)}
+                  >
+                    <div className={styles.toggleKnob} style={{ transform: notifDraft.sms ? 'translateX(24px)' : 'translateX(0px)' }}></div>
+                  </div>
+                </div>
+
+                <div className={styles.secInputGroup}>
+                  <span className={styles.secRowTitle}>Email Digest Frequency</span>
+                  <select
+                    className={styles.secInput}
+                    value={notifDraft.emailDigest ?? "none"}
+                    onChange={(e) => setNotif("emailDigest", e.target.value)}
+                  >
+                    <option value="none">None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
                 </div>
               </div>
 
-              <div className={styles.secGroup}>
-                <h3 className={styles.secGroupTitle}>Notification Preferences</h3>
-                
-                <div className={styles.secRow}>
-                  <div className={styles.secRowInfo}>
-                    <span className={styles.secRowTitle}>Booking alerts</span>
-                  </div>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-
-                <div className={styles.secRow}>
-                  <div className={styles.secRowInfo}>
-                    <span className={styles.secRowTitle}>Payment alerts</span>
-                  </div>
-                  <div className={styles.toggleSwitch}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(24px)' }}></div>
-                  </div>
-                </div>
-
-                <div className={styles.secRow}>
-                  <div className={styles.secRowInfo}>
-                    <span className={styles.secRowTitle}>Maintenance alerts</span>
-                  </div>
-                  <div className={`${styles.toggleSwitch} ${styles.toggleSwitchOff}`}>
-                    <div className={styles.toggleKnob} style={{ transform: 'translateX(0px)' }}></div>
-                  </div>
-                </div>
+              <div className={styles.formActions}>
+                <button className={styles.saveBtn} onClick={async () => { await saveNotif(); }}>Save Notification Settings</button>
               </div>
             </>
           ) : (
