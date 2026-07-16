@@ -21,6 +21,15 @@ registerEnumType(TimePeriod, {
 });
 
 @ObjectType()
+export class MetricTrend {
+  @Field()
+  value!: number;
+
+  @Field()
+  direction!: string;
+}
+
+@ObjectType()
 export class DashboardMetrics {
   @Field()
   totalRevenue!: number;
@@ -39,6 +48,15 @@ export class DashboardMetrics {
 
   @Field()
   availableSeats!: number;
+
+  @Field(() => MetricTrend, { nullable: true })
+  revenueTrend!: MetricTrend | null;
+
+  @Field(() => MetricTrend, { nullable: true })
+  occupancyTrend!: MetricTrend | null;
+
+  @Field(() => MetricTrend, { nullable: true })
+  bookingsTrend!: MetricTrend | null;
 }
 
 @ObjectType()

@@ -10,21 +10,14 @@
 import { Resolver, Query, Args, ID } from '@nestjs/graphql';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Between, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import {
   BookingStatus,
   PaymentStatus,
   SeatStatus,
   SeatType,
 } from '../types/user.type';
-import {
-  DashboardMetrics,
-  RevenueReport,
-  OccupancyReport,
-  OccupancyDay,
-  SeatTypeOccupancy,
-  TimePeriod,
-} from '../types/analytics.type';
+import { DashboardMetrics, MetricTrend, OccupancyDay, OccupancyReport, RevenueMonth, RevenueReport, SeatTypeOccupancy, TimePeriod } from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
@@ -50,7 +43,8 @@ export class AnalyticsResolver {
     return this.cache.getOrSet<DashboardMetrics>(cacheKey, async () => {
       const where: any = centerId ? { centerId } : {};
       const now = new Date();
-      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
       const recentBookings = await this.bookingRepo.find({
         where: {
@@ -59,6 +53,16 @@ export class AnalyticsResolver {
           createdAt: MoreThanOrEqual(thirtyDaysAgo)
         } as any,
         relations: ['seat', 'payment'],
+      });
+
+      // Previous-period bookings (31–60 days ago) for trend calculations.
+      const prevBookings = await this.bookingRepo.find({
+        where: {
+          ...where,
+          status: 'CONFIRMED',
+          createdAt: Between(sixtyDaysAgo, thirtyDaysAgo)
+        } as any,
+        relations: ['payment'],
       });
 
       // Calculate metrics
@@ -85,6 +89,17 @@ export class AnalyticsResolver {
 
       const occupancyRate = totalSeats > 0 ? occupiedSeats / totalSeats : 0;
 
+      // Previous-period occupancy: seats that had an OCCUPIED status
+      // before the current 30-day window (i.e. updatedAt < thirtyDaysAgo).
+      const prevOccupiedSeats = await this.seatRepo.count({
+        where: {
+          status: SeatStatus.OCCUPIED,
+          updatedAt: LessThan(thirtyDaysAgo),
+          ...(centerId ? { floor: { centerId } } : {})
+        } as any,
+      });
+      const prevOccupancyRate = totalSeats > 0 ? prevOccupiedSeats / totalSeats : 0;
+
       // Pending payments
       const pendingPayments = await this.bookingRepo.find({
         where: {
@@ -106,6 +121,27 @@ export class AnalyticsResolver {
         } as any,
       });
 
+      // ----- Trend calculations (vs. previous 30-day period) -----
+      const prevRevenue = prevBookings
+        .filter(b => b.payment?.status === 'COMPLETED')
+        .reduce((sum, b) => sum + b.totalPrice, 0);
+      const prevActiveBookings = prevBookings.filter(
+        b => b.status === BookingStatus.CONFIRMED
+      ).length;
+
+      const computeTrend = (current: number, previous: number): MetricTrend => {
+        if (previous === 0) {
+          return { value: 0, direction: 'neutral' };
+        }
+        const value = ((current - previous) / previous) * 100;
+        const direction = value > 0 ? 'up' : value < 0 ? 'down' : 'neutral';
+        return { value, direction };
+      };
+
+      const revenueTrend = computeTrend(totalRevenue, prevRevenue);
+      const occupancyTrend = computeTrend(occupancyRate, prevOccupancyRate);
+      const bookingsTrend = computeTrend(activeBookings, prevActiveBookings);
+
       return {
         totalRevenue,
         occupancyRate,
@@ -114,6 +150,9 @@ export class AnalyticsResolver {
         upcomingMaintenance: upcomingMaintenance as any,
         totalSeats,
         availableSeats: totalSeats - occupiedSeats,
+        revenueTrend,
+        occupancyTrend,
+        bookingsTrend,
       };
     }, { ttl: 1800 }); // Cache for 30 minutes
   }

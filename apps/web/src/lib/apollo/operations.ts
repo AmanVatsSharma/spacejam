@@ -916,6 +916,18 @@ export const GET_DASHBOARD_METRICS = gql`
       pendingPayments
       totalSeats
       availableSeats
+      revenueTrend {
+        value
+        direction
+      }
+      occupancyTrend {
+        value
+        direction
+      }
+      bookingsTrend {
+        value
+        direction
+      }
     }
   }
 `;

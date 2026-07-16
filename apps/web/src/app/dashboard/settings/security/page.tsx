@@ -9,6 +9,8 @@ import {
   LOGOUT_ALL_DEVICES,
 } from "@/lib/apollo/operations";
 import { useSettingsGroup } from "@/hooks/use-settings";
+import { useAuth } from "@/contexts/auth-context";
+import { getAccessToken } from "@/lib/apollo/token-storage";
 import { toast } from "sonner";
 import styles from "./security.module.css";
 
@@ -130,6 +132,8 @@ export default function SecuritySettingsPage() {
     allowMultipleDevices: true,
     requireVerificationNewDevices: true,
     highValueTransactionThreshold: "10000",
+    sessionTimeout: "30 minutes",
+    deviceTrustDuration: "30 days",
   });
 
   return (
@@ -233,8 +237,18 @@ export default function SecuritySettingsPage() {
 
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Session Timeout</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`} style={{ background: '#F9FAFB' }}>
-                    <option>30 minutes</option>
+                  <select
+                    className={`${styles.inputBox} ${styles.selectBox}`}
+                    style={{ background: '#F9FAFB' }}
+                    value={draft.sessionTimeout ?? "30 minutes"}
+                    onChange={e => set('sessionTimeout', e.target.value)}
+                  >
+                    <option value="15 minutes">15 minutes</option>
+                    <option value="30 minutes">30 minutes</option>
+                    <option value="1 hour">1 hour</option>
+                    <option value="4 hours">4 hours</option>
+                    <option value="1 day">1 day</option>
+                    <option value="Never">Never</option>
                   </select>
                   <span className={styles.inputSub}>Time before inactive users are automatically logged out</span>
                 </div>
@@ -445,7 +459,21 @@ export default function SecuritySettingsPage() {
                 const { data: sessionsData, loading: sessionsLoading, refetch: refetchSessions } = useQuery(GET_USER_SESSIONS);
                 const [logoutDevice] = useMutation(LOGOUT_DEVICE);
                 const [logoutAllDevices, { loading: logoutAllLoading }] = useMutation(LOGOUT_ALL_DEVICES);
+                const { user } = useAuth();
                 const sessions = sessionsData?.myActiveSessions ?? [];
+
+                // Decode JWT to extract session identifier for current-device detection.
+                const getCurrentSessionId = (): string | null => {
+                  try {
+                    const token = getAccessToken();
+                    if (!token) return null;
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.sid ?? payload.jti ?? payload.sessionId ?? null;
+                  } catch {
+                    return null;
+                  }
+                };
+                const currentSessionId = getCurrentSessionId();
 
                 const handleLogoutDevice = async (sessionId: string) => {
                   try {
@@ -491,18 +519,40 @@ export default function SecuritySettingsPage() {
                   return { device, browser, os };
                 };
 
-                const formatLastActive = (iso: string): string => {
+                const formatSessionTime = (iso: string): string => {
                   const date = new Date(iso);
                   const now = new Date();
                   const diffMs = now.getTime() - date.getTime();
                   const diffMins = Math.floor(diffMs / 60000);
-                  if (diffMins < 1) return 'Just now';
-                  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                  if (diffMins < 1) return 'Active now';
+                  if (diffMins < 60) return `Active ${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
                   const diffHrs = Math.floor(diffMins / 60);
-                  if (diffHrs < 24) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
+                  if (diffHrs < 24) return `Active ${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
                   const diffDays = Math.floor(diffHrs / 24);
-                  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                  return date.toLocaleDateString();
+                  if (diffDays < 7) return `Active ${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                  return `Active since ${date.toLocaleDateString()}`;
+                };
+
+                const formatExpiry = (iso: string): string => {
+                  const date = new Date(iso);
+                  const now = new Date();
+                  const diffMs = date.getTime() - now.getTime();
+                  if (diffMs <= 0) {
+                    const diffAgo = now.getTime() - date.getTime();
+                    const minsAgo = Math.floor(diffAgo / 60000);
+                    if (minsAgo < 60) return `Expired ${minsAgo} min${minsAgo > 1 ? 's' : ''} ago`;
+                    const hrsAgo = Math.floor(minsAgo / 60);
+                    if (hrsAgo < 24) return `Expired ${hrsAgo} hr${hrsAgo > 1 ? 's' : ''} ago`;
+                    const daysAgo = Math.floor(hrsAgo / 24);
+                    return `Expired ${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`;
+                  }
+                  const diffDays = Math.floor(diffMs / 86400000);
+                  const diffHrs = Math.floor(diffMs / 3600000);
+                  const diffMins = Math.floor(diffMs / 60000);
+                  if (diffMins < 60) return `Expires in ${diffMins} min${diffMins > 1 ? 's' : ''}`;
+                  if (diffHrs < 24) return `Expires in ${diffHrs} hr${diffHrs > 1 ? 's' : ''}`;
+                  if (diffDays < 7) return `Expires in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
+                  return `Expires ${date.toLocaleDateString()}`;
                 };
 
                 return (
@@ -532,9 +582,9 @@ export default function SecuritySettingsPage() {
                         {!sessionsLoading && sessions.length === 0 && (
                           <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>No active devices found.</div>
                         )}
-                        {sessions.map((session: any, idx: number) => {
+                        {sessions.map((session: any) => {
                           const { device, browser, os } = parseUserAgent(session.userAgent);
-                          const isCurrentSession = idx === 0 && session.isActive;
+                          const isCurrent = session.id === currentSessionId;
                           return (
                             <div className={styles.deviceCard} key={session.id}>
                               <div className={styles.deviceInfoLeft}>
@@ -544,16 +594,17 @@ export default function SecuritySettingsPage() {
                                 <div className={styles.deviceInfoText}>
                                   <div className={styles.deviceNameWrap}>
                                     <span className={styles.deviceName}>{`${os} ${device}`}</span>
-                                    {isCurrentSession && <span className={styles.deviceTagOrange}>Current Device</span>}
+                                    {isCurrent && <span className={styles.deviceTagOrange}>Current Device</span>}
                                   </div>
                                   <div className={styles.deviceMeta}>
                                     <span className={styles.deviceMetaItem}>{`🌐 ${browser}`}</span>
                                     <span className={styles.deviceMetaItem}>{`📍 ${session.ipAddress ?? 'Unknown location'}`}</span>
-                                    <span className={styles.deviceMetaItem}>{`🕒 Last active: ${formatLastActive(session.createdAt)}`}</span>
+                                    <span className={styles.deviceMetaItem}>{`🕒 ${formatSessionTime(session.createdAt)}`}</span>
+                                    <span className={styles.deviceMetaItem}>{`⏱ ${formatExpiry(session.expiresAt)}`}</span>
                                   </div>
                                 </div>
                               </div>
-                              {isCurrentSession ? (
+                              {isCurrent ? (
                                 <button className={styles.deviceLogoutBtn} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>{Icons.logOut} Current</button>
                               ) : (
                                 <button
@@ -606,8 +657,16 @@ export default function SecuritySettingsPage() {
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Device Trust Duration</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`} style={{ background: '#F9FAFB' }}>
-                    <option>30 days</option>
+                  <select
+                    className={`${styles.inputBox} ${styles.selectBox}`}
+                    style={{ background: '#F9FAFB' }}
+                    value={draft.deviceTrustDuration ?? "30 days"}
+                    onChange={e => set('deviceTrustDuration', e.target.value)}
+                  >
+                    <option value="7 days">7 days</option>
+                    <option value="30 days">30 days</option>
+                    <option value="90 days">90 days</option>
+                    <option value="Never">Never</option>
                   </select>
                   <span className={styles.inputSub}>How long to trust a device before requiring re-verification</span>
                 </div>
@@ -839,7 +898,7 @@ export default function SecuritySettingsPage() {
                 </div>
                 <div className={styles.summaryRow} style={{ marginTop: '12px' }}>
                   <span className={styles.summaryLabel}>Trust Duration</span>
-                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>30 days</span>
+                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>{draft.deviceTrustDuration ?? "30 days"}</span>
                 </div>
               </div>
 

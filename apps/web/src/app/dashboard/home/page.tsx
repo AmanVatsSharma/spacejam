@@ -246,12 +246,22 @@ export default function DashboardPage() {
     return items;
   }, [deposits, requests]);
 
+  // Payment Health Calculation - uses backend revenueTrend for the revenue card
+  const revenueTrend = metrics?.revenueTrend;
+  const revenueTrendProps = revenueTrend
+    ? {
+        changePercent: Math.round(revenueTrend.value),
+        changeDirection: revenueTrend.direction as "up" | "down" | "neutral",
+      }
+    : undefined;
+
   const stats = [
     {
       label: "Revenue (MTD)",
       value: metrics ? formatCurrency(metrics.totalRevenue) : "—",
       icon: <RevenueIcon />,
       className: "flex-1 min-w-0",
+      ...revenueTrendProps,
     },
     {
       label: "Active Bookings",
@@ -272,13 +282,6 @@ export default function DashboardPage() {
       className: "flex-1 min-w-0",
     },
   ];
-
-  // Payment Health Calculation
-  const totalPayments = (metrics?.totalRevenue || 0) + (metrics?.pendingPayments || 0);
-  const paidPercent = totalPayments ? Math.round(((metrics?.totalRevenue || 0) / totalPayments) * 100) : 0;
-  const partialPercent = totalPayments ? Math.round(((metrics?.pendingPayments || 0) / totalPayments) * 100) : 0;
-  const paymentHealthPaid = { percent: paidPercent, amount: formatCurrency(metrics?.totalRevenue || 0) };
-  const paymentHealthPartial = { percent: partialPercent, amount: formatCurrency(metrics?.pendingPayments || 0) };
 
   return (
     <div className="w-full flex flex-col gap-[24px] compact:gap-4 p-8 compact:p-4">
@@ -348,10 +351,15 @@ export default function DashboardPage() {
         {/* Middle Column — stretches to match row height */}
         <div className="flex-1 min-w-0 max-w-[420px]">
           <PaymentHealthCard
-            total={formatCurrency(totalPayments)}
-            paid={paymentHealthPaid}
+            total={formatCurrency(metrics?.totalRevenue ?? 0)}
+            paid={{
+              percent: Math.round(revenueTrend?.value ?? 0),
+              amount: revenueTrend
+                ? `${revenueTrend.direction === "up" ? "↑" : revenueTrend.direction === "down" ? "↓" : "—"} ${Math.round(revenueTrend.value)}%`
+                : "—",
+            }}
             overdue={{ percent: 0, amount: "₹0" }}
-            partial={paymentHealthPartial}
+            partial={{ percent: 0, amount: "₹0" }}
             className="h-full"
           />
         </div>
