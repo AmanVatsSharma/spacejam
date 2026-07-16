@@ -264,7 +264,19 @@ export default function TableViewPage() {
             <input type="text" placeholder="Search spaces..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <button
-            onClick={() => setShowExport(true)}
+            onClick={() => {
+              const headers = ["Space Name", "Floor", "Type", "Status", "Price"];
+              const rows = inventoryData.map((s: any) => [s.spaceName, s.floor, s.type, s.status, s.price]);
+              const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+              const blob = new Blob([csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `inventory-${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`Exported ${inventoryData.length} spaces`);
+            }}
             className={`${styles.exportBtn} active:scale-[0.97] transition-transform duration-150`}
           >
             {Icons.export} Export CSV
@@ -282,7 +294,7 @@ export default function TableViewPage() {
       <div className={styles.filterBar}>
         <div className={styles.searchBox}>
           <div className={styles.searchBoxIcon}>{Icons.search}</div>
-          <input type="text" placeholder="Search Space Name and Company" />
+          <input type="text" placeholder="Search Space Name and Company" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
 
         <select

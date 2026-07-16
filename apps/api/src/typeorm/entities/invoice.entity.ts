@@ -17,7 +17,6 @@ import {
 } from 'typeorm';
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { InvoiceStatus, PaymentMethod } from '../../graphql/types/user.type';
-import { User } from './user.entity';
 import { Center } from './center.entity';
 
 @Entity('invoices')
@@ -88,10 +87,9 @@ export class Invoice {
   notes?: string;
 
   // Relations
-  @Field(() => User, { nullable: true })
-  @ManyToOne(() => User, { eager: false })
-  @JoinColumn({ name: 'customerId' })
-  customer?: User;
+  // customerId references the customers table but we keep it as a plain
+  // string column (no FK constraint) to avoid cross-table FK issues.
+  // The customer relation is resolved via a separate query if needed.
 
   @Field(() => Center, { nullable: true })
   @ManyToOne(() => Center, { eager: false })

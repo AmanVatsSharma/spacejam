@@ -18,14 +18,15 @@ import { toast } from "sonner";
 import {
   GET_MY_CENTERS,
   GET_FLOORS,
+  GET_DASHBOARD_METRICS,
   CREATE_CENTER,
   UPDATE_CENTER,
 } from "@/lib/apollo/operations";
-import { StatCards } from "@/components/ui/stat-card";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
 import { SetUpCenterModal, FloorSetupModal } from "@/components/ui/dashboard";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
+import { normalizeStatus } from "@/lib/revenue-status";
 
 interface CenterLocation {
   id: string;
@@ -73,6 +74,31 @@ export default function InventoryPage() {
     errorPolicy: "all",
     variables: selectedCenterId ? { centerId: selectedCenterId } : {},
   });
+
+  // Live metrics for inventory stat cards
+  const { data: metricsData } = useQuery(GET_DASHBOARD_METRICS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const metrics = metricsData?.dashboardMetrics;
+
+  // Compute inventory stats from live data
+  const inventoryStats = useMemo(() => {
+    const totalFloors = floorsData?.floors?.length ?? 0;
+    const allSeats = (floorsData?.floors ?? []).reduce(
+      (sum: number, f: any) => sum + (f.seats?.length ?? 0),
+      0,
+    );
+    const availableSeats = (floorsData?.floors ?? []).reduce(
+      (sum: number, f: any) =>
+        sum + (f.seats?.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length ?? 0),
+      0,
+    );
+    const occupiedSeats = allSeats - availableSeats;
+    const occupancyRate = allSeats > 0 ? Math.round((occupiedSeats / allSeats) * 100) : 0;
+    const totalCenters = centersData?.myCenters?.length ?? 0;
+    return { totalCenters, totalFloors, allSeats, availableSeats, occupiedSeats, occupancyRate };
+  }, [floorsData, centersData]);
 
   // Mutations
   const [createCenter] = useMutation(CREATE_CENTER, {
@@ -173,8 +199,22 @@ export default function InventoryPage() {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <StatCards />
+        {/* Inventory Stats — live data */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: "Centers", value: inventoryStats.totalCenters, icon: "🏢", color: "text-blue-600" },
+            { label: "Floors", value: inventoryStats.totalFloors, icon: "🏗️", color: "text-purple-600" },
+            { label: "Total Seats", value: inventoryStats.allSeats, icon: "🪑", color: "text-gray-700" },
+            { label: "Available", value: inventoryStats.availableSeats, icon: "✅", color: "text-green-600" },
+            { label: "Occupied", value: inventoryStats.occupiedSeats, icon: "🔴", color: "text-orange-600" },
+            { label: "Occupancy", value: `${inventoryStats.occupancyRate}%`, icon: "📊", color: "text-[#FF6A2F]" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col gap-1">
+              <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{stat.label}</span>
+              <span className={`text-[22px] font-bold ${stat.color}`}>{stat.value}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Floor Overview */}
         <div className="flex flex-col gap-4">

@@ -12,6 +12,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import {
   GET_CENTERS,
   GET_FLOORS,
@@ -277,7 +278,10 @@ export default function FloorMapPage() {
 
   // Handle Add Space
   const handleAddSpace = async () => {
-    if (!activeFloorId) return;
+    if (!activeFloorId) {
+      toast.error("Please select a floor first");
+      return;
+    }
     try {
       await createSeat({
         variables: {
@@ -289,8 +293,10 @@ export default function FloorMapPage() {
           },
         },
       });
+      toast.success("Space added successfully");
     } catch (err) {
       console.error("Failed to create seat:", err);
+      toast.error("Failed to add space");
     }
   };
 
@@ -303,8 +309,10 @@ export default function FloorMapPage() {
           input: { status: "AVAILABLE" },
         },
       });
+      toast.success("Seat vacated — marked as available");
     } catch (err) {
       console.error("Failed to update seat:", err);
+      toast.error("Failed to vacate seat");
     }
   };
 
