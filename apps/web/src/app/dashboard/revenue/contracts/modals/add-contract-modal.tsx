@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { CREATE_CONTRACT, GET_CONTRACTS } from "@/lib/apollo/operations";
+import { ClientSelect, type SelectedClient } from "@/components/ui/client-select";
 
 export interface AddContractModalProps {
   open: boolean;
@@ -63,8 +64,8 @@ export function AddContractModal({ open, onClose }: AddContractModalProps) {
     e.preventDefault();
     setTouched(true);
 
-    if (!form.customerName.trim()) {
-      toast.error("Customer name is required");
+    if (!form.customerId.trim() || !form.customerName.trim()) {
+      toast.error("Please select a client");
       return;
     }
     if (!form.planName.trim()) {
@@ -86,6 +87,7 @@ export function AddContractModal({ open, onClose }: AddContractModalProps) {
     }
 
     const input: Record<string, unknown> = {
+      customerId: form.customerId.trim(),
       customerName: form.customerName.trim(),
       planName: form.planName.trim(),
       startDate: form.startDate,
@@ -93,7 +95,6 @@ export function AddContractModal({ open, onClose }: AddContractModalProps) {
       amount: amountNum,
       paymentFrequency: form.paymentFrequency,
     };
-    if (form.customerId.trim()) input.customerId = form.customerId.trim();
     if (form.terms.trim()) input.terms = form.terms.trim();
 
     try {
@@ -143,30 +144,22 @@ export function AddContractModal({ open, onClose }: AddContractModalProps) {
 
         <form className="p-6 overflow-y-auto flex flex-col gap-5" onSubmit={handleSubmit}>
           {/* Customer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-gray-700">Customer Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Acme Inc."
-                className={inputCls}
-                value={form.customerName}
-                onChange={(e) => update("customerName", e.target.value)}
-              />
-              {touched && !form.customerName.trim() && (
-                <span className="text-[12px] text-red-500">Customer name is required</span>
-              )}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-gray-700">Customer ID (optional)</label>
-              <input
-                type="text"
-                placeholder="Existing customer ID, if known"
-                className={inputCls}
-                value={form.customerId}
-                onChange={(e) => update("customerId", e.target.value)}
-              />
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-medium text-gray-700">Client</label>
+            <ClientSelect
+              value={form.customerId}
+              onChange={(client: SelectedClient | null) => {
+                update("customerId", client?.id || "");
+                update("customerName", client?.name || "");
+              }}
+              placeholder="Search and select a client..."
+              required
+              error={
+                touched && !form.customerId.trim()
+                  ? "Please select a client"
+                  : undefined
+              }
+            />
           </div>
 
           {/* Plan + frequency */}

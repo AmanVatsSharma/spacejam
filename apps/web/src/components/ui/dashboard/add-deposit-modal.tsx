@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import styles from "./add-deposit-modal.module.css";
 import { CREATE_DEPOSIT, GET_DEPOSITS, GET_CENTERS } from "@/lib/apollo/operations";
+import { ClientSelect, type SelectedClient } from "@/components/ui/client-select";
 
 interface AddDepositModalProps {
   isOpen: boolean;
@@ -63,9 +64,9 @@ export function AddDepositModal({ isOpen, onClose }: AddDepositModalProps) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validation: customerName + amount required.
-    if (!form.customerName.trim()) {
-      toast.error("Client name is required");
+    // Validation: a client must be selected.
+    if (!form.customerId.trim() || !form.customerName.trim()) {
+      toast.error("Please select a client");
       return;
     }
     const amountNum = Number(form.amount);
@@ -77,11 +78,11 @@ export function AddDepositModal({ isOpen, onClose }: AddDepositModalProps) {
     setSubmitting(true);
     try {
       const input: Record<string, unknown> = {
+        customerId: form.customerId.trim(),
         customerName: form.customerName.trim(),
         amount: amountNum,
         depositType: form.type,
       };
-      if (form.customerId.trim()) input.customerId = form.customerId.trim();
       if (form.centerId) input.centerId = form.centerId;
       if (form.referenceNumber.trim())
         input.referenceNumber = form.referenceNumber.trim();
@@ -131,25 +132,15 @@ export function AddDepositModal({ isOpen, onClose }: AddDepositModalProps) {
 
         <form className={styles.body} onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
-            <label className={styles.label}>Client Name</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Enter client name"
-              value={form.customerName}
-              onChange={(e) => update("customerName", e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.label}>Customer ID (optional)</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Existing customer ID, if known"
+            <label className={styles.label}>Client</label>
+            <ClientSelect
               value={form.customerId}
-              onChange={(e) => update("customerId", e.target.value)}
+              onChange={(client: SelectedClient | null) => {
+                update("customerId", client?.id || "");
+                update("customerName", client?.name || "");
+              }}
+              placeholder="Search and select a client..."
+              required
             />
           </div>
 

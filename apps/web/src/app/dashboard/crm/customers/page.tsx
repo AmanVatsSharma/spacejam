@@ -147,6 +147,8 @@ export default function CustomersPage() {
       await createCustomer({ variables: { input } });
       toast.success("Client created successfully");
       setShowAddClient(false);
+      // Force a fresh refetch to ensure the new client appears immediately
+      await refetch();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to create client";
       toast.error(msg);

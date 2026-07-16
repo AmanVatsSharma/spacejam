@@ -5,6 +5,7 @@ import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import styles from "./generate-invoice-modal.module.css";
 import { CREATE_INVOICE, GET_INVOICES } from "@/lib/apollo/operations";
+import { ClientSelect, type SelectedClient } from "@/components/ui/client-select";
 
 interface GenerateInvoiceModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface GenerateInvoiceModalProps {
 }
 
 const emptyForm = {
+  customerId: "",
   customerName: "",
   customerEmail: "",
   amount: "",
@@ -41,6 +43,7 @@ export function GenerateInvoiceModal({ isOpen, onClose }: GenerateInvoiceModalPr
   const buildInput = (status: string) => {
     const amountNum = Number(form.amount);
     const input: Record<string, unknown> = {
+      customerId: form.customerId.trim(),
       customerName: form.customerName.trim(),
       amount: amountNum,
       status,
@@ -56,8 +59,8 @@ export function GenerateInvoiceModal({ isOpen, onClose }: GenerateInvoiceModalPr
   const handleSubmit = async (e: FormEvent, status: string) => {
     e.preventDefault();
 
-    if (!form.customerName.trim()) {
-      toast.error("Client name is required");
+    if (!form.customerId.trim() || !form.customerName.trim()) {
+      toast.error("Please select a client");
       return;
     }
     const amountNum = Number(form.amount);
@@ -104,13 +107,15 @@ export function GenerateInvoiceModal({ isOpen, onClose }: GenerateInvoiceModalPr
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>Name</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Enter client name"
-              value={form.customerName}
-              onChange={(e) => update("customerName", e.target.value)}
+            <label className={styles.label}>Client</label>
+            <ClientSelect
+              value={form.customerId}
+              onChange={(client: SelectedClient | null) => {
+                update("customerId", client?.id || "");
+                update("customerName", client?.name || "");
+                update("customerEmail", client?.email || "");
+              }}
+              placeholder="Search and select a client..."
               required
             />
           </div>
