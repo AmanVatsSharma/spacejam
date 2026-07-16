@@ -145,10 +145,12 @@ export default function CustomersPage() {
   const handleAddClient = async (input: Record<string, string>) => {
     try {
       await createCustomer({ variables: { input } });
-      toast.success("Client added successfully");
+      toast.success("Client created successfully");
       setShowAddClient(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to add client");
+      const msg = err instanceof Error ? err.message : "Failed to create client";
+      toast.error(msg);
+      throw err; // re-throw so the modal stays open and doesn't close
     }
   };
 
