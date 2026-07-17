@@ -152,8 +152,8 @@ export default function ContractsPage() {
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-80px)] font-sans">
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex gap-6 h-[calc(100vh-140px)] font-sans">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-6 flex-shrink-0">
           <h1 className="text-[24px] font-bold text-gray-900 mb-1">Contract Management</h1>
           <p className="text-[14px] text-gray-500">Track active contracts, manage renewals, and monitor revenue.</p>
@@ -243,8 +243,8 @@ export default function ContractsPage() {
         </div>
 
         {/* Contracts Table */}
-        <div className="bg-white rounded-2xl border border-gray-100 flex-1 overflow-hidden flex flex-col min-h-0">
-          <div className="overflow-auto flex-1">
+        <div className="bg-white rounded-2xl border border-gray-100 flex-1 overflow-hidden flex flex-col min-h-0 max-h-full">
+          <div className="overflow-y-auto overflow-x-auto flex-1 min-h-0">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr>
@@ -311,7 +311,7 @@ export default function ContractsPage() {
       </div>
 
       {/* Right Sidebar: Contract Details */}
-      <div className="w-[360px] bg-white rounded-2xl border border-gray-100 flex flex-col flex-shrink-0 h-full overflow-y-auto">
+      <div className="w-[340px] bg-white rounded-2xl border border-gray-100 flex flex-col flex-shrink-0 h-full overflow-y-auto min-h-0">
         <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h2 className="text-[18px] font-bold text-gray-900">Contract Details</h2>
         </div>
