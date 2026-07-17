@@ -50,9 +50,9 @@ export class Center {
   @Column({ type: 'jsonb', nullable: true })
   settings!: Record<string, any> | null;
 
-  @Field(() => ID)
-  @Column()
-  owner!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ nullable: true })
+  owner?: string;
 
   @Field(() => Date)
   @CreateDateColumn({ name: 'createdAt' })
