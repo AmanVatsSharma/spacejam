@@ -47,11 +47,11 @@ export class Contract {
   planName?: string;
 
   @Field()
-  @Column({ name: 'startDate', type: 'date' })
+  @Column({ name: 'startDate', type: 'timestamp' })
   startDate!: Date;
 
   @Field()
-  @Column({ name: 'endDate', type: 'date' })
+  @Column({ name: 'endDate', type: 'timestamp' })
   endDate!: Date;
 
   @Field(() => ContractStatus)

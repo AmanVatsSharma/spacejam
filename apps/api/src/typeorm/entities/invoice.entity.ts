@@ -67,15 +67,15 @@ export class Invoice {
   status!: InvoiceStatus;
 
   @Field()
-  @Column({ name: 'issueDate', type: 'date' })
+  @Column({ name: 'issueDate', type: 'timestamp' })
   issueDate!: Date;
 
   @Field()
-  @Column({ name: 'dueDate', type: 'date' })
+  @Column({ name: 'dueDate', type: 'timestamp' })
   dueDate!: Date;
 
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'paidDate', type: 'date', nullable: true })
+  @Column({ name: 'paidDate', type: 'timestamp', nullable: true })
   paidDate?: Date;
 
   @Field(() => PaymentMethod, { nullable: true })

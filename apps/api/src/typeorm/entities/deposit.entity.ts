@@ -55,15 +55,15 @@ export class Deposit {
   referenceNumber!: string;
 
   @Field()
-  @Column({ name: 'receivedDate', type: 'date' })
+  @Column({ name: 'receivedDate', type: 'timestamp' })
   receivedDate!: Date;
 
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'releasedDate', type: 'date', nullable: true })
+  @Column({ name: 'releasedDate', type: 'timestamp', nullable: true })
   releasedDate?: Date;
 
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'releaseRequestedDate', type: 'date', nullable: true })
+  @Column({ name: 'releaseRequestedDate', type: 'timestamp', nullable: true })
   releaseRequestedDate?: Date;
 
   @Field(() => String, { nullable: true })
