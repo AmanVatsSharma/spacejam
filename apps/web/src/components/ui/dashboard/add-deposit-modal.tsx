@@ -81,7 +81,7 @@ export function AddDepositModal({ isOpen, onClose }: AddDepositModalProps) {
         customerId: form.customerId.trim(),
         customerName: form.customerName.trim(),
         amount: amountNum,
-        depositType: form.type,
+        type: form.type,
       };
       if (form.centerId) input.centerId = form.centerId;
       if (form.referenceNumber.trim())
