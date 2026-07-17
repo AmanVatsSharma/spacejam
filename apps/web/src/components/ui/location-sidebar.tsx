@@ -24,9 +24,10 @@ interface Location {
 interface LocationSidebarProps {
   locations: Location[];
   onLocationSelect?: (locationId: string, centerId?: string) => void;
+  onAddSubLocation?: () => void;
 }
 
-export function LocationSidebar({ locations, onLocationSelect }: LocationSidebarProps) {
+export function LocationSidebar({ locations, onLocationSelect, onAddSubLocation }: LocationSidebarProps) {
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>(
     Object.fromEntries(locations.map((l) => [l.id, l.expanded ?? false]))
   );
@@ -90,7 +91,9 @@ export function LocationSidebar({ locations, onLocationSelect }: LocationSidebar
       </div>
 
       {/* Add Sub-location Button */}
-      <button className="flex items-center justify-center gap-2 w-full h-[50px] bg-white border border-[#EAEAEA] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
+      <button
+        onClick={() => onAddSubLocation?.()}
+        className="flex items-center justify-center gap-2 w-full h-[50px] bg-white border border-[#EAEAEA] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M8 3V13M3 8H13" />
         </svg>

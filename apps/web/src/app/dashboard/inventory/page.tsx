@@ -261,7 +261,17 @@ export default function InventoryPage() {
           <QueryError message="Unable to load locations." onRetry={() => window.location.reload()} />
         </aside>
       ) : (
-        <LocationSidebar locations={locations} onLocationSelect={handleLocationSelect} />
+        <LocationSidebar
+          locations={locations}
+          onLocationSelect={handleLocationSelect}
+          onAddSubLocation={() => {
+            if (selectedCenterId) {
+              setShowFloorModal(true);
+            } else {
+              toast.info("Select a center first to add a floor");
+            }
+          }}
+        />
       )}
 
       <SetUpCenterModal
