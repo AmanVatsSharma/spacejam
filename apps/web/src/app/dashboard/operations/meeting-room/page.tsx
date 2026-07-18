@@ -10,10 +10,12 @@
  */
 
 import { useMeetingRooms } from "@/hooks/use-operations";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import styles from "./meeting-room.module.css";
 import { BookRoomModal } from "../modals/book-room-modal";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
+import { useQuery } from "@apollo/client";
+import { GET_BOOKINGS } from "@/lib/apollo/operations";
 
 type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
 type BookingInfo = { label: string; title: string; time: string };
@@ -87,6 +89,8 @@ export default function MeetingRoomsPage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
   const { rooms, loading, error, refetch } = useMeetingRooms();
 
+  const { data: bookingsData } = useQuery(GET_BOOKINGS);
+
   const displayRooms: RoomCard[] = rooms.map((r: any) => ({
     id: r.id,
     name: r.name,
@@ -96,6 +100,46 @@ export default function MeetingRoomsPage() {
   }));
 
   const availableCount = displayRooms.filter(r => r.status === "available").length;
+
+  const { bookingCount, totalHours, peakUsageStr } = useMemo(() => {
+    if (!bookingsData?.bookings || !displayRooms.length) return { bookingCount: 0, totalHours: 0, peakUsageStr: "10 AM - 4 PM" };
+    const roomIds = new Set(displayRooms.map((r: any) => r.id));
+    const validBookings = bookingsData.bookings.filter((b: any) => b.meetingRoom?.id && roomIds.has(b.meetingRoom.id));
+    
+    const count = validBookings.length;
+    let hours = 0;
+    validBookings.forEach((b: any) => {
+      const start = new Date(b.startDate).getTime();
+      const end = new Date(b.endDate).getTime();
+      if (!isNaN(start) && !isNaN(end)) {
+         hours += (end - start) / (1000 * 60 * 60);
+      }
+    });
+
+    let peakStr = "10 AM - 4 PM";
+    if (count > 0) {
+      const hourCounts: Record<number, number> = {};
+      validBookings.forEach((b: any) => {
+         const h = new Date(b.startDate).getHours();
+         if (!isNaN(h)) hourCounts[h] = (hourCounts[h] || 0) + 1;
+      });
+      let maxHour = -1;
+      let maxCount = -1;
+      for (const [h, c] of Object.entries(hourCounts)) {
+         if (c > maxCount) { maxCount = c; maxHour = Number(h); }
+      }
+      if (maxHour !== -1) {
+         const ampm = maxHour >= 12 ? 'PM' : 'AM';
+         const hr12 = maxHour % 12 || 12;
+         const nextHr = (maxHour + 2) % 24;
+         const nextAmpm = nextHr >= 12 ? 'PM' : 'AM';
+         const nextHr12 = nextHr % 12 || 12;
+         peakStr = `${hr12} ${ampm} - ${nextHr12} ${nextAmpm}`;
+      }
+    }
+    
+    return { bookingCount: count, totalHours: Math.round(hours), peakUsageStr: peakStr };
+  }, [bookingsData, displayRooms]);
 
   return (
     <div className={styles.page}>
@@ -123,7 +167,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>No. of Bookings</span>
           </div>
-          <div className={styles.statValue}>{displayRooms.length}</div>
+          <div className={styles.statValue}>{bookingCount}</div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -135,7 +179,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>Total Hours used</span>
           </div>
-          <div className={styles.statValue}>0 <span className={styles.statUnit}>hrs</span></div>
+          <div className={styles.statValue}>{totalHours} <span className={styles.statUnit}>hrs</span></div>
         </div>
         <div className={styles.statCard}>
           <div className={styles.statHeader}>
@@ -159,7 +203,7 @@ export default function MeetingRoomsPage() {
             </span>
             <span className={styles.statLabel}>Peak usage Hrs</span>
           </div>
-          <div className={styles.statValue}>10 <span className={styles.statUnit}>AM – 4</span> <span className={styles.statUnit}>PM</span></div>
+          <div className={styles.statValue}>{peakUsageStr}</div>
         </div>
       </section>
 

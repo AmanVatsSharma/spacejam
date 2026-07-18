@@ -13,14 +13,14 @@
  * Last-updated: 2026-06-20
  */
 
-"use client";
+'use client';
 
-import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Sidebar } from "@/components/ui/sidebar";
-import { Header, type HeaderTab } from "@/components/ui/header";
-import { SetUpNewCenter } from "@/components/ui/set-up-new-center";
-import { useAuth } from "@/contexts/auth-context";
+import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Sidebar } from '@/components/ui/sidebar';
+import { Header, type HeaderTab } from '@/components/ui/header';
+import { SetUpNewCenter } from '@/components/ui/set-up-new-center';
+import { useAuth } from '@/contexts/auth-context';
 
 /**
  * Per-section sub-navigation. The first tab of each section is the
@@ -30,50 +30,87 @@ import { useAuth } from "@/contexts/auth-context";
  */
 const SECTION_TABS: Record<string, HeaderTab[]> = {
   dashboard: [
-    { id: "changelog", label: "What's new", href: "/dashboard/changelog" }
+    { id: 'changelog', label: "What's new", href: '/dashboard/changelog' },
   ],
   revenue: [
-    { id: "invoices", label: "Invoices", href: "/dashboard/revenue" },
-    { id: "deposits", label: "Deposit", href: "/dashboard/revenue/deposits" },
-    { id: "contracts", label: "Contracts", href: "/dashboard/revenue/contracts" },
+    { id: 'invoices', label: 'Invoices', href: '/dashboard/revenue' },
+    { id: 'deposits', label: 'Deposit', href: '/dashboard/revenue/deposits' },
+    {
+      id: 'contracts',
+      label: 'Contracts',
+      href: '/dashboard/revenue/contracts',
+    },
   ],
   inventory: [
-    { id: "location", label: "Location", href: "/dashboard/inventory" },
-    { id: "floor-map", label: "Floor map", href: "/dashboard/inventory/floor-map" },
-    { id: "table-view", label: "Table view", href: "/dashboard/inventory/table-view" },
+    { id: 'location', label: 'Location', href: '/dashboard/inventory' },
+    {
+      id: 'floor-map',
+      label: 'Floor map',
+      href: '/dashboard/inventory/floor-map',
+    },
+    {
+      id: 'table-view',
+      label: 'Table view',
+      href: '/dashboard/inventory/table-view',
+    },
   ],
   crm: [
-    { id: "customers", label: "Customers", href: "/dashboard/crm/customers" },
-    { id: "leads", label: "Leads", href: "/dashboard/crm/leads" },
-    { id: "onboarding-list", label: "Onboarding List", href: "/dashboard/crm/onboarding-list" },
-    { id: "onboarding", label: "Onboarding", href: "/dashboard/crm/onboarding" },
+    { id: 'customers', label: 'Customers', href: '/dashboard/crm/customers' },
+    { id: 'leads', label: 'Leads', href: '/dashboard/crm/leads' },
+    {
+      id: 'onboarding-list',
+      label: 'Onboarding List',
+      href: '/dashboard/crm/onboarding-list',
+    },
+    {
+      id: 'onboarding',
+      label: 'Onboarding',
+      href: '/dashboard/crm/onboarding',
+    },
   ],
   operations: [
-    { id: "operations", label: "Operations", href: "/dashboard/operations" },
-    { id: "meeting-room", label: "Meeting Room", href: "/dashboard/operations/meeting-room" },
-    { id: "events", label: "Events", href: "/dashboard/operations/events" },
-    { id: "request", label: "Request", href: "/dashboard/operations/request" },
+    { id: 'operations', label: 'Operations', href: '/dashboard/operations' },
+    {
+      id: 'meeting-room',
+      label: 'Meeting Room',
+      href: '/dashboard/operations/meeting-room',
+    },
+    { id: 'events', label: 'Events', href: '/dashboard/operations/events' },
+    { id: 'request', label: 'Request', href: '/dashboard/operations/request' },
   ],
   report: [
-    { id: "overview", label: "Overview", href: "/dashboard/report" },
-    { id: "revenue", label: "Revenue", href: "/dashboard/report/revenue" },
-    { id: "occupancy", label: "Occupancy", href: "/dashboard/report/occupancy" },
+    { id: 'overview', label: 'Overview', href: '/dashboard/report' },
+    { id: 'revenue', label: 'Revenue', href: '/dashboard/report/revenue' },
+    {
+      id: 'occupancy',
+      label: 'Occupancy',
+      href: '/dashboard/report/occupancy',
+    },
   ],
   settings: [
-    { id: "teams", label: "Teams", href: "/dashboard/settings" },
-    { id: "finance", label: "Finance", href: "/dashboard/settings/finance" },
-    { id: "notification", label: "Notification", href: "/dashboard/settings/notification" },
-    { id: "center", label: "Center", href: "/dashboard/settings/center" },
-    { id: "security", label: "Security", href: "/dashboard/settings/security" },
+    { id: 'teams', label: 'Teams', href: '/dashboard/settings' },
+    { id: 'finance', label: 'Finance', href: '/dashboard/settings/finance' },
+    {
+      id: 'notification',
+      label: 'Notification',
+      href: '/dashboard/settings/notification',
+    },
+    { id: 'center', label: 'Center', href: '/dashboard/settings/center' },
+    { id: 'security', label: 'Security', href: '/dashboard/settings/security' },
   ],
 };
 
-function getTabsForPath(pathname: string | null): { tabs: HeaderTab[]; activeId: string | undefined } {
+function getTabsForPath(pathname: string | null): {
+  tabs: HeaderTab[];
+  activeId: string | undefined;
+} {
   if (!pathname) return { tabs: [], activeId: undefined };
   // `/dashboard/<section>/...` — pick the section segment.
   const match = pathname.match(/^\/dashboard\/([^/]+)/);
-  const section = match?.[1] || (pathname === '/dashboard' ? 'dashboard' : undefined);
-  if (!section || !SECTION_TABS[section]) return { tabs: [], activeId: undefined };
+  const section =
+    match?.[1] || (pathname === '/dashboard' ? 'dashboard' : undefined);
+  if (!section || !SECTION_TABS[section])
+    return { tabs: [], activeId: undefined };
 
   const tabs = SECTION_TABS[section];
   // Find exact match first
@@ -109,7 +146,7 @@ export default function DashboardLayout({
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}
-        hideSetUpButton={user?.role === 'MEMBER' || pathname !== '/dashboard/inventory'}
+        hideSetUpButton={true}
         user={{
           name: user?.name ?? user?.email ?? 'Guest',
           email: user?.email,
@@ -133,7 +170,9 @@ export default function DashboardLayout({
       </div>
 
       {/* Set Up New Center Modal */}
-      {showSetUpModal && <SetUpNewCenter onClose={() => setShowSetUpModal(false)} />}
+      {showSetUpModal && (
+        <SetUpNewCenter onClose={() => setShowSetUpModal(false)} />
+      )}
     </div>
   );
 }

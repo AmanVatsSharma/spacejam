@@ -17,9 +17,9 @@ import {
   GET_CENTERS,
   GET_FLOORS,
   GET_SEATS,
-  GET_DASHBOARD_METRICS,
   CREATE_SEAT,
   UPDATE_SEAT,
+  GET_BOOKINGS,
 } from "@/lib/apollo/operations";
 import styles from "./floor-map.module.css";
 
@@ -160,7 +160,6 @@ export default function FloorMapPage() {
     variables: activeFloorId ? { floorId: activeFloorId } : {},
   });
 
-  // Load dashboard metrics for stat cards
   const {
     data: metricsData,
     loading: metricsLoading,
@@ -168,6 +167,11 @@ export default function FloorMapPage() {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
     variables: activeCenterId ? { centerId: activeCenterId } : {},
+  });
+
+  const { data: bookingsData } = useQuery(GET_BOOKINGS, {
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
   });
 
   // Mutations
@@ -277,11 +281,43 @@ export default function FloorMapPage() {
     const available = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length;
     const occupied = seats.filter((s: any) => normalizeStatus(s.status) === "OCCUPIED").length;
     const maintenance = seats.filter((s: any) => normalizeStatus(s.status) === "MAINTENANCE").length;
-    // Upcoming bookings per seat are not exposed by GET_SEATS. Intentionally 0
-    // (do not fabricate) until a bookings-by-seat query is wired in.
-    const upcoming = 0;
+    
+    let upcomingCount = 0;
+    if (bookingsData?.bookings) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const upcomingSeatIds = new Set();
+      bookingsData.bookings.forEach((b: any) => {
+         if (b.status === "CONFIRMED" || b.status === "PENDING") {
+           const startDate = new Date(b.startDate);
+           if (startDate >= today && b.seat?.id) {
+             upcomingSeatIds.add(b.seat.id);
+           }
+         }
+      });
+      upcomingCount = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE" && upcomingSeatIds.has(s.id)).length;
+    }
+    const upcoming = upcomingCount;
     return { all, available, occupied, maintenance, upcoming };
-  }, [seats]);
+  }, [seats, bookingsData]);
+
+  // Compute upcoming bookings globally
+  const upcomingSeatIds = useMemo(() => {
+    const ids = new Set();
+    if (bookingsData?.bookings) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      bookingsData.bookings.forEach((b: any) => {
+         if (b.status === "CONFIRMED" || b.status === "PENDING") {
+           const startDate = new Date(b.startDate);
+           if (startDate >= today && b.seat?.id) {
+             ids.add(b.seat.id);
+           }
+         }
+      });
+    }
+    return ids;
+  }, [bookingsData]);
 
   // Handle Add Space — opens modal
   const handleAddSpace = () => {
@@ -584,17 +620,24 @@ export default function FloorMapPage() {
                 {/* Render each seat as a room card */}
                 {mapSeats.map((seat: any, index: number) => {
                   const status = normalizeStatus(seat.status);
+                  let displayStatus = status;
+                  if (status === "AVAILABLE" && upcomingSeatIds.has(seat.id)) {
+                    displayStatus = "UPCOMING";
+                  }
+
                   const statusColor: Record<string, string> = {
                     AVAILABLE: styles.roomGreen,
                     OCCUPIED: styles.roomRed,
                     MAINTENANCE: styles.roomGrey,
+                    UPCOMING: styles.roomOrange,
                   };
                   const statusText: Record<string, string> = {
                     AVAILABLE: "Available Now",
                     OCCUPIED: "Occupied",
                     MAINTENANCE: "Unavailable",
+                    UPCOMING: "Upcoming",
                   };
-                  const colorClass = statusColor[status] ?? styles.roomOrange;
+                  const colorClass = statusColor[displayStatus] ?? styles.roomOrange;
 
                   return (
                     <div

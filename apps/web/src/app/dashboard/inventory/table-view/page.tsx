@@ -11,6 +11,7 @@ import {
   GET_MY_CENTERS,
   CREATE_SEAT,
   UPDATE_SEAT,
+  GET_BOOKINGS,
 } from "@/lib/apollo/operations";
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./table-view.module.css";
@@ -86,6 +87,11 @@ export default function TableViewPage() {
 
   const seats = seatsData?.seats ?? [];
 
+  const { data: bookingsData } = useQuery(GET_BOOKINGS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+
   // Mutations
   const [createSeat] = useMutation(CREATE_SEAT, {
     refetchQueries: [{ query: GET_SEATS }],
@@ -96,22 +102,48 @@ export default function TableViewPage() {
 
   // Map API seats to the table's expected shape (preserve real seat id for mutations)
   const inventoryData = useMemo(() => {
-    return seats.map((seat: any) => ({
-      id: seat.id,
-      spaceName: seat.number ?? `Seat ${seat.id}`,
-      location: seat.location ?? "—",
-      floor: seat.floor?.name ?? "—",
-      floorId: seat.floor?.id ?? null,
-      type: seat.seatType ?? "—",
-      capacity: 1,
-      price: seat.price ? formatCurrency(seat.price) : "—",
-      gst: "18%",
-      status: seat.status ?? "Available",
-      assignedTo: seat.status === "OCCUPIED" ? "Assigned" : "-",
-      startDate: "-",
-      endDate: "-",
-    }));
-  }, [seats]);
+    const activeBookingsBySeat = new Map();
+    if (bookingsData?.bookings) {
+      bookingsData.bookings.forEach((b: any) => {
+        if (b.status === "CONFIRMED" || b.status === "CHECKED_IN") {
+          if (b.seat?.id) {
+             activeBookingsBySeat.set(b.seat.id, b);
+          }
+        }
+      });
+    }
+
+    return seats.map((seat: any) => {
+      const b = activeBookingsBySeat.get(seat.id);
+      let assignedTo = "-";
+      let startDate = "-";
+      let endDate = "-";
+      
+      if (b) {
+        assignedTo = b.user?.name || b.user?.email || "Assigned";
+        startDate = b.startDate ? new Date(b.startDate).toLocaleDateString() : "-";
+        endDate = b.endDate ? new Date(b.endDate).toLocaleDateString() : "-";
+      } else if (seat.status === "OCCUPIED") {
+        assignedTo = "Assigned";
+      }
+
+      return {
+        id: seat.id,
+        spaceName: seat.number ?? `Seat ${seat.id}`,
+        location: seat.location ?? "—",
+        floor: seat.floor?.name ?? "—",
+        floorId: seat.floor?.id ?? null,
+        type: seat.seatType ?? "—",
+        capacity: 1,
+        price: seat.price ? formatCurrency(seat.price) : "—",
+        gst: "18%",
+        status: seat.status ?? "Available",
+        assignedTo,
+        startDate,
+        endDate,
+      };
+    });
+  }, [seats, bookingsData]);
 
   const filteredData = useMemo(() => {
     let result = inventoryData;
