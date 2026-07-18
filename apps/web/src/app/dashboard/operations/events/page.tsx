@@ -409,6 +409,48 @@ export default function EventsPage() {
         </button>
       </section>
 
+      {/* Stats row */}
+      {!statsLoading && stats && (
+        <section className={styles.statsRow}>
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <span className={styles.statIconWrap}>
+                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2H12M2 5H12M2 8H8" stroke="#FF6A2F" strokeWidth="1.5"/></svg>
+              </span>
+              <span className={styles.statLabel}>Total Events</span>
+            </div>
+            <div className={styles.statValue}>{stats.totalEvents}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <span className={styles.statIconWrap}>
+                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="#F59E0B" strokeWidth="1.5"/><path d="M7 4V7L9 9" stroke="#F59E0B" strokeWidth="1.5"/></svg>
+              </span>
+              <span className={styles.statLabel}>Upcoming Events</span>
+            </div>
+            <div className={styles.statValue}>{stats.upcomingEvents}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <span className={styles.statIconWrap}>
+                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#10B981" strokeWidth="1.5"/></svg>
+              </span>
+              <span className={styles.statLabel}>Completed</span>
+            </div>
+            <div className={styles.statValue}>{stats.completedEvents}</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <span className={styles.statIconWrap}>
+                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4L10 10M10 4L4 10" stroke="#EF4444" strokeWidth="1.5"/></svg>
+              </span>
+              <span className={styles.statLabel}>Cancelled</span>
+            </div>
+            <div className={styles.statValue}>{stats.cancelledEvents}</div>
+          </div>
+        </section>
+      )}
+
       {/* Filter bar */}
       <section className={styles.filterBar}>
         <div className={styles.searchInput}>

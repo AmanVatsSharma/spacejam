@@ -3,7 +3,18 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS } from "@/lib/apollo/operations";
+import { CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS, CREATE_SEAT } from "@/lib/apollo/operations";
+
+export interface LocalSpace {
+  id: string; // e.g. FD01
+  floorId: string | number;
+  type: string;
+  seatType: string;
+  capacity: number;
+  status: string;
+  basePrice: number;
+  amenities: string[];
+}
 
 interface FloorSetupModalProps {
   isOpen: boolean;
@@ -40,33 +51,95 @@ const CheckIcon = () => (
 export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
 
+  const [spaces, setSpaces] = useState<LocalSpace[]>([]);
+
   // Fetch floors from backend when centerId is provided
   const { data: floorsData, loading: floorsLoading } = useQuery(GET_FLOORS, {
     variables: { centerId },
     skip: !centerId,
   });
 
-  // Step 1 State (Floor Setup) — populated from backend via GET_FLOORS
+  // Step 1 State (Floor Setup) — populated from backend via GET_FLOORS + local additions
   const [floors, setFloors] = useState<
-    { id: number; name: string; status: string; expanded: boolean; units: number; distributions: { id: number; type: string; format: string; count: number; amenities: string[]; availability: string }[] }[]
+    { id: string | number; name: string; status: string; expanded: boolean; units: number; distributions: { id: number; type: string; format: string; count: number; amenities: string[]; availability: string }[], isLocal?: boolean }[]
   >([]);
-  const [floorName, setFloorName] = useState("Floor 1");
   const [saving, setSaving] = useState(false);
-  const [pendingFloors, setPendingFloors] = useState<string[]>([]);
 
   const [createFloor] = useMutation(CREATE_FLOOR, {
     refetchQueries: centerId ? [{ query: GET_FLOORS, variables: { centerId } }] : [{ query: GET_FLOORS }],
   });
+  const [createSeat] = useMutation(CREATE_SEAT);
 
   // Add Floor: creates a new local floor entry in the wizard
   const handleAddFloor = () => {
-    const name = floorName.trim() || `Floor ${floors.length + pendingFloors.length + 1}`;
-    setPendingFloors(prev => [...prev, name]);
-    setFloorName(`Floor ${floors.length + pendingFloors.length + 2}`);
+    const nextId = `local-${Date.now()}`;
+    const defaultName = `Floor ${floors.length + 1}`;
+    
+    setFloors(prev => [
+      ...prev,
+      {
+        id: nextId,
+        name: defaultName,
+        status: "Active",
+        expanded: true,
+        units: 5,
+        distributions: [
+          { id: 1, type: "Open Desk", format: "FD", count: 2, amenities: ["WiFi"], availability: "Available" },
+          { id: 2, type: "Hexagon Seat", format: "FH", count: 1, amenities: ["WiFi"], availability: "Available" },
+          { id: 3, type: "Cabin (2 Seater)", format: "FC", count: 2, amenities: ["WiFi", "Whiteboard"], availability: "Available" }
+        ],
+        isLocal: true,
+      }
+    ]);
   };
 
-  const [activeFloorTab, setActiveFloorTab] = useState(3);
-  const [selectedSpaceDetails, setSelectedSpaceDetails] = useState<string | null>(null);
+  const mapTypeToBackend = (type: string) => {
+    if (type.includes("Cabin")) return "PRIVATE_OFFICE";
+    if (type.includes("Meeting")) return "MEETING_ROOM";
+    if (type.includes("Hexagon")) return "DEDICATED_DESK";
+    return "HOT_DESK";
+  };
+
+  const mapTypeToCapacity = (type: string) => {
+    const match = type.match(/(\d+)\s*Seater/);
+    if (match) return parseInt(match[1], 10);
+    return 1;
+  };
+
+  const generateSpacesForFloors = () => {
+    setSpaces(prevSpaces => {
+      const newSpaces = [...prevSpaces];
+      floors.forEach(floor => {
+        if (newSpaces.some(s => s.floorId === floor.id)) return;
+
+        floor.distributions.forEach(dist => {
+          for (let i = 1; i <= dist.count; i++) {
+            const paddedNum = i.toString().padStart(2, '0');
+            const spaceId = `${dist.format}${paddedNum}`;
+            let price = 6500;
+            if (dist.type.includes("Cabin")) price = 19000;
+            if (dist.type.includes("Hexagon")) price = 7500;
+            if (dist.type.includes("Meeting")) price = 1000;
+
+            newSpaces.push({
+              id: `${spaceId}-${floor.id}-${Date.now()}`, // unique ID for local state
+              floorId: floor.id,
+              type: dist.type,
+              seatType: mapTypeToBackend(dist.type),
+              capacity: mapTypeToCapacity(dist.type),
+              status: "AVAILABLE",
+              basePrice: price,
+              amenities: [...dist.amenities],
+            });
+          }
+        });
+      });
+      return newSpaces;
+    });
+  };
+
+  const [activeFloorTab, setActiveFloorTab] = useState<string | number>(1);
+  const [selectedSpaceDetails, setSelectedSpaceDetails] = useState<LocalSpace | null>(null);
 
   // Close animation effect
   const [show, setShow] = useState(false);
@@ -97,37 +170,66 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
 
   const handleNext = async () => {
     if (currentStep < 3) {
+      if (currentStep === 1) {
+        generateSpacesForFloors();
+        setActiveFloorTab(floors[0]?.id ?? 1);
+      }
       setCurrentStep(c => c + 1);
       return;
     }
-    // Step 3: persist any queued floors. The wizard collects names into
-    // pendingFloors; we create them in order, then close on success.
+    // Step 3: persist any queued local floors.
     if (!centerId) {
       toast.error("No center selected");
       return;
     }
-    const queued = pendingFloors.length > 0
-      ? pendingFloors
-      : (floorName.trim() ? [floorName.trim()] : []);
-    if (queued.length === 0) {
+    const localFloors = floors.filter(f => f.isLocal);
+    
+    if (localFloors.length === 0) {
       toast.error("Add at least one floor before finishing");
       return;
     }
     setSaving(true);
-    let created = 0;
+    let createdFloors = 0;
+    let createdSeats = 0;
     try {
-      for (const name of queued) {
-        const { errors } = await createFloor({
-          variables: { input: { name, centerId } },
+      for (const floor of localFloors) {
+        // Create Floor
+        const { data, errors } = await createFloor({
+          variables: { input: { name: floor.name.trim() || `Floor ${createdFloors + 1}`, centerId } },
         });
         if (errors && errors.length) {
           toast.error(errors[0].message);
           return;
         }
-        created += 1;
+        const createdFloorId = data?.createFloor?.id;
+        createdFloors += 1;
+
+        if (createdFloorId) {
+          // Find spaces for this floor
+          const floorSpaces = spaces.filter(s => s.floorId === floor.id);
+          for (const space of floorSpaces) {
+            // Provide a display-friendly number by dropping the timestamp suffix
+            const number = space.id.split('-')[0];
+            const { errors: seatErrors } = await createSeat({
+              variables: {
+                input: {
+                  number,
+                  floorId: createdFloorId,
+                  seatType: space.seatType,
+                  price: space.basePrice,
+                  status: space.status,
+                }
+              }
+            });
+            if (seatErrors && seatErrors.length) {
+              toast.error(`Failed to create space ${number}: ${seatErrors[0].message}`);
+            } else {
+              createdSeats += 1;
+            }
+          }
+        }
       }
-      setPendingFloors([]);
-      toast.success(`${created} floor${created > 1 ? 's' : ''} created`);
+      toast.success(`${createdFloors} floor(s) and ${createdSeats} space(s) created`);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create floors");
@@ -232,9 +334,10 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                       <input
                         type="text"
                         className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
-                        {...(floor.id === 1
-                          ? { value: floorName, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setFloorName(e.target.value) }
-                          : { defaultValue: floor.name })}
+                        value={floor.name}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setFloors(floors.map(f => f.id === floor.id ? { ...f, name: e.target.value } : f));
+                        }}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -321,25 +424,16 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
         <h2 className="text-[18px] font-semibold text-gray-900">Space Setup</h2>
         <p className="text-[14px] text-gray-500">Configure auto-generated spaces from your floor distribution</p>
         
-        <div className="flex items-center gap-6 border-b border-gray-200 mt-6">
-          <button
-            onClick={() => setActiveFloorTab(1)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 1 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Floor 1
-          </button>
-          <button 
-            onClick={() => setActiveFloorTab(2)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 2 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Floor 2
-          </button>
-          <button 
-            onClick={() => setActiveFloorTab(3)}
-            className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] ${activeFloorTab === 3 ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Floor 3
-          </button>
+        <div className="flex items-center gap-6 border-b border-gray-200 mt-6 overflow-x-auto custom-scrollbar">
+          {floors.map((floor) => (
+            <button
+              key={floor.id}
+              onClick={() => { setActiveFloorTab(floor.id); setSelectedSpaceDetails(null); }}
+              className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] whitespace-nowrap ${activeFloorTab === floor.id ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              {floor.name}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -378,25 +472,19 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { id: 'FD01', type: 'Open Desk', cap: 1, basePrice: '₹6,500', token: 65 },
-                  { id: 'FD02', type: 'Open Desk', cap: 1, basePrice: '₹6,500', token: 65 },
-                  { id: 'FH01', type: 'Hexagon Seat', cap: 1, basePrice: '₹7,500', token: 75 },
-                  { id: 'FC01', type: 'Cabin (2 Seater)', cap: 2, basePrice: '₹19,000', token: 190 },
-                  { id: 'FC02', type: 'Cabin (2 Seater)', cap: 2, basePrice: '₹19,000', token: 190 }
-                ].map((s) => (
+                {spaces.filter(s => s.floorId === activeFloorTab).map((s) => (
                   <tr key={s.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-900">{s.id}</td>
+                    <td className="py-3 px-4 font-medium text-gray-900">{s.id.split('-')[0]}</td>
                     <td className="py-3 px-4 text-gray-600">{s.type}</td>
-                    <td className="py-3 px-4 text-gray-600">{s.cap}</td>
+                    <td className="py-3 px-4 text-gray-600">{s.capacity}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5 text-[13px] text-[#FF6A2F] bg-[#FFE8DF] px-2 py-1 rounded-md w-fit">
-                        Available <ChevronDownIcon />
+                        {s.status === 'AVAILABLE' ? 'Available' : 'Occupied'} <ChevronDownIcon />
                       </div>
                     </td>
                     <td className="py-3 px-4">
                       <button 
-                        onClick={() => setSelectedSpaceDetails(s.id)}
+                        onClick={() => setSelectedSpaceDetails(s)}
                         className="bg-[#FF6A2F] text-white px-3 py-1.5 rounded-lg text-[13px] font-semibold shadow-sm"
                       >
                         View Details
@@ -425,16 +513,25 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                 <h4 className="text-[13px] font-bold text-gray-900">Basic Info</h4>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[12px] font-medium text-gray-700">Space Name</label>
-                  <input type="text" defaultValue={selectedSpaceDetails} className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+                  <input type="text" value={selectedSpaceDetails.id.split('-')[0]} className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50" readOnly />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-medium text-gray-700">Type</label>
-                    <input type="text" defaultValue="Open Desk" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50" readOnly />
+                    <input type="text" defaultValue={selectedSpaceDetails.type} className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50" readOnly />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[12px] font-medium text-gray-700">Capacity</label>
-                    <input type="text" defaultValue="1" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" />
+                    <input 
+                      type="number" 
+                      value={selectedSpaceDetails.capacity} 
+                      onChange={(e) => {
+                        const newSpaces = spaces.map(s => s.id === selectedSpaceDetails.id ? { ...s, capacity: parseInt(e.target.value) || 1 } : s);
+                        setSpaces(newSpaces);
+                        setSelectedSpaceDetails({ ...selectedSpaceDetails, capacity: parseInt(e.target.value) || 1 });
+                      }}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" 
+                    />
                   </div>
                 </div>
               </div>
@@ -443,45 +540,46 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                 <h4 className="text-[13px] font-bold text-gray-900">Status</h4>
                 <div className="flex flex-col gap-2">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="status" defaultChecked className="accent-[#FF6A2F] w-4 h-4" />
+                    <input type="radio" name="status" checked={selectedSpaceDetails.status === 'AVAILABLE'} onChange={() => {
+                        const newSpaces = spaces.map(s => s.id === selectedSpaceDetails.id ? { ...s, status: 'AVAILABLE' } : s);
+                        setSpaces(newSpaces);
+                        setSelectedSpaceDetails({ ...selectedSpaceDetails, status: 'AVAILABLE' });
+                    }} className="accent-[#FF6A2F] w-4 h-4" />
                     <span className="text-[14px] text-gray-800">Available</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="status" className="accent-[#FF6A2F] w-4 h-4" />
+                    <input type="radio" name="status" checked={selectedSpaceDetails.status === 'OCCUPIED'} onChange={() => {
+                        const newSpaces = spaces.map(s => s.id === selectedSpaceDetails.id ? { ...s, status: 'OCCUPIED' } : s);
+                        setSpaces(newSpaces);
+                        setSelectedSpaceDetails({ ...selectedSpaceDetails, status: 'OCCUPIED' });
+                    }} className="accent-[#FF6A2F] w-4 h-4" />
                     <span className="text-[14px] text-gray-800">Occupied</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="status" className="accent-[#FF6A2F] w-4 h-4" />
-                    <span className="text-[14px] text-gray-800">Maintenance</span>
                   </label>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3">
                 <h4 className="text-[13px] font-bold text-gray-900">Amenities</h4>
-                <select className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] text-gray-500 focus:outline-none focus:border-[#FF6A2F]">
-                  <option>Add amenities</option>
-                </select>
                 <div className="flex gap-2 flex-wrap">
-                  <span className="bg-gray-100 text-[12px] px-2 py-1 rounded border border-gray-200 flex items-center gap-1">WiFi <span className="text-gray-400">×</span></span>
-                  <span className="bg-gray-100 text-[12px] px-2 py-1 rounded border border-gray-200 flex items-center gap-1">CCTV <span className="text-gray-400">×</span></span>
+                  {selectedSpaceDetails.amenities.map(am => (
+                    <span key={am} className="bg-gray-100 text-[12px] px-2 py-1 rounded border border-gray-200 flex items-center gap-1">{am}</span>
+                  ))}
                 </div>
               </div>
 
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[13px] font-bold text-gray-900">Override Pricing</h4>
-                  <div className="w-9 h-5 bg-gray-200 rounded-full relative cursor-pointer">
-                    <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm"></div>
-                  </div>
-                </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[12px] font-medium text-gray-700">Base Price</label>
-                  <input type="text" defaultValue="₹6,500" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50 text-gray-500" readOnly />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-medium text-gray-700">Base Token</label>
-                  <input type="text" defaultValue="65" className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50 text-gray-500" readOnly />
+                  <input 
+                    type="number" 
+                    value={selectedSpaceDetails.basePrice} 
+                    onChange={(e) => {
+                      const newSpaces = spaces.map(s => s.id === selectedSpaceDetails.id ? { ...s, basePrice: parseInt(e.target.value) || 0 } : s);
+                      setSpaces(newSpaces);
+                      setSelectedSpaceDetails({ ...selectedSpaceDetails, basePrice: parseInt(e.target.value) || 0 });
+                    }}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]" 
+                  />
                 </div>
               </div>
 
@@ -500,63 +598,73 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
   // -------------------------------------------------------------
   // STEP 3: Review
   // -------------------------------------------------------------
-  const renderStep3 = () => (
-    <div className="flex flex-col p-6 bg-[#F9FAFB] flex-1 overflow-y-auto">
-      <div className="mb-6">
-        <h2 className="text-[18px] font-semibold text-gray-900">Review & Confirm</h2>
-        <p className="text-[14px] text-gray-500">Verify all details before creating your center</p>
-      </div>
+  const renderStep3 = () => {
+    // Dynamic review calculations
+    const uniqueProductTypes = new Set(spaces.map(s => s.type)).size;
+    const totalInventory = spaces.length;
+    const available = spaces.filter(s => s.status === 'AVAILABLE').length;
+    const occupied = spaces.filter(s => s.status === 'OCCUPIED').length;
+    const groupedSpaces = spaces.reduce((acc, curr) => {
+      if (!acc[curr.type]) acc[curr.type] = curr.basePrice;
+      return acc;
+    }, {} as Record<string, number>);
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3"/></svg>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] text-gray-500 font-medium">Center Details</span>
-            <span className="text-[16px] font-bold text-gray-900 mb-1">Unnamed Center</span>
-            <span className="text-[13px] text-gray-500">Code: SJ-MECN91</span>
-            <span className="text-[13px] text-gray-500">Location: —, Punjab</span>
-            <span className="text-[13px] text-gray-500">Currency: ₹ INR</span>
-          </div>
+    return (
+      <div className="flex flex-col p-6 bg-[#F9FAFB] flex-1 overflow-y-auto">
+        <div className="mb-6">
+          <h2 className="text-[18px] font-semibold text-gray-900">Review & Confirm</h2>
+          <p className="text-[14px] text-gray-500">Verify all details before creating your center</p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+            <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v3m4-3v3m4-3v3"/></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] text-gray-500 font-medium">Center Details</span>
+              <span className="text-[16px] font-bold text-gray-900 mb-1">Center ID: {centerId || "New"}</span>
+              <span className="text-[13px] text-gray-500">Currency: ₹ INR</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] text-gray-500 font-medium">Product Types</span>
-            <span className="text-[18px] font-bold text-gray-900 mb-1">6</span>
-            <span className="text-[13px] text-gray-500">GST: 18%</span>
-          </div>
-        </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12l10 5 10-5-10-5zM2 17l10 5 10-5M2 7l10 5 10-5"/></svg>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+            <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] text-gray-500 font-medium">Product Types</span>
+              <span className="text-[18px] font-bold text-gray-900 mb-1">{uniqueProductTypes}</span>
+              <span className="text-[13px] text-gray-500">GST: 18%</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] text-gray-500 font-medium">Total Floors</span>
-            <span className="text-[18px] font-bold text-gray-900 mb-1">3</span>
-            <span className="text-[13px] text-gray-500">Floor 1</span>
-            <span className="text-[13px] text-gray-500">Floor 2</span>
-            <span className="text-[13px] text-gray-500">Floor 3</span>
-          </div>
-        </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+            <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12l10 5 10-5-10-5zM2 17l10 5 10-5M2 7l10 5 10-5"/></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] text-gray-500 font-medium">Total Floors</span>
+              <span className="text-[18px] font-bold text-gray-900 mb-1">{floors.filter(f => f.isLocal).length} New</span>
+              {floors.filter(f => f.isLocal).slice(0, 3).map(f => (
+                <span key={f.id} className="text-[13px] text-gray-500">{f.name}</span>
+              ))}
+              {floors.filter(f => f.isLocal).length > 3 && <span className="text-[13px] text-gray-500">...and more</span>}
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[13px] text-gray-500 font-medium">Total Inventory</span>
-            <span className="text-[18px] font-bold text-gray-900 mb-1">12</span>
-            <span className="text-[13px] text-gray-500">Available: 12</span>
-            <span className="text-[13px] text-gray-500">Occupied: 0</span>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-5 flex gap-4">
+            <div className="w-10 h-10 rounded-lg bg-[#FFE8DF] text-[#FF6A2F] flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] text-gray-500 font-medium">Total Inventory</span>
+              <span className="text-[18px] font-bold text-gray-900 mb-1">{totalInventory}</span>
+              <span className="text-[13px] text-gray-500">Available: {available}</span>
+              <span className="text-[13px] text-gray-500">Occupied: {occupied}</span>
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         
@@ -587,22 +695,18 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
         <div className="p-6 border-b border-gray-100">
           <h4 className="text-[14px] font-bold text-gray-900 mb-4">Product Pricing Summary</h4>
           <div className="flex flex-col gap-4">
-            {[
-              { t: 'Open Desk', p: '₹6,500' },
-              { t: 'Hexagon Seat', p: '₹7,500' },
-              { t: 'Cabin (2 Seater)', p: '₹19,000' },
-              { t: 'Cabin (4 Seater)', p: '₹28,000' },
-              { t: 'Cabin (6 Seater)', p: '₹32,000' },
-              { t: 'Meeting Room', p: '₹1,000' },
-            ].map(item => (
-              <div key={item.t} className="flex justify-between items-center">
-                <span className="text-[14px] text-gray-700">{item.t}</span>
+            {Object.entries(groupedSpaces).map(([type, price]) => (
+              <div key={type} className="flex justify-between items-center">
+                <span className="text-[14px] text-gray-700">{type}</span>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-[14px] text-gray-900">{item.p}</span>
+                  <span className="font-semibold text-[14px] text-gray-900">₹{price.toLocaleString()}</span>
                   <span className="text-[13px] text-gray-400 w-16 text-right">GST: 18%</span>
                 </div>
               </div>
             ))}
+            {Object.keys(groupedSpaces).length === 0 && (
+              <span className="text-[14px] text-gray-500 italic">No spaces generated yet.</span>
+            )}
           </div>
         </div>
 
@@ -610,45 +714,38 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
         <div className="p-6">
           <h4 className="text-[14px] font-bold text-gray-900 mb-4">Floor Distribution</h4>
           
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[13px] text-gray-600 font-medium">Floor 1</span>
-              <span className="text-[13px] text-gray-500">5 spaces</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">2× Open Desk</span>
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">1× Hexagon Seat</span>
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">2× Cabin (2 Seater)</span>
-            </div>
-          </div>
+          {floors.filter(f => f.isLocal).map(floor => {
+            const floorSpaces = spaces.filter(s => s.floorId === floor.id);
+            // Count by type
+            const counts = floorSpaces.reduce((acc, curr) => {
+              acc[curr.type] = (acc[curr.type] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
 
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[13px] text-gray-600 font-medium">Floor 2</span>
-              <span className="text-[13px] text-gray-500">2 spaces</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">2× Open Desk</span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[13px] text-gray-600 font-medium">Floor 3</span>
-              <span className="text-[13px] text-gray-500">5 spaces</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">2× Open Desk</span>
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">1× Hexagon Seat</span>
-              <span className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">2× Cabin (2 Seater)</span>
-            </div>
-          </div>
-
+            return (
+              <div key={floor.id} className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[13px] text-gray-600 font-medium">{floor.name}</span>
+                  <span className="text-[13px] text-gray-500">{floorSpaces.length} spaces</span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(counts).map(([type, count]) => (
+                    <span key={type} className="bg-gray-50 border border-gray-200 text-gray-700 text-[12px] px-2 py-1 rounded-md">
+                      {count}× {type}
+                    </span>
+                  ))}
+                  {Object.keys(counts).length === 0 && (
+                    <span className="text-[12px] text-gray-400">No spaces</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-
       </div>
     </div>
   );
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
