@@ -17,6 +17,7 @@ import { Center as CenterEntity } from '../../typeorm/entities/center.entity';
 import { Location as LocationEntity } from '../../typeorm/entities/location.entity';
 import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
+import { MeetingRoom as MeetingRoomEntity } from '../../typeorm/entities/meeting-room.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
 import {
   CreateCenterInput,
@@ -307,6 +308,8 @@ export class SeatResolver {
     private cache: CacheService,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
+    @InjectRepository(MeetingRoomEntity)
+    private meetingRoomRepo: Repository<MeetingRoomEntity>,
     private readonly pubSub: PubSubService,
   ) {}
 
@@ -333,6 +336,34 @@ export class SeatResolver {
   async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
+
+    // If the seat is a MEETING_ROOM, also create a MeetingRoom record
+    // so the Operations > Meeting Room page can see and book it.
+    if (input.seatType === 'MEETING_ROOM') {
+      // Look up the floor to get centerId
+      const floor = await this.seatRepo.manager.findOne(FloorEntity, {
+        where: { id: input.floorId } as any,
+      });
+      const centerId = (floor as any)?.centerId;
+      if (centerId) {
+        const existing = await this.meetingRoomRepo.findOne({
+          where: { name: input.number, centerId } as any,
+        });
+        if (!existing) {
+          await this.meetingRoomRepo.save(
+            this.meetingRoomRepo.create({
+              name: input.number,
+              centerId,
+              floorId: input.floorId,
+              capacity: 1,
+              status: (input.status as any) || 'AVAILABLE',
+              hourlyRate: input.price ?? 0,
+            } as any),
+          );
+        }
+      }
+    }
+
     return seat;
   }
 

@@ -33,29 +33,29 @@ export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'userId' })
-  userId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'userId', nullable: true })
+  userId?: string;
 
   @Field(() => ID)
-  @Column({ name: 'seatId' })
-  seatId!: string;
+  @Column({ name: 'seatId', nullable: true })
+  seatId?: string;
 
-  @Field(() => ID)
-  @Column({ name: 'centerId' })
-  centerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'centerId', nullable: true })
+  centerId?: string;
 
   @Field(() => ID, { nullable: true })
   @Column({ name: 'planId', type: 'uuid', nullable: true })
-  planId!: string | null;
+  planId?: string | null;
 
-  @Field()
-  @Column({ type: 'timestamp' })
-  startDate!: Date;
+  @Field({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
+  startDate?: Date;
 
-  @Field()
-  @Column({ type: 'timestamp' })
-  endDate!: Date;
+  @Field({ nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
+  endDate?: Date;
 
   @Field(() => BookingStatus)
   @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
@@ -63,15 +63,15 @@ export class Booking {
 
   @Field(() => String, { nullable: true })
   @Column({ name: 'paymentId', type: 'uuid', nullable: true })
-  paymentId!: string | null;
+  paymentId?: string | null;
 
-  @Field()
-  @Column({ type: 'float' })
-  totalPrice!: number;
+  @Field({ nullable: true })
+  @Column({ type: 'float', nullable: true, default: 0 })
+  totalPrice?: number;
 
-  @Field()
-  @Column({ type: 'float', default: 0 })
-  discount!: number;
+  @Field({ nullable: true })
+  @Column({ type: 'float', default: 0, nullable: true })
+  discount?: number;
 
   @Field(() => String, { nullable: true })
   @Column({ name: 'discountCode', type: 'varchar', nullable: true })

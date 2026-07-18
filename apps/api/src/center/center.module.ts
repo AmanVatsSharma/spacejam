@@ -14,11 +14,12 @@ import { Center } from '../typeorm/entities/center.entity';
 import { Location } from '../typeorm/entities/location.entity';
 import { Floor } from '../typeorm/entities/floor.entity';
 import { Seat } from '../typeorm/entities/seat.entity';
+import { MeetingRoom } from '../typeorm/entities/meeting-room.entity';
 import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Center, Location, Floor, Seat]),
+    TypeOrmModule.forFeature([Center, Location, Floor, Seat, MeetingRoom]),
     CacheModule,
     PubSubModule,
   ],
