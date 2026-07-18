@@ -575,6 +575,7 @@ export function useCreateEvent() {
       if (result.errors?.length) {
         return { success: false, error: result.errors[0].message, event: null };
       }
+      await client.refetchQueries({ include: ['GetEvents'] });
       return result.data?.createEvent ?? { success: false, error: 'Unknown error', event: null };
     } finally {
       setSaving(false);

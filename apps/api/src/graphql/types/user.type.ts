@@ -110,6 +110,7 @@ export enum SeatType {
   HOT_DESK = 'HOT_DESK',
   DEDICATED = 'DEDICATED',
   CABIN = 'CABIN',
+  MEETING_ROOM = 'MEETING_ROOM',
 }
 
 export enum SeatStatus {

@@ -16,7 +16,7 @@ import {
 import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
 import styles from "./table-view.module.css";
 
-const SEAT_TYPES = ["HOT_DESK", "DEDICATED", "CABIN"] as const;
+const SEAT_TYPES = ["HOT_DESK", "DEDICATED", "CABIN", "MEETING_ROOM"] as const;
 
 const Icons = {
   export: (
@@ -365,6 +365,7 @@ export default function TableViewPage() {
           <option value="HOT_DESK">Hot Desk</option>
           <option value="DEDICATED">Dedicated Desk</option>
           <option value="CABIN">Cabin</option>
+          <option value="MEETING_ROOM">Meeting Room</option>
         </select>
 
         <select

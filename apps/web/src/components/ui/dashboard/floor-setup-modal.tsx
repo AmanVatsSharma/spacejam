@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS, CREATE_SEAT } from "@/lib/apollo/operations";
+import { CREATE_FLOOR, GET_FLOORS, GET_MY_CENTERS, CREATE_SEAT, CREATE_MEETING_ROOM } from "@/lib/apollo/operations";
 
 export interface LocalSpace {
   id: string; // e.g. FD01
@@ -69,6 +69,7 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
     refetchQueries: centerId ? [{ query: GET_FLOORS, variables: { centerId } }] : [{ query: GET_FLOORS }],
   });
   const [createSeat] = useMutation(CREATE_SEAT);
+  const [createMeetingRoom] = useMutation(CREATE_MEETING_ROOM);
 
   // Add Floor: creates a new local floor entry in the wizard
   const handleAddFloor = () => {
@@ -86,7 +87,8 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
         distributions: [
           { id: 1, type: "Open Desk", format: "FD", count: 2, amenities: ["WiFi"], availability: "Available" },
           { id: 2, type: "Hexagon Seat", format: "FH", count: 1, amenities: ["WiFi"], availability: "Available" },
-          { id: 3, type: "Cabin (2 Seater)", format: "FC", count: 2, amenities: ["WiFi", "Whiteboard"], availability: "Available" }
+          { id: 3, type: "Cabin (2 Seater)", format: "FC", count: 2, amenities: ["WiFi", "Whiteboard"], availability: "Available" },
+          { id: 4, type: "Meeting Room (6 Seater)", format: "MR", count: 1, amenities: ["WiFi", "TV"], availability: "Available" }
         ],
         isLocal: true,
       }
@@ -94,9 +96,9 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
   };
 
   const mapTypeToBackend = (type: string) => {
-    if (type.includes("Cabin")) return "PRIVATE_OFFICE";
+    if (type.includes("Cabin")) return "CABIN";
     if (type.includes("Meeting")) return "MEETING_ROOM";
-    if (type.includes("Hexagon")) return "DEDICATED_DESK";
+    if (type.includes("Hexagon") || type.includes("Dedicated")) return "DEDICATED";
     return "HOT_DESK";
   };
 
@@ -210,21 +212,40 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
           for (const space of floorSpaces) {
             // Provide a display-friendly number by dropping the timestamp suffix
             const number = space.id.split('-')[0];
-            const { errors: seatErrors } = await createSeat({
-              variables: {
-                input: {
-                  number,
-                  floorId: createdFloorId,
-                  seatType: space.seatType,
-                  price: space.basePrice,
-                  status: space.status,
+            if (space.seatType === "MEETING_ROOM") {
+              const { errors: roomErrors } = await createMeetingRoom({
+                variables: {
+                  input: {
+                    name: `${floor.name} - ${space.type} ${number}`,
+                    centerId: centerId,
+                    floorId: createdFloorId,
+                    type: "MEETING_ROOM",
+                    capacity: space.capacity,
+                  }
                 }
+              });
+              if (roomErrors && roomErrors.length) {
+                toast.error(`Failed to create meeting room ${number}: ${roomErrors[0].message}`);
+              } else {
+                createdSeats += 1;
               }
-            });
-            if (seatErrors && seatErrors.length) {
-              toast.error(`Failed to create space ${number}: ${seatErrors[0].message}`);
             } else {
-              createdSeats += 1;
+              const { errors: seatErrors } = await createSeat({
+                variables: {
+                  input: {
+                    number,
+                    floorId: createdFloorId,
+                    seatType: space.seatType,
+                    price: space.basePrice,
+                    status: space.status,
+                  }
+                }
+              });
+              if (seatErrors && seatErrors.length) {
+                toast.error(`Failed to create space ${number}: ${seatErrors[0].message}`);
+              } else {
+                createdSeats += 1;
+              }
             }
           }
         }
@@ -347,23 +368,64 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                   </div>
 
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-4">
-                    <h4 className="text-[13px] font-bold text-gray-900 mb-4">Product Distribution</h4>
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-[13px] font-bold text-gray-900">Product Distribution</h4>
+                      <button 
+                        onClick={() => {
+                          const newDist = { id: Date.now(), type: "New Space", format: "NS", count: 1, amenities: [], availability: "Available" };
+                          setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: [...f.distributions, newDist] } : f));
+                        }}
+                        className="text-[13px] font-semibold text-[#FF6A2F] hover:text-[#e55a20] transition-colors flex items-center gap-1"
+                      >
+                        + Add Space
+                      </button>
+                    </div>
                     <div className="flex flex-col gap-6">
                       {floor.distributions.map(dist => (
-                        <div key={dist.id} className="flex flex-col gap-3">
-                          <div className="grid grid-cols-[1.5fr_1.5fr_1fr] gap-4">
+                        <div key={dist.id} className="flex flex-col gap-3 relative">
+                          <button 
+                            onClick={() => {
+                              setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.filter(d => d.id !== dist.id) } : f));
+                            }}
+                            className="absolute -right-2 -top-2 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-500 transition-colors shadow-sm"
+                            title="Remove space"
+                          >
+                            ×
+                          </button>
+                          <div className="grid grid-cols-[1.5fr_1.5fr_1fr] gap-4 pr-6">
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Product Type</label>
-                              <input type="text" defaultValue={dist.type} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
+                              <input 
+                                type="text" 
+                                value={dist.type} 
+                                onChange={(e) => {
+                                  setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, type: e.target.value } : d) } : f));
+                                }}
+                                className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white focus:outline-none focus:border-[#FF6A2F]" 
+                              />
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Space Code Format</label>
-                              <input type="text" defaultValue={dist.format} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
+                              <input 
+                                type="text" 
+                                value={dist.format} 
+                                onChange={(e) => {
+                                  setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, format: e.target.value } : d) } : f));
+                                }}
+                                className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white focus:outline-none focus:border-[#FF6A2F]" 
+                              />
                               <span className="text-[11px] text-gray-400">Use for Space code</span>
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Count</label>
-                              <input type="text" defaultValue={dist.count} className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white" />
+                              <input 
+                                type="number" 
+                                value={dist.count} 
+                                onChange={(e) => {
+                                  setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, count: parseInt(e.target.value) || 0 } : d) } : f));
+                                }}
+                                className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white focus:outline-none focus:border-[#FF6A2F]" 
+                              />
                             </div>
                           </div>
                           <div className="grid grid-cols-[2fr_1.5fr] gap-4">
@@ -373,7 +435,14 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                                 {dist.amenities.map(am => (
                                   <div key={am} className="bg-gray-100 text-gray-700 text-[12px] px-2 py-0.5 rounded flex items-center gap-1">
                                     {am}
-                                    <span className="text-gray-400 cursor-pointer hover:text-gray-600">×</span>
+                                    <span 
+                                      className="text-gray-400 cursor-pointer hover:text-gray-600"
+                                      onClick={() => {
+                                        setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, amenities: d.amenities.filter(a => a !== am) } : d) } : f));
+                                      }}
+                                    >
+                                      ×
+                                    </span>
                                   </div>
                                 ))}
                                 <span className="text-[13px] text-gray-400">+ Add amenities</span>
@@ -382,8 +451,15 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Availability</label>
                               <div className="relative">
-                                <select className="w-full appearance-none border border-gray-200 rounded-md py-2 px-3 text-[14px] text-gray-700 bg-white focus:outline-none focus:border-[#FF6A2F]">
-                                  <option>{dist.availability}</option>
+                                <select 
+                                  value={dist.availability}
+                                  onChange={(e) => {
+                                    setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, availability: e.target.value } : d) } : f));
+                                  }}
+                                  className="w-full appearance-none border border-gray-200 rounded-md py-2 px-3 text-[14px] text-gray-700 bg-white focus:outline-none focus:border-[#FF6A2F]"
+                                >
+                                  <option value="Available">Available</option>
+                                  <option value="Occupied">Occupied</option>
                                 </select>
                                 <div className="absolute right-3 top-2.5 pointer-events-none text-gray-400">
                                   <ChevronDownIcon />
@@ -394,16 +470,24 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                           <div className="w-full h-px bg-gray-200 my-1"></div>
                         </div>
                       ))}
+                      {floor.distributions.length === 0 && (
+                        <div className="text-center py-4 text-gray-500 text-[13px] border border-dashed border-gray-300 rounded-lg">
+                          No spaces configured yet. Click "+ Add Space" to begin.
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="bg-[#FFFCFA] border border-[#FFDCD0] rounded-xl p-4 flex items-center gap-4">
                     <div className="w-8 h-8 rounded-full bg-[#FF6A2F] text-white flex items-center justify-center font-bold text-[14px] shrink-0">
-                      {floor.units}
+                      {floor.distributions.reduce((acc, d) => acc + d.count, 0)}
                     </div>
                     <div>
-                      <h4 className="text-[14px] font-semibold text-gray-900">{floor.units} spaces will be generated automatically</h4>
-                      <p className="text-[13px] text-gray-600">Preview: 2x Open Desk · 1x Hexagon Seat · 2x Cabin (2 Seater)</p>
+                      <h4 className="text-[14px] font-semibold text-gray-900">{floor.distributions.reduce((acc, d) => acc + d.count, 0)} spaces will be generated automatically</h4>
+                      <p className="text-[13px] text-gray-600">
+                        Preview: {floor.distributions.slice(0, 3).map(d => `${d.count}x ${d.type}`).join(' · ')}
+                        {floor.distributions.length > 3 ? ` · and ${floor.distributions.length - 3} more` : ''}
+                      </p>
                     </div>
                   </div>
                 </div>

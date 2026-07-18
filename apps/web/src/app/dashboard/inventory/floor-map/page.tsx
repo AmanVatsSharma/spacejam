@@ -17,6 +17,7 @@ import {
   GET_CENTERS,
   GET_FLOORS,
   GET_SEATS,
+  GET_DASHBOARD_METRICS,
   CREATE_SEAT,
   UPDATE_SEAT,
   GET_BOOKINGS,
@@ -861,6 +862,7 @@ export default function FloorMapPage() {
                   <option value="HOT_DESK">Hot Desk</option>
                   <option value="DEDICATED">Dedicated Desk</option>
                   <option value="CABIN">Cabin</option>
+                  <option value="MEETING_ROOM">Meeting Room</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">

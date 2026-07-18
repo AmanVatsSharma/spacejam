@@ -139,15 +139,21 @@ export default function RequestsPage() {
     setStatusFilter("All Statuses");
   };
 
-  const handleStatusChange = (reqId: string, newStatus: string) => {
+  const handleStatusChange = async (reqId: string, newStatus: string) => {
     const status = newStatus as RequestStatus;
-    if (status === "Pending") {
-      update(reqId, { status: "PENDING" } as any);
-    } else if (status === "Approved") {
-      // Approve via the dedicated approveRequest mutation (sets status IN_PROGRESS)
-      approve(reqId);
-    } else if (status === "Rejected") {
-      reject(reqId, "Rejected by admin");
+    try {
+      if (status === "Pending") {
+        await update(reqId, { status: "PENDING" } as any);
+        toast.success("Request set to Pending");
+      } else if (status === "Approved") {
+        await approve(reqId);
+        toast.success("Request approved");
+      } else if (status === "Rejected") {
+        await reject(reqId, "Rejected by admin");
+        toast.success("Request rejected");
+      }
+    } catch {
+      toast.error("Failed to update request status");
     }
     setOpenStatusMenu(null);
   };

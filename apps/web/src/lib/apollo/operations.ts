@@ -1117,6 +1117,18 @@ export const CREATE_SEAT = gql`
   }
 `;
 
+export const CREATE_MEETING_ROOM = gql`
+  mutation CreateMeetingRoom($input: CreateMeetingRoomInput!) {
+    createMeetingRoom(input: $input) {
+      id
+      name
+      type
+      capacity
+      status
+    }
+  }
+`;
+
 export const CREATE_FLOOR = gql`
   mutation CreateFloor($input: CreateFloorInput!) {
     createFloor(input: $input) {
