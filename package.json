@@ -6,7 +6,7 @@
     "build": "cd apps/web && npm run build",
     "dev": "cd apps/web && npm run dev",
     "build:web": "npx nx build web",
-    "deploy:prod": "ssh -i \"C:\\\\Users\\\\ASUS TUF A15\\\\Desktop\\\\DevOPS\\\\AWS_Key_Pairs\\\\Ap-south-2.pem\" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com 'bash -lc \"/home/ubuntu/spacejam/scripts/deploy.sh\"'"
+    "deploy:prod": "ssh -i \"C:\\\\Users\\\\ASUS TUF A15\\\\Desktop\\\\DevOPS\\\\AWS_Key_Pairs\\\\Ap-south-2.pem\" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com 'bash -lc \"/home/ubuntu/spacejam/deploy.sh\"'"
   },
   "private": true,
   "devDependencies": {

@@ -79,7 +79,7 @@ pm2 delete spacejam-web 2>/dev/null || true
 pm2 start "apps/api/dist/main.js" --name spacejam-api --cwd /home/ubuntu/spacejam
 
 # WEB — run Next.js native server
-PORT=3000 HOSTNAME=0.0.0.0 pm2 start "npm start" --name spacejam-web --cwd /home/ubuntu/spacejam/apps/web
+PORT=3000 HOSTNAME=0.0.0.0 pm2 start "npx next start" --name spacejam-web --cwd /home/ubuntu/spacejam/apps/web
 
 pm2 save
 
