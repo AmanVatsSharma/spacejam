@@ -9,10 +9,11 @@
  * Last-updated: 2026-07-06
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
+import { ContextMenu } from "@/components/ui/context-menu";
 import {
   GET_CENTERS,
   GET_FLOORS,
@@ -20,6 +21,7 @@ import {
   GET_DASHBOARD_METRICS,
   CREATE_SEAT,
   UPDATE_SEAT,
+  DELETE_SEAT,
   GET_BOOKINGS,
 } from "@/lib/apollo/operations";
 import styles from "./floor-map.module.css";
@@ -184,6 +186,12 @@ export default function FloorMapPage() {
     refetchQueries: [{ query: GET_SEATS }, { query: GET_DASHBOARD_METRICS }],
   });
 
+  const [deleteSeat] = useMutation(DELETE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }, { query: GET_FLOORS }],
+  });
+
+  const [seatMenu, setSeatMenu] = useState<{ seatId: string; x: number; y: number } | null>(null);
+
   // Derived data
   const floors = floorsData?.floors ?? [];
   const seats = seatsData?.seats ?? [];
@@ -205,14 +213,14 @@ export default function FloorMapPage() {
   );
 
   // Auto-select first floor when center changes or floors load
-  useMemo(() => {
+  useEffect(() => {
     if (floors.length > 0 && !activeFloorId) {
       setActiveFloorId(floors[0].id);
     }
   }, [floors, activeFloorId]);
 
   // Auto-select first center
-  useMemo(() => {
+  useEffect(() => {
     if (activeCenterId === null && centersData?.centers?.length) {
       setActiveCenterId(centersData.centers[0].id);
     }
@@ -608,10 +616,10 @@ export default function FloorMapPage() {
                     ))}
                   </div>
                   <div style={{ position: 'absolute', left: '70px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {mapSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length} Hexagon
+                    {filteredSeats.filter((s: any) => s.seatType?.toUpperCase().includes("HEXAGON") || s.seatType === "HOT_DESK").length} Hexagon
                   </div>
                   <div style={{ position: 'absolute', right: '40px', top: '40px', fontSize: '13px', color: '#1F2937' }}>
-                    {mapSeats.filter((s: any) => s.seatType === "HOT_DESK" || s.seatType === "DEDICATED" || s.seatType?.toUpperCase().includes("OPEN") || s.seatType?.toUpperCase().includes("DESK")).length} Open Seats
+                    {filteredSeats.filter((s: any) => s.seatType === "HOT_DESK" || s.seatType === "DEDICATED" || s.seatType?.toUpperCase().includes("OPEN") || s.seatType?.toUpperCase().includes("DESK")).length} Open Seats
                   </div>
                   <div className={styles.rOpenSeatsBox}>
                     Open Seats
@@ -621,7 +629,7 @@ export default function FloorMapPage() {
                 {/* Render each seat as a room card */}
                 {mapSeats.map((seat: any, index: number) => {
                   const status = normalizeStatus(seat.status);
-                  let displayStatus = status;
+                  let displayStatus: string = status;
                   if (status === "AVAILABLE" && upcomingSeatIds.has(seat.id)) {
                     displayStatus = "UPCOMING";
                   }
@@ -645,6 +653,10 @@ export default function FloorMapPage() {
                       key={seat.id}
                       className={`${styles.roomBlock} ${colorClass} ${seat.id === selectedSeatId ? styles.roomActive : ''} active:scale-[0.95] transition-all duration-200`}
                       onClick={() => setSelectedSeatId(seat.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setSeatMenu({ seatId: seat.id, x: e.clientX, y: e.clientY });
+                      }}
                       style={{ cursor: "pointer", animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `${index * 60}ms` }}
                     >
                       <div className={styles.roomHeader}>
@@ -656,7 +668,7 @@ export default function FloorMapPage() {
                       <div className={styles.roomCapacity}>
                         {Icons.chair} {seat.features?.length ?? 1}
                       </div>
-                      <div className={styles.roomStatus}>{statusText[status]}</div>
+                      <div className={styles.roomStatus}>{statusText[displayStatus]}</div>
                     </div>
                   );
                 })}
@@ -896,6 +908,22 @@ export default function FloorMapPage() {
         </div>
       )}
 
+      {seatMenu && (
+        <ContextMenu
+          x={seatMenu.x}
+          y={seatMenu.y}
+          onClose={() => setSeatMenu(null)}
+          items={[
+            { label: "View details", onClick: () => { setSelectedSeatId(seatMenu.seatId); setSeatMenu(null); } },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "Set Available", onClick: () => { handleStatusChange(seatMenu.seatId, "AVAILABLE"); setSeatMenu(null); } },
+            { label: "Set Occupied", onClick: () => { handleStatusChange(seatMenu.seatId, "OCCUPIED"); setSeatMenu(null); } },
+            { label: "Set Maintenance", onClick: () => { handleStatusChange(seatMenu.seatId, "MAINTENANCE"); setSeatMenu(null); } },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "Delete seat", destructive: true, onClick: () => { if (confirm("Delete this seat? This cannot be undone.")) { deleteSeat({ variables: { id: seatMenu.seatId } }); } setSeatMenu(null); } },
+          ]}
+        />
+      )}
     </div>
   );
 }

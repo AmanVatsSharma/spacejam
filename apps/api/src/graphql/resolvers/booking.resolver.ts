@@ -103,6 +103,29 @@ export class BookingResolver {
       throw new BadRequestException('Seat is not available');
     }
 
+    // Check for time-range conflicts (only for non-HOT_DESK seats where time matters)
+    if (seat.seatType !== 'HOT_DESK' && input.startTime && input.endTime) {
+      const start = new Date(input.startTime);
+      const end = new Date(input.endTime);
+      if (end <= start) {
+        throw new BadRequestException('End time must be after start time');
+      }
+      const conflict = await this.bookingRepo
+        .createQueryBuilder('booking')
+        .where('booking.seatId = :seatId', { seatId: input.seatId })
+        .andWhere('booking.status NOT IN (:...statuses)', {
+          statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW],
+        })
+        .andWhere('(booking.startTime < :end AND booking.endTime > :start)', { start, end })
+        .getOne();
+
+      if (conflict) {
+        throw new BadRequestException(
+          `Seat is already booked for this time slot (booking ${conflict.id} overlaps)`,
+        );
+      }
+    }
+
     const newBooking = this.bookingRepo.create({
       ...input,
       userId,

@@ -98,10 +98,14 @@ export enum UserRole {
   ADMIN = 'ADMIN',
   CENTER_MANAGER = 'CENTER_MANAGER',
   MEMBER = 'MEMBER',
+  STAFF = 'STAFF',
+  FINANCE = 'FINANCE',
+  SUPPORT = 'SUPPORT',
 }
 
 export enum CenterStatus {
   ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
   FULL = 'FULL',
   MAINTENANCE = 'MAINTENANCE',
 }

@@ -10,6 +10,11 @@
  */
 import { useState } from 'react';
 import { useQuery, useMutation, useApolloClient, gql } from '@apollo/client';
+import {
+  GET_BOOKINGS,
+  CANCEL_ROOM_BOOKING,
+  BULK_UPDATE_STATUS,
+} from '@/lib/apollo/operations';
 
 // ═══════════════════════════════════════════════════════
 // GraphQL Documents
@@ -504,6 +509,43 @@ export function useBookRoom() {
 
   return { book, booking };
 }
+
+export function useCancelRoomBooking() {
+  const client = useApolloClient();
+  const [cancelling, setCancelling] = useState(false);
+  const [cancel] = useMutation(CANCEL_ROOM_BOOKING, {
+    refetchQueries: ['GetMeetingRooms', 'GetBookings'],
+  });
+  async function cancelBooking(bookingId: string, roomId: string) {
+    setCancelling(true);
+    try {
+      await cancel({ variables: { bookingId, roomId } });
+      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetBookings'] });
+    } finally {
+      setCancelling(false);
+    }
+  }
+  return { cancelBooking, cancelling };
+}
+
+export function useBulkUpdateStatus() {
+  const client = useApolloClient();
+  const [updating, setUpdating] = useState(false);
+  const [bulkUpdate] = useMutation(BULK_UPDATE_STATUS, {
+    refetchQueries: ['GetMeetingRooms'],
+  });
+  async function update(roomIds: string[], status: string) {
+    setUpdating(true);
+    try {
+      await bulkUpdate({ variables: { roomIds, status } });
+      await client.refetchQueries({ include: ['GetMeetingRooms'] });
+    } finally {
+      setUpdating(false);
+    }
+  }
+  return { update, updating };
+}
+
 
 // ═══════════════════════════════════════════════════════
 // Hooks — Events

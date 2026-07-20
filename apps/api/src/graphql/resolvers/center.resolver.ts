@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, Subscription, ID, UseGuards } from '@nestjs/graphql';
 import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { UserRole, CenterStatus } from '../types/user.type';
@@ -19,6 +19,11 @@ import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { MeetingRoom as MeetingRoomEntity } from '../../typeorm/entities/meeting-room.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { UserRole as UR } from '../../auth/roles.enum';
 import {
   CreateCenterInput,
   UpdateCenterInput,
@@ -279,10 +284,13 @@ export class FloorResolver {
     private cache: CacheService,
     @InjectRepository(FloorEntity)
     private floorRepo: Repository<FloorEntity>,
+    @InjectRepository(SeatEntity)
+    private seatRepo: Repository<SeatEntity>,
     private readonly pubSub: PubSubService,
   ) {}
 
   @Query(() => [FloorEntity])
+  @UseGuards(GqlAuthGuard)
   async floors(@Args('centerId', { type: () => ID, nullable: true }) centerId?: string): Promise<FloorEntity[]> {
     const where: any = centerId ? { centerId, active: true } : { active: true };
     const floors = await this.floorRepo.find({
@@ -293,12 +301,45 @@ export class FloorResolver {
   }
 
   @Mutation(() => FloorEntity)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   async createFloor(
     @Args('input') input: CreateFloorInput
   ): Promise<FloorEntity> {
     const newFloor = this.floorRepo.create(input);
     const floor = await this.floorRepo.save(newFloor);
+    await this.cache.invalidatePattern(`center:${floor.centerId}`);
     return floor;
+  }
+
+  @Mutation(() => FloorEntity)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  async updateFloor(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: UpdateFloorInput
+  ): Promise<FloorEntity> {
+    await this.floorRepo.update(id, input);
+    const floor = await this.floorRepo.findOne({ where: { id }, relations: ['seats'] });
+    if (!floor) throw new NotFoundException('Floor not found');
+    await this.cache.invalidatePattern(`floor:${id}`);
+    await this.cache.invalidatePattern(`center:${floor.centerId}`);
+    await this.pubSub.publish(CENTER_TRIGGERS.floorUpdated, { floorUpdated: floor });
+    return floor;
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  async deleteFloor(
+    @Args('id', { type: () => ID }) id: string
+  ): Promise<boolean> {
+    const floor = await this.floorRepo.findOne({ where: { id } });
+    if (!floor) throw new NotFoundException('Floor not found');
+    await this.floorRepo.softDelete(id);
+    await this.cache.invalidatePattern(`floor:${id}`);
+    await this.cache.invalidatePattern(`center:${floor.centerId}`);
+    return true;
   }
 }
 
@@ -314,6 +355,7 @@ export class SeatResolver {
   ) {}
 
   @Query(() => [SeatEntity])
+  @UseGuards(GqlAuthGuard)
   async seats(@Args('floorId', { type: () => ID, nullable: true }) floorId?: string): Promise<SeatEntity[]> {
     const where = floorId ? { floorId } : {};
     const seats = await this.seatRepo.find({
@@ -324,6 +366,7 @@ export class SeatResolver {
   }
 
   @Query(() => SeatEntity, { nullable: true })
+  @UseGuards(GqlAuthGuard)
   async seat(@Args('id', { type: () => ID }) id: string): Promise<SeatEntity | null> {
     const seat = await this.seatRepo.findOne({
       where: { id },
@@ -333,6 +376,8 @@ export class SeatResolver {
   }
 
   @Mutation(() => SeatEntity)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
@@ -368,6 +413,8 @@ export class SeatResolver {
   }
 
   @Mutation(() => SeatEntity)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   async updateSeat(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateSeatInput
@@ -386,6 +433,22 @@ export class SeatResolver {
     });
 
     return seat;
+  }
+
+  @Mutation(() => Boolean)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  async deleteSeat(
+    @Args('id', { type: () => ID }) id: string
+  ): Promise<boolean> {
+    const seat = await this.seatRepo.findOne({ where: { id }, relations: ['floor'] });
+    if (!seat) throw new NotFoundException('Seat not found');
+    await this.seatRepo.softDelete(id);
+    if (seat.floor) {
+      await this.cache.invalidatePattern(`floor:${seat.floor.id}`);
+      await this.pubSub.publish(CENTER_TRIGGERS.floorUpdated, { floorUpdated: seat.floor });
+    }
+    return true;
   }
 
   /**

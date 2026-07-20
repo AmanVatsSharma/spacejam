@@ -25,7 +25,6 @@ import { Floor } from './floor.entity';
 import { Booking } from './booking.entity';
 import { RevenueAnalytics } from './revenue-analytics.entity';
 import { Event } from './event.entity';
-import { MeetingRoom } from './meeting-room.entity';
 
 @ObjectType()
 @Entity('centers')
@@ -86,6 +85,4 @@ export class Center {
   @OneToMany(() => Event, (event) => event.center)
   events!: Event[];
 
-  @OneToMany(() => MeetingRoom, (room) => room.center)
-  meetingRooms!: MeetingRoom[];
 }

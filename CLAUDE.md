@@ -8,7 +8,8 @@ SpaceJam is a coworking space management system built as an Nx monorepo with:
 - **Frontend**: Next.js 16 (React 19) with Tailwind CSS v4 and CSS Modules
 - **Backend**: NestJS (apps/api/) - GraphQL API with TypeORM, Auth (JWT + 2FA), Redis caching
 - **Package manager**: npm (use `npm exec nx` or `npx nx` for Nx commands)
-- **Dev server**: Port 3001 by default
+- **Frontend dev server**: Port 3000 (Next.js auto-selects next available if occupied)
+- **Backend dev server**: Port 4000 (GraphQL endpoint: http://localhost:4000/graphql)
 
 ---
 
@@ -16,10 +17,25 @@ SpaceJam is a coworking space management system built as an Nx monorepo with:
 
 ### Running the App
 ```sh
-npx nx dev web              # Start frontend dev server (port 3001)
+npx nx dev web              # Start frontend dev server (port 3000)
 npx nx serve api            # Start backend dev server (port 4000)
 npx nx build web            # Production build
 npx nx build api            # Backend production build
+```
+
+### Single Test
+```sh
+# Vitest single test file
+npx nx test web -- --run path/to/file.test.ts
+
+# Playwright single test
+npx nx e2e web -- --grep="test name"
+```
+
+### Type-checking (per app)
+```sh
+npx tsc --noEmit -p apps/web/tsconfig.json
+npx tsc --noEmit -p apps/api/tsconfig.json
 ```
 
 ### Testing
@@ -84,6 +100,7 @@ apps/web/src/
 │   └── constants/             # Shared constants
 ├── hooks/
 │   └── use-operations.ts      # Domain-specific Apollo hooks (meeting rooms, events, etc.)
+│   └── use-inventory.ts       # Inventory hooks (centers, floors, seats)
 ├── proxy.ts                   # Next.js 16 route guard (auth, role checks)
 ├── types/                     # Shared TypeScript types
 └── globals.css                # CSS variables, Tailwind imports
@@ -91,10 +108,11 @@ apps/web/src/
 
 ### Data Flow
 
-1. **GraphQL-first**: All data fetching uses Apollo Client (`@/lib/apollo/operations.ts`). Pages consume data via `useQuery`/`useMutation` hooks defined in domain-specific hook files (e.g., `hooks/use-operations.ts`).
+1. **GraphQL-first**: All data fetching uses Apollo Client (`@/lib/apollo/operations.ts`). Pages consume data via `useQuery`/`useMutation` hooks defined in domain-specific hook files (e.g., `hooks/use-operations.ts`, `hooks/use-inventory.ts`). Hooks expose `{ data, loading, error, refetch }` and mutation return `{ loading, actionName }`.
 2. **Auth**: JWT access + refresh tokens stored in cookies. `auth-context.tsx` manages user state and auth mutations. Apollo client automatically attaches access tokens and handles silent refresh on 401.
-3. **Mock data**: Each domain has mock data files in `lib/mock-data/`. Pages fall back to mock data when no backend is wired. The pattern is `const { data, loading } = useQuery(...)` with mock fallback in the component.
+3. **Mock data**: Many pages fall back to mock data when no backend is wired (inventory, operations/request, revenue/*). The pattern is `const { data, loading } = useQuery(...)` with mock fallback in the component. Preserve mock fallbacks unless backend is fully verified.
 4. **Proxy (not middleware)**: `proxy.ts` is the Next.js 16 route guard. It checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes.
+5. **Toasts**: Use `sonner`'s `toast` for success/error feedback. The toast provider is mounted in the dashboard layout. Import `toast` from `sonner` in any client component.
 
 ### Component Pattern
 
@@ -190,6 +208,17 @@ apps/api/src/
 - **Caching**: Redis-backed with in-memory fallback. DataLoader pattern for batching entity lookups.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 
+### Mock-Fallback Convention (Frontend)
+
+Many pages intentionally render mock data when the GraphQL response is empty. The pattern (used by `/dashboard/inventory/*`, `/dashboard/operations/request`, `/dashboard/revenue/*`):
+
+```tsx
+const { data } = useQuery(QUERY, { variables: {...} });
+const rows = data?.items?.length ? data.items : MOCK_ITEMS;
+```
+
+Preserve this fallback unless you've fully verified the backend for that page. Fully-wired pages with no mock fallback: `/dashboard/home`, `/dashboard/crm/*`, `/dashboard/operations/booking`, `/dashboard/operations/meeting-room`.
+
 ---
 
 ## Environment Variables
@@ -207,16 +236,85 @@ The frontend reads from `apps/web/.env.local`:
 
 ---
 
-## Deployment
+## Production Server
 
-Production is a single EC2 instance (ap-south-2) running both frontend and backend behind nginx.
-- Frontend: PM2 process `spacejam-web`, port 3000
-- Backend: PM2 process `spacejam-api`, port 4000
-- Nginx: reverse proxy + SSL termination
-- Database: PostgreSQL (local or RDS)
-- Cache: Redis (local or ElastiCache)
+### SSH Access
 
-Update workflow: `git archive` → `scp` → extract on server → `npm install && npx nx build web` → `pm2 restart`
+```sh
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+```
+
+| Field | Value |
+|---|---|
+| Instance ID | `i-040fe592978e19408` |
+| Region | `ap-south-2` |
+| Public DNS | `ec2-98-130-45-181.ap-south-2.compute.amazonaws.com` |
+| SSH user | `ubuntu` |
+| Key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
+| Production URL | `https://spacejam.vedpragya.com` |
+
+Security group: inbound **22, 80, 443**. Outbound: default.
+
+### Server Environment
+
+| Component | Detail |
+|---|---|
+| PM2 process (frontend) | `spacejam-web` — port 3000, `HOSTNAME=0.0.0.0` |
+| PM2 process (backend) | `spacejam-api` — port 4000 |
+| Node version | v20.20.2 (NVM managed, path: `~/.nvm/versions/node/v20.20.2/`) |
+| Repo path | `/home/ubuntu/spacejam` |
+| Next.js binary | **Hoisted** to `/home/ubuntu/spacejam/node_modules/next/dist/bin/next` (NOT `apps/web/node_modules/next/...`) |
+
+### PM2 Quirks (non-interactive SSH)
+
+1. **Always prefix remote commands with `bash -lc`** — `pm2` and `node` are only on `$PATH` in a login shell that sources `~/.profile`:
+   ```sh
+   ssh -i "..." ubuntu@ec2-... 'bash -lc "pm2 status"'
+   ```
+
+2. **PM2 v7 PID file** — The auto-generated `pm2-ubuntu.service` uses `Type=forking` but PM2 v7 doesn't write the PID file. A drop-in override at `/etc/systemd/system/pm2-ubuntu.service.d/override.conf` fixes this (`Type=oneshot`, `PIDFile=` cleared). If you ever re-run `pm2 startup`, the override survives — verify with `systemctl cat pm2-ubuntu`.
+
+3. **Hoisted `next` binary** — The correct path is `/home/ubuntu/spacejam/node_modules/next/dist/bin/next`. The PM2 process is launched with `--cwd /home/ubuntu/spacejam/apps/web` so Next's own resolution works. Do NOT use `apps/web/node_modules/next/dist/bin/next`.
+
+### Deploy Workflow
+
+```sh
+# 1. Build locally
+npx nx build web && npx nx build api
+
+# 2. Archive and copy
+cd <repo root>
+git archive --format=tar.gz HEAD -o update.tar.gz
+scp -i "..." update.tar.gz ubuntu@ec2-...:/home/ubuntu/
+
+# 3. SSH in and deploy
+ssh -i "..." ubuntu@ec2-...
+# Then run:
+bash deploy.sh   # (uses /home/ubuntu/deploy.sh, not scripts/deploy.sh)
+```
+
+The `deploy.sh` script:
+- Extracts the archive to `/home/ubuntu/spacejam`
+- Writes `.env` files for both `apps/web` and `apps/api`
+- Runs `npx nx build web` (frontend) and `tsc` (backend)
+- Starts/restarts PM2 processes: `spacejam-web` (frontend) and `spacejam-api` (backend)
+- Uses `pm2 resurrect` to restore the process list
+
+### Environment Variables (Production)
+
+Frontend (`apps/web/.env`):
+- `NEXT_PUBLIC_GRAPHQL_HTTP_URL` — backend GraphQL endpoint (proxied by nginx)
+- `NEXT_PUBLIC_GRAPHQL_WS_URL` — WebSocket endpoint for subscriptions
+
+Backend (`apps/api/.env`):
+- `DATABASE_URL` — PostgreSQL connection
+- `JWT_SECRET` — JWT signing secret
+- `REFRESH_TOKEN_SECRET` — Refresh token secret
+- `REDIS_HOST` / `REDIS_PORT` — Redis connection
+- `PORT=4000` — Backend port
+- `CORS_ORIGIN` — Frontend origin for CORS
+- `FRONTEND_URL` — Frontend URL
+- `NODE_ENV=production`
 
 ---
 

@@ -1122,10 +1122,40 @@ export const CREATE_MEETING_ROOM = gql`
     createMeetingRoom(input: $input) {
       id
       name
-      type
+      roomType
       capacity
       status
+      hourlyRate
+      amenities
+      centerId
+      floorId
+      createdAt
+      updatedAt
     }
+  }
+`;
+
+export const UPDATE_MEETING_ROOM = gql`
+  mutation UpdateMeetingRoom($id: ID!, $input: UpdateMeetingRoomInput!) {
+    updateMeetingRoom(id: $id, input: $input) {
+      id
+      name
+      roomType
+      capacity
+      status
+      hourlyRate
+      amenities
+      centerId
+      floorId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_MEETING_ROOM = gql`
+  mutation DeleteMeetingRoom($id: ID!) {
+    deleteMeetingRoom(id: $id)
   }
 `;
 
@@ -1149,6 +1179,30 @@ export const UPDATE_SEAT = gql`
       seatType
       status
       price
+    }
+  }
+`;
+
+export const DELETE_FLOOR = gql`
+  mutation DeleteFloor($id: ID!) {
+    deleteFloor(id: $id)
+  }
+`;
+
+export const DELETE_SEAT = gql`
+  mutation DeleteSeat($id: ID!) {
+    deleteSeat(id: $id)
+  }
+`;
+
+export const UPDATE_FLOOR = gql`
+  mutation UpdateFloor($id: ID!, $input: UpdateFloorInput!) {
+    updateFloor(id: $id, input: $input) {
+      id
+      name
+      layout
+      createdAt
+      updatedAt
     }
   }
 `;
@@ -1322,6 +1376,18 @@ export const CANCEL_BOOKING = gql`
       status
       updatedAt
     }
+  }
+`;
+
+export const CANCEL_ROOM_BOOKING = gql`
+  mutation CancelRoomBooking($bookingId: String!, $roomId: String!) {
+    cancelRoomBooking(bookingId: $bookingId, roomId: $roomId)
+  }
+`;
+
+export const BULK_UPDATE_STATUS = gql`
+  mutation BulkUpdateStatus($roomIds: [String!]!, $status: String!) {
+    bulkUpdateStatus(roomIds: $roomIds, status: $status)
   }
 `;
 

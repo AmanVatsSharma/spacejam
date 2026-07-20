@@ -1,45 +1,15 @@
 "use client";
 
-/**
- * File:        apps/web/src/app/dashboard/inventory/page.tsx
- * Module:      Web · Dashboard · Inventory Page
- * Purpose:     Inventory page content - header/sidebar provided by layout
- *
- * Exports:
- *   - InventoryPage — inventory page content
- *
- * Author:      AmanVatsSharma
- * Last-updated: 2026-07-06
- */
-
 import { useState, useMemo } from "react";
-import { useQuery, useMutation } from "@apollo/client";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  GET_MY_CENTERS,
-  GET_FLOORS,
-  GET_DASHBOARD_METRICS,
-  CREATE_CENTER,
-  UPDATE_CENTER,
-} from "@/lib/apollo/operations";
+import { useCenters, useFloors, useCreateCenter, useUpdateFloor, useDeleteFloor } from "@/hooks/use-inventory";
 import { FloorCardGrid } from "@/components/ui/floor-card";
 import { LocationSidebar } from "@/components/ui/location-sidebar";
 import { SetUpCenterModal, FloorSetupModal } from "@/components/ui/dashboard";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { normalizeStatus } from "@/lib/revenue-status";
-
-interface CenterLocation {
-  id: string;
-  name?: string;
-  city: string;
-}
-
-interface ServerCenter {
-  id: string;
-  name: string;
-  location: CenterLocation;
-  floors: { id: string; name: string }[];
-}
 
 interface SidebarLocation {
   id: string;
@@ -49,73 +19,28 @@ interface SidebarLocation {
 }
 
 export default function InventoryPage() {
+  const router = useRouter();
   const [selectedCenterId, setSelectedCenterId] = useState<string | null>(null);
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showFloorModal, setShowFloorModal] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Query centers (provides sidebar tree)
-  const {
-    data: centersData,
-    loading: centersLoading,
-    error: centersError,
-  } = useQuery<{ myCenters: ServerCenter[] }>(GET_MY_CENTERS, {
-    fetchPolicy: "cache-and-network",
-    errorPolicy: "all",
-  });
+  const [renameTarget, setRenameTarget] = useState<{ id: string; currentName: string } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [actionPending, setActionPending] = useState(false);
 
-  // Query floors — filtered by selected center
-  const {
-    data: floorsData,
-    loading: floorsLoading,
-    error: floorsError,
-  } = useQuery<{ floors: any[] }>(GET_FLOORS, {
-    fetchPolicy: "cache-and-network",
-    errorPolicy: "all",
-    variables: selectedCenterId ? { centerId: selectedCenterId } : {},
-  });
+  const { centers: centersList, loading: centersLoading, error: centersError, refetch: refetchCenters } = useCenters();
+  const { floors, loading: floorsLoading, error: floorsError, refetch: refetchFloors } = useFloors(selectedCenterId);
 
-  // Live metrics for inventory stat cards
-  const { data: metricsData } = useQuery(GET_DASHBOARD_METRICS, {
-    fetchPolicy: "cache-and-network",
-    errorPolicy: "all",
-  });
-  const metrics = metricsData?.dashboardMetrics;
+  const { loading: createCenterLoading, createCenter } = useCreateCenter();
+  const { loading: updateFloorLoading, updateFloor } = useUpdateFloor();
+  const { loading: deleteFloorLoading, deleteFloor } = useDeleteFloor();
 
-  // Compute inventory stats from live data
-  const inventoryStats = useMemo(() => {
-    const totalFloors = floorsData?.floors?.length ?? 0;
-    const allSeats = (floorsData?.floors ?? []).reduce(
-      (sum: number, f: any) => sum + (f.seats?.length ?? 0),
-      0,
-    );
-    const availableSeats = (floorsData?.floors ?? []).reduce(
-      (sum: number, f: any) =>
-        sum + (f.seats?.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length ?? 0),
-      0,
-    );
-    const occupiedSeats = allSeats - availableSeats;
-    const occupancyRate = allSeats > 0 ? Math.round((occupiedSeats / allSeats) * 100) : 0;
-    const totalCenters = centersData?.myCenters?.length ?? 0;
-    return { totalCenters, totalFloors, allSeats, availableSeats, occupiedSeats, occupancyRate };
-  }, [floorsData, centersData]);
-
-  // Mutations
-  const [createCenter] = useMutation(CREATE_CENTER, {
-    refetchQueries: [{ query: GET_MY_CENTERS }],
-  });
-
-  const [updateCenter] = useMutation(UPDATE_CENTER, {
-    refetchQueries: [{ query: GET_MY_CENTERS }, { query: GET_FLOORS }],
-  });
-
-  // Transform myCenters → sidebar location tree (grouped by city)
   const locations: SidebarLocation[] = useMemo(() => {
-    if (!centersData?.myCenters) return [];
-
-    // Group centers by city
+    if (!centersList.length) return [];
     const byCity: Record<string, SidebarLocation> = {};
-    for (const center of centersData.myCenters) {
+    for (const center of centersList) {
       const cityKey = center.location?.city ?? "Unknown City";
       if (!byCity[cityKey]) {
         byCity[cityKey] = {
@@ -131,49 +56,118 @@ export default function InventoryPage() {
         selected: center.id === selectedCenterId,
       });
     }
-
-    // Auto-expand the city that has the selected center
-    const result = Object.values(byCity).map((loc) => ({
+    return Object.values(byCity).map((loc) => ({
       ...loc,
       expanded: loc.centers.some((c) => c.selected),
     }));
-    return result;
-  }, [centersData, selectedCenterId]);
+  }, [centersList, selectedCenterId]);
 
-  // Transform server floors → FloorCard props
-  const floors = useMemo(() => {
-    if (!floorsData?.floors) return [];
-    return floorsData.floors.map((floor: any) => ({
-      floorName: floor.name ?? `Floor ${floor.id}`,
-      totalSeats: floor.seats?.length ?? 0,
-      status: "active" as const,
-      openSeats: floor.seats?.filter((s: any) => s.status === "AVAILABLE" || s.status === "available").length ?? 0,
-      cabins: floor.seats?.filter((s: any) => s.seatType === "CABIN" || s.seatType === "cabin").length ?? 0,
-      occupancy: 0, // computed from seat statuses if booking data is available
-    }));
-  }, [floorsData]);
+  const stats = useMemo(() => {
+    const totalSeats = floors.reduce((s: number, f: any) => s + (f.seats?.length ?? 0), 0);
+    const availableSeats = floors.reduce(
+      (s: number, f: any) => s + (f.seats?.filter((seat: any) => normalizeStatus(seat.status) === "AVAILABLE").length ?? 0),
+      0,
+    );
+    const occupiedSeats = totalSeats - availableSeats;
+    const occupancyRate = totalSeats > 0 ? Math.round((occupiedSeats / totalSeats) * 100) : 0;
+    return { totalSeats, availableSeats, occupiedSeats, occupancyRate };
+  }, [floors]);
 
-  const handleLocationSelect = (locationId: string, centerId?: string) => {
-    if (centerId) {
-      setSelectedCenterId(centerId);
+  const isLoading = centersLoading || floorsLoading;
+
+  const openRename = (floorId: string, currentName: string) => {
+    setRenameTarget({ id: floorId, currentName });
+    setRenameValue(currentName ?? "");
+  };
+
+  const closeRename = () => {
+    setRenameTarget(null);
+    setRenameValue("");
+  };
+
+  const submitRename = async () => {
+    if (!renameTarget) return;
+    const name = renameValue.trim();
+    if (!name) {
+      toast.error("Floor name cannot be empty");
+      return;
+    }
+    if (name === renameTarget.currentName) {
+      closeRename();
+      return;
+    }
+    setActionPending(true);
+    try {
+      await updateFloor({ id: renameTarget.id, input: { name } });
+      toast.success("Floor renamed");
+      await refetchFloors();
+      closeRename();
+    } finally {
+      setActionPending(false);
     }
   };
 
-  // Wire SetUpCenterModal "Create center" (step 5) to CREATE_CENTER mutation
+  const openDelete = (floorId: string, name: string) => {
+    setDeleteTarget({ id: floorId, name });
+  };
+
+  const submitDelete = async () => {
+    if (!deleteTarget) return;
+    setActionPending(true);
+    try {
+      await deleteFloor({ id: deleteTarget.id });
+      toast.success(`Floor "${deleteTarget.name}" deleted`);
+      await refetchFloors();
+      setDeleteTarget(null);
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const handleLocationSelect = (_locationId: string, centerId?: string) => {
+    if (centerId) setSelectedCenterId(centerId);
+  };
+
   const handleCreateCenter = async (input: Record<string, any>) => {
     setCreating(true);
     try {
-      await createCenter({ variables: { input } });
-      toast.success("Center created successfully");
+      await createCenter({ input });
       setShowSetupModal(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create center");
+      await refetchCenters();
     } finally {
       setCreating(false);
     }
   };
 
-  const isLoading = centersLoading || floorsLoading;
+  const floorCards = useMemo(() => {
+    return floors.map((floor: any) => ({
+      id: floor.id,
+      floorName: floor.name ?? `Floor ${floor.id}`,
+      totalSeats: floor.seats?.length ?? 0,
+      status: "active" as const,
+      openSeats: floor.seats?.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length ?? 0,
+      cabins: floor.seats?.filter((s: any) => normalizeStatus(s.seatType) === "CABIN").length ?? 0,
+      occupancy: stats.occupancyRate,
+      contextMenuItems: [
+        {
+          label: "View floor map",
+          onClick: () => {
+            router.push(`/dashboard/inventory/floor-map?centerId=${selectedCenterId}&floorId=${floor.id}`);
+          },
+        },
+        {
+          label: "Rename floor",
+          onClick: () => openRename(floor.id, floor.name),
+        },
+        { divider: true, label: "", onClick: () => {} },
+        {
+          label: "Delete floor",
+          destructive: true,
+          onClick: () => openDelete(floor.id, floor.name ?? `Floor ${floor.id}`),
+        },
+      ],
+    }));
+  }, [floors, selectedCenterId, router, stats.occupancyRate]);
 
   return (
     <div className="flex gap-6 compact:gap-3">
@@ -202,12 +196,12 @@ export default function InventoryPage() {
         {/* Inventory Stats — live data */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { label: "Centers", value: inventoryStats.totalCenters, icon: "🏢", color: "text-blue-600" },
-            { label: "Floors", value: inventoryStats.totalFloors, icon: "🏗️", color: "text-purple-600" },
-            { label: "Total Seats", value: inventoryStats.allSeats, icon: "🪑", color: "text-gray-700" },
-            { label: "Available", value: inventoryStats.availableSeats, icon: "✅", color: "text-green-600" },
-            { label: "Occupied", value: inventoryStats.occupiedSeats, icon: "🔴", color: "text-orange-600" },
-            { label: "Occupancy", value: `${inventoryStats.occupancyRate}%`, icon: "📊", color: "text-[#FF6A2F]" },
+            { label: "Centers", value: centersList.length, icon: "🏢", color: "text-blue-600" },
+            { label: "Floors", value: floors.length, icon: "🏗️", color: "text-purple-600" },
+            { label: "Total Seats", value: stats.totalSeats, icon: "🪑", color: "text-gray-700" },
+            { label: "Available", value: stats.availableSeats, icon: "✅", color: "text-green-600" },
+            { label: "Occupied", value: stats.occupiedSeats, icon: "🔴", color: "text-orange-600" },
+            { label: "Occupancy", value: `${stats.occupancyRate}%`, icon: "📊", color: "text-[#FF6A2F]" },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-4 flex flex-col gap-1">
               <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{stat.label}</span>
@@ -246,7 +240,7 @@ export default function InventoryPage() {
               <QueryEmpty message="No floors found" hint={selectedCenterId ? "Add a new floor to get started." : "Select a center from the sidebar to view floors."} />
             </div>
           ) : (
-            <FloorCardGrid floors={floors} />
+            <FloorCardGrid floors={floorCards} />
           )}
         </div>
       </div>
@@ -283,6 +277,66 @@ export default function InventoryPage() {
         isOpen={showFloorModal}
         onClose={() => setShowFloorModal(false)}
         centerId={selectedCenterId ?? undefined}
+      />
+
+      {/* Rename Floor dialog (replaces native prompt) */}
+      {renameTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={closeRename}>
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog" aria-modal="true"
+          >
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">Rename floor</h2>
+              <p className="text-sm text-gray-500 mt-1.5">Choose a new name for this floor.</p>
+            </div>
+            <div className="px-6 py-4">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Floor name</label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") submitRename();
+                  if (e.key === "Escape") closeRename();
+                }}
+                autoFocus
+                placeholder="Enter floor name"
+                className="mt-1.5 w-full h-10 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]/30 focus:border-[#FF6A2F]"
+              />
+            </div>
+            <div className="px-6 py-4 flex justify-end gap-2 bg-gray-50">
+              <button
+                type="button"
+                onClick={closeRename}
+                disabled={actionPending}
+                className="bg-white hover:bg-gray-100 text-gray-700 text-sm font-medium py-2 px-5 rounded-lg border border-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitRename}
+                disabled={actionPending || !renameValue.trim()}
+                className="bg-[#FF6A2F] hover:bg-[#E85A1F] text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {actionPending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={`Delete floor "${deleteTarget?.name ?? ""}"?`}
+        description="This will remove the floor and all its seats. This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={submitDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

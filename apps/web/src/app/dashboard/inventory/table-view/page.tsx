@@ -1,19 +1,20 @@
 "use client";
 
-
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
+
 import {
   GET_SEATS,
   GET_FLOORS,
   GET_MY_CENTERS,
   CREATE_SEAT,
   UPDATE_SEAT,
+  DELETE_SEAT,
   GET_BOOKINGS,
 } from "@/lib/apollo/operations";
-import { ExportExcelModal } from "@/components/ui/dashboard/export-excel-modal";
+import { ContextMenu } from "@/components/ui/context-menu";
 import styles from "./table-view.module.css";
 
 const SEAT_TYPES = ["HOT_DESK", "DEDICATED", "CABIN", "MEETING_ROOM"] as const;
@@ -55,8 +56,8 @@ function formatCurrency(amount: number): string {
 
 export default function TableViewPage() {
   const [activeDropdown, setActiveDropdown] = useState<number | null>(0);
-  const [showExport, setShowExport] = useState(false);
   const [search, setSearch] = useState("");
+  const [rowMenu, setRowMenu] = useState<{ rowId: string; x: number; y: number } | null>(null);
 
   // Filter state — driven by live data where possible
   const [locationId, setLocationId] = useState<string>("all");
@@ -98,6 +99,9 @@ export default function TableViewPage() {
   });
   const [updateSeat] = useMutation(UPDATE_SEAT, {
     refetchQueries: [{ query: GET_SEATS }],
+  });
+  const [deleteSeat] = useMutation(DELETE_SEAT, {
+    refetchQueries: [{ query: GET_SEATS }, { query: GET_FLOORS }],
   });
 
   // Map API seats to the table's expected shape (preserve real seat id for mutations)
@@ -299,7 +303,7 @@ export default function TableViewPage() {
             onClick={() => {
               const headers = ["Space Name", "Floor", "Type", "Status", "Price"];
               const rows = inventoryData.map((s: any) => [s.spaceName, s.floor, s.type, s.status, s.price]);
-              const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+              const csv = [headers, ...rows].map((r: any[]) => r.map((v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
               const blob = new Blob([csv], { type: "text/csv" });
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
@@ -427,7 +431,12 @@ export default function TableViewPage() {
               </tr>
             ) : (
               filteredData.map((row: any, index: number) => (
-                <tr key={row.id} className="transition-colors duration-150 hover:bg-[#F9FAFB]" style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `calc(${index} * 50ms)` }}>
+                <tr
+                  key={row.id}
+                  onContextMenu={(e) => { e.preventDefault(); setRowMenu({ rowId: row.id, x: e.clientX, y: e.clientY }); }}
+                  className="transition-colors duration-150 hover:bg-[#F9FAFB]"
+                  style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `calc(${index} * 50ms)` }}
+                >
                   <td className={styles.colSpaceName}>
                     <div style={{ width: '120px', lineHeight: '1.4' }}>{row.spaceName}</div>
                   </td>
@@ -486,7 +495,22 @@ export default function TableViewPage() {
         </table>
       </div>
 
-      <ExportExcelModal isOpen={showExport} onClose={() => setShowExport(false)} />
+      {/* Dead ExportExcelModal removed — see spacejam-2tf */}
+
+      {rowMenu && (
+        <ContextMenu
+          x={rowMenu.x}
+          y={rowMenu.y}
+          onClose={() => setRowMenu(null)}
+          items={[
+            { label: "Mark Available", onClick: () => { handleStatusChange(rowMenu.rowId, "AVAILABLE"); setRowMenu(null); } },
+            { label: "Mark Occupied", onClick: () => { handleStatusChange(rowMenu.rowId, "OCCUPIED"); setRowMenu(null); } },
+            { label: "Mark Maintenance", onClick: () => { handleStatusChange(rowMenu.rowId, "MAINTENANCE"); setRowMenu(null); } },
+            { divider: true, label: "", onClick: () => {} },
+            { label: "Delete seat", destructive: true, onClick: () => { if (confirm("Delete this seat? This cannot be undone.")) { deleteSeat({ variables: { id: rowMenu.rowId } }).then(() => toast.success("Seat deleted")).catch((err) => toast.error(err.message ?? "Failed to delete seat")); } setRowMenu(null); } },
+          ]}
+        />
+      )}
     </div>
   );
 }

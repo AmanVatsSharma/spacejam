@@ -44,6 +44,31 @@ export class BookingFiltersInput {
   @IsOptional()
   userId?: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  seatId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  meetingRoomId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  requestedById?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  paymentId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  planId?: string;
+
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()

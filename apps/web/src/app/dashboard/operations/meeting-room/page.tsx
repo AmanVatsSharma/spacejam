@@ -9,13 +9,16 @@
  * Last-updated: 2026-07-06
  */
 
-import { useMeetingRooms } from "@/hooks/use-operations";
-import { useState, useMemo } from "react";
+import { useMeetingRooms, useCancelRoomBooking, useBulkUpdateStatus, useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from "@/hooks/use-operations";
+import { useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import styles from "./meeting-room.module.css";
-import { BookRoomModal } from "../modals/book-room-modal";
+import { BookRoomModal, BookRoomModalProps } from "../modals/book-room-modal";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 import { useQuery } from "@apollo/client";
-import { GET_BOOKINGS } from "@/lib/apollo/operations";
+import { GET_BOOKINGS, GET_MY_CENTERS } from "@/lib/apollo/operations";
+import { ViewDetailsModal } from "./view-details-modal";
+import { MeetingRoomFormModal } from "./meeting-room-form-modal";
 
 type RoomStatus = "occupied" | "available" | "booked" | "maintenance";
 type BookingInfo = { label: string; title: string; time: string };
@@ -87,7 +90,16 @@ export default function MeetingRoomsPage() {
   const [view, setView] = useState<"layout" | "table">("layout");
   const [showBookRoom, setShowBookRoom] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
-  const { rooms, loading, error, refetch } = useMeetingRooms();
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const [filters, setFilters] = useState({ centerId: "", floorId: "", status: "", minCapacity: "" });
+  const { data: centersData } = useQuery(GET_MY_CENTERS);
+  const { rooms, loading, error, refetch } = useMeetingRooms({
+    centerId: filters.centerId || undefined,
+    floorId: filters.floorId || undefined,
+    status: filters.status || undefined,
+    minCapacity: filters.minCapacity ? Number(filters.minCapacity) : undefined,
+  } as any);
+  const { cancelBooking } = useCancelRoomBooking();
 
   const { data: bookingsData } = useQuery(GET_BOOKINGS);
 
@@ -99,13 +111,94 @@ export default function MeetingRoomsPage() {
     booking: undefined,
   }));
 
+  const roomIdToBooking = useMemo(() => {
+    if (!bookingsData?.bookings || !displayRooms.length) return {} as Record<string, any>;
+    const roomIds = new Set(displayRooms.map((r: any) => r.id));
+    const map: Record<string, any> = {};
+    bookingsData.bookings.forEach((b: any) => {
+      if (b.meetingRoom?.id && roomIds.has(b.meetingRoom.id) && (b.status === 'CONFIRMED' || b.status === 'BOOKED')) {
+        map[b.meetingRoom.id] = b;
+      }
+    });
+    return map;
+  }, [bookingsData, displayRooms]);
+
+  const handleExtend = (room: RoomCard) => {
+    const existing = roomIdToBooking[room.id];
+    if (existing) {
+      const startDate = existing.startDate ? new Date(existing.startDate) : null;
+      const endDate = existing.endDate ? new Date(existing.endDate) : null;
+      const formatTime = (d: Date | null) => d && !isNaN(d.getTime()) ? d.toTimeString().slice(0, 5) : "";
+      const formatDate = (d: Date | null) => d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : "";
+      setSelectedRoomId(room.id);
+      setPrefillBooking({
+        eventDate: formatDate(startDate),
+        startTime: formatTime(startDate),
+        endTime:   formatTime(endDate),
+        title:     existing.title ?? "",
+      });
+      setShowBookRoom(true);
+    } else {
+      setSelectedRoomId(room.id);
+      setPrefillBooking(undefined);
+      setShowBookRoom(true);
+    }
+  };
+
+  const handleBook = (room: RoomCard) => {
+    setSelectedRoomId(room.id);
+    setPrefillBooking(undefined);
+    setShowBookRoom(true);
+  };
+
+  const [prefillBooking, setPrefillBooking] = useState<BookRoomModalProps['prefillBooking']>(undefined);
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [confirmDeleteRoom, setConfirmDeleteRoom] = useState<any>(null);
+  const { create } = useCreateMeetingRoom();
+  const { update } = useUpdateMeetingRoom();
+  const { deleteRoom } = useDeleteMeetingRoom();
+
   const availableCount = displayRooms.filter(r => r.status === "available").length;
 
+  type DateRange = "today" | "week" | "month" | "all";
+  const [dateRange, setDateRange] = useState<DateRange>("all");
+
+  const dateRangeBounds = (range: DateRange): { start: Date; end: Date } | null => {
+    const now = new Date();
+    switch (range) {
+      case "today":
+        return { start: new Date(now.getFullYear(), now.getMonth(), now.getDate()), end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59) };
+      case "week":
+        const day = now.getDay() || 7;
+        const monday = new Date(now);
+        monday.setDate(now.getDate() - day + 1);
+        monday.setHours(0, 0, 0, 0);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        return { start: monday, end: sunday };
+      case "month":
+        return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+      default:
+        return null;
+    }
+  };
+
+  const bounds = dateRangeBounds(dateRange);
+
   const { bookingCount, totalHours, peakUsageStr } = useMemo(() => {
-    if (!bookingsData?.bookings || !displayRooms.length) return { bookingCount: 0, totalHours: 0, peakUsageStr: "10 AM - 4 PM" };
+    const filtered = bounds
+      ? bookingsData?.bookings?.filter((b: any) => {
+          const start = new Date(b.startDate).getTime();
+          return !isNaN(start) && start >= bounds.start.getTime() && start <= bounds.end.getTime();
+        }) ?? []
+      : bookingsData?.bookings ?? [];
+
+    if (!filtered.length || !displayRooms.length) return { bookingCount: 0, totalHours: 0, peakUsageStr: "No data" };
     const roomIds = new Set(displayRooms.map((r: any) => r.id));
-    const validBookings = bookingsData.bookings.filter((b: any) => b.meetingRoom?.id && roomIds.has(b.meetingRoom.id));
-    
+    const validBookings = filtered.filter((b: any) => b.meetingRoom?.id && roomIds.has(b.meetingRoom.id));
+
     const count = validBookings.length;
     let hours = 0;
     validBookings.forEach((b: any) => {
@@ -116,7 +209,7 @@ export default function MeetingRoomsPage() {
       }
     });
 
-    let peakStr = "10 AM - 4 PM";
+    let peakStr = "No data";
     if (count > 0) {
       const hourCounts: Record<number, number> = {};
       validBookings.forEach((b: any) => {
@@ -153,7 +246,28 @@ export default function MeetingRoomsPage() {
           <span className={styles.plusIcon}>+</span>
           <span>Book Room</span>
         </button>
+        <button type="button" className={styles.heroAction} onClick={() => { setEditingRoom(null); setShowRoomForm(true); }}>
+          <span className={styles.plusIcon}>+</span>
+          <span>New Room</span>
+        </button>
       </section>
+
+      {/* Date-range selector */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-[13px] font-medium text-gray-500">Period:</span>
+        {(["today", "week", "month", "all"] as const).map((range) => (
+          <button
+            key={range}
+            type="button"
+            onClick={() => setDateRange(range)}
+            className={`px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+              dateRange === range ? "bg-[#FF6A2F] text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {range === "all" ? "All Time" : range === "today" ? "Today" : range === "week" ? "This Week" : "This Month"}
+          </button>
+        ))}
+      </div>
 
       {/* Stats */}
       <section className={styles.statsGrid}>
@@ -219,7 +333,65 @@ export default function MeetingRoomsPage() {
             <span>Table View</span>
           </button>
         </div>
-        <div className={styles.showingCount}>Showing {displayRooms.length} of {displayRooms.length} rooms</div>
+        <div className={styles.showingCount}>Showing {displayRooms.length} room{displayRooms.length !== 1 ? 's' : ''}</div>
+      </section>
+
+      {/* Filters */}
+      <section className={styles.filterRow}>
+        <select
+          className={styles.filterSelect}
+          value={filters.centerId}
+          onChange={(e) => {
+            const c = e.target.value;
+            setFilters(f => ({ ...f, centerId: c, floorId: "" }));
+          }}
+          aria-label="Filter by center"
+        >
+          <option value="">All Centers</option>
+          {(centersData?.myCenters ?? []).map((c: any) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <select
+          className={styles.filterSelect}
+          value={filters.floorId}
+          onChange={(e) => setFilters(f => ({ ...f, floorId: e.target.value }))}
+          aria-label="Filter by floor"
+          disabled={!filters.centerId}
+        >
+          <option value="">All Floors</option>
+          {(centersData?.myCenters ?? []).find((c: any) => c.id === filters.centerId)?.floors?.map((f: any) => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
+        <select
+          className={styles.filterSelect}
+          value={filters.status}
+          onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+          aria-label="Filter by status"
+        >
+          <option value="">All Status</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="BOOKED">Booked</option>
+          <option value="OCCUPIED">Occupied</option>
+          <option value="MAINTENANCE">Maintenance</option>
+        </select>
+        <input
+          className={styles.filterInput}
+          type="number"
+          min={1}
+          placeholder="Min capacity"
+          value={filters.minCapacity}
+          onChange={(e) => setFilters(f => ({ ...f, minCapacity: e.target.value }))}
+          aria-label="Minimum capacity"
+        />
+        <button
+          type="button"
+          className={styles.filterResetBtn}
+          onClick={() => setFilters({ centerId: "", floorId: "", status: "", minCapacity: "" })}
+        >
+          Reset
+        </button>
       </section>
 
       {/* Rooms */}
@@ -254,8 +426,8 @@ export default function MeetingRoomsPage() {
               <RoomCard
                 key={room.id}
                 room={room}
-                onBook={(r) => { setSelectedRoomId(r.id); setShowBookRoom(true); }}
-                onExtend={(r) => { setSelectedRoomId(r.id); setShowBookRoom(true); }}
+                onBook={handleBook}
+                onExtend={handleExtend}
               />
             ))}
           </section>
@@ -280,7 +452,11 @@ export default function MeetingRoomsPage() {
                       <span className={styles.tableStatusPill} style={{ color: p.color, background: p.bg }}>{p.label.toUpperCase()}</span>
                     </div>
                     <div className={`${styles.td} ${styles.tdActions}`} role="cell">
-                      <button type="button" className={styles.viewDetailsBtn}>View Details</button>
+                      <div className="flex gap-2 justify-end">
+                        <button type="button" className={styles.viewDetailsBtn} onClick={() => setSelectedRoom(room)}>View</button>
+                        <button type="button" className={styles.viewDetailsBtn} onClick={() => { setEditingRoom(room); setShowRoomForm(true); }}>Edit</button>
+                        <button type="button" className={styles.viewDetailsBtn} onClick={() => setConfirmDeleteRoom(room)}>Delete</button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -293,9 +469,68 @@ export default function MeetingRoomsPage() {
       {/* Book Room Modal */}
       <BookRoomModal
         open={showBookRoom}
-        onClose={() => setShowBookRoom(false)}
+        onClose={() => { setShowBookRoom(false); setPrefillBooking(undefined); }}
         roomId={selectedRoomId}
+        prefillBooking={prefillBooking}
       />
+      <ViewDetailsModal
+        open={!!selectedRoom}
+        onClose={() => setSelectedRoom(null)}
+        room={selectedRoom}
+        onCancelBooking={async (bookingId) => {
+          await cancelBooking(bookingId, selectedRoom?.id);
+          setSelectedRoom(null);
+          refetch();
+        }}
+      />
+      <MeetingRoomFormModal
+        open={showRoomForm}
+        onClose={() => { setShowRoomForm(false); setEditingRoom(null); }}
+        editingRoom={editingRoom}
+        defaultCenterId={filters.centerId || undefined}
+        onSubmit={async (input) => {
+          if (editingRoom) {
+            await update(editingRoom.id, input as any);
+            toast.success(`Room "${input.name}" updated`);
+          } else {
+            await create(input as any);
+            toast.success(`Room "${input.name}" created`);
+          }
+          setShowRoomForm(false);
+          setEditingRoom(null);
+          refetch();
+        }}
+      />
+      {confirmDeleteRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">Delete meeting room?</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Permanently delete "{confirmDeleteRoom?.name ?? ''}"? Active bookings may block this.
+              </p>
+            </div>
+            <div className="px-6 py-4 flex justify-end gap-2 bg-gray-50">
+              <button type="button" onClick={() => setConfirmDeleteRoom(null)} className="bg-white hover:bg-gray-100 text-gray-700 text-sm font-medium py-2 px-5 rounded-lg border border-gray-200 transition-colors">Cancel</button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await deleteRoom(confirmDeleteRoom.id);
+                    toast.success(`Room "${confirmDeleteRoom.name}" deleted`);
+                    refetch();
+                  } catch (err: any) {
+                    toast.error(err?.message ?? "Could not delete room");
+                  } finally {
+                    setConfirmDeleteRoom(null);
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white text-sm font-medium py-2 px-5 rounded-lg transition-colors"
+              >Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

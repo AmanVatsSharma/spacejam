@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
-import { BookRoomModal } from "@/components/ui/dashboard/book-room-modal";
+import { BookRoomModal } from "@/app/dashboard/operations/modals/book-room-modal";
 import { GET_BOOKINGS, GET_DASHBOARD_METRICS, CREATE_BOOKING, UPDATE_BOOKING, CHECK_IN_BOOKING, CHECK_OUT_BOOKING, CANCEL_BOOKING } from "@/lib/apollo/operations";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 import { useMeetingRooms, useRequests } from "@/hooks/use-operations";
@@ -40,6 +40,10 @@ export default function OperationsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("meeting-rooms");
   const [showBookRoom, setShowBookRoom] = useState(false);
 
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterFrom, setFilterFrom] = useState<string>("");
+  const [filterTo, setFilterTo] = useState<string>("");
+
   const tabs: { id: TabType; label: string }[] = [
     { id: "bookings", label: "All Bookings" },
     { id: "check-in", label: "Check-in/Out" },
@@ -49,6 +53,13 @@ export default function OperationsPage() {
 
   // Real data hooks
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } = useQuery(GET_BOOKINGS, {
+    variables: {
+      filters: {
+        status: filterStatus || undefined,
+        startDate: filterFrom ? new Date(filterFrom) : undefined,
+        endDate: filterTo ? new Date(`${filterTo}T23:59:59`) : undefined,
+      },
+    },
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
   });
@@ -211,6 +222,48 @@ export default function OperationsPage() {
       {/* Bookings Table */}
       {activeTab === "bookings" && (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
+          <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-gray-100">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 bg-[#F9FAFB] rounded-lg text-sm text-gray-700 outline-none border border-gray-200 focus:border-[#FF6A2F] transition-colors"
+              >
+                <option value="">All</option>
+                <option value="PENDING">Pending</option>
+                <option value="CONFIRMED">Confirmed</option>
+                <option value="CHECKED_IN">Checked In</option>
+                <option value="CHECKED_OUT">Checked Out</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">From</label>
+              <input
+                type="date"
+                value={filterFrom}
+                onChange={(e) => setFilterFrom(e.target.value)}
+                className="px-3 py-2 bg-[#F9FAFB] rounded-lg text-sm text-gray-700 outline-none border border-gray-200 focus:border-[#FF6A2F] transition-colors"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">To</label>
+              <input
+                type="date"
+                value={filterTo}
+                onChange={(e) => setFilterTo(e.target.value)}
+                className="px-3 py-2 bg-[#F9FAFB] rounded-lg text-sm text-gray-700 outline-none border border-gray-200 focus:border-[#FF6A2F] transition-colors"
+              />
+            </div>
+            <button
+              onClick={() => { setFilterStatus(""); setFilterFrom(""); setFilterTo(""); }}
+              className="self-end mb-1 px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
