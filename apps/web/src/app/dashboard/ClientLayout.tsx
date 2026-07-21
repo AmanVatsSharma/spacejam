@@ -75,6 +75,11 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
       label: 'Meeting Room',
       href: '/dashboard/operations/meeting-room',
     },
+    {
+      id: 'recurring-bookings',
+      label: 'Recurring',
+      href: '/dashboard/operations/recurring-bookings',
+    },
     { id: 'events', label: 'Events', href: '/dashboard/operations/events' },
     { id: 'request', label: 'Request', href: '/dashboard/operations/request' },
   ],

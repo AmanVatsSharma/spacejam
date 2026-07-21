@@ -15,6 +15,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
@@ -22,6 +23,7 @@ import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
+import { Event } from './event.entity';
 
 export enum RecurrencePattern {
   DAILY = 'DAILY',
@@ -105,6 +107,10 @@ export class RecurringBooking {
   @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   notes!: string | null;
+
+  @Field(() => [Event])
+  @OneToMany(() => Event, (event) => event.recurringBooking)
+  events!: Event[];
 
   @Field()
   @CreateDateColumn()

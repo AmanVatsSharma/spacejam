@@ -31,6 +31,7 @@ export enum RoomStatus {
 // Event Enums
 export enum EventType {
   MEETING = 'MEETING',
+  MEETING_ROOM = 'MEETING_ROOM',
   CONFERENCE = 'CONFERENCE',
   WORKSHOP = 'WORKSHOP',
   TRAINING = 'TRAINING',

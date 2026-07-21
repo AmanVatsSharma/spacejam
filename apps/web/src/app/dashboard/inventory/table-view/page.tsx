@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
+import { SeatBookModal } from "./seat-book-modal";
 
 import {
   GET_SEATS,
@@ -64,6 +65,9 @@ export default function TableViewPage() {
   const [floorId, setFloorId] = useState<string>("all");
   const [product, setProduct] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
+
+  // Book seat modal state
+  const [bookModal, setBookModal] = useState<{ seatId: string; seatName: string } | null>(null);
 
   // Live centers data (drives the Location filter options)
   const { data: centersData } = useQuery<{ myCenters: any[] }>(GET_MY_CENTERS, {
@@ -378,8 +382,9 @@ export default function TableViewPage() {
           onChange={(e) => setStatus(e.target.value)}
         >
           <option value="all">Status</option>
-          <option value="OCCUPIED">Occupied</option>
           <option value="AVAILABLE">Available</option>
+          <option value="OCCUPIED">Occupied</option>
+          <option value="RESERVED">Reserved</option>
           <option value="MAINTENANCE">Maintenance</option>
         </select>
 
@@ -453,6 +458,7 @@ export default function TableViewPage() {
                   <td>
                     <span className={`${styles.badge} ${row.status === 'Occupied' || row.status === 'OCCUPIED' ? styles.badgeOccupied :
                       row.status === 'Available' || row.status === 'AVAILABLE' ? styles.badgeAvailable :
+                      row.status === 'Reserved' || row.status === 'RESERVED' ? styles.badgeReserved :
                         styles.badgeMaintenance
                       }`}>
                       {row.status}
@@ -468,6 +474,26 @@ export default function TableViewPage() {
                     <div style={{ width: '60px', lineHeight: '1.4' }}>{row.endDate}</div>
                   </td>
                   <td className={styles.actionCell}>
+                    {row.status === 'AVAILABLE' || row.status === 'Available' ? (
+                      <button
+                        onClick={() => setBookModal({ seatId: row.id, seatName: row.spaceName })}
+                        className="px-3 py-1.5 bg-[#FF6A2F] text-white text-[12px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors active:scale-[0.97]"
+                      >
+                        Book
+                      </button>
+                    ) : row.status === 'OCCUPIED' || row.status === 'Occupied' ? (
+                      <span className="inline-block px-3 py-1.5 bg-red-50 text-red-700 text-[12px] font-medium rounded-lg border border-red-100">
+                        Occupied
+                      </span>
+                    ) : row.status === 'RESERVED' || row.status === 'Reserved' ? (
+                      <span className="inline-block px-3 py-1.5 bg-green-50 text-green-700 text-[12px] font-medium rounded-lg border border-green-100">
+                        Reserved
+                      </span>
+                    ) : (
+                      <span className="inline-block px-3 py-1.5 bg-gray-50 text-gray-600 text-[12px] font-medium rounded-lg border border-gray-100">
+                        Maintenance
+                      </span>
+                    )}
                     <div className={styles.actionBtn} onClick={() => toggleDropdown(index)}>
                       {Icons.chevronDown}
                     </div>
@@ -485,6 +511,10 @@ export default function TableViewPage() {
                           className={styles.dropdownItem}
                           onClick={() => handleStatusChange(row.id, "MAINTENANCE")}
                         >Maintenance</div>
+                      <div
+                          className={styles.dropdownItem}
+                          onClick={() => handleStatusChange(row.id, "RESERVED")}
+                        >Reserved</div>
                       </div>
                     )}
                   </td>
@@ -503,12 +533,25 @@ export default function TableViewPage() {
           y={rowMenu.y}
           onClose={() => setRowMenu(null)}
           items={[
+            { label: "Book Seat", onClick: () => { setBookModal({ seatId: rowMenu.rowId, seatName: "" }); setRowMenu(null); } },
+            { divider: true, label: "", onClick: () => {} },
             { label: "Mark Available", onClick: () => { handleStatusChange(rowMenu.rowId, "AVAILABLE"); setRowMenu(null); } },
             { label: "Mark Occupied", onClick: () => { handleStatusChange(rowMenu.rowId, "OCCUPIED"); setRowMenu(null); } },
+            { label: "Mark Reserved", onClick: () => { handleStatusChange(rowMenu.rowId, "RESERVED"); setRowMenu(null); } },
             { label: "Mark Maintenance", onClick: () => { handleStatusChange(rowMenu.rowId, "MAINTENANCE"); setRowMenu(null); } },
             { divider: true, label: "", onClick: () => {} },
             { label: "Delete seat", destructive: true, onClick: () => { if (confirm("Delete this seat? This cannot be undone.")) { deleteSeat({ variables: { id: rowMenu.rowId } }).then(() => toast.success("Seat deleted")).catch((err) => toast.error(err.message ?? "Failed to delete seat")); } setRowMenu(null); } },
           ]}
+        />
+      )}
+
+      {/* Book Seat Modal */}
+      {bookModal && (
+        <SeatBookModal
+          open={!!bookModal}
+          onClose={() => setBookModal(null)}
+          seatId={bookModal.seatId}
+          seatName={bookModal.seatName || ""}
         />
       )}
     </div>

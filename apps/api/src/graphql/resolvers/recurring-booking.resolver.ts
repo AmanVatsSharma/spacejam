@@ -65,6 +65,11 @@ export class RecurringBookingResolver {
     const cursor = new Date(start);
     cursor.setDate(cursor.getDate() + 1);
 
+    const skipDates = new Set<string>();
+    if (template.excludeDates?.length) {
+      template.excludeDates.forEach((d) => skipDates.add(d));
+    }
+
     while (cursor <= end) {
       const dow = cursor.getDay();
 
@@ -76,6 +81,42 @@ export class RecurringBookingResolver {
       }
 
       const dateStr = cursor.toISOString().split('T')[0];
+
+      if (skipDates.has(dateStr)) {
+        cursor.setDate(cursor.getDate() + 1);
+        continue;
+      }
+
+      const existing = await this.eventRepo.count({
+        where: {
+          meetingRoomId: template.roomId,
+          eventDate: dateStr,
+          startTime: template.startTime,
+          endTime: template.endTime,
+          recurringBookingId: template.id,
+        },
+      });
+      if (existing > 0) {
+        cursor.setDate(cursor.getDate() + 1);
+        continue;
+      }
+
+      const conflict = await this.eventRepo.findOne({
+        where: {
+          meetingRoomId: template.roomId,
+          eventDate: dateStr,
+        },
+        order: { startTime: 'ASC' },
+      });
+      if (conflict) {
+        if (template.pattern === RecurrencePattern.DAILY || template.pattern === RecurrencePattern.WEEKLY) {
+          cursor.setDate(cursor.getDate() + 1);
+        } else {
+          cursor.setMonth(cursor.getMonth() + 1);
+        }
+        continue;
+      }
+
       const [sh, sm] = template.startTime.split(':').map(Number);
       const [eh, em] = template.endTime.split(':').map(Number);
       const eventStart = new Date(dateStr);
@@ -86,7 +127,7 @@ export class RecurringBookingResolver {
       const evt = this.eventRepo.create({
         title: template.title,
         status: EventStatus.CONFIRMED,
-        eventType: EventType.MEETING,
+        eventType: EventType.MEETING_ROOM,
         eventDate: dateStr,
         startTime: eventStart.toTimeString().slice(0, 8),
         endTime: eventEnd.toTimeString().slice(0, 8),

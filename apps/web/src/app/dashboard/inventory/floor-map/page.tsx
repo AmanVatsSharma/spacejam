@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { ContextMenu } from "@/components/ui/context-menu";
+import { SeatBookModal } from "@/app/dashboard/inventory/table-view/seat-book-modal";
 import {
   GET_CENTERS,
   GET_FLOORS,
@@ -133,6 +134,9 @@ export default function FloorMapPage() {
   const [seatType, setSeatType] = useState("HOT_DESK");
   const [seatPrice, setSeatPrice] = useState("");
   const [adding, setAdding] = useState(false);
+
+  // Book seat modal state
+  const [bookModal, setBookModal] = useState<{ seatId: string; seatName: string } | null>(null);
 
   // Load centers to populate floor tabs
   const {
@@ -652,7 +656,13 @@ export default function FloorMapPage() {
                     <div
                       key={seat.id}
                       className={`${styles.roomBlock} ${colorClass} ${seat.id === selectedSeatId ? styles.roomActive : ''} active:scale-[0.95] transition-all duration-200`}
-                      onClick={() => setSelectedSeatId(seat.id)}
+                      onClick={() => {
+                        if (normalizeStatus(seat.status) === "AVAILABLE") {
+                          setBookModal({ seatId: seat.id, seatName: `${seatTypeLabel(seat.seatType)} ${seat.name ?? `Seat ${seat.id}`}` });
+                        } else {
+                          setSelectedSeatId(seat.id);
+                        }
+                      }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setSeatMenu({ seatId: seat.id, x: e.clientX, y: e.clientY });
@@ -763,6 +773,14 @@ export default function FloorMapPage() {
                 className={styles.btnSecondary}
                 onClick={() => handleViewDetails(selectedSeat.id)}
               >View Details</button>
+              {normalizeStatus(selectedSeat.status) === "AVAILABLE" && (
+                <button
+                  className={styles.btnPrimary}
+                  onClick={() => setBookModal({ seatId: selectedSeat.id, seatName: `${seatTypeLabel(selectedSeat.seatType)} ${selectedSeat.name ?? ""}` })}
+                >
+                  Book
+                </button>
+              )}
               {normalizeStatus(selectedSeat.status) !== "AVAILABLE" && (
                 <button
                   className={styles.btnPrimary}
@@ -917,6 +935,7 @@ export default function FloorMapPage() {
           onClose={() => setSeatMenu(null)}
           items={[
             { label: "View details", onClick: () => { setSelectedSeatId(seatMenu.seatId); setSeatMenu(null); } },
+            { label: "Book Seat", onClick: () => { setBookModal({ seatId: seatMenu.seatId, seatName: "" }); setSeatMenu(null); } },
             { divider: true, label: "", onClick: () => {} },
             { label: "Set Available", onClick: () => { handleStatusChange(seatMenu.seatId, "AVAILABLE"); setSeatMenu(null); } },
             { label: "Set Occupied", onClick: () => { handleStatusChange(seatMenu.seatId, "OCCUPIED"); setSeatMenu(null); } },
@@ -924,6 +943,16 @@ export default function FloorMapPage() {
             { divider: true, label: "", onClick: () => {} },
             { label: "Delete seat", destructive: true, onClick: () => { if (confirm("Delete this seat? This cannot be undone.")) { deleteSeat({ variables: { id: seatMenu.seatId } }); } setSeatMenu(null); } },
           ]}
+        />
+      )}
+
+      {/* Book Seat Modal */}
+      {bookModal && (
+        <SeatBookModal
+          open={!!bookModal}
+          onClose={() => setBookModal(null)}
+          seatId={bookModal.seatId}
+          seatName={bookModal.seatName}
         />
       )}
     </div>

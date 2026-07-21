@@ -221,6 +221,10 @@
   background: #ECFDF5;
   color: #10B981;
 }
+.badgeReserved {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
 .badgeMaintenance {
   background: #FEF3C7;
   color: #D97706;

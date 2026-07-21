@@ -274,9 +274,9 @@ export function useRecurringBooking(id: string) {
 
 export function useRecurringBookingMutations() {
   const client = useApolloClient();
-  const [createMu] = useMutation(CREATE_RECURRING_BOOKING_MUTATION);
-  const [expandMu] = useMutation(EXPAND_RECURRING_MUTATION);
-  const [cancelMu] = useMutation(CANCEL_RECURRING_BOOKING_MUTATION);
+  const [createMu, createRes] = useMutation(CREATE_RECURRING_BOOKING_MUTATION);
+  const [expandMu, expandRes] = useMutation(EXPAND_RECURRING_MUTATION);
+  const [cancelMu, cancelRes] = useMutation(CANCEL_RECURRING_BOOKING_MUTATION);
   const [countMu] = useMutation(COUNT_RECURRING_OCCURRENCES_MUTATION);
 
   const create = useCallback(async (input: any) => {
@@ -302,7 +302,7 @@ export function useRecurringBookingMutations() {
     return r.data?.countRecurringOccurrences;
   }, [countMu]);
 
-  return { create, expand, cancel, countOccurrences };
+  return { create, expand, cancel, countOccurrences, creating: createRes.loading, expanding: expandRes.loading, cancelling: cancelRes.loading };
 }
 
 // ─── Scheduled Reports ────────────────────────────────────────

@@ -1,0 +1,286 @@
+/**
+ * File:        apps/web/src/app/dashboard/operations/recurring-bookings/recurring-bookings.module.css
+ * Module:      Web · Dashboard · Operations · Recurring Bookings
+ * Purpose:     Stylesheet for the recurring bookings management page
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-07-21
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding-bottom: 24px;
+}
+
+/* Hero */
+.heroCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 22px 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.heroLeft { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.heroTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.heroSubtitle {
+  font-size: 13px;
+  color: #6A7282;
+  margin: 0;
+  line-height: 1.4;
+}
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FF6A2F;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+.heroAction:hover { background: #E85A1F; }
+.heroAction:active { transform: scale(0.97); }
+
+/* Stats row */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+.statCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.statHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.statIconWrap {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFEBE0;
+  border-radius: 8px;
+}
+.statLabel {
+  font-size: 12px;
+  color: #4A5565;
+  font-weight: 500;
+}
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #101828;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Table card */
+.tableCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.dataTable thead {
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+.dataTable th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #4A5565;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.dataTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #1F1F1F;
+  vertical-align: middle;
+}
+.dataTable tbody tr:last-child td {
+  border-bottom: none;
+}
+.dataTable tbody tr:hover {
+  background: #FBF6F4;
+}
+
+/* Cell helpers */
+.titleCell {
+  font-weight: 600;
+  color: #1F1F1F;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roomCell {
+  color: #4A5565;
+}
+.patternBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.patternDaily {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+.patternWeekly {
+  background: #FDF2F8;
+  color: #BE185D;
+}
+.patternMonthly {
+  background: #F0FDF4;
+  color: #16A34A;
+}
+.scheduleText {
+  font-size: 13px;
+  color: #4A5565;
+  white-space: nowrap;
+}
+.dateRangeText {
+  font-size: 13px;
+  color: #4A5565;
+  white-space: nowrap;
+}
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.statusActive {
+  background: #D1FAE5;
+  color: #065F46;
+}
+.statusCancelled {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+.actionsCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btnExpand {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  color: #4A5565;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnExpand:hover {
+  background: #F9FAFB;
+  border-color: #FF6A2F;
+  color: #FF6A2F;
+}
+.btnCancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #FECACA;
+  background: #FFFFFF;
+  color: #DC2626;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnCancel:hover {
+  background: #FEF2F2;
+}
+.btnLoading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Empty table state */
+.tableEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.tableEmptyIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #F9FAFB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D1D5DB;
+}
+.tableEmptyTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+.tableEmptyHint {
+  font-size: 13px;
+  color: #9CA3AF;
+  max-width: 320px;
+  line-height: 1.5;
+}

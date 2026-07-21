@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@apollo/client";
 import { useBookRoom, useMeetingRooms } from "@/hooks/use-operations";
+import { useRecurringBookingMutations } from "@/hooks/use-enterprise";
 import { GET_BOOKINGS } from "@/lib/apollo/operations";
 
 export interface BookRoomModalProps {
@@ -25,6 +26,8 @@ export interface BookRoomModalProps {
   centerId?: string;
   /** Pre-fill form fields from an existing booking (used for Extend flow). */
   prefillBooking?: { eventDate?: string; startTime?: string; endTime?: string; title?: string };
+  /** If true, show recurring booking fields and create a recurring booking instead of a one-time booking */
+  recurring?: boolean;
 }
 
 const emptyForm = {
@@ -35,13 +38,18 @@ const emptyForm = {
   title: "",
 };
 
-export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking }: BookRoomModalProps) {
+export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking, recurring }: BookRoomModalProps) {
   const [form, setForm] = useState(emptyForm);
   const [attendees, setAttendees] = useState<number>(1);
   const [touched, setTouched] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<"DAILY" | "WEEKLY" | "MONTHLY">("WEEKLY");
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>([1, 3, 5]);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
 
   const { rooms, loading } = useMeetingRooms(centerId ? { centerId } : undefined);
   const { book, booking } = useBookRoom();
+  const { create: createRecurring, creating: recurringCreating } = useRecurringBookingMutations();
 
   // Pre-select a room when one is passed in (and refresh if it changes).
   useEffect(() => {
@@ -64,7 +72,12 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking 
   useEffect(() => {
     if (!open) {
       setForm(emptyForm);
+      setAttendees(1);
       setTouched(false);
+      setIsRecurring(false);
+      setRecurrencePattern("WEEKLY");
+      setRecurrenceDays([1, 3, 5]);
+      setRecurrenceEndDate("");
     }
   }, [open]);
 
@@ -146,20 +159,51 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking 
     }
 
     try {
-      const result = await book({
-        roomId: form.roomId,
-        centerId: selectedRoom?.centerId ?? centerId ?? "",
-        eventDate: form.eventDate,
-        startTime: form.startTime,
-        endTime: form.endTime,
-        title: form.title.trim(),
-      });
-
-      if (result) {
-        toast.success("Meeting room booked successfully");
+      if (isRecurring) {
+        if (!recurrenceEndDate) {
+          toast.error("Recurrence end date is required");
+          return;
+        }
+        if (recurrenceEndDate <= form.eventDate) {
+          toast.error("Recurrence end date must be after the start date");
+          return;
+        }
+        if (recurrencePattern === "WEEKLY" && recurrenceDays.length === 0) {
+          toast.error("Select at least one day for weekly recurrence");
+          return;
+        }
+        const input: Record<string, unknown> = {
+          roomId: form.roomId,
+          centerId: selectedRoom?.centerId ?? centerId ?? "",
+          startDate: form.eventDate,
+          endDate: recurrenceEndDate,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          pattern: recurrencePattern,
+          title: form.title.trim(),
+        };
+        if (recurrencePattern === "WEEKLY") {
+          input.daysOfWeek = recurrenceDays;
+        }
+        await createRecurring(input);
+        toast.success("Recurring booking created");
         onClose();
       } else {
-        toast.error("Could not book the room. Please try again.");
+        const result = await book({
+          roomId: form.roomId,
+          centerId: selectedRoom?.centerId ?? centerId ?? "",
+          eventDate: form.eventDate,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          title: form.title.trim(),
+        });
+
+        if (result) {
+          toast.success("Meeting room booked successfully");
+          onClose();
+        } else {
+          toast.error("Could not book the room. Please try again.");
+        }
       }
     } catch (err) {
       toast.error(
@@ -310,6 +354,84 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking 
               )}
             </div>
 
+            {/* Make Recurring toggle */}
+            <div className="rounded-lg border border-gray-100 bg-gray-50/50 p-4 flex flex-col gap-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F]"
+                />
+                <span className="text-[13px] font-medium text-gray-700">Make this a recurring booking</span>
+              </label>
+
+              {isRecurring && (
+                <div className="flex flex-col gap-3 pl-7">
+                  {/* Pattern */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-gray-600">Repeat</label>
+                    <div className="flex gap-2">
+                      {(["DAILY", "WEEKLY", "MONTHLY"] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setRecurrencePattern(p)}
+                          className={`flex-1 py-2 rounded-lg text-[13px] font-medium border transition-colors ${
+                            recurrencePattern === p
+                              ? "border-[#FF6A2F] bg-[#FFEBE0] text-[#FF6A2F]"
+                              : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          {p === "DAILY" ? "Daily" : p === "WEEKLY" ? "Weekly" : "Monthly"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Days of week */}
+                  {recurrencePattern === "WEEKLY" && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[13px] font-medium text-gray-600">On days</label>
+                      <div className="flex gap-1.5">
+                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label, idx) => (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() =>
+                              setRecurrenceDays((prev) =>
+                                prev.includes(idx)
+                                  ? prev.filter((d) => d !== idx)
+                                  : [...prev, idx].sort(),
+                              )
+                            }
+                            className={`flex-1 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
+                              recurrenceDays.includes(idx)
+                                ? "border-[#FF6A2F] bg-[#FFEBE0] text-[#FF6A2F]"
+                                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* End date */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-gray-600">End Date</label>
+                    <input
+                      type="date"
+                      className="px-4 py-2.5 bg-white rounded-lg text-[14px] text-gray-900 outline-none border border-gray-200 focus:border-[#FF6A2F] transition-colors"
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Conflict preview */}
             {(conflictQuery.loading || hasConflict) && form.roomId && form.eventDate && form.startTime && form.endTime && (
               <div className={`rounded-lg p-4 ${hasConflict ? "bg-red-50 border border-red-100" : "bg-gray-50"}`}>
@@ -347,23 +469,23 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking 
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={booking}
+                className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 text-[14px] font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+                disabled={booking || recurringCreating}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 className="flex-1 py-3 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={booking || hasConflict}
+                disabled={booking || recurringCreating || hasConflict}
               >
-                {booking && (
+                {(booking || recurringCreating) && (
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
                     <path d="M22 12a10 10 0 01-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                 )}
-                {booking ? "Booking..." : "Confirm Booking"}
+                {recurringCreating ? "Creating..." : booking ? "Booking..." : isRecurring ? "Create Recurring" : "Confirm Booking"}
               </button>
             </div>
           </form>

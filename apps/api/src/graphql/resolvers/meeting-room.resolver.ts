@@ -156,8 +156,8 @@ export class MeetingRoomResolver {
   }
 
   @Mutation(() => MeetingRoom)
-  // @UseGuards(GqlAuthGuard, RolesGuard)
-  // @Roles(UserRole.ADMIN, UserRole.CENTER_MANAGER)
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.CENTER_MANAGER)
   async createMeetingRoom(
     @Args('input') input: CreateMeetingRoomInput,
   ): Promise<MeetingRoom> {
