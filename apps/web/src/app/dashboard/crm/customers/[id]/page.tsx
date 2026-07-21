@@ -565,7 +565,45 @@ export default function CustomerDetailPage() {
               </section>
 
               {/* Financial Summary */}
-              {renderFinancialSummary()}
+              {(() => {
+                const deposits = depositsData?.customerDeposits ?? [];
+                const contracts = contractsData?.customerContracts ?? [];
+                const invoices = invoicesData?.customerInvoices ?? [];
+                const totalDeposits = deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
+                const activeContracts = contracts.filter((c: any) => c.status === "Active" || c.status === "Expiring Soon");
+                const activeContractsTotal = activeContracts.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0);
+                const outstandingInvoices = invoices.filter((i: any) => i.status !== "Paid");
+                const outstandingTotal = outstandingInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+                const paidInvoices = invoices.filter((i: any) => i.status === "Paid");
+                const totalSpent = paidInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+                return (
+                  <section className={styles.card}>
+                    <h2 className={styles.cardTitle}>Financial Summary</h2>
+                    <div className={styles.finSummaryGrid}>
+                      <div className={styles.finSummaryCard}>
+                        <p className={styles.finSummaryLabel}>Total Deposits</p>
+                        <p className={styles.finSummaryValue}>{formatRupee(totalDeposits)}</p>
+                        <p className={styles.finSummaryCount}>{deposits.length} deposit{deposits.length !== 1 ? "s" : ""}</p>
+                      </div>
+                      <div className={styles.finSummaryCard}>
+                        <p className={styles.finSummaryLabel}>Active Contracts</p>
+                        <p className={styles.finSummaryValue}>{formatRupee(activeContractsTotal)}</p>
+                        <p className={styles.finSummaryCount}>{activeContracts.length} active</p>
+                      </div>
+                      <div className={styles.finSummaryCard}>
+                        <p className={styles.finSummaryLabel}>Outstanding Invoices</p>
+                        <p className={styles.finSummaryValue}>{formatRupee(outstandingTotal)}</p>
+                        <p className={styles.finSummaryCount}>{outstandingInvoices.length} pending</p>
+                      </div>
+                      <div className={styles.finSummaryCard}>
+                        <p className={styles.finSummaryLabel}>Total Spent</p>
+                        <p className={styles.finSummaryValue}>{formatRupee(totalSpent)}</p>
+                        <p className={styles.finSummaryCount}>{paidInvoices.length} paid</p>
+                      </div>
+                    </div>
+                  </section>
+                );
+              })()}
 
               {/* Deposits */}
               <section className={styles.card}>
@@ -586,7 +624,61 @@ export default function CustomerDetailPage() {
                     {Icons.chevronDown}
                   </span>
                 </div>
-                {depositsOpen && renderDeposits()}
+                {depositsOpen && (() => {
+                  const deposits = depositsData?.customerDeposits ?? [];
+                  if (deposits.length === 0) {
+                    return (
+                      <div className={styles.emptyState}>
+                        <p className={styles.emptyStateTitle}>No deposits</p>
+                        <p className={styles.emptyStateBody}>No deposits have been recorded for this customer yet.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className={styles.finList}>
+                      {deposits.map((d: any) => (
+                        <div key={d.id} className={styles.finListItem}>
+                          <div className={styles.finListMeta}>
+                            <p className={styles.finListPrimary}>{d.depositType} Deposit &middot; {d.referenceNumber}</p>
+                            <p className={styles.finListSecondary}>
+                              Received {formatDate(d.receivedDate)} &middot; {d.notes || "—"}
+                            </p>
+                          </div>
+                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${d.status?.replace(/\s+/g, "_")}] ?? ""}`}>{d.status}</span>
+                          <span className={styles.finListAmount}>{formatRupee(d.amount)}</span>
+                          <div className={styles.finActions}>
+                            {d.status === "Held" && !d.frozen && (
+                              <>
+                                <button type="button" className={styles.finActionBtn} onClick={async () => {
+                                  const reason = prompt("Freeze reason (optional):");
+                                  if (reason === null) return;
+                                  await requestReleaseMut({ variables: { id: d.id, reason: reason || undefined } });
+                                  toast.success("Release requested");
+                                }}>Request Release</button>
+                                <button type="button" className={styles.finActionBtn} onClick={async () => {
+                                  await freezeDepositMut({ variables: { id: d.id } });
+                                  toast.success("Deposit frozen");
+                                }}>Freeze</button>
+                              </>
+                            )}
+                            {d.frozen && (
+                              <button type="button" className={styles.finActionBtn} onClick={async () => {
+                                await unfreezeDepositMut({ variables: { id: d.id } });
+                                toast.success("Deposit unfrozen");
+                              }}>Unfreeze</button>
+                            )}
+                            {d.status === "Release Requested" && (
+                              <button type="button" className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`} onClick={async () => {
+                                await releaseDepositMut({ variables: { id: d.id } });
+                                toast.success("Deposit released");
+                              }}>Release</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </section>
 
               {/* Contracts */}
@@ -608,7 +700,49 @@ export default function CustomerDetailPage() {
                     {Icons.chevronDown}
                   </span>
                 </div>
-                {contractsOpen && renderContracts()}
+                {contractsOpen && (() => {
+                  const contracts = contractsData?.customerContracts ?? [];
+                  if (contracts.length === 0) {
+                    return (
+                      <div className={styles.emptyState}>
+                        <p className={styles.emptyStateTitle}>No contracts</p>
+                        <p className={styles.emptyStateBody}>No contracts have been created for this customer yet.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className={styles.finList}>
+                      {contracts.map((c: any) => (
+                        <div key={c.id} className={styles.finListItem}>
+                          <div className={styles.finListMeta}>
+                            <p className={styles.finListPrimary}>{c.contractNumber} &middot; {c.planName}</p>
+                            <p className={styles.finListSecondary}>
+                              {formatDate(c.startDate)} — {formatDate(c.endDate)} &middot; {c.paymentFrequency} &middot; Auto-renew: {c.autoRenew ? "Yes" : "No"}
+                            </p>
+                          </div>
+                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${c.status?.replace(/\s+/g, "_")}] ?? ""}`}>{c.status}</span>
+                          <span className={styles.finListAmount}>{formatRupee(c.amount)}</span>
+                          <div className={styles.finActions}>
+                            {c.status === "Active" && (
+                              <>
+                                <button type="button" className={`${styles.finActionBtn} ${styles.finActionBtnPrimary}`} onClick={() => {
+                                  setRenewingContractId(c.id);
+                                  setRenewEndDate("");
+                                  setShowRenewContractDialog(true);
+                                }}>Renew</button>
+                                <button type="button" className={`${styles.finActionBtn} ${styles.finActionBtnDanger}`} onClick={async () => {
+                                  if (!confirm("Terminate this contract?")) return;
+                                  await terminateContractMut({ variables: { id: c.id } });
+                                  toast.success("Contract terminated");
+                                }}>Terminate</button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </section>
 
               {/* Invoices */}
@@ -630,7 +764,48 @@ export default function CustomerDetailPage() {
                     {Icons.chevronDown}
                   </span>
                 </div>
-                {invoicesOpen && renderInvoices()}
+                {invoicesOpen && (() => {
+                  const invoices = invoicesData?.customerInvoices ?? [];
+                  if (invoices.length === 0) {
+                    return (
+                      <div className={styles.emptyState}>
+                        <p className={styles.emptyStateTitle}>No invoices</p>
+                        <p className={styles.emptyStateBody}>No invoices have been generated for this customer yet.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className={styles.finList}>
+                      {invoices.map((inv: any) => (
+                        <div key={inv.id} className={styles.finListItem}>
+                          <div className={styles.finListMeta}>
+                            <p className={styles.finListPrimary}>{inv.invoiceNumber} &middot; {inv.planName || "—"}</p>
+                            <p className={styles.finListSecondary}>
+                              Issued {formatDate(inv.issueDate)} &middot; Due {formatDate(inv.dueDate)}
+                              {inv.paidDate ? ` &middot; Paid ${formatDate(inv.paidDate)}` : ""}
+                            </p>
+                          </div>
+                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${inv.status?.replace(/\s+/g, "_")}] ?? ""}`}>{inv.status}</span>
+                          <span className={styles.finListAmount}>{formatRupee(inv.totalAmount)}</span>
+                          <div className={styles.finActions}>
+                            {inv.status !== "Paid" && (
+                              <button type="button" className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`} onClick={async () => {
+                                const methods = ["CARD", "UPI", "WALLET", "BANK_TRANSFER"] as const;
+                                const method = prompt(`Payment method (${methods.join(", ")}):`);
+                                if (!method || !methods.includes(method as any)) {
+                                  if (method !== null) toast.error("Invalid payment method");
+                                  return;
+                                }
+                                await markPaidMut({ variables: { id: inv.id, paymentMethod: method } });
+                                toast.success("Invoice marked as paid");
+                              }}>Mark Paid</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </section>
             </>
           )}
@@ -749,249 +924,6 @@ export default function CustomerDetailPage() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-/* ============================================================
-   Financial Section Renderers (Overview tab)
-   ============================================================ */
-
-function renderFinancialSummary() {
-  const deposits = depositsData?.customerDeposits ?? [];
-  const contracts = contractsData?.customerContracts ?? [];
-  const invoices = invoicesData?.customerInvoices ?? [];
-
-  const totalDeposits = deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
-  const activeContracts = contracts.filter((c: any) => c.status === "Active" || c.status === "Expiring Soon");
-  const activeContractsTotal = activeContracts.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0);
-  const outstandingInvoices = invoices.filter((i: any) => i.status !== "Paid");
-  const outstandingTotal = outstandingInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
-  const paidInvoices = invoices.filter((i: any) => i.status === "Paid");
-  const totalSpent = paidInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
-
-  return (
-    <section className={styles.card}>
-      <h2 className={styles.cardTitle}>Financial Summary</h2>
-      <div className={styles.finSummaryGrid}>
-        <div className={styles.finSummaryCard}>
-          <p className={styles.finSummaryLabel}>Total Deposits</p>
-          <p className={styles.finSummaryValue}>{formatRupee(totalDeposits)}</p>
-          <p className={styles.finSummaryCount}>{deposits.length} deposit{deposits.length !== 1 ? "s" : ""}</p>
-        </div>
-        <div className={styles.finSummaryCard}>
-          <p className={styles.finSummaryLabel}>Active Contracts</p>
-          <p className={styles.finSummaryValue}>{formatRupee(activeContractsTotal)}</p>
-          <p className={styles.finSummaryCount}>{activeContracts.length} active</p>
-        </div>
-        <div className={styles.finSummaryCard}>
-          <p className={styles.finSummaryLabel}>Outstanding Invoices</p>
-          <p className={styles.finSummaryValue}>{formatRupee(outstandingTotal)}</p>
-          <p className={styles.finSummaryCount}>{outstandingInvoices.length} pending</p>
-        </div>
-        <div className={styles.finSummaryCard}>
-          <p className={styles.finSummaryLabel}>Total Spent</p>
-          <p className={styles.finSummaryValue}>{formatRupee(totalSpent)}</p>
-          <p className={styles.finSummaryCount}>{paidInvoices.length} paid</p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function renderDeposits() {
-  const deposits = depositsData?.customerDeposits ?? [];
-
-  if (deposits.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <p className={styles.emptyStateTitle}>No deposits</p>
-        <p className={styles.emptyStateBody}>No deposits have been recorded for this customer yet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.finList}>
-      {deposits.map((d: any) => (
-        <div key={d.id} className={styles.finListItem}>
-          <div className={styles.finListMeta}>
-            <p className={styles.finListPrimary}>{d.depositType} Deposit &middot; {d.referenceNumber}</p>
-            <p className={styles.finListSecondary}>
-              Received {formatDate(d.receivedDate)} &middot; {d.notes || "—"}
-            </p>
-          </div>
-          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${d.status?.replace(/\s+/g, "_")}] ?? ""}`}>
-            {d.status}
-          </span>
-          <span className={styles.finListAmount}>{formatRupee(d.amount)}</span>
-          <div className={styles.finActions}>
-            {d.status === "Held" && !d.frozen && (
-              <>
-                <button
-                  type="button"
-                  className={styles.finActionBtn}
-                  onClick={async () => {
-                    const reason = prompt("Freeze reason (optional):");
-                    if (reason === null) return;
-                    await requestReleaseMut({ variables: { id: d.id, reason: reason || undefined } });
-                    toast.success("Release requested");
-                  }}
-                >
-                  Request Release
-                </button>
-                <button
-                  type="button"
-                  className={styles.finActionBtn}
-                  onClick={async () => {
-                    await freezeDepositMut({ variables: { id: d.id } });
-                    toast.success("Deposit frozen");
-                  }}
-                >
-                  Freeze
-                </button>
-              </>
-            )}
-            {d.frozen && (
-              <button
-                type="button"
-                className={styles.finActionBtn}
-                onClick={async () => {
-                  await unfreezeDepositMut({ variables: { id: d.id } });
-                  toast.success("Deposit unfrozen");
-                }}
-              >
-                Unfreeze
-              </button>
-            )}
-            {d.status === "Release Requested" && (
-              <button
-                type="button"
-                className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`}
-                onClick={async () => {
-                  await releaseDepositMut({ variables: { id: d.id } });
-                  toast.success("Deposit released");
-                }}
-              >
-                Release
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function renderContracts() {
-  const contracts = contractsData?.customerContracts ?? [];
-
-  if (contracts.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <p className={styles.emptyStateTitle}>No contracts</p>
-        <p className={styles.emptyStateBody}>No contracts have been created for this customer yet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.finList}>
-      {contracts.map((c: any) => (
-        <div key={c.id} className={styles.finListItem}>
-          <div className={styles.finListMeta}>
-            <p className={styles.finListPrimary}>{c.contractNumber} &middot; {c.planName}</p>
-            <p className={styles.finListSecondary}>
-              {formatDate(c.startDate)} — {formatDate(c.endDate)} &middot; {c.paymentFrequency} &middot; Auto-renew: {c.autoRenew ? "Yes" : "No"}
-            </p>
-          </div>
-          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${c.status?.replace(/\s+/g, "_")}] ?? ""}`}>
-            {c.status}
-          </span>
-          <span className={styles.finListAmount}>{formatRupee(c.amount)}</span>
-          <div className={styles.finActions}>
-            {c.status === "Active" && (
-              <>
-                <button
-                  type="button"
-                  className={`${styles.finActionBtn} ${styles.finActionBtnPrimary}`}
-                  onClick={() => {
-                    setRenewingContractId(c.id);
-                    setRenewEndDate("");
-                    setShowRenewContractDialog(true);
-                  }}
-                >
-                  Renew
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.finActionBtn} ${styles.finActionBtnDanger}`}
-                  onClick={async () => {
-                    if (!confirm("Terminate this contract?")) return;
-                    await terminateContractMut({ variables: { id: c.id } });
-                    toast.success("Contract terminated");
-                  }}
-                >
-                  Terminate
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function renderInvoices() {
-  const invoices = invoicesData?.customerInvoices ?? [];
-
-  if (invoices.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <p className={styles.emptyStateTitle}>No invoices</p>
-        <p className={styles.emptyStateBody}>No invoices have been generated for this customer yet.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.finList}>
-      {invoices.map((inv: any) => (
-        <div key={inv.id} className={styles.finListItem}>
-          <div className={styles.finListMeta}>
-            <p className={styles.finListPrimary}>{inv.invoiceNumber} &middot; {inv.planName || "—"}</p>
-            <p className={styles.finListSecondary}>
-              Issued {formatDate(inv.issueDate)} &middot; Due {formatDate(inv.dueDate)}
-              {inv.paidDate ? ` &middot; Paid ${formatDate(inv.paidDate)}` : ""}
-            </p>
-          </div>
-          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${inv.status?.replace(/\s+/g, "_")}] ?? ""}`}>
-            {inv.status}
-          </span>
-          <span className={styles.finListAmount}>{formatRupee(inv.totalAmount)}</span>
-          <div className={styles.finActions}>
-            {inv.status !== "Paid" && (
-              <button
-                type="button"
-                className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`}
-                onClick={async () => {
-                  const methods = ["CARD", "UPI", "WALLET", "BANK_TRANSFER"] as const;
-                  const method = prompt(`Payment method (${methods.join(", ")}):`);
-                  if (!method || !methods.includes(method as any)) {
-                    if (method !== null) toast.error("Invalid payment method");
-                    return;
-                  }
-                  await markPaidMut({ variables: { id: inv.id, paymentMethod: method } });
-                  toast.success("Invoice marked as paid");
-                }}
-              >
-                Mark Paid
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }
