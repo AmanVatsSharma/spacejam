@@ -205,6 +205,34 @@ export default function LeadsPage() {
     { fetchPolicy: 'cache-and-network' },
   );
 
+  /* ── Filtered leads (must be before selected so selected can reference it) ── */
+  const filtered = useMemo(() => {
+    let result = leads.filter((l) => {
+      const q = search.trim().toLowerCase();
+      const matchesQuery =
+        q.length === 0 ||
+        l.name.toLowerCase().includes(q) ||
+        (l.email?.toLowerCase().includes(q) ?? false) ||
+        (l.company?.toLowerCase().includes(q) ?? false);
+      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
+      const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
+      return matchesQuery && matchesStatus && matchesSource;
+    });
+
+    // Apply sort
+    if (sort === 'Name') {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === 'Budget') {
+      result = [...result].sort(
+        (a, b) =>
+          parseFloat(b.budget?.replace(/[^0-9]/g, '') || '0') -
+          parseFloat(a.budget?.replace(/[^0-9]/g, '') || '0'),
+      );
+    }
+    // 'Recent' keeps the default (backend) order
+    return result;
+  }, [leads, search, statusFilter, sourceFilter, sort]);
+
   /* ── Selected lead ── */
   const selected = useMemo(
     () => filtered.find((l) => l.id === selectedId) ?? filtered[0],
@@ -300,35 +328,6 @@ export default function LeadsPage() {
     },
     [createLead],
   );
-
-  /* ── Filtered leads ── */
-  const filtered = useMemo(() => {
-    let result = leads.filter((l) => {
-      const q = search.trim().toLowerCase();
-      const matchesQuery =
-        q.length === 0 ||
-        l.name.toLowerCase().includes(q) ||
-        (l.email?.toLowerCase().includes(q) ?? false) ||
-        (l.company?.toLowerCase().includes(q) ?? false);
-      const matchesStatus = statusFilter === 'all' || l.status === statusFilter;
-      const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
-      return matchesQuery && matchesStatus && matchesSource;
-    });
-
-    // Apply sort
-    if (sort === 'Name') {
-      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === 'Budget') {
-      result = [...result].sort(
-        (a, b) =>
-          parseFloat(b.budget?.replace(/[^0-9]/g, '') || '0') -
-          parseFloat(a.budget?.replace(/[^0-9]/g, '') || '0'),
-      );
-    }
-    // 'Recent' keeps the default (backend) order
-
-    return result;
-  }, [leads, search, statusFilter, sourceFilter, sort]);
 
   /* ── Lead counts for pipeline stats ── */
   const stats = useMemo(() => {
