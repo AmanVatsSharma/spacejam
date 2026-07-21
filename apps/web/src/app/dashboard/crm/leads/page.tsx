@@ -18,6 +18,7 @@ import { useQuery, useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import {
   GET_LEADS,
+  GET_CUSTOMERS,
   CREATE_LEAD,
   UPDATE_LEAD,
   CONVERT_LEAD,
@@ -198,6 +199,12 @@ export default function LeadsPage() {
   /* ── Apollo data ── */
   const { leads, loading, error, refetch } = useLeads();
 
+  // Customers query used after conversion to find the newly created customer
+  const { refetch: refetchCustomers } = useQuery<{ customers: { email: string; id: string }[] }>(
+    GET_CUSTOMERS,
+    { fetchPolicy: 'cache-and-network' },
+  );
+
   /* ── Mutations ── */
   const [createLead] = useMutation(CREATE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
@@ -209,7 +216,10 @@ export default function LeadsPage() {
     refetchQueries: [{ query: GET_LEADS }],
   });
   const [convertLead] = useMutation(CONVERT_LEAD, {
-    refetchQueries: [{ query: GET_LEADS }],
+    refetchQueries: [
+      { query: GET_LEADS },
+      { query: GET_CUSTOMERS },
+    ],
   });
 
   /* ── Lead counts for pipeline stats ── */
@@ -270,11 +280,19 @@ export default function LeadsPage() {
       try {
         await convertLead({ variables: { id: leadId } });
         toast.success('Lead converted to client');
+        // After successful conversion, find the new customer and navigate to their detail page
+        const customersData = await refetchCustomers();
+        const newCustomer = customersData.data?.customers?.find(
+          (c: any) => c.email === selected?.email,
+        );
+        if (newCustomer) {
+          router.push(`/dashboard/crm/customers/${newCustomer.id}`);
+        }
       } catch {
         toast.error('Failed to convert lead');
       }
     },
-    [convertLead],
+    [convertLead, router, refetchCustomers, selected],
   );
 
   const handleAddLead = useCallback(

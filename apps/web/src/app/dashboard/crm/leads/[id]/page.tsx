@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   GET_LEAD,
   GET_LEADS,
+  GET_CUSTOMERS,
   UPDATE_LEAD,
   CONVERT_LEAD,
   DELETE_LEAD,
@@ -130,11 +131,21 @@ export default function LeadDetailsPage() {
     refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
   });
   const [convertLead] = useMutation(CONVERT_LEAD, {
-    refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }, { query: GET_LEADS }],
+    refetchQueries: [
+      { query: GET_LEAD, variables: { id: leadId } },
+      { query: GET_LEADS },
+      { query: GET_CUSTOMERS },
+    ],
   });
   const [deleteLead] = useMutation(DELETE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
   });
+
+  // Customers query used after conversion to locate the newly created customer
+  const { refetch: refetchCustomers } = useQuery<{ customers: { email: string; id: string }[] }>(
+    GET_CUSTOMERS,
+    { fetchPolicy: 'cache-and-network' },
+  );
 
   const handleDeleteLead = async () => {
     if (!confirm(`Delete lead "${lead?.name}"? This cannot be undone.`)) return;
@@ -153,9 +164,40 @@ export default function LeadDetailsPage() {
       await convertLead({ variables: { id: leadId } });
       toast.success("Lead converted to client");
       setShowConvertClient(false);
+      // Find the newly created customer by email and navigate to their detail page
+      const customersData = await refetchCustomers();
+      const newCustomer = customersData.data?.customers?.find(
+        (c: any) => c.email === lead?.email,
+      );
+      if (newCustomer) {
+        router.push(`/dashboard/crm/customers/${newCustomer.id}`);
+      }
     } catch (err) {
       console.error("Failed to convert lead:", err);
       toast.error("Could not convert lead");
+    }
+  };
+
+  const handleViewCustomer = async () => {
+    if (!lead?.email) {
+      toast.error("No email associated with this lead");
+      return;
+    }
+    setIsFindingCustomer(true);
+    try {
+      const customersData = await refetchCustomers();
+      const found = customersData.data?.customers?.find(
+        (c: any) => c.email === lead?.email,
+      );
+      if (found) {
+        router.push(`/dashboard/crm/customers/${found.id}`);
+      } else {
+        toast.error("No matching customer found");
+      }
+    } catch {
+      toast.error("Could not find customer");
+    } finally {
+      setIsFindingCustomer(false);
     }
   };
 
@@ -244,6 +286,10 @@ export default function LeadDetailsPage() {
   const [showEmail, setShowEmail] = useState(false);
   const [showAddNote, setShowAddNote] = useState(false);
 
+  // Local state for the "View Customer" button
+  const [viewingCustomerId, setViewingCustomerId] = useState<string | null>(null);
+  const [isFindingCustomer, setIsFindingCustomer] = useState(false);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -315,9 +361,19 @@ export default function LeadDetailsPage() {
             <button onClick={() => setShowEditLead(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 active:scale-[0.97] shadow-sm">
               {Icons.edit} Edit Lead
             </button>
-            <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] shadow-sm">
-              {Icons.userConvert} Convert to Client
-            </button>
+            {lead.status === "Converted" ? (
+              <button
+                onClick={handleViewCustomer}
+                disabled={isFindingCustomer}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#10B981] text-white rounded-lg text-sm font-semibold hover:bg-[#059669] transition-all duration-200 active:scale-[0.97] shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {Icons.users} {isFindingCustomer ? "Finding…" : "View Customer"}
+              </button>
+            ) : (
+              <button onClick={() => setShowConvertClient(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all duration-200 active:scale-[0.97] shadow-sm">
+                {Icons.userConvert} Convert to Client
+              </button>
+            )}
             <button
               onClick={handleDeleteLead}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg text-sm font-semibold hover:bg-red-50 transition-all duration-200 active:scale-[0.97] shadow-sm"

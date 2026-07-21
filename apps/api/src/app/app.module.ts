@@ -29,6 +29,7 @@ import { RequestModule } from '../request/request.module';
 import { UserModule } from '../user/user.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { NotificationModule } from '../notification/notification.module';
+import { EnterpriseModule } from '../enterprise/enterprise.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { NotificationModule } from '../notification/notification.module';
     UserModule,
     AnalyticsModule,
     NotificationModule,
+    EnterpriseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

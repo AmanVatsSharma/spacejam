@@ -13,11 +13,15 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     ManyToOne,
+    OneToMany,
     JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { CustomerStatus } from '../../graphql/types/user.type';
 import { Center } from './center.entity';
+import { Deposit } from './deposit.entity';
+import { Contract } from './contract.entity';
+import { Invoice } from './invoice.entity';
 
 @Entity('customers')
 @ObjectType()
@@ -87,6 +91,18 @@ export class Customer {
     @ManyToOne(() => Center, { eager: false })
     @JoinColumn({ name: 'centerId' })
     center?: Center;
+
+    @Field(() => [Deposit], { nullable: true })
+    @OneToMany(() => Deposit, (deposit) => deposit.customer)
+    deposits?: Deposit[];
+
+    @Field(() => [Contract], { nullable: true })
+    @OneToMany(() => Contract, (contract) => contract.customer)
+    contracts?: Contract[];
+
+    @Field(() => [Invoice], { nullable: true })
+    @OneToMany(() => Invoice, (invoice) => invoice.customer)
+    invoices?: Invoice[];
 
     @Field(() => Date)
     @CreateDateColumn({ name: 'createdAt' })

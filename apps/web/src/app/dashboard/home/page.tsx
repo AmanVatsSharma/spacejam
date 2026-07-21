@@ -76,7 +76,7 @@ function formatCurrency(amount: number): string {
 
 export default function DashboardPage() {
   const { user } = useAuth() || { user: null };
-  const greetingName = user?.name?.split(" ")[0] || "User";
+  const greetingName = user?.name || "User";
 
   const [createLead] = useMutation(CREATE_LEAD, {
     refetchQueries: [{ query: LEAD_COUNT }, { query: GET_LEADS }],

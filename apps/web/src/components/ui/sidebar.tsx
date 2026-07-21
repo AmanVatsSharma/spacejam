@@ -88,6 +88,22 @@ const SettingsIcon = ({ active }: IconProps) => (
   </svg>
 );
 
+const AuditIcon = ({ active }: IconProps) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 3H15V15H3V3Z" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M6 7H12M6 10H12M6 13H10" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const CalendarSyncIcon = ({ active }: IconProps) => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2.5" y="3.5" width="13" height="12" rx="2" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5"/>
+    <path d="M2.5 7H15.5M6 2V5M12 2V5" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round"/>
+    <path d="M9 11L11 13L9 15" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M11 13H6" stroke={active ? "#FFFFFF" : "#4B5563"} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 /*
 const FloorIcon = ({ active }: IconProps) => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -126,6 +142,8 @@ const icons: Record<string, (props: IconProps) => ReactNode> = {
   report: ReportIcon,
   inventory: InventoryIcon,
   settings: SettingsIcon,
+  audit: AuditIcon,
+  calendar: CalendarSyncIcon,
 };
 
 interface SidebarProps {
@@ -138,13 +156,14 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
 
   const navItems: NavItem[] = [
     { id: "dashboard", label: "Dashboard", icon: DashboardIcon, href: "/dashboard" },
-    // Point directly to customers to avoid the /dashboard/crm → /dashboard/crm/customers
-    // redirect which gets cached by the browser's RSC cache across builds.
     { id: "crm", label: "CRM", icon: CRMIcon, href: "/dashboard/crm/customers" },
     { id: "revenue", label: "Revenue", icon: RevenueIcon, href: "/dashboard/revenue" },
     { id: "operations", label: "Operations", icon: OperationsIcon, href: "/dashboard/operations" },
     { id: "report", label: "Report", icon: ReportIcon, href: "/dashboard/report" },
     { id: "inventory", label: "Inventory", icon: InventoryIcon, href: "/dashboard/inventory" },
+    { id: "audit", label: "Audit Log", icon: AuditIcon, href: "/dashboard/audit" },
+    { id: "equipment", label: "Equipment", icon: InventoryIcon, href: "/dashboard/equipment" },
+    { id: "calendar", label: "Calendar", icon: CalendarSyncIcon, href: "/dashboard/calendar-sync" },
     { id: "settings", label: "Settings", icon: SettingsIcon, href: "/dashboard/settings" },
   ];
 

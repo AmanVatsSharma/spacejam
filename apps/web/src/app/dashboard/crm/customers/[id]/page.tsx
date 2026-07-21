@@ -6,15 +6,28 @@
  * Purpose:     360° customer view matching Figma node 0:23687
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-24
+ * Last-updated: 2026-07-21
  */
 
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useQuery } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
-import { GET_CUSTOMER } from "@/lib/apollo/operations";
+import {
+  GET_CUSTOMER,
+  GET_CUSTOMER_DEPOSITS,
+  GET_CUSTOMER_CONTRACTS,
+  GET_CUSTOMER_INVOICES,
+  TERMINATE_CONTRACT,
+  RENEW_CONTRACT,
+  FREEZE_DEPOSIT,
+  UNFREEZE_DEPOSIT,
+  RELEASE_DEPOSIT,
+  REQUEST_DEPOSIT_RELEASE,
+  SEND_DEPOSIT_REMINDER,
+  MARK_INVOICE_PAID,
+} from "@/lib/apollo/operations";
 import styles from "./customer-detail.module.css";
 
 type Tab = "overview" | "employees" | "activity" | "documents";
@@ -280,6 +293,12 @@ export default function CustomerDetailPage() {
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [showFreezeDialog, setShowFreezeDialog] = useState(false);
   const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [depositsOpen, setDepositsOpen] = useState(true);
+  const [contractsOpen, setContractsOpen] = useState(true);
+  const [invoicesOpen, setInvoicesOpen] = useState(true);
+  const [showRenewContractDialog, setShowRenewContractDialog] = useState(false);
+  const [renewingContractId, setRenewingContractId] = useState<string>("");
+  const [renewEndDate, setRenewEndDate] = useState("");
 
   /* ── Apollo: fetch customer ── */
   const { data, loading, error } = useQuery(GET_CUSTOMER, {
@@ -290,16 +309,87 @@ export default function CustomerDetailPage() {
   });
   const customer = data?.customer;
 
+  /* ── Apollo: fetch financial data ── */
+  const { data: depositsData } = useQuery(GET_CUSTOMER_DEPOSITS, {
+    variables: { customerId },
+    skip: !customerId,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const { data: contractsData } = useQuery(GET_CUSTOMER_CONTRACTS, {
+    variables: { customerId },
+    skip: !customerId,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const { data: invoicesData } = useQuery(GET_CUSTOMER_INVOICES, {
+    variables: { customerId },
+    skip: !customerId,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+
+  /* ── Apollo: financial mutations ── */
+  const [terminateContractMut] = useMutation(TERMINATE_CONTRACT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER_CONTRACTS, variables: { customerId } },
+      { query: GET_CUSTOMER_INVOICES, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [renewContractMut] = useMutation(RENEW_CONTRACT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_CONTRACTS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [freezeDepositMut] = useMutation(FREEZE_DEPOSIT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [unfreezeDepositMut] = useMutation(UNFREEZE_DEPOSIT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [releaseDepositMut] = useMutation(RELEASE_DEPOSIT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [requestReleaseMut] = useMutation(REQUEST_DEPOSIT_RELEASE, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [sendReminderMut] = useMutation(SEND_DEPOSIT_REMINDER, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+    ],
+  });
+  const [markPaidMut] = useMutation(MARK_INVOICE_PAID, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_INVOICES, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+
   // Lock body scroll while dialog is open
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (!(showUpgradeDialog || showRenewDialog)) return;
+    if (!(showUpgradeDialog || showRenewDialog || showRenewContractDialog)) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [showUpgradeDialog, showRenewDialog]);
+  }, [showUpgradeDialog, showRenewDialog, showRenewContractDialog]);
 
   /* ── Loading state ── */
   if (loading && !customer) {
@@ -464,6 +554,7 @@ export default function CustomerDetailPage() {
 
           {activeTab === "overview" && (
             <>
+              {/* Membership Details */}
               <section className={styles.card}>
                 <h2 className={styles.cardTitle}>Membership Details</h2>
                 <div className={`${styles.fieldGrid} ${styles.fieldGrid3}`}>
@@ -473,33 +564,73 @@ export default function CustomerDetailPage() {
                 </div>
               </section>
 
+              {/* Financial Summary */}
+              {renderFinancialSummary()}
+
+              {/* Deposits */}
               <section className={styles.card}>
-                <h2 className={styles.cardTitle}>Financial Summary</h2>
-                <div className={`${styles.fieldGrid} ${styles.fieldGrid4}`}>
-                  {financialFields.map((f) => (
-                    <Field
-                      key={f.label}
-                      label={f.label}
-                      value={f.value}
-                      highlight={f.highlight}
-                    />
-                  ))}
+                <div
+                  className={styles.finSectionHeader}
+                  onClick={() => setDepositsOpen((o) => !o)}
+                >
+                  <div className={styles.finSectionHeaderLeft}>
+                    <span className={styles.finSectionIcon} aria-hidden="true">
+                      {Icons.rupee}
+                    </span>
+                    <h2 className={styles.finSectionTitle}>Deposits</h2>
+                  </div>
+                  <span
+                    className={`${styles.finSectionToggle} ${depositsOpen ? styles.finSectionToggleOpen : ""}`}
+                    aria-hidden="true"
+                  >
+                    {Icons.chevronDown}
+                  </span>
                 </div>
+                {depositsOpen && renderDeposits()}
               </section>
 
+              {/* Contracts */}
               <section className={styles.card}>
-                <h2 className={styles.cardTitle}>Usage Metrics</h2>
-                <div className={`${styles.fieldGrid} ${styles.fieldGrid3}`}>
-                  {usageFields.map((f) => (
-                    <Field
-                      key={f.label}
-                      label={f.label}
-                      value={f.value}
-                      trend={f.trend}
-                      subtext={f.subtext}
-                    />
-                  ))}
+                <div
+                  className={styles.finSectionHeader}
+                  onClick={() => setContractsOpen((o) => !o)}
+                >
+                  <div className={styles.finSectionHeaderLeft}>
+                    <span className={styles.finSectionIcon} aria-hidden="true">
+                      {Icons.filePdf}
+                    </span>
+                    <h2 className={styles.finSectionTitle}>Contracts</h2>
+                  </div>
+                  <span
+                    className={`${styles.finSectionToggle} ${contractsOpen ? styles.finSectionToggleOpen : ""}`}
+                    aria-hidden="true"
+                  >
+                    {Icons.chevronDown}
+                  </span>
                 </div>
+                {contractsOpen && renderContracts()}
+              </section>
+
+              {/* Invoices */}
+              <section className={styles.card}>
+                <div
+                  className={styles.finSectionHeader}
+                  onClick={() => setInvoicesOpen((o) => !o)}
+                >
+                  <div className={styles.finSectionHeaderLeft}>
+                    <span className={styles.finSectionIcon} aria-hidden="true">
+                      {Icons.invoice}
+                    </span>
+                    <h2 className={styles.finSectionTitle}>Invoices</h2>
+                  </div>
+                  <span
+                    className={`${styles.finSectionToggle} ${invoicesOpen ? styles.finSectionToggleOpen : ""}`}
+                    aria-hidden="true"
+                  >
+                    {Icons.chevronDown}
+                  </span>
+                </div>
+                {invoicesOpen && renderInvoices()}
               </section>
             </>
           )}
@@ -599,6 +730,268 @@ export default function CustomerDetailPage() {
         customerName={displayName}
         onClose={() => setShowRenewDialog(false)}
       />
+
+      {showRenewContractDialog && (
+        <RenewContractDialog
+          open={showRenewContractDialog}
+          contractId={renewingContractId}
+          onClose={() => {
+            setShowRenewContractDialog(false);
+            setRenewingContractId("");
+            setRenewEndDate("");
+          }}
+          onRenew={async (id, date) => {
+            await renewContractMut({ variables: { id, newEndDate: date } });
+            toast.success("Contract renewed successfully");
+            setShowRenewContractDialog(false);
+            setRenewingContractId("");
+            setRenewEndDate("");
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Financial Section Renderers (Overview tab)
+   ============================================================ */
+
+function renderFinancialSummary() {
+  const deposits = depositsData?.customerDeposits ?? [];
+  const contracts = contractsData?.customerContracts ?? [];
+  const invoices = invoicesData?.customerInvoices ?? [];
+
+  const totalDeposits = deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
+  const activeContracts = contracts.filter((c: any) => c.status === "Active" || c.status === "Expiring Soon");
+  const activeContractsTotal = activeContracts.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0);
+  const outstandingInvoices = invoices.filter((i: any) => i.status !== "Paid");
+  const outstandingTotal = outstandingInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+  const paidInvoices = invoices.filter((i: any) => i.status === "Paid");
+  const totalSpent = paidInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+
+  return (
+    <section className={styles.card}>
+      <h2 className={styles.cardTitle}>Financial Summary</h2>
+      <div className={styles.finSummaryGrid}>
+        <div className={styles.finSummaryCard}>
+          <p className={styles.finSummaryLabel}>Total Deposits</p>
+          <p className={styles.finSummaryValue}>{formatRupee(totalDeposits)}</p>
+          <p className={styles.finSummaryCount}>{deposits.length} deposit{deposits.length !== 1 ? "s" : ""}</p>
+        </div>
+        <div className={styles.finSummaryCard}>
+          <p className={styles.finSummaryLabel}>Active Contracts</p>
+          <p className={styles.finSummaryValue}>{formatRupee(activeContractsTotal)}</p>
+          <p className={styles.finSummaryCount}>{activeContracts.length} active</p>
+        </div>
+        <div className={styles.finSummaryCard}>
+          <p className={styles.finSummaryLabel}>Outstanding Invoices</p>
+          <p className={styles.finSummaryValue}>{formatRupee(outstandingTotal)}</p>
+          <p className={styles.finSummaryCount}>{outstandingInvoices.length} pending</p>
+        </div>
+        <div className={styles.finSummaryCard}>
+          <p className={styles.finSummaryLabel}>Total Spent</p>
+          <p className={styles.finSummaryValue}>{formatRupee(totalSpent)}</p>
+          <p className={styles.finSummaryCount}>{paidInvoices.length} paid</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function renderDeposits() {
+  const deposits = depositsData?.customerDeposits ?? [];
+
+  if (deposits.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateTitle}>No deposits</p>
+        <p className={styles.emptyStateBody}>No deposits have been recorded for this customer yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.finList}>
+      {deposits.map((d: any) => (
+        <div key={d.id} className={styles.finListItem}>
+          <div className={styles.finListMeta}>
+            <p className={styles.finListPrimary}>{d.depositType} Deposit &middot; {d.referenceNumber}</p>
+            <p className={styles.finListSecondary}>
+              Received {formatDate(d.receivedDate)} &middot; {d.notes || "—"}
+            </p>
+          </div>
+          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${d.status?.replace(/\s+/g, "_")}] ?? ""}`}>
+            {d.status}
+          </span>
+          <span className={styles.finListAmount}>{formatRupee(d.amount)}</span>
+          <div className={styles.finActions}>
+            {d.status === "Held" && !d.frozen && (
+              <>
+                <button
+                  type="button"
+                  className={styles.finActionBtn}
+                  onClick={async () => {
+                    const reason = prompt("Freeze reason (optional):");
+                    if (reason === null) return;
+                    await requestReleaseMut({ variables: { id: d.id, reason: reason || undefined } });
+                    toast.success("Release requested");
+                  }}
+                >
+                  Request Release
+                </button>
+                <button
+                  type="button"
+                  className={styles.finActionBtn}
+                  onClick={async () => {
+                    await freezeDepositMut({ variables: { id: d.id } });
+                    toast.success("Deposit frozen");
+                  }}
+                >
+                  Freeze
+                </button>
+              </>
+            )}
+            {d.frozen && (
+              <button
+                type="button"
+                className={styles.finActionBtn}
+                onClick={async () => {
+                  await unfreezeDepositMut({ variables: { id: d.id } });
+                  toast.success("Deposit unfrozen");
+                }}
+              >
+                Unfreeze
+              </button>
+            )}
+            {d.status === "Release Requested" && (
+              <button
+                type="button"
+                className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`}
+                onClick={async () => {
+                  await releaseDepositMut({ variables: { id: d.id } });
+                  toast.success("Deposit released");
+                }}
+              >
+                Release
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function renderContracts() {
+  const contracts = contractsData?.customerContracts ?? [];
+
+  if (contracts.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateTitle}>No contracts</p>
+        <p className={styles.emptyStateBody}>No contracts have been created for this customer yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.finList}>
+      {contracts.map((c: any) => (
+        <div key={c.id} className={styles.finListItem}>
+          <div className={styles.finListMeta}>
+            <p className={styles.finListPrimary}>{c.contractNumber} &middot; {c.planName}</p>
+            <p className={styles.finListSecondary}>
+              {formatDate(c.startDate)} — {formatDate(c.endDate)} &middot; {c.paymentFrequency} &middot; Auto-renew: {c.autoRenew ? "Yes" : "No"}
+            </p>
+          </div>
+          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${c.status?.replace(/\s+/g, "_")}] ?? ""}`}>
+            {c.status}
+          </span>
+          <span className={styles.finListAmount}>{formatRupee(c.amount)}</span>
+          <div className={styles.finActions}>
+            {c.status === "Active" && (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.finActionBtn} ${styles.finActionBtnPrimary}`}
+                  onClick={() => {
+                    setRenewingContractId(c.id);
+                    setRenewEndDate("");
+                    setShowRenewContractDialog(true);
+                  }}
+                >
+                  Renew
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.finActionBtn} ${styles.finActionBtnDanger}`}
+                  onClick={async () => {
+                    if (!confirm("Terminate this contract?")) return;
+                    await terminateContractMut({ variables: { id: c.id } });
+                    toast.success("Contract terminated");
+                  }}
+                >
+                  Terminate
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function renderInvoices() {
+  const invoices = invoicesData?.customerInvoices ?? [];
+
+  if (invoices.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateTitle}>No invoices</p>
+        <p className={styles.emptyStateBody}>No invoices have been generated for this customer yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.finList}>
+      {invoices.map((inv: any) => (
+        <div key={inv.id} className={styles.finListItem}>
+          <div className={styles.finListMeta}>
+            <p className={styles.finListPrimary}>{inv.invoiceNumber} &middot; {inv.planName || "—"}</p>
+            <p className={styles.finListSecondary}>
+              Issued {formatDate(inv.issueDate)} &middot; Due {formatDate(inv.dueDate)}
+              {inv.paidDate ? ` &middot; Paid ${formatDate(inv.paidDate)}` : ""}
+            </p>
+          </div>
+          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${inv.status?.replace(/\s+/g, "_")}] ?? ""}`}>
+            {inv.status}
+          </span>
+          <span className={styles.finListAmount}>{formatRupee(inv.totalAmount)}</span>
+          <div className={styles.finActions}>
+            {inv.status !== "Paid" && (
+              <button
+                type="button"
+                className={`${styles.finActionBtn} ${styles.finActionBtnSuccess}`}
+                onClick={async () => {
+                  const methods = ["CARD", "UPI", "WALLET", "BANK_TRANSFER"] as const;
+                  const method = prompt(`Payment method (${methods.join(", ")}):`);
+                  if (!method || !methods.includes(method as any)) {
+                    if (method !== null) toast.error("Invalid payment method");
+                    return;
+                  }
+                  await markPaidMut({ variables: { id: inv.id, paymentMethod: method } });
+                  toast.success("Invoice marked as paid");
+                }}
+              >
+                Mark Paid
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1533,6 +1926,98 @@ function RenewMembershipDialog({
             }}
           >
             Generate Renewal Invoice
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ----- Renew Contract Dialog ----- */
+function RenewContractDialog({
+  open,
+  contractId,
+  onClose,
+  onRenew,
+}: {
+  open: boolean;
+  contractId: string;
+  onClose: () => void;
+  onRenew: (id: string, newEndDate: string) => Promise<void>;
+}) {
+  const [endDate, setEndDate] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const handleSubmit = async () => {
+    if (!endDate) {
+      toast.error("Please select a new end date");
+      return;
+    }
+    await onRenew(contractId, new Date(endDate).toISOString());
+  };
+
+  return (
+    <div
+      className={styles.dialogBackdrop}
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className={styles.dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="renew-contract-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className={styles.dialogHeader}>
+          <div className={styles.dialogHeaderMeta}>
+            <h2 id="renew-contract-title" className={styles.dialogTitle}>
+              Renew Contract
+            </h2>
+            <p className={styles.dialogSubtitle}>Contract {contractId.slice(0, 8)}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.dialogCloseBtn}
+            onClick={onClose}
+            aria-label="Close dialog"
+          >
+            {Icons.close}
+          </button>
+        </header>
+
+        <div className={styles.dialogBody}>
+          <div className={styles.freezeFieldHalf}>
+            <label className={styles.freezeFieldLabel} htmlFor="renew-end-date">
+              New End Date
+            </label>
+            <input
+              id="renew-end-date"
+              type="date"
+              className={styles.renewDateInput}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <footer className={styles.dialogFooter}>
+          <button
+            type="button"
+            className="w-full py-2.5 bg-[#FF6A2F] text-white text-[14px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors shadow-sm"
+            onClick={handleSubmit}
+          >
+            Renew Contract
           </button>
         </footer>
       </div>

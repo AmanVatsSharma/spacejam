@@ -8,7 +8,6 @@ const { composePlugins, withNx } = require('@nx/next');
  **/
 const nextConfig = {
   nx: {},
-  output: 'standalone',
   // @spacejam/ui is file:-linked and ships raw .ts/.tsx source; transpile it
   // through the Next/SWC pipeline so it bundles correctly during build.
   transpilePackages: ['@spacejam/ui'],

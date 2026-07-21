@@ -8,7 +8,7 @@ pm2 delete all || true
 if [ -d "/home/ubuntu/spacejam" ]; then
   cd /home/ubuntu/spacejam && npx nx daemon --stop || true
 fi
-sudo rm -rf /home/ubuntu/spacejam
+# Preserve node_modules to avoid OOM
 mkdir -p /home/ubuntu/spacejam
 sudo tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam
 sudo chown -R ubuntu:ubuntu /home/ubuntu/spacejam
@@ -51,11 +51,12 @@ echo ""
 echo "=== [3/6] Clearing stale build caches ==="
 rm -rf /home/ubuntu/spacejam/apps/web/.next
 rm -rf /home/ubuntu/spacejam/apps/api/dist
+rm -rf /home/ubuntu/spacejam/.nx/cache
 
 echo ""
 echo "=== [4/6] Installing dependencies ==="
 cd /home/ubuntu/spacejam
-npm install --prefer-offline 2>&1 | tail -5
+npm install 2>&1 | tail -5
 # Ensure pino is installed (needed by nestjs-pino)
 npm install pino --save 2>&1 | tail -3
 
@@ -92,4 +93,8 @@ echo "=== Done! Checking if app responds ==="
 sleep 5
 curl -s -o /dev/null -w "Web HTTP %{http_code}" http://localhost:3000 || echo "App not yet responding on port 3000"
 echo ""
-curl -s -o /dev/null -w "API HTTP %{http_code}" http://localhost:3001/graphql || echo "API not yet responding on port 3001"
+if curl -s http://localhost:4000/api/health | grep -q "ok"; then
+    echo -e "API HTTP 200\e[32mOK\e[0m"
+else
+    echo -e "API HTTP 000\e[31mAPI not yet responding on port 4000\e[0m"
+fi

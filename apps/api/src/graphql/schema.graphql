@@ -160,7 +160,7 @@ type Mutation {
   # CRM — Leads
   createLead(input: CreateLeadInput!): Lead!
   updateLead(id: ID!, input: UpdateLeadInput!): Lead!
-  convertLead(id: ID!): Lead!
+  convertLead(id: ID!): Lead!   # Side-effect: auto-creates a Customer entity
   deleteLead(id: ID!): Boolean!
 
   # CRM — Customers

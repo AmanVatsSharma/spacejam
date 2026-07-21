@@ -836,10 +836,12 @@ export const GET_CUSTOMERS = gql`
       totalSpent
       lastBooking
       location
+      centerId
       teamSize
       joinDate
       notes
       createdAt
+      updatedAt
     }
   }
 `;
@@ -902,6 +904,139 @@ export const UPDATE_CUSTOMER = gql`
 export const DELETE_CUSTOMER = gql`
   mutation DeleteCustomer($id: ID!) {
     deleteCustomer(id: $id)
+  }
+`;
+
+/* ========================= CRM — Customer financial detail ========================= */
+
+export const GET_CUSTOMER_DEPOSITS = gql`
+  query GetCustomerDeposits($customerId: ID!) {
+    customerDeposits(customerId: $customerId) {
+      id
+      customerId
+      customerName
+      amount
+      depositType
+      status
+      referenceNumber
+      receivedDate
+      releasedDate
+      freezeReason: releaseReason
+      notes
+    }
+  }
+`;
+
+export const GET_CUSTOMER_CONTRACTS = gql`
+  query GetCustomerContracts($customerId: ID!) {
+    customerContracts(customerId: $customerId) {
+      id
+      contractNumber
+      customerId
+      customerName
+      planName
+      amount
+      paymentFrequency
+      status
+      startDate
+      endDate
+      autoRenew
+    }
+  }
+`;
+
+export const GET_CUSTOMER_INVOICES = gql`
+  query GetCustomerInvoices($customerId: ID!) {
+    customerInvoices(customerId: $customerId) {
+      id
+      invoiceNumber
+      customerId
+      customerName
+      amount
+      tax
+      totalAmount
+      status
+      issueDate
+      dueDate
+      paidDate
+      paymentMethod
+    }
+  }
+`;
+
+export const TERMINATE_CONTRACT = gql`
+  mutation TerminateContract($id: ID!) {
+    terminateContract(id: $id) {
+      id
+      status
+      endDate
+    }
+  }
+`;
+
+export const RENEW_CONTRACT = gql`
+  mutation RenewContract($id: ID!, $newEndDate: DateTime!) {
+    renewContract(id: $id, newEndDate: $newEndDate) {
+      id
+      endDate
+      status
+    }
+  }
+`;
+
+export const FREEZE_DEPOSIT = gql`
+  mutation FreezeDeposit($id: ID!) {
+    freezeDeposit(id: $id) {
+      id
+      status
+      frozen
+    }
+  }
+`;
+
+export const UNFREEZE_DEPOSIT = gql`
+  mutation UnfreezeDeposit($id: ID!) {
+    unfreezeDeposit(id: $id) {
+      id
+      status
+      frozen
+    }
+  }
+`;
+
+export const RELEASE_DEPOSIT = gql`
+  mutation ReleaseDeposit($id: ID!) {
+    releaseDeposit(id: $id) {
+      id
+      status
+      releasedDate
+    }
+  }
+`;
+
+export const REQUEST_DEPOSIT_RELEASE = gql`
+  mutation RequestDepositRelease($id: ID!, $reason: String) {
+    requestDepositRelease(id: $id, reason: $reason) {
+      id
+      status
+      releaseRequestedDate
+    }
+  }
+`;
+
+export const SEND_DEPOSIT_REMINDER = gql`
+  mutation SendDepositReminder($id: ID!, $reminderType: String!) {
+    sendDepositReminder(id: $id, reminderType: $reminderType)
+  }
+`;
+
+export const MARK_INVOICE_PAID = gql`
+  mutation MarkInvoicePaid($id: ID!, $paymentMethod: PaymentMethod) {
+    markInvoicePaid(id: $id, paymentMethod: $paymentMethod) {
+      id
+      status
+      paidDate
+    }
   }
 `;
 
@@ -1074,11 +1209,11 @@ export const GET_FLOORS = gql`
       updatedAt
       seats {
         id
-        number
+        name
         seatType
         status
         price
-        features
+        amenities
         location
       }
     }
@@ -1109,7 +1244,7 @@ export const CREATE_SEAT = gql`
   mutation CreateSeat($input: CreateSeatInput!) {
     createSeat(input: $input) {
       id
-      number
+      name
       seatType
       status
       price

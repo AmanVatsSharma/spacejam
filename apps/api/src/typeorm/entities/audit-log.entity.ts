@@ -67,7 +67,7 @@ export class AuditLog {
 
   // Relations
   @Field(() => User, { nullable: true })
-  @ManyToOne(() => User, (user) => user.auditLogs, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'userId' })
   user!: User;
 }

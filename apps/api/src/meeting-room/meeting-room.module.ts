@@ -12,10 +12,11 @@ import { CacheModule } from '../cache/cache.module';
 import { MeetingRoomResolver } from '../graphql/resolvers/meeting-room.resolver';
 import { MeetingRoom } from '../typeorm/entities/meeting-room.entity';
 import { Booking } from '../typeorm/entities/booking.entity';
+import { Notification } from '../typeorm/entities/notification.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MeetingRoom, Booking]),
+    TypeOrmModule.forFeature([MeetingRoom, Booking, Notification]),
     CacheModule,
   ],
   providers: [

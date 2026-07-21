@@ -133,7 +133,7 @@ export default function TableViewPage() {
 
       return {
         id: seat.id,
-        spaceName: seat.number ?? `Seat ${seat.id}`,
+        spaceName: seat.name ?? `Seat ${seat.id}`,
         location: seat.location ?? "—",
         floor: seat.floor?.name ?? "—",
         floorId: seat.floor?.id ?? null,

@@ -4,237 +4,107 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SpaceJam is a coworking space management system built as an Nx monorepo with:
-- **Frontend**: Next.js 16 (React 19) with Tailwind CSS v4 and CSS Modules
-- **Backend**: NestJS (apps/api/) - GraphQL API with TypeORM, Auth (JWT + 2FA), Redis caching
-- **Package manager**: npm (use `npm exec nx` or `npx nx` for Nx commands)
-- **Frontend dev server**: Port 3000 (Next.js auto-selects next available if occupied)
-- **Backend dev server**: Port 4000 (GraphQL endpoint: http://localhost:4000/graphql)
+SpaceJam is a coworking space management system built as an Nx 22 monorepo with four apps:
 
----
+| App | Project | Tech |
+|-----|---------|------|
+| Web | `web` | Next.js 16 (React 19), Apollo GraphQL, Tailwind v4, CSS Modules |
+| API | `api` | NestJS 11, GraphQL (code-first), TypeORM, PostgreSQL, Redis |
+| Mobile | `mobile` | Expo ~54 (Expo SDK 57), React Native |
+| E2E | `web-e2e` | Playwright against the web app |
+
+Package manager: npm workspaces. Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
 
 ## Development Commands
 
-### Running the App
+### Running Apps
+
 ```sh
-npx nx dev web              # Start frontend dev server (port 3000)
-npx nx serve api            # Start backend dev server (port 4000)
-npx nx build web            # Production build
-npx nx build api            # Backend production build
+npx nx dev web          # Next.js dev server (port 3000)
+npx nx serve api        # NestJS dev server (port 4000)
+npx nx start mobile     # Expo dev server
 ```
 
-### Single Test
+### Building
+
 ```sh
-# Vitest single test file
-npx nx test web -- --run path/to/file.test.ts
-
-# Playwright single test
-npx nx e2e web -- --grep="test name"
+npx nx build web        # Next.js production build
+npx nx build api        # NestJS production build
 ```
 
-### Type-checking (per app)
+### Tests
+
 ```sh
-npx tsc --noEmit -p apps/web/tsconfig.json
-npx tsc --noEmit -p apps/api/tsconfig.json
+# Web unit tests (Vitest)
+npx nx test web
+npx nx test web -- --run path/to/file.test.ts    # single file, CI mode
+
+# API tests (Vitest, configured at apps/api/vitest.config.ts)
+npx nx test api
+
+# Playwright E2E (web + api-e2e)
+npx nx e2e web
+npx nx e2e api-e2e
+npx nx e2e web -- --grep="test name"             # single test by name
 ```
 
-### Testing
+### Formatting
+
 ```sh
-npx nx test web             # Run frontend unit tests (vitest)
-npx nx e2e web              # Run Playwright E2E tests
+npx nx format:check      # Prettier dry-run across workspace
+npx nx format:write      # Prettier fix across workspace
 ```
 
-### Nx Workspace
+### Nx Utilities
+
 ```sh
-npx nx graph                # Visual project dependency graph
-npx nx list                 # List all projects
-npx nx sync                 # Sync TypeScript project references
+npx nx show projects             # list all projects
+npx nx graph                     # visual project dependency graph
+npx nx sync                      # sync TypeScript project references
+npx nx affected:test --base=main # run tests affected by changes
 ```
 
-### Troubleshooting
-| Issue | Fix |
-|-------|-----|
-| Tailwind/PostCSS error | `npm install @tailwindcss/postcss --workspace=apps/web` |
-| Build cache issues | `rm -rf apps/web/.next` then rebuild |
-| Port occupied | Next.js auto-selects next available port |
+## Architecture
 
----
+### Data Flow (Frontend)
 
-## Frontend Architecture
+1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
+2. **Auth**: JWT access + refresh tokens stored in cookies. `auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
+3. **Route guard**: `proxy.ts` (Next.js 16) checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes. Not a middleware — it runs as a proxy.
 
-### App Structure
+### Backend
 
-```
-apps/web/src/
-├── app/                      # Next.js App Router
-│   ├── layout.tsx            # Root layout → wraps with Providers (Apollo + Auth)
-│   ├── page.tsx              # Root redirect
-│   ├── global-error.tsx      # Global error boundary
-│   ├── api/                  # Route handlers (GraphQL proxy endpoint)
-│   ├── dashboard/
-│   │   ├── layout.tsx        # Dashboard shell: Header + Sidebar + Content
-│   │   ├── page.tsx          # Dashboard home
-│   │   ├── home/             # Main dashboard (stats, charts)
-│   │   ├── crm/              # CRM: leads, customers, onboarding (nested routes)
-│   │   ├── revenue/          # Revenue: contracts, deposits, invoices
-│   │   ├── operations/       # Operations: bookings, requests, meeting rooms
-│   │   ├── inventory/        # Inventory management
-│   │   ├── floors/           # Floor/seat grid
-│   │   ├── location/         # Location management
-│   │   ├── report/           # Reports
-│   │   └── settings/         # Settings tabs
-│   └── set-up-new-center/    # 5-step wizard modal
-├── components/
-│   ├── ui/                   # Shared UI primitives (header, sidebar, cards)
-│   └── Providers.tsx          # ApolloProvider + AuthProvider wrapper
-├── contexts/
-│   ├── auth-context.tsx       # Auth state (user, tokens, signin/signup/2FA)
-│   └── apollo-provider-wrapper.tsx  # Client-side Apollo + Auth mount
-├── lib/
-│   ├── apollo/
-│   │   ├── client.ts          # Apollo Client instance (auth, refresh tokens)
-│   │   ├── operations.ts      # All GraphQL operations (queries + mutations)
-│   │   └── token-storage.ts   # Cookie-based token storage
-│   ├── api.ts                 # Convenience fetch wrapper (non-React contexts)
-│   ├── mock-data/             # Mock data per domain (crm, operations, revenue)
-│   └── constants/             # Shared constants
-├── hooks/
-│   └── use-operations.ts      # Domain-specific Apollo hooks (meeting rooms, events, etc.)
-│   └── use-inventory.ts       # Inventory hooks (centers, floors, seats)
-├── proxy.ts                   # Next.js 16 route guard (auth, role checks)
-├── types/                     # Shared TypeScript types
-└── globals.css                # CSS variables, Tailwind imports
-```
-
-### Data Flow
-
-1. **GraphQL-first**: All data fetching uses Apollo Client (`@/lib/apollo/operations.ts`). Pages consume data via `useQuery`/`useMutation` hooks defined in domain-specific hook files (e.g., `hooks/use-operations.ts`, `hooks/use-inventory.ts`). Hooks expose `{ data, loading, error, refetch }` and mutation return `{ loading, actionName }`.
-2. **Auth**: JWT access + refresh tokens stored in cookies. `auth-context.tsx` manages user state and auth mutations. Apollo client automatically attaches access tokens and handles silent refresh on 401.
-3. **Mock data**: Many pages fall back to mock data when no backend is wired (inventory, operations/request, revenue/*). The pattern is `const { data, loading } = useQuery(...)` with mock fallback in the component. Preserve mock fallbacks unless backend is fully verified.
-4. **Proxy (not middleware)**: `proxy.ts` is the Next.js 16 route guard. It checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes.
-5. **Toasts**: Use `sonner`'s `toast` for success/error feedback. The toast provider is mounted in the dashboard layout. Import `toast` from `sonner` in any client component.
-
-### Component Pattern
-
-```tsx
-'use client';  // Required for any file using hooks/event handlers
-
-import styles from './ComponentName.module.css';
-
-interface Props { /* inline or imported */ }
-
-export default function ComponentName({ active, onAction }: Props) {
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Tailwind for layout/spacing */}
-      {/* CSS Modules for component-specific styles */}
-    </div>
-  );
-}
-```
-
-### Styling Rules
-
-- **Tailwind**: layout, spacing, grid, flexbox
-- **CSS Modules**: component-specific styles, animations, complex selectors
-- **Responsive**: use the `compact:` variant (triggers at `max-width: 1023.98px`) for tablet layouts
-- **Tables**: always wrap in `overflow-x-auto` for horizontal scroll at compact width
-
-### Design Tokens
-
-| Purpose | Value |
-|---------|-------|
-| Primary orange | `#FF6A2F` (use consistently, not `#FF7847`) |
-| Text dark | `#1F1F1F` / `#101828` |
-| Text gray | `#4A5565` |
-| Text muted | `#6A7282` / `#9CA3AF` |
-| Background | `#FBF6F4` (warm cream) |
-| Card background | `#FFFFFF` |
-| Border | `#E5E7EB` |
-| Success | `#10B981` |
-| Error | `#EF4444` |
-
-| Element | Style |
-|---------|-------|
-| Cards | `border-radius: 14px`, `padding: 16px 24px` |
-| Buttons | `border-radius: 10px`, `padding: 10px 20px` |
-| Table rows | `background: #F9FAFB`, `border-bottom: 1px solid #E5E7EB` |
-
-### Path Alias
-
-`@/*` maps to `apps/web/src/*` (configured in `apps/web/tsconfig.json`).
-
----
-
-## Backend Architecture
-
-```
-apps/api/src/
-├── main.ts                    # NestJS bootstrap (CORS, validation, body parser)
-├── app/
-│   └── app.module.ts          # Root module
-├── auth/                      # Auth module (JWT, 2FA, magic link, password reset)
-├── user/                      # User entity + service
-├── crm/                       # Customer/lead management
-├── booking/                   # Booking entity + service
-├── meeting-room/              # Meeting room + events
-├── request/                   # Booking requests
-├── revenue/                   # Contracts, deposits, invoices
-├── center/                    # Center/location management
-├── event/                     # Events module
-├── analytics/                 # Analytics module
-├── health/                    # Health checks
-├── cache/                     # Redis caching layer
-├── observability/             # OpenTelemetry + Prometheus metrics
-├── config/                    # Configuration module
-├── graphql/
-│   ├── schema.graphql         # SDL schema (source of truth)
-│   ├── resolvers/             # GraphQL resolvers (one per domain)
-│   ├── inputs/                # GraphQL input types
-│   ├── types/                 # GraphQL output types
-│   ├── guards/                # GraphQL auth guards (field-level + global)
-│   ├── plugins/               # GraphQL plugins (rate limiting, complexity)
-│   ├── dataloaders/           # DataLoader batching for N+1 prevention
-│   └── pubsub/                # Subscription pub/sub (Redis-backed)
-├── typeorm/                    # TypeORM entities, migrations, connections
-└── prisma/                     # Legacy Prisma (migrated to TypeORM, being phased out)
-```
-
-### Key Backend Patterns
-
-- **GraphQL-first**: Schema defined in SDL (`graphql/schema.graphql`), code-first resolvers mirror it
-- **TypeORM**: Entities in `typeorm/` directory. Migrations run via TypeORM CLI.
-- **Auth**: Passport + JWT strategy. Access tokens (15m) + refresh tokens (7d). 2FA via TOTP. Guard pattern: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
-- **Caching**: Redis-backed with in-memory fallback. DataLoader pattern for batching entity lookups.
+- **GraphQL schema**: SDL at `apps/api/src/graphql/schema.graphql` is the source of truth. Resolvers are code-first and mirror it.
+- **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. Run via TypeORM CLI (configured in `apps/api/package.json`).
+- **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). 2FA via TOTP. Guards: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
+- **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 
-### Mock-Fallback Convention (Frontend)
+### Key Conventions
 
-Many pages intentionally render mock data when the GraphQL response is empty. The pattern (used by `/dashboard/inventory/*`, `/dashboard/operations/request`, `/dashboard/revenue/*`):
+- **Path alias**: `@/*` maps to `apps/web/src/*`.
+- **Styling**: Tailwind for layout/spacing; CSS Modules for component-specific styles, animations, and complex selectors. Responsive breakpoint: `compact:` (max-width 1023.98px).
+- **Tables**: wrap in `overflow-x-auto` for horizontal scroll at compact widths.
+- **Design tokens** (use consistently, don't hardcode alternatives):
+  - Primary orange `#FF6A2F`, background `#FBF6F4`, card `#FFFFFF`, border `#E5E7EB`
+  - Text: `#1F1F1F` (dark), `#4A5565` (gray), `#6A7282` (muted)
+  - Cards: `border-radius: 14px`, `padding: 16px 24px`. Buttons: `border-radius: 10px`, `padding: 10px 20px`.
+- **File headers**: Every TS/TSX file should include the module/purpose/author/date header block.
+- **Toasts**: use `toast` from `sonner` (mounted in dashboard layout).
 
-```tsx
-const { data } = useQuery(QUERY, { variables: {...} });
-const rows = data?.items?.length ? data.items : MOCK_ITEMS;
-```
+### Mock-Fallback Convention
 
-Preserve this fallback unless you've fully verified the backend for that page. Fully-wired pages with no mock fallback: `/dashboard/home`, `/dashboard/crm/*`, `/dashboard/operations/booking`, `/dashboard/operations/meeting-room`.
+Many pages render mock data when the GraphQL response is empty: `const rows = data?.items?.length ? data.items : MOCK_ITEMS`. Preserve mock fallbacks unless the backend for that page is fully verified.
 
----
+**Known limitation**: `/dashboard/page.tsx` is an unwired demo duplicate of `/dashboard/home/page.tsx` (hardcoded placeholder data, unwired Add modals). Settings pages (finance/notification/security + permissions tab) have no backend entity — toggles and Save buttons are purely cosmetic.
 
 ## Environment Variables
 
-The backend reads from `.env` (root). Key vars:
-- `DATABASE_URL` - PostgreSQL connection
-- `JWT_SECRET` - JWT signing secret
-- `REDIS_HOST` / `REDIS_PORT` - Redis connection
-- `PORT` - Backend port (default 4000)
-- `FRONTEND_URL` - Frontend origin for CORS
-- `NODE_ENV` - environment mode
-
-The frontend reads from `apps/web/.env.local`:
-- `NEXT_PUBLIC_GRAPHQL_HTTP_URL` - backend GraphQL endpoint
-
----
+| Scope | File | Key vars |
+|-------|------|----------|
+| Backend | `apps/api/.env` | `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_HOST`, `REDIS_PORT`, `PORT` (default 4000), `CORS_ORIGIN`, `NODE_ENV` |
+| Frontend | `apps/web/.env.local` | `NEXT_PUBLIC_GRAPHQL_HTTP_URL`, `NEXT_PUBLIC_GRAPHQL_WS_URL` |
+| Mobile | `apps/mobile/.env` | Expo/EAS vars |
 
 ## Production Server
 
@@ -285,12 +155,12 @@ npx nx build web && npx nx build api
 # 2. Archive and copy
 cd <repo root>
 git archive --format=tar.gz HEAD -o update.tar.gz
-scp -i "..." update.tar.gz ubuntu@ec2-...:/home/ubuntu/
+scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com:/home/ubuntu/
 
 # 3. SSH in and deploy
-ssh -i "..." ubuntu@ec2-...
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
 # Then run:
-bash deploy.sh   # (uses /home/ubuntu/deploy.sh, not scripts/deploy.sh)
+bash /home/ubuntu/deploy.sh   # (uses /home/ubuntu/deploy.sh, not scripts/deploy.sh)
 ```
 
 The `deploy.sh` script:
@@ -340,6 +210,12 @@ All TypeScript/TSX files should include this header:
 - No emoji in commit messages
 - Use imperative mood: "Add feature" not "Added feature"
 - Reference issue numbers if applicable
+
+---
+
+## Mobile Notes
+
+The mobile app uses Expo ~54 (SDK 57). Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
 
 ---
 

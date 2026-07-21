@@ -514,13 +514,13 @@ export function useCancelRoomBooking() {
   const client = useApolloClient();
   const [cancelling, setCancelling] = useState(false);
   const [cancel] = useMutation(CANCEL_ROOM_BOOKING, {
-    refetchQueries: ['GetMeetingRooms', 'GetBookings'],
+    refetchQueries: ['GetMeetingRooms', 'GetTodayEvents', 'GetUpcomingEvents'],
   });
   async function cancelBooking(bookingId: string, roomId: string) {
     setCancelling(true);
     try {
       await cancel({ variables: { bookingId, roomId } });
-      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetBookings'] });
+      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetTodayEvents', 'GetUpcomingEvents'] });
     } finally {
       setCancelling(false);
     }

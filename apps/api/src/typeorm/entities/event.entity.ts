@@ -16,11 +16,14 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
+import { RecurringBooking } from './recurring-booking.entity';
+import { EventAttendee } from './event-attendee.entity';
 import { EventType, EventStatus } from '../../graphql/types/user.type';
 
 @ObjectType()
@@ -41,6 +44,15 @@ export class Event {
   @Field(() => ID)
   @Column({ name: 'requestedById' })
   requestedById!: string;
+
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'recurringBookingId', type: 'uuid', nullable: true })
+  recurringBookingId!: string | null;
+
+  @Field(() => RecurringBooking, { nullable: true })
+  @ManyToOne(() => RecurringBooking, (rb) => rb.events, { nullable: true })
+  @JoinColumn({ name: 'recurringBookingId' })
+  recurringBooking!: RecurringBooking | null;
 
   @Field()
   @Column({ type: 'varchar' })
@@ -129,4 +141,8 @@ export class Event {
   @ManyToOne(() => User, (user) => user.events)
   @JoinColumn({ name: 'requestedById' })
   requestedBy!: User;
+
+  @Field(() => [EventAttendee])
+  @OneToMany(() => EventAttendee, (a) => a.event)
+  attendees!: EventAttendee[];
 }

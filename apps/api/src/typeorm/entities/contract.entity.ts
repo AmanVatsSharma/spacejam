@@ -13,11 +13,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { ContractStatus, PaymentFrequency } from '../../graphql/types/user.type';
 import { Center } from './center.entity';
+import { Customer } from './customer.entity';
 
 @Entity('contracts')
 @ObjectType()
@@ -74,15 +76,15 @@ export class Contract {
   @Column({ type: 'text', nullable: true })
   terms?: string;
 
-  // Relations
-  // customerId references the customers table but we keep it as a plain
-  // string column (no FK constraint) to avoid cross-table FK issues.
-  // The customer relation is resolved via a separate query if needed.
-
   @Field(() => Center, { nullable: true })
   @ManyToOne(() => Center, { eager: false })
   @JoinColumn({ name: 'centerId' })
   center?: Center;
+
+  @Field(() => Customer, { nullable: true })
+  @ManyToOne(() => Customer, (customer) => customer.contracts, { eager: false })
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
 
   @Field(() => Date)
   @CreateDateColumn({ name: 'createdAt' })

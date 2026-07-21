@@ -236,7 +236,7 @@ export default function FloorMapPage() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter((s: any) =>
-        String(s.number ?? "").toLowerCase().includes(q) ||
+        String(s.name ?? "").toLowerCase().includes(q) ||
         seatTypeLabel(s.seatType).toLowerCase().includes(q) ||
         String(s.location ?? "").toLowerCase().includes(q)
       );
@@ -249,7 +249,7 @@ export default function FloorMapPage() {
     if (!mapSearch.trim()) return filteredSeats;
     const q = mapSearch.toLowerCase();
     return filteredSeats.filter((s: any) =>
-      String(s.number ?? "").toLowerCase().includes(q) ||
+      String(s.name ?? "").toLowerCase().includes(q) ||
       seatTypeLabel(s.seatType).toLowerCase().includes(q)
     );
   }, [filteredSeats, mapSearch]);
@@ -661,7 +661,7 @@ export default function FloorMapPage() {
                     >
                       <div className={styles.roomHeader}>
                         <div className={styles.roomName}>
-                          {seatTypeLabel(seat.seatType)} {seat.number ?? index + 1}
+                          {seatTypeLabel(seat.seatType)} {seat.name ?? `Seat ${seat.id}`}
                         </div>
                         <div className={styles.roomDot}></div>
                       </div>
@@ -703,7 +703,7 @@ export default function FloorMapPage() {
             <div className={styles.panelHeader}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h2 className={styles.panelTitle}>
-                  {seatTypeLabel(selectedSeat.seatType)} {selectedSeat.number ?? ""}
+                  {seatTypeLabel(selectedSeat.seatType)} {selectedSeat.name ?? ""}
                 </h2>
                 <span className={styles.panelSubtitle}>{seatTypeLabel(selectedSeat.seatType)}</span>
               </div>
@@ -738,12 +738,14 @@ export default function FloorMapPage() {
               </div>
             )}
 
-            {selectedSeat.features && selectedSeat.features.length > 0 && (
+            {selectedSeat.amenities && selectedSeat.amenities.length > 0 && (
               <div className={styles.sectionBlock}>
                 <span className={styles.sectionTitle}>Amenities</span>
-                <div className={styles.amenityPills}>
-                  {selectedSeat.features.map((feature: string, i: number) => (
-                    <span key={i} className={styles.amenityPill}>{feature}</span>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {(selectedSeat.amenities || []).map((feature: string, i: number) => (
+                    <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-[12px]">
+                      {feature}
+                    </span>
                   ))}
                 </div>
               </div>
