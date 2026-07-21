@@ -7,8 +7,8 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, Subscription, ID, UseGuards } from '@nestjs/graphql';
-import { UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
+import { UnauthorizedException, NotFoundException, UseGuards } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { UserRole, CenterStatus } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,7 +17,7 @@ import { Center as CenterEntity } from '../../typeorm/entities/center.entity';
 import { Location as LocationEntity } from '../../typeorm/entities/location.entity';
 import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
-import { MeetingRoom as MeetingRoomEntity } from '../../typeorm/entities/meeting-room.entity';
+// Meeting rooms are managed exclusively through MeetingRoomResolver.
 import { PubSubService } from '../pubsub/pubsub.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -349,8 +349,6 @@ export class SeatResolver {
     private cache: CacheService,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
-    @InjectRepository(MeetingRoomEntity)
-    private meetingRoomRepo: Repository<MeetingRoomEntity>,
     private readonly pubSub: PubSubService,
   ) {}
 
@@ -382,32 +380,10 @@ export class SeatResolver {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
 
-    // If the seat is a MEETING_ROOM, also create a MeetingRoom record
-    // so the Operations > Meeting Room page can see and book it.
-    if (input.seatType === 'MEETING_ROOM') {
-      // Look up the floor to get centerId
-      const floor = await this.seatRepo.manager.findOne(FloorEntity, {
-        where: { id: input.floorId } as any,
-      });
-      const centerId = (floor as any)?.centerId;
-      if (centerId) {
-        const existing = await this.meetingRoomRepo.findOne({
-          where: { name: input.number, centerId } as any,
-        });
-        if (!existing) {
-          await this.meetingRoomRepo.save(
-            this.meetingRoomRepo.create({
-              name: input.number,
-              centerId,
-              floorId: input.floorId,
-              capacity: 1,
-              status: (input.status as any) || 'AVAILABLE',
-              hourlyRate: input.price ?? 0,
-            } as any),
-          );
-        }
-      }
-    }
+    // Note: Meeting rooms are managed exclusively through the meeting_rooms
+    // table via MeetingRoomResolver. Seats are inventory assets (desks,
+    // hot-desks, private spaces) only. Setting seatType='MEETING_ROOM' here
+    // is just a label and does NOT create a MeetingRoom record.
 
     return seat;
   }

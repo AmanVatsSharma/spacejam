@@ -4,7 +4,7 @@
  * Purpose:     Lead management resolvers
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-01
+ * Last-updated: 2026-07-21
  */
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
@@ -12,6 +12,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LeadStatus } from '../types/user.type';
 import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';
+import { Customer as CustomerEntity } from '../../typeorm/entities/customer.entity';
+import { CustomerStatus } from '../types/user.type';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
 
@@ -21,6 +23,8 @@ export class CrmResolver {
     private cache: CacheService,
     @InjectRepository(LeadEntity)
     private leadRepo: Repository<LeadEntity>,
+    @InjectRepository(CustomerEntity)
+    private customerRepo: Repository<CustomerEntity>,
   ) {}
 
   @Query(() => [LeadEntity])
@@ -94,14 +98,47 @@ export class CrmResolver {
   async convertLead(
     @Args('id', { type: () => ID }) id: string
   ): Promise<LeadEntity> {
-    await this.leadRepo.update(id, { status: LeadStatus.CONVERTED });
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
     if (!lead) throw new NotFoundException('Lead not found');
+
+    // Check if already converted
+    if (lead.status === LeadStatus.CONVERTED) {
+      await this.cache.invalidatePattern('leads:*');
+      return lead;
+    }
+
+    // Auto-create Customer from lead data
+    const newCustomer = this.customerRepo.create({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      company: lead.company,
+      location: lead.location,
+      notes: lead.notes,
+      centerId: lead.centerId,
+      status: CustomerStatus.ACTIVE,
+      joinDate: new Date(),
+      totalBookings: 0,
+      totalSpent: 0,
+    });
+    await this.customerRepo.save(newCustomer);
+
+    // Mark lead as converted
+    await this.leadRepo.update(id, { status: LeadStatus.CONVERTED });
+
+    // Invalidate caches
     await this.cache.invalidatePattern('leads:*');
-    return lead;
+    await this.cache.invalidatePattern('customers:*');
+
+    // Return refreshed lead
+    const updatedLead = await this.leadRepo.findOne({
+      where: { id },
+      relations: ['assignedTo'],
+    });
+    return updatedLead!;
   }
 
   @Mutation(() => Boolean)

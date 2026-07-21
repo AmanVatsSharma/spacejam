@@ -51,7 +51,7 @@ export class InvoiceResolver {
 
     const invoices = await this.invoiceRepo.find({
       where,
-      relations: ['center'],
+      relations: ['center', 'customer', 'contract'],
       order: { createdAt: 'DESC' },
       take: filters?.limit ?? 50,
       skip: filters?.offset ?? 0,
@@ -64,7 +64,7 @@ export class InvoiceResolver {
   async invoice(@Args('id', { type: () => ID }) id: string): Promise<InvoiceEntity | null> {
     const invoice = await this.invoiceRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer', 'contract'],
     });
     return invoice;
   }
@@ -97,7 +97,7 @@ export class InvoiceResolver {
     await this.invoiceRepo.update(id, input);
     const invoice = await this.invoiceRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer', 'contract'],
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     await this.cache.invalidatePattern('invoices:*');
@@ -124,7 +124,7 @@ export class InvoiceResolver {
     });
     const invoice = await this.invoiceRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer', 'contract'],
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     await this.cache.invalidatePattern('invoices:*');
@@ -165,7 +165,7 @@ export class DepositResolver {
 
     const deposits = await this.depositRepo.find({
       where,
-      relations: ['center'],
+      relations: ['center', 'customer'],
       order: { createdAt: 'DESC' },
       take: filters?.limit ?? 50,
       skip: filters?.offset ?? 0,
@@ -178,7 +178,7 @@ export class DepositResolver {
   async deposit(@Args('id', { type: () => ID }) id: string): Promise<DepositEntity | null> {
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     return deposit;
   }
@@ -207,7 +207,7 @@ export class DepositResolver {
     await this.depositRepo.update(id, input);
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -225,7 +225,7 @@ export class DepositResolver {
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -251,7 +251,7 @@ export class DepositResolver {
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -269,7 +269,7 @@ export class DepositResolver {
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -289,7 +289,7 @@ export class DepositResolver {
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -309,7 +309,7 @@ export class DepositResolver {
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
@@ -324,7 +324,7 @@ export class DepositResolver {
   ): Promise<boolean> {
     const deposit = await this.depositRepo.findOne({
       where: { id },
-      relations: [],
+      relations: ['customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     // Email/notification infra is not yet wired into the revenue module.
@@ -341,7 +341,7 @@ export class DepositResolver {
     @Args('format', { nullable: true }) format?: string,
   ): Promise<string> {
     const deposits = await this.depositRepo.find({
-      relations: ['center'],
+      relations: ['center', 'customer'],
       order: { createdAt: 'DESC' },
       take: 500,
     });
@@ -396,7 +396,7 @@ export class ContractResolver {
 
     const contracts = await this.contractRepo.find({
       where,
-      relations: ['center'],
+      relations: ['center', 'customer'],
       order: { createdAt: 'DESC' },
       take: filters?.limit ?? 50,
       skip: filters?.offset ?? 0,
@@ -409,7 +409,7 @@ export class ContractResolver {
   async contract(@Args('id', { type: () => ID }) id: string): Promise<ContractEntity | null> {
     const contract = await this.contractRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     return contract as unknown as Contract | null;
   }
@@ -438,7 +438,7 @@ export class ContractResolver {
     await this.contractRepo.update(id, input);
     const contract = await this.contractRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
@@ -453,7 +453,7 @@ export class ContractResolver {
     await this.contractRepo.update(id, { status: ContractStatus.TERMINATED });
     const contract = await this.contractRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
@@ -472,7 +472,7 @@ export class ContractResolver {
     });
     const contract = await this.contractRepo.findOne({
       where: { id },
-      relations: ['center'],
+      relations: ['center', 'customer'],
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
