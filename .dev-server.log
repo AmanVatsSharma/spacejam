@@ -1,0 +1,26 @@
+
+[2m> [22m[2mnx run[22m web:dev
+
+> @org/web@0.0.1 dev
+> next dev -p 3000
+[1m[38;2;173;127;168m▲ Next.js 16.2.3[39m[22m (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.3:3000
+- Environments: .env.local
+[32m[1m✓[22m[39m Ready in 1285ms
+ GET /dashboard/crm/customers [32m200[39m in 4.0s[2m (next.js: 1845ms, proxy.ts: 597ms, application-code: 1531ms)[22m
+[36m[browser][39m [33mAn error occurred! For more details, see the full error text at https://go.apollo.dev/c/err#%7B%22version%22%3A%223.14.1%22%2C%22message%22%3A103%2C%22args%22%3A%5B%22ApolloClient%22%2C%22connectToDevTools%22%2C%22Please%20use%20%60devtools.enabled%60%20instead.%22%5D%7D[39m [2m(file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)[22m
+[36m[browser][39m [33mImage with src "/_next/static/media/logo.0mt5hmw1syvad.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading[39m [2m(file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)[22m
+[36m[browser][39m [33mImage with src "/_next/static/media/logo.0mt5hmw1syvad.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.[39m [2m(file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)[22m
+
+[2m[32m[39m[22m
+
+[7m[1m[32m NX [39m[22m[27m  [32mSuccessfully ran target [1mdev[22m for project web[39m
+
+
+
+[7m[1m[33m NX [39m[22m[27m  [33mNx Cloud encountered some problems[39m
+
+This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+
