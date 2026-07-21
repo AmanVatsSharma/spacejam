@@ -636,7 +636,9 @@ export default function CustomerDetailPage() {
                   }
                   return (
                     <div className={styles.finList}>
-                      {deposits.map((d: any) => (
+                      {deposits.map((d: any) => {
+                        const statusCls = styles[`finStatus_${d.status?.replace(/\s+/g, "_")}`] ?? "";
+                        return (
                         <div key={d.id} className={styles.finListItem}>
                           <div className={styles.finListMeta}>
                             <p className={styles.finListPrimary}>{d.depositType} Deposit &middot; {d.referenceNumber}</p>
@@ -644,7 +646,7 @@ export default function CustomerDetailPage() {
                               Received {formatDate(d.receivedDate)} &middot; {d.notes || "—"}
                             </p>
                           </div>
-                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${d.status?.replace(/\s+/g, "_")}] ?? ""}`}>{d.status}</span>
+                          <span className={`${styles.finStatusBadge} ${statusCls}`}>{d.status}</span>
                           <span className={styles.finListAmount}>{formatRupee(d.amount)}</span>
                           <div className={styles.finActions}>
                             {d.status === "Held" && !d.frozen && (
@@ -675,7 +677,8 @@ export default function CustomerDetailPage() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
@@ -712,7 +715,9 @@ export default function CustomerDetailPage() {
                   }
                   return (
                     <div className={styles.finList}>
-                      {contracts.map((c: any) => (
+                      {contracts.map((c: any) => {
+                        const statusCls = styles[`finStatus_${c.status?.replace(/\s+/g, "_")}`] ?? "";
+                        return (
                         <div key={c.id} className={styles.finListItem}>
                           <div className={styles.finListMeta}>
                             <p className={styles.finListPrimary}>{c.contractNumber} &middot; {c.planName}</p>
@@ -720,7 +725,7 @@ export default function CustomerDetailPage() {
                               {formatDate(c.startDate)} — {formatDate(c.endDate)} &middot; {c.paymentFrequency} &middot; Auto-renew: {c.autoRenew ? "Yes" : "No"}
                             </p>
                           </div>
-                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${c.status?.replace(/\s+/g, "_")}] ?? ""}`}>{c.status}</span>
+                          <span className={`${styles.finStatusBadge} ${statusCls}`}>{c.status}</span>
                           <span className={styles.finListAmount}>{formatRupee(c.amount)}</span>
                           <div className={styles.finActions}>
                             {c.status === "Active" && (
@@ -739,7 +744,8 @@ export default function CustomerDetailPage() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
@@ -776,7 +782,9 @@ export default function CustomerDetailPage() {
                   }
                   return (
                     <div className={styles.finList}>
-                      {invoices.map((inv: any) => (
+                      {invoices.map((inv: any) => {
+                        const statusCls = styles[`finStatus_${inv.status?.replace(/\s+/g, "_")}`] ?? "";
+                        return (
                         <div key={inv.id} className={styles.finListItem}>
                           <div className={styles.finListMeta}>
                             <p className={styles.finListPrimary}>{inv.invoiceNumber} &middot; {inv.planName || "—"}</p>
@@ -785,7 +793,7 @@ export default function CustomerDetailPage() {
                               {inv.paidDate ? ` &middot; Paid ${formatDate(inv.paidDate)}` : ""}
                             </p>
                           </div>
-                          <span className={`${styles.finStatusBadge} ${styles[`finStatus_${inv.status?.replace(/\s+/g, "_")}] ?? ""}`}>{inv.status}</span>
+                          <span className={`${styles.finStatusBadge} ${statusCls}`}>{inv.status}</span>
                           <span className={styles.finListAmount}>{formatRupee(inv.totalAmount)}</span>
                           <div className={styles.finActions}>
                             {inv.status !== "Paid" && (
@@ -802,7 +810,8 @@ export default function CustomerDetailPage() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
