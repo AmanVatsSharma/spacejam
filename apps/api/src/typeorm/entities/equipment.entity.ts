@@ -75,15 +75,15 @@ export class Equipment {
   center!: Center;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   serialNumber!: string | null;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   brand!: string | null;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   model!: string | null;
 
   @Field(() => Float, { nullable: true })
@@ -95,7 +95,7 @@ export class Equipment {
   purchaseDate!: string | null;
 
   @Field(() => Int, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   warrantyMonths!: number | null;
 
   @Field(() => ID, { nullable: true })

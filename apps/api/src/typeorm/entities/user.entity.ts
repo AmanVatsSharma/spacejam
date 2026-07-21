@@ -65,23 +65,23 @@ export class User {
   @Column({ name: 'lastLogin', type: 'timestamp', nullable: true })
   lastLoginAt!: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   passwordHash!: string;
 
   @Field()
   @Column({ default: false })
   twoFactorEnabled!: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   twoFactorSecret?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   passwordResetToken?: string;
 
   @Column({ type: 'timestamp', nullable: true })
   passwordResetExpiresAt?: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   emailVerifyToken?: string;
 
   @Column({ type: 'timestamp', nullable: true })

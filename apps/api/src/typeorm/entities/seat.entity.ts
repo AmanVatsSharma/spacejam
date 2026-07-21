@@ -36,7 +36,7 @@ export class Seat {
   floorId!: string;
 
   @Field(() => ID, { nullable: true })
-  @Column({ name: 'centerId', nullable: true })
+  @Column({ name: 'centerId', type: 'uuid', nullable: true })
   centerId!: string | null;
 
   @Field(() => String)

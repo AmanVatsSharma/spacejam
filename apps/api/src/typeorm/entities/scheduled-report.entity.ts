@@ -88,7 +88,7 @@ export class ScheduledReport {
   @Column({ type: 'boolean', default: true })
   enabled!: boolean;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'date', nullable: true })
   lastSentAt!: string | null;
 

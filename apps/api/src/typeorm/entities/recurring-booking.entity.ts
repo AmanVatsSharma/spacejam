@@ -102,7 +102,7 @@ export class RecurringBooking {
   @Column({ type: 'boolean', default: true })
   active!: boolean;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   notes!: string | null;
 

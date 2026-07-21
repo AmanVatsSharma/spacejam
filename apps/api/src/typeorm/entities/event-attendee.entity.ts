@@ -61,7 +61,7 @@ export class EventAttendee {
   ticketTier!: string | null;
 
   @Field(() => Int, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   seatNumber!: number | null;
 
   @Field(() => String, { nullable: true })

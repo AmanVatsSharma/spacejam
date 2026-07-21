@@ -32,9 +32,9 @@ export class Contract {
   @Column()
   contractNumber!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'customerId' })
-  customerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'customerId', type: 'uuid', nullable: true })
+  customerId!: string | null;
 
   @Field()
   @Column()

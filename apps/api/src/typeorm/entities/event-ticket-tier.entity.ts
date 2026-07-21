@@ -54,11 +54,11 @@ export class EventTicketTier {
   @Column({ type: 'int', default: 0 })
   soldCount!: number;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'date', nullable: true })
   earlyBirdEndDate!: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 128, nullable: true })
   description!: string | null;
 

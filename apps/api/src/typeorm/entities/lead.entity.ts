@@ -36,11 +36,11 @@ export class Lead {
   email!: string;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   phone?: string;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   company?: string;
 
   @Field(() => LeadStatus)

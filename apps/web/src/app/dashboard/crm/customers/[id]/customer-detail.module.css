@@ -2302,6 +2302,78 @@
   gap: 10px;
 }
 
+.finSectionHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #ff6a2f;
+  background: rgba(255, 106, 47, 0.08);
+  color: #ff6a2f;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1.5;
+}
+
+.finAddBtn:hover {
+  background: #ff6a2f;
+  color: #fff;
+}
+
+.quickCreate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 4px;
+  flex-wrap: wrap;
+}
+
+.quickInput {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-width: 120px;
+  outline: none;
+}
+
+.quickInput:focus {
+  border-color: #ff6a2f;
+}
+
+.quickCreateBtn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  background: #ff6a2f;
+  color: #fff;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.quickCreateBtn:hover:not(:disabled) {
+  background: #e55a26;
+}
+
+.quickCreateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .finSectionIcon {
   width: 20px;
   height: 20px;

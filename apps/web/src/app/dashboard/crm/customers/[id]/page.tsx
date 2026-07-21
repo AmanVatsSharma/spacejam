@@ -27,6 +27,10 @@ import {
   REQUEST_DEPOSIT_RELEASE,
   SEND_DEPOSIT_REMINDER,
   MARK_INVOICE_PAID,
+  CREATE_DEPOSIT,
+  CREATE_CONTRACT,
+  CREATE_INVOICE,
+  UPDATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 import styles from "./customer-detail.module.css";
 
@@ -300,6 +304,21 @@ export default function CustomerDetailPage() {
   const [renewingContractId, setRenewingContractId] = useState<string>("");
   const [renewEndDate, setRenewEndDate] = useState("");
 
+  // Quick-create dialogs (from inside each financial section)
+  const [showCreateDeposit, setShowCreateDeposit] = useState(false);
+  const [showCreateContract, setShowCreateContract] = useState(false);
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+
+  // Simple creation form state (lightweight inline, not a separate modal component)
+  const [newDepositAmount, setNewDepositAmount] = useState("");
+  const [newDepositType, setNewDepositType] = useState("Refundable");
+  const [newContractAmount, setNewContractAmount] = useState("");
+  const [newContractStart, setNewContractStart] = useState("");
+  const [newContractEnd, setNewContractEnd] = useState("");
+  const [newInvoiceAmount, setNewInvoiceAmount] = useState("");
+  const [newInvoiceDue, setNewInvoiceDue] = useState("");
+  const [creating, setCreating] = useState(false);
+
   /* ── Apollo: fetch customer ── */
   const { data, loading, error } = useQuery(GET_CUSTOMER, {
     variables: { id: customerId },
@@ -376,6 +395,29 @@ export default function CustomerDetailPage() {
   const [markPaidMut] = useMutation(MARK_INVOICE_PAID, {
     refetchQueries: [
       { query: GET_CUSTOMER_INVOICES, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [createDepositMut] = useMutation(CREATE_DEPOSIT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_DEPOSITS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [createContractMut] = useMutation(CREATE_CONTRACT, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_CONTRACTS, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [createInvoiceMut] = useMutation(CREATE_INVOICE, {
+    refetchQueries: [
+      { query: GET_CUSTOMER_INVOICES, variables: { customerId } },
+      { query: GET_CUSTOMER, variables: { id: customerId } },
+    ],
+  });
+  const [updateCustomerMut] = useMutation(UPDATE_CUSTOMER, {
+    refetchQueries: [
       { query: GET_CUSTOMER, variables: { id: customerId } },
     ],
   });
@@ -457,6 +499,116 @@ export default function CustomerDetailPage() {
     { label: "Location", value: customer.location || NA },
   ];
 
+  /* ── Derived financial aggregates (available to KPI cards + Overview) ── */
+  const deposits = depositsData?.customerDeposits ?? [];
+  const contracts = contractsData?.customerContracts ?? [];
+  const invoices = invoicesData?.customerInvoices ?? [];
+  const totalDeposits = deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
+  const heldDepositTotal = deposits
+    .filter((d: any) => d.status === "Held")
+    .reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
+  const activeContracts = contracts.filter((c: any) => c.status === "Active" || c.status === "Expiring Soon");
+  const activeContractsTotal = activeContracts.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0);
+  const outstandingInvoices = invoices.filter((i: any) => i.status !== "Paid");
+  const outstandingTotal = outstandingInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+  const paidInvoices = invoices.filter((i: any) => i.status === "Paid");
+  const totalSpent = paidInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
+
+  /* ── Creation handlers ── */
+  const handleCreateDeposit = async () => {
+    if (!newDepositAmount || Number(newDepositAmount) <= 0) {
+      toast.error("Enter a valid deposit amount");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createDepositMut({
+        variables: {
+          input: {
+            customerId,
+            centerId: customer.centerId,
+            amount: Number(newDepositAmount),
+            depositType: newDepositType,
+            receivedDate: new Date().toISOString(),
+            status: "Held",
+          },
+        },
+      });
+      toast.success("Deposit created");
+      setShowCreateDeposit(false);
+      setNewDepositAmount("");
+    } catch {
+      toast.error("Failed to create deposit");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleCreateContract = async () => {
+    if (!newContractAmount || Number(newContractAmount) <= 0) {
+      toast.error("Enter a valid contract amount");
+      return;
+    }
+    if (!newContractStart || !newContractEnd) {
+      toast.error("Select start and end dates");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createContractMut({
+        variables: {
+          input: {
+            customerId,
+            centerId: customer.centerId,
+            amount: Number(newContractAmount),
+            startDate: new Date(newContractStart).toISOString(),
+            endDate: new Date(newContractEnd).toISOString(),
+            status: "Active",
+          },
+        },
+      });
+      toast.success("Contract created");
+      setShowCreateContract(false);
+      setNewContractAmount("");
+    } catch {
+      toast.error("Failed to create contract");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!newInvoiceAmount || Number(newInvoiceAmount) <= 0) {
+      toast.error("Enter a valid invoice amount");
+      return;
+    }
+    if (!newInvoiceDue) {
+      toast.error("Select a due date");
+      return;
+    }
+    setCreating(true);
+    try {
+      await createInvoiceMut({
+        variables: {
+          input: {
+            customerId,
+            centerId: customer.centerId,
+            totalAmount: Number(newInvoiceAmount),
+            dueDate: new Date(newInvoiceDue).toISOString(),
+            status: "Pending",
+          },
+        },
+      });
+      toast.success("Invoice created");
+      setShowCreateInvoice(false);
+      setNewInvoiceAmount("");
+    } catch {
+      toast.error("Failed to create invoice");
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className={styles.shell}>
       {/* ----- Row 1: Profile header ----- */}
@@ -519,7 +671,7 @@ export default function CustomerDetailPage() {
           value={formatRupee(customer.totalSpent)}
           label="Total Revenue Generated"
         />
-        <KpiCard icon={Icons.rupee} value={NA} label="Outstanding Dues" />
+        <KpiCard icon={Icons.rupee} value={formatRupee(outstandingTotal)} label="Outstanding Dues" />
         <KpiCard
           icon={Icons.users}
           value={customer.teamSize != null ? String(customer.teamSize) : NA}
@@ -527,7 +679,7 @@ export default function CustomerDetailPage() {
         />
         <KpiCard
           icon={Icons.shield}
-          value={NA}
+          value={formatRupee(heldDepositTotal)}
           label="Security Deposit Held"
         />
       </div>
@@ -566,16 +718,6 @@ export default function CustomerDetailPage() {
 
               {/* Financial Summary */}
               {(() => {
-                const deposits = depositsData?.customerDeposits ?? [];
-                const contracts = contractsData?.customerContracts ?? [];
-                const invoices = invoicesData?.customerInvoices ?? [];
-                const totalDeposits = deposits.reduce((s: number, d: any) => s + Number(d.amount ?? 0), 0);
-                const activeContracts = contracts.filter((c: any) => c.status === "Active" || c.status === "Expiring Soon");
-                const activeContractsTotal = activeContracts.reduce((s: number, c: any) => s + Number(c.amount ?? 0), 0);
-                const outstandingInvoices = invoices.filter((i: any) => i.status !== "Paid");
-                const outstandingTotal = outstandingInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
-                const paidInvoices = invoices.filter((i: any) => i.status === "Paid");
-                const totalSpent = paidInvoices.reduce((s: number, i: any) => s + Number(i.totalAmount ?? 0), 0);
                 return (
                   <section className={styles.card}>
                     <h2 className={styles.cardTitle}>Financial Summary</h2>
@@ -617,13 +759,52 @@ export default function CustomerDetailPage() {
                     </span>
                     <h2 className={styles.finSectionTitle}>Deposits</h2>
                   </div>
-                  <span
-                    className={`${styles.finSectionToggle} ${depositsOpen ? styles.finSectionToggleOpen : ""}`}
-                    aria-hidden="true"
-                  >
-                    {Icons.chevronDown}
-                  </span>
+                  <div className={styles.finSectionHeaderRight}>
+                    <button
+                      type="button"
+                      className={styles.finAddBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCreateDeposit((o) => !o);
+                      }}
+                    >
+                      + Add Deposit
+                    </button>
+                    <span
+                      className={`${styles.finSectionToggle} ${depositsOpen ? styles.finSectionToggleOpen : ""}`}
+                      aria-hidden="true"
+                    >
+                      {Icons.chevronDown}
+                    </span>
+                  </div>
                 </div>
+                {showCreateDeposit && (
+                  <div className={styles.quickCreate}>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className={styles.quickInput}
+                      value={newDepositAmount}
+                      onChange={(e) => setNewDepositAmount(e.target.value)}
+                    />
+                    <select
+                      className={styles.quickInput}
+                      value={newDepositType}
+                      onChange={(e) => setNewDepositType(e.target.value)}
+                    >
+                      <option value="Refundable">Refundable</option>
+                      <option value="Non-Refundable">Non-Refundable</option>
+                    </select>
+                    <button
+                      type="button"
+                      className={styles.quickCreateBtn}
+                      disabled={creating}
+                      onClick={handleCreateDeposit}
+                    >
+                      {creating ? "Creating…" : "Create Deposit"}
+                    </button>
+                  </div>
+                )}
                 {depositsOpen && (() => {
                   const deposits = depositsData?.customerDeposits ?? [];
                   if (deposits.length === 0) {
@@ -696,13 +877,56 @@ export default function CustomerDetailPage() {
                     </span>
                     <h2 className={styles.finSectionTitle}>Contracts</h2>
                   </div>
-                  <span
-                    className={`${styles.finSectionToggle} ${contractsOpen ? styles.finSectionToggleOpen : ""}`}
-                    aria-hidden="true"
-                  >
-                    {Icons.chevronDown}
-                  </span>
+                  <div className={styles.finSectionHeaderRight}>
+                    <button
+                      type="button"
+                      className={styles.finAddBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCreateContract((o) => !o);
+                      }}
+                    >
+                      + Add Contract
+                    </button>
+                    <span
+                      className={`${styles.finSectionToggle} ${contractsOpen ? styles.finSectionToggleOpen : ""}`}
+                      aria-hidden="true"
+                    >
+                      {Icons.chevronDown}
+                    </span>
+                  </div>
                 </div>
+                {showCreateContract && (
+                  <div className={styles.quickCreate}>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className={styles.quickInput}
+                      value={newContractAmount}
+                      onChange={(e) => setNewContractAmount(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className={styles.quickInput}
+                      value={newContractStart}
+                      onChange={(e) => setNewContractStart(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className={styles.quickInput}
+                      value={newContractEnd}
+                      onChange={(e) => setNewContractEnd(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className={styles.quickCreateBtn}
+                      disabled={creating}
+                      onClick={handleCreateContract}
+                    >
+                      {creating ? "Creating…" : "Create Contract"}
+                    </button>
+                  </div>
+                )}
                 {contractsOpen && (() => {
                   const contracts = contractsData?.customerContracts ?? [];
                   if (contracts.length === 0) {
@@ -763,13 +987,50 @@ export default function CustomerDetailPage() {
                     </span>
                     <h2 className={styles.finSectionTitle}>Invoices</h2>
                   </div>
-                  <span
-                    className={`${styles.finSectionToggle} ${invoicesOpen ? styles.finSectionToggleOpen : ""}`}
-                    aria-hidden="true"
-                  >
-                    {Icons.chevronDown}
-                  </span>
+                  <div className={styles.finSectionHeaderRight}>
+                    <button
+                      type="button"
+                      className={styles.finAddBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCreateInvoice((o) => !o);
+                      }}
+                    >
+                      + Add Invoice
+                    </button>
+                    <span
+                      className={`${styles.finSectionToggle} ${invoicesOpen ? styles.finSectionToggleOpen : ""}`}
+                      aria-hidden="true"
+                    >
+                      {Icons.chevronDown}
+                    </span>
+                  </div>
                 </div>
+                {showCreateInvoice && (
+                  <div className={styles.quickCreate}>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className={styles.quickInput}
+                      value={newInvoiceAmount}
+                      onChange={(e) => setNewInvoiceAmount(e.target.value)}
+                    />
+                    <input
+                      type="date"
+                      className={styles.quickInput}
+                      value={newInvoiceDue}
+                      onChange={(e) => setNewInvoiceDue(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className={styles.quickCreateBtn}
+                      disabled={creating}
+                      onClick={handleCreateInvoice}
+                    >
+                      {creating ? "Creating…" : "Create Invoice"}
+                    </button>
+                  </div>
+                )}
                 {invoicesOpen && (() => {
                   const invoices = invoicesData?.customerInvoices ?? [];
                   if (invoices.length === 0) {
@@ -876,13 +1137,20 @@ export default function CustomerDetailPage() {
             <button
               type="button"
               className={styles.saveNoteBtn}
-              onClick={() => {
+              onClick={async () => {
                 if (!note.trim()) {
                   toast.error("Note cannot be empty");
                   return;
                 }
-                toast.success("Note saved");
-                setNote("");
+                try {
+                  await updateCustomerMut({
+                    variables: { id: customerId, input: { notes: note.trim() } },
+                  });
+                  toast.success("Note saved");
+                  setNote("");
+                } catch {
+                  toast.error("Failed to save note");
+                }
               }}
             >
               Save Note

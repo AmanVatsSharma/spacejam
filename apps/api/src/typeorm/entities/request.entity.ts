@@ -38,7 +38,7 @@ export class Request {
   requestedById!: string;
 
   @Field(() => ID, { nullable: true })
-  @Column({ name: 'assignedToId', nullable: true })
+  @Column({ name: 'assignedToId', type: 'uuid', nullable: true })
   assignedToId!: string | null;
 
   @Field(() => RequestType)

@@ -62,7 +62,7 @@ export class CalendarConnection {
   @Column({ name: 'externalCalendarId', type: 'varchar', nullable: true })
   externalCalendarId!: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', nullable: true })
   email!: string | null;
 
@@ -74,7 +74,7 @@ export class CalendarConnection {
   @CreateDateColumn()
   createdAt!: Date;
 
-  @Field()
+  @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   lastSyncedAt!: Date | null;
 }

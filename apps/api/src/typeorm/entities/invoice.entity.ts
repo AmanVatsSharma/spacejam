@@ -33,16 +33,16 @@ export class Invoice {
   @Column()
   invoiceNumber!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'customerId' })
-  customerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'customerId', type: 'uuid', nullable: true })
+  customerId!: string | null;
 
   @Field()
   @Column()
   customerName!: string;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   customerEmail?: string;
 
   @Field(() => ID, { nullable: true })
@@ -50,7 +50,7 @@ export class Invoice {
   centerId?: string;
 
   @Field(() => String, { nullable: true })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   planName?: string;
 
   @Field(() => Float)

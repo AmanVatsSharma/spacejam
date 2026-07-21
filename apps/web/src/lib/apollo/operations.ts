@@ -325,6 +325,16 @@ export const LEAD_COUNT = gql`
   }
 `;
 
+export const LEAD_PIPELINE_STATS = gql`
+  query LeadPipelineStats {
+    new: leadCount(status: NEW)
+    visited: leadCount(status: VISITED)
+    negotiation: leadCount(status: NEGOTIATION)
+    converted: leadCount(status: CONVERTED)
+    cold: leadCount(status: COLD)
+  }
+`;
+
 /* ========================= Revenue — Invoices ========================= */
 
 export const GET_INVOICES = gql`

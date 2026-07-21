@@ -49,11 +49,11 @@ export class Booking {
   @Column({ name: 'planId', type: 'uuid', nullable: true })
   planId?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   startDate?: Date;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   endDate?: Date;
 
@@ -65,11 +65,11 @@ export class Booking {
   @Column({ name: 'paymentId', type: 'uuid', nullable: true })
   paymentId?: string | null;
 
-  @Field({ nullable: true })
+  @Field(() => Float, { nullable: true })
   @Column({ type: 'float', nullable: true, default: 0 })
   totalPrice?: number;
 
-  @Field({ nullable: true })
+  @Field(() => Float, { nullable: true })
   @Column({ type: 'float', default: 0, nullable: true })
   discount?: number;
 

@@ -35,6 +35,12 @@ import { Contract } from './entities/contract.entity';
 import { Customer } from './entities/customer.entity';
 import { Notification } from './entities/notification.entity';
 import { Discount } from './entities/discount.entity';
+import { Equipment } from './entities/equipment.entity';
+import { EventAttendee } from './entities/event-attendee.entity';
+import { EventTicketTier } from './entities/event-ticket-tier.entity';
+import { RecurringBooking } from './entities/recurring-booking.entity';
+import { ScheduledReport } from './entities/scheduled-report.entity';
+import { CalendarConnection } from './entities/calendar-connection.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -60,6 +66,12 @@ const ALL_ENTITIES = [
   Contract,
   Notification,
   Discount,
+  Equipment,
+  EventAttendee,
+  EventTicketTier,
+  RecurringBooking,
+  ScheduledReport,
+  CalendarConnection,
 ];
 
 @Module({

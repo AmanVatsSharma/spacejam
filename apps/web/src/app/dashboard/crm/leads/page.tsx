@@ -23,7 +23,7 @@ import {
   UPDATE_LEAD,
   CONVERT_LEAD,
   DELETE_LEAD,
-  LEAD_COUNT,
+  LEAD_PIPELINE_STATS,
 } from '@/lib/apollo/operations';
 import {
   AddLeadModal,
@@ -205,6 +205,12 @@ export default function LeadsPage() {
     { fetchPolicy: 'cache-and-network' },
   );
 
+  /* ── Selected lead ── */
+  const selected = useMemo(
+    () => filtered.find((l) => l.id === selectedId) ?? filtered[0],
+    [filtered, selectedId],
+  );
+
   /* ── Mutations ── */
   const [createLead] = useMutation(CREATE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
@@ -222,32 +228,19 @@ export default function LeadsPage() {
     ],
   });
 
-  /* ── Lead counts for pipeline stats ── */
-  const { data: newCountData } = useQuery(LEAD_COUNT, {
-    variables: { status: 'New' },
+  /* ── Pipeline stats (single query, aliased fields) ── */
+  const { data: pipelineData } = useQuery(LEAD_PIPELINE_STATS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
-  const { data: visitedCountData } = useQuery(LEAD_COUNT, {
-    variables: { status: 'Visited' },
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { data: negotiationCountData } = useQuery(LEAD_COUNT, {
-    variables: { status: 'Negotiation' },
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { data: convertedCountData } = useQuery(LEAD_COUNT, {
-    variables: { status: 'Converted' },
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { data: coldCountData } = useQuery(LEAD_COUNT, {
-    variables: { status: 'Cold' },
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
+
+  const pipelineCounts = useMemo(() => ({
+    new: pipelineData?.new ?? 0,
+    visited: pipelineData?.visited ?? 0,
+    negotiation: pipelineData?.negotiation ?? 0,
+    converted: pipelineData?.converted ?? 0,
+    cold: pipelineData?.cold ?? 0,
+  }), [pipelineData]);
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
@@ -337,13 +330,7 @@ export default function LeadsPage() {
     return result;
   }, [leads, search, statusFilter, sourceFilter, sort]);
 
-  /* ── Selected lead ── */
-  const selected = useMemo(
-    () => filtered.find((l) => l.id === selectedId) ?? filtered[0],
-    [filtered, selectedId],
-  );
-
-  /* ── Stats ── */
+  /* ── Lead counts for pipeline stats ── */
   const stats = useMemo(() => {
     const converted = leads.filter((l) => l.status === 'Converted').length;
     const conversionRate = leads.length
@@ -358,11 +345,11 @@ export default function LeadsPage() {
   }, [leads]);
 
   const pipeline = [
-    { name: 'Inquiry', count: newCountData?.leadCount ?? 0, cls: styles.tileInquiry },
-    { name: 'Visited', count: visitedCountData?.leadCount ?? 0, cls: styles.tileVisited },
-    { name: 'Negotiate', count: negotiationCountData?.leadCount ?? 0, cls: styles.tileNegotiate },
-    { name: 'Converted', count: convertedCountData?.leadCount ?? 0, cls: styles.tileConverted },
-    { name: 'Cold', count: coldCountData?.leadCount ?? 0, cls: styles.tileCold },
+    { name: 'Inquiry', count: pipelineCounts.new, cls: styles.tileInquiry },
+    { name: 'Visited', count: pipelineCounts.visited, cls: styles.tileVisited },
+    { name: 'Negotiate', count: pipelineCounts.negotiation, cls: styles.tileNegotiate },
+    { name: 'Converted', count: pipelineCounts.converted, cls: styles.tileConverted },
+    { name: 'Cold', count: pipelineCounts.cold, cls: styles.tileCold },
   ];
 
   return (

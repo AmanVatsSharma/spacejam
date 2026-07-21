@@ -19,6 +19,8 @@ import { EventTicketTier } from '../typeorm/entities/event-ticket-tier.entity';
 import { RecurringBooking } from '../typeorm/entities/recurring-booking.entity';
 import { ScheduledReport } from '../typeorm/entities/scheduled-report.entity';
 import { CalendarConnection } from '../typeorm/entities/calendar-connection.entity';
+import { User } from '../typeorm/entities/user.entity';
+import { Event } from '../typeorm/entities/event.entity';
 
 import { AuditLogResolver } from '../graphql/resolvers/audit-log.resolver';
 import { EquipmentResolver } from '../graphql/resolvers/equipment.resolver';
@@ -41,6 +43,8 @@ import { CalendarSyncService } from './calendar-sync.service';
       RecurringBooking,
       ScheduledReport,
       CalendarConnection,
+      User,
+      Event,
     ]),
     CacheModule,
   ],
