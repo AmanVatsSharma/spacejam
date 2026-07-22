@@ -111,14 +111,13 @@ Many pages render mock data when the GraphQL response is empty: `const rows = da
 ### SSH Access
 
 ```sh
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
 ```
 
 | Field | Value |
 |---|---|
-| Instance ID | `i-040fe592978e19408` |
 | Region | `ap-south-2` |
-| Public DNS | `ec2-98-130-45-181.ap-south-2.compute.amazonaws.com` |
+| Public DNS | `ec2-18-60-107-5.ap-south-2.compute.amazonaws.com` |
 | SSH user | `ubuntu` |
 | Key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
 | Production URL | `https://spacejam.vedpragya.com` |
@@ -155,10 +154,10 @@ npx nx build web && npx nx build api
 # 2. Archive and copy
 cd <repo root>
 git archive --format=tar.gz HEAD -o update.tar.gz
-scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com:/home/ubuntu/
+scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com:/home/ubuntu/
 
 # 3. SSH in and deploy
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
 # Then run:
 bash /home/ubuntu/deploy.sh   # (uses /home/ubuntu/deploy.sh, not scripts/deploy.sh)
 ```
