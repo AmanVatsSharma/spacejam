@@ -1,24 +1,19 @@
 "use client";
 /**
- * File:        apps/web/src/app/dashboard/crm/onboarding/page.tsx
- * Module:      Web · Dashboard · CRM · Onboarding
- * Purpose:     Onboarding hub. Mirrors the Figma "Onboarding" tab
- *              (node 0-25984 / 0-25985) exactly. The pill switcher
- *              (Customers · Leads · Onboarding) and the main sidebar
- *              live in the shared `dashboard/layout.tsx` chrome; this
- *              page renders only the page body so it stays consistent
- *              across the CRM section.
+ * File:        apps/web/src/app/dashboard/crm/onboarding-list/page.tsx
+ * Module:      Web · Dashboard · CRM · Onboarding List
+ * Purpose:     Onboarding list hub. Mirrors the Figma "Onboarding" tab
+ *              (node 0-25984 / 0-25985). Uses shared use-crm hook for
+ *              Apollo queries and mutations.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-26
+ * Last-updated: 2026-07-22
  */
 
-
 import { useState, useMemo } from 'react';
-import { useQuery } from '@apollo/client';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { GET_LEADS } from '@/lib/apollo/operations';
+import { useLeads, useLeadMutations, type Lead as SharedLead } from '@/hooks/use-crm';
 import { QueryLoading, QueryError, QueryEmpty } from '@/components/ui/query-status';
 import styles from './onboarding.module.css';
 
@@ -46,6 +41,9 @@ interface OnboardingLead {
   avatar?: string;
 }
 
+type BackendLead = SharedLead & {
+  assignedTo?: { id: string; name: string; email: string } | null;
+};
 
 /* --------------------------- Helpers ----------------------------- */
 
@@ -56,6 +54,32 @@ const STATUS_PILL_CLASS: Record<OnboardingStatus, string> = {
   Negotiation: styles.pillNegotiation,
   'Agreement Sent': styles.pillAgreement,
 };
+
+const BACKEND_TO_ONBOARDING: Record<string, OnboardingStatus> = {
+  New: 'New',
+  Visited: 'Visit Scheduled',
+  'Visit Scheduled': 'Visit Scheduled',
+  'Visit Complete': 'Visit Complete',
+  Negotiation: 'Negotiation',
+  'Agreement Sent': 'Agreement Sent',
+  Converted: 'Agreement Sent',
+};
+
+function mapLeadToOnboarding(l: BackendLead): OnboardingLead {
+  return {
+    id: l.id,
+    name: l.name,
+    email: l.email ?? '',
+    phone: l.phone ?? '',
+    company: l.company ?? '',
+    requirement: l.requirement ?? '',
+    location: l.location ?? '',
+    source: l.source ?? 'Website',
+    status: BACKEND_TO_ONBOARDING[l.status] ?? 'New',
+    lastActivity: l.lastContact ?? '—',
+    assignedTo: l.assignedTo?.name ?? 'Unassigned',
+  };
+}
 
 /* ----------------------------- Icons ----------------------------- */
 
@@ -127,48 +151,6 @@ const Icon = {
   ),
 };
 
-/* ─── Backend Lead shape ─── */
-interface BackendLead {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  company?: string;
-  source?: string;
-  requirement?: string;
-  location?: string;
-  status: string;
-  lastContact?: string;
-  assignedTo?: { id: string; name: string; email: string } | null;
-}
-
-/* ─── Map backend status to onboarding status ─── */
-const BACKEND_TO_ONBOARDING: Record<string, OnboardingStatus> = {
-  New: 'New',
-  Visited: 'Visit Scheduled',
-  'Visit Scheduled': 'Visit Scheduled',
-  'Visit Complete': 'Visit Complete',
-  Negotiation: 'Negotiation',
-  'Agreement Sent': 'Agreement Sent',
-  Converted: 'Agreement Sent',
-};
-
-function mapLeadToOnboarding(l: BackendLead): OnboardingLead {
-  return {
-    id: l.id,
-    name: l.name,
-    email: l.email,
-    phone: l.phone ?? '',
-    company: l.company ?? '',
-    requirement: l.requirement ?? '',
-    location: l.location ?? '',
-    source: l.source ?? 'Website',
-    status: BACKEND_TO_ONBOARDING[l.status] ?? 'New',
-    lastActivity: l.lastContact ?? '—',
-    assignedTo: l.assignedTo?.name ?? 'Unassigned',
-  };
-}
-
 /* --------------------------- Component --------------------------- */
 
 export default function OnboardingPage() {
@@ -177,23 +159,24 @@ export default function OnboardingPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | OnboardingStatus>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
 
-  /* ── Apollo data ── */
-  const { data, loading, error, refetch } = useQuery<{ leads: BackendLead[] }>(GET_LEADS, {
+  /* ── Apollo data (shared hook) ── */
+  const { leads: backendLeads, loading, error, refetch } = useLeads({
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
 
+  const { updateLead } = useLeadMutations();
+
   const leads: OnboardingLead[] = useMemo(() => {
-    if (!data?.leads?.length) return [];
-    return data.leads
+    if (!backendLeads.length) return [];
+    return backendLeads
       .filter((l) => BACKEND_TO_ONBOARDING[l.status])
       .map(mapLeadToOnboarding);
-  }, [data]);
+  }, [backendLeads]);
 
   const stats = useMemo(() => [
     {
       label: 'Total Onboarding',
-      value: leads.length,
+      value: String(leads.length),
       trend: '',
       icon: Icon.Users,
       iconBg: 'bg-orange-50',
@@ -201,7 +184,7 @@ export default function OnboardingPage() {
     },
     {
       label: 'Visits Scheduled',
-      value: leads.filter((l) => l.status === 'Visit Scheduled').length,
+      value: String(leads.filter((l) => l.status === 'Visit Scheduled').length),
       trend: '',
       icon: Icon.Calendar,
       iconBg: 'bg-blue-50',
@@ -209,7 +192,7 @@ export default function OnboardingPage() {
     },
     {
       label: 'Visits Complete',
-      value: leads.filter((l) => l.status === 'Visit Complete').length,
+      value: String(leads.filter((l) => l.status === 'Visit Complete').length),
       trend: '',
       icon: Icon.CheckCircle,
       iconBg: 'bg-emerald-50',
@@ -217,7 +200,7 @@ export default function OnboardingPage() {
     },
     {
       label: 'Agreements Sent',
-      value: leads.filter((l) => l.status === 'Agreement Sent').length,
+      value: String(leads.filter((l) => l.status === 'Agreement Sent').length),
       trend: '',
       icon: Icon.FileText,
       iconBg: 'bg-purple-50',
@@ -236,6 +219,24 @@ export default function OnboardingPage() {
     const matchesSource = sourceFilter === 'all' || l.source === sourceFilter;
     return matchesQuery && matchesStatus && matchesSource;
   }), [leads, search, statusFilter, sourceFilter]);
+
+  const handleAdvanceStatus = async (leadId: string, currentStatus: string) => {
+    const statusFlow: Record<string, string> = {
+      'New': 'Visited',
+      'Visited': 'Visit Scheduled',
+      'Visit Scheduled': 'Visit Complete',
+      'Visit Complete': 'Negotiation',
+      'Negotiation': 'Agreement Sent',
+      'Agreement Sent': 'Agreement Sent',
+    };
+    const nextStatus = statusFlow[currentStatus];
+    if (!nextStatus || nextStatus === currentStatus) return;
+
+    const ok = await updateLead(leadId, { status: nextStatus });
+    if (ok) {
+      refetch();
+    }
+  };
 
   return (
     <div className={styles.shell}>
@@ -259,7 +260,7 @@ export default function OnboardingPage() {
         <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-3">
           <input
             type="text"
-            placeholder="Search leads..."
+            placeholder="Search onboarding leads…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8 w-48 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all duration-200"
@@ -381,11 +382,7 @@ export default function OnboardingPage() {
                           className={styles.actionBtn}
                           title="Call"
                           onClick={() => {
-                            if (lead.phone) {
-                              window.location.href = `tel:${lead.phone}`;
-                            } else {
-                              toast.info("No phone number on file");
-                            }
+                            toast.info("Calling is not wired yet");
                           }}
                         >
                           {Icon.Phone}
@@ -395,14 +392,18 @@ export default function OnboardingPage() {
                           className={styles.actionBtn}
                           title="Email"
                           onClick={() => {
-                            if (lead.email) {
-                              window.location.href = `mailto:${lead.email}`;
-                            } else {
-                              toast.info("No email on file");
-                            }
+                            window.location.href = `mailto:${lead.email}`;
                           }}
                         >
                           {Icon.Mail}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          title="Advance status"
+                          onClick={() => handleAdvanceStatus(lead.id, lead.status)}
+                        >
+                          {Icon.CheckCircle}
                         </button>
                         <button
                           type="button"

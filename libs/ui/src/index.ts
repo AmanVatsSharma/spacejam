@@ -1,4 +1,3 @@
-export { SetUpNewCenter } from './lib';
 export * from './lib';
 
 // Re-export all components from lib index for single-import convenience

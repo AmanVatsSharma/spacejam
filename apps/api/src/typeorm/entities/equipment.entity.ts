@@ -18,7 +18,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, Float, registerEnumType } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
 
@@ -42,6 +42,9 @@ export enum EquipmentType {
   NETWORK = 'NETWORK',
   OTHER = 'OTHER',
 }
+
+registerEnumType(EquipmentStatus, { name: 'EquipmentStatus' });
+registerEnumType(EquipmentType, { name: 'EquipmentType' });
 
 @ObjectType()
 @Entity('equipment')

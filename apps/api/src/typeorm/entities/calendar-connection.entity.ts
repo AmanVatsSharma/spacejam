@@ -16,7 +16,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
 import { User } from './user.entity';
 
 export enum CalendarProvider {
@@ -24,6 +24,8 @@ export enum CalendarProvider {
   OUTLOOK = 'OUTLOOK',
   APPLE = 'APPLE',
 }
+
+registerEnumType(CalendarProvider, { name: 'CalendarProvider' });
 
 @ObjectType()
 @Entity('calendar_connections')

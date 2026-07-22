@@ -148,6 +148,12 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
+export enum RecurrencePatternEnum {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+}
+
 export enum LeadStatus {
   NEW = 'New',
   VISITED = 'Visited',
@@ -223,6 +229,7 @@ registerEnumType(SeatStatus, { name: 'SeatStatus' });
 registerEnumType(BookingStatus, { name: 'BookingStatus' });
 registerEnumType(PaymentMethod, { name: 'PaymentMethod' });
 registerEnumType(PaymentStatus, { name: 'PaymentStatus' });
+registerEnumType(RecurrencePatternEnum, { name: 'RecurrencePattern' });
 
 // Re-export analytics DTOs from their dedicated file
 export * from './analytics.type';

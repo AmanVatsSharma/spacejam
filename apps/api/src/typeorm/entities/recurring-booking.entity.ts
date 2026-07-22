@@ -24,12 +24,7 @@ import { User } from './user.entity';
 import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
 import { Event } from './event.entity';
-
-export enum RecurrencePattern {
-  DAILY = 'DAILY',
-  WEEKLY = 'WEEKLY',
-  MONTHLY = 'MONTHLY',
-}
+import { RecurrencePatternEnum } from '../../graphql/types/user.type';
 
 @ObjectType()
 @Entity('recurring_bookings')
@@ -71,9 +66,9 @@ export class RecurringBooking {
   @JoinColumn({ name: 'userId' })
   user!: User;
 
-  @Field(() => RecurrencePattern)
+  @Field(() => RecurrencePatternEnum)
   @Column({ type: 'varchar' })
-  pattern!: RecurrencePattern;
+  pattern!: RecurrencePatternEnum;
 
   /** Days of week for WEEKLY pattern. 0=Sunday, 6=Saturday */
   @Field(() => [Int], { nullable: true })

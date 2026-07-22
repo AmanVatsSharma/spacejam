@@ -17,7 +17,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, registerEnumType } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
 
@@ -35,6 +35,9 @@ export enum ReportType {
   AUDIT = 'AUDIT',
   PAYMENTS = 'PAYMENTS',
 }
+
+registerEnumType(ReportFrequency, { name: 'ReportFrequency' });
+registerEnumType(ReportType, { name: 'ReportType' });
 
 @ObjectType()
 @Entity('scheduled_reports')

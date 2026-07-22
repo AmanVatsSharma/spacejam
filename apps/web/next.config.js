@@ -20,6 +20,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  output: 'standalone',
+  // outputFileTracing: true,
   /**
    * Proxy /api/graphql requests to the NestJS backend.
    * In development the backend runs on port 3001; in production
