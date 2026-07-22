@@ -8,27 +8,22 @@ const { composePlugins, withNx } = require('@nx/next');
  **/
 const nextConfig = {
   nx: {},
-  // @spacejam/ui is file:-linked and ships raw .ts/.tsx source; transpile it
-  // through the Next/SWC pipeline so it bundles correctly during build.
   transpilePackages: ['@spacejam/ui'],
-  // Unique build ID per deploy so the browser invalidates its RSC/router
-  // cache. A static build ID causes stale cached routes to persist across
-  // deploys (e.g. a route that previously 307-redirected stays cached).
   generateBuildId: () => `build-${Date.now()}`,
   skipTrailingSlashRedirect: true,
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: 'standalone',
-  // outputFileTracing: true,
   /**
    * Proxy /api/graphql requests to the NestJS backend.
-   * In development the backend runs on port 3001; in production
-   * it's typically behind the same origin (nginx reverse proxy).
+   * Production backend listens on localhost:4000. Dev uses 3001.
    */
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const backendUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'http://localhost:4000'
+        : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     return [
       {
         source: '/api/graphql',
