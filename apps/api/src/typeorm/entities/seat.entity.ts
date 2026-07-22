@@ -101,6 +101,6 @@ export class Seat {
   @OneToMany(() => Booking, (booking) => booking.seat)
   bookings!: Booking[];
 
-  @OneToMany(() => Event, (event) => event.seat)
+  @OneToMany(() => Event, (event: any) => event.seat)
   events!: Event[];
 }

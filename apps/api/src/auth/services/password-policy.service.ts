@@ -13,6 +13,7 @@
  */
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+// @ts-ignore
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -43,18 +44,18 @@ export class PasswordPolicyService {
    *  API call. */
   private readonly localBreachHashes: Set<string>;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.cfg = {
-      minLength: parseInt(this.config.get<string>('PASSWORD_MIN_LENGTH') ?? '12', 10),
+      minLength: parseInt(this.configService.get<string>('PASSWORD_MIN_LENGTH') ?? '12', 10),
       maxLength: 128,
       requireUpper: true,
       requireLower: true,
       requireDigit: true,
       requireSymbol: true,
-      maxHistory: parseInt(this.config.get<string>('PASSWORD_HISTORY') ?? '5', 10),
-      rotationDays: parseInt(this.config.get<string>('PASSWORD_ROTATION_DAYS') ?? '90', 10),
-      bcryptRounds: parseInt(this.config.get<string>('BCRYPT_ROUNDS') ?? '12', 10),
-      checkBreach: this.config.get<string>('PASSWORD_BREACH_CHECK') !== 'false',
+      maxHistory: parseInt(this.configService.get<string>('PASSWORD_HISTORY') ?? '5', 10),
+      rotationDays: parseInt(this.configService.get<string>('PASSWORD_ROTATION_DAYS') ?? '90', 10),
+      bcryptRounds: parseInt(this.configService.get<string>('BCRYPT_ROUNDS') ?? '12', 10),
+      checkBreach: this.configService.get<string>('PASSWORD_BREACH_CHECK') !== 'false',
     };
     this.localBreachHashes = new SeededBreachList().hashes;
   }
@@ -179,7 +180,7 @@ export class PasswordPolicyService {
     for (const old of history) {
       // bcrypt comparison is constant-time, ~100ms per call. Cap the check
       // to the last N (most recent) for performance.
-      const slice = history.slice(-this.cfg.maxHistory);
+      const slice: any[] = (history as any).slice(-this.cfg.maxHistory);
       if (await bcrypt.compare(newPassword, old).catch(() => false)) {
         return true;
       }

@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from '../../typeorm/entities/request.entity';
 import { RequestStatus, RequestType } from '../types/user.type';
-import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput, RequestStatistics, CreateRequestPayload } from '../inputs/request.input';
+import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput, RequestStatistics } from '../inputs/request.input';
 import { CacheService } from '../../cache/cache.service';
 
 @Resolver(() => Request)
@@ -204,7 +204,7 @@ export class RequestResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateRequestInput,
   ): Promise<Request> {
-    await this.requestRepo.update(id, input);
+    await this.requestRepo.update(id, input as any);
 
     const updated = await this.requestRepo.findOne({
       where: { id },
@@ -212,7 +212,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }
@@ -233,7 +233,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }
@@ -252,7 +252,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }
@@ -273,7 +273,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }
@@ -297,7 +297,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }
@@ -309,7 +309,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return true;
   }
@@ -319,7 +319,7 @@ export class RequestResolver {
     await this.requestRepo.delete(id);
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return true;
   }
@@ -349,7 +349,7 @@ export class RequestResolver {
     });
 
     await this.cache.invalidatePattern('requests:*');
-    await this.cache.invalidate(`request:${id}`);
+    await this.cache.del(`request:${id}`);
 
     return updated!;
   }

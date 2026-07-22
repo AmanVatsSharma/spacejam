@@ -13,7 +13,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { UserRepository } from '../../typeorm/repositories/user.repository';
-import { User, UserRole } from '../../typeorm/entities/user.entity';
+import { UserRole } from '../../graphql/types/user.type';
 
 export interface JwtRefreshPayload {
   sub: string;

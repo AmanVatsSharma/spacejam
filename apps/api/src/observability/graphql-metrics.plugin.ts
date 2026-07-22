@@ -31,10 +31,10 @@ function opName(doc: any): string {
 
 export function createGraphqlMetricsPlugin(metrics: MetricsService): ApolloServerPlugin {
   return {
-    async requestDidStart(): Promise<GraphQLRequestListener> {
+    async requestDidStart(): Promise<GraphQLRequestListener<any>> {
       const startedAt = process.hrtime.bigint();
       return {
-        async didResolveOperation(ctx) {
+        async didResolveOperation(ctx: any) {
           const doc = (ctx.document as any) ?? (ctx.request as any)?.document;
           const operationType = opType(doc);
           const operation = opName(doc);
@@ -49,7 +49,7 @@ export function createGraphqlMetricsPlugin(metrics: MetricsService): ApolloServe
             seconds,
           );
         },
-        async didEncounterErrors(ctx) {
+        async didEncounterErrors(ctx: any) {
           const errors: ReadonlyArray<GraphQLError> = ctx.errors ?? [];
           const doc = (ctx.document as any) ?? (ctx.request as any)?.document;
           const operationType = opType(doc);

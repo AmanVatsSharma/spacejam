@@ -13,10 +13,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { DepositStatus, DepositType } from '../../graphql/types/user.type';
 import { Center } from './center.entity';
 import { Customer } from './customer.entity';

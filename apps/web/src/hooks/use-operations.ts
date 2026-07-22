@@ -402,6 +402,7 @@ export function useCreateMeetingRoom() {
     setSaving(true);
     try {
       const result = await mutation({ variables: { input } });
+      if (result.errors?.length) throw new Error(result.errors[0].message);
       await client.refetchQueries({ include: ['GetMeetingRooms'] });
       return result.data?.createMeetingRoom ?? null;
     } finally {
@@ -424,6 +425,7 @@ export function useUpdateMeetingRoom() {
     setSaving(true);
     try {
       const result = await mutation({ variables: { id, input } });
+      if (result.errors?.length) throw new Error(result.errors[0].message);
       await client.refetchQueries({ include: ['GetMeetingRooms'] });
       return result.data?.updateMeetingRoom ?? null;
     } finally {
@@ -467,7 +469,8 @@ export function useDeleteMeetingRoom() {
   async function remove(id: string) {
     setDeleting(true);
     try {
-      await mutation({ variables: { id } });
+      const result = await mutation({ variables: { id } });
+      if (result.errors?.length) throw new Error(result.errors[0].message);
       await client.refetchQueries({ include: ['GetMeetingRooms'] });
       return true;
     } catch {

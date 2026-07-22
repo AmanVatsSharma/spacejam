@@ -91,7 +91,7 @@ export class MeetingRoom {
   updatedAt!: Date;
 
   @Field(() => Center)
-  @ManyToOne(() => Center, (center) => center.meetingRooms)
+  @ManyToOne(() => Center, (center: any) => center.meetingRooms)
   @JoinColumn({ name: 'centerId' })
   center!: Center;
 

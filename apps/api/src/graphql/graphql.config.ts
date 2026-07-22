@@ -14,7 +14,7 @@ import { GraphQLError, BuildSchemaOptions } from 'graphql';
 import { DataSource } from 'typeorm';
 
 import { GqlDataLoaders } from './dataloaders';
-import { createGraphqlMetricsPlugin } from '../observability/graphql-metrics.plugin';
+
 
 const MAX_COMPLEXITY = parseInt(process.env.GRAPHQL_MAX_COMPLEXITY ?? '1000', 10);
 const MAX_DEPTH = parseInt(process.env.GRAPHQL_MAX_DEPTH ?? '8', 10);
@@ -134,20 +134,19 @@ export async function buildSchemaOptions(
 }
 
 async function buildValidationRules(
-  schema: NonNullable<Parameters<typeof buildSchema>[0]> extends string
-    ? ReturnType<typeof import('graphql').buildSchema>
-    : never,
+  schema: import('graphql').GraphQLSchema,
   maxComplexity: number,
   maxDepth: number,
 ) {
-  const { createComplexityLimitRule, fieldExtensionsEstimator, simpleEstimator } =
+  const { createComplexityRule, fieldExtensionsEstimator, simpleEstimator } =
     await import('graphql-query-complexity');
-  const depthLimit = (await import('graphql-depth-limit')).default;
+  // @ts-ignore
+  const depthLimit = (await import('graphql-depth-limit')).default || (await import('graphql-depth-limit'));
   return [
-    createComplexityLimitRule(maxComplexity, {
+    createComplexityRule({
+      maximumComplexity: maxComplexity,
       estimators: [fieldExtensionsEstimator(), simpleEstimator({ defaultComplexity: 1 })],
-      schema,
-      createError: (cost, max) =>
+      createError: (cost: number, max: number) =>
         new GraphQLError(
           `Query is too complex: ${cost}. Maximum allowed complexity is ${max}.`,
           { extensions: { code: 'COMPLEXITY_LIMIT_EXCEEDED', cost, max } },

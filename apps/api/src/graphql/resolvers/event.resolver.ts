@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Event } from '../../typeorm/entities/event.entity';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
-import { EventStatus, EventType } from '../../graphql/types/user.type';
+import { EventStatus } from '../../graphql/types/user.type';
 import { CreateEventInput, UpdateEventInput, EventFiltersInput, EventStatistics, CreateEventPayload } from '../inputs/event.input';
 import { CacheService } from '../../cache/cache.service';
 
@@ -184,8 +184,8 @@ export class EventResolver {
       where: {
         meetingRoomId: roomId,
         centerId,
-        eventDate,
-        status: [EventStatus.PENDING, EventStatus.CONFIRMED],
+        eventDate: eventDate as any,
+        status: (await import('typeorm')).In([EventStatus.PENDING, EventStatus.CONFIRMED]) as any,
         startTime: (await import('typeorm')).LessThan(endTime),
         endTime: (await import('typeorm')).MoreThan(startTime),
       },
@@ -234,7 +234,7 @@ export class EventResolver {
     });
 
     await this.cache.invalidatePattern('events:*');
-    await this.cache.invalidate(`event:${id}`);
+    await this.cache.del(`event:${id}`);
 
     return {
       success: true,
@@ -255,7 +255,7 @@ export class EventResolver {
     });
 
     await this.cache.invalidatePattern('events:*');
-    await this.cache.invalidate(`event:${id}`);
+    await this.cache.del(`event:${id}`);
 
     return {
       success: true,
@@ -270,7 +270,7 @@ export class EventResolver {
     });
 
     await this.cache.invalidatePattern('events:*');
-    await this.cache.invalidate(`event:${id}`);
+    await this.cache.del(`event:${id}`);
 
     return true;
   }
@@ -280,7 +280,7 @@ export class EventResolver {
     await this.eventRepo.delete(id);
 
     await this.cache.invalidatePattern('events:*');
-    await this.cache.invalidate(`event:${id}`);
+    await this.cache.del(`event:${id}`);
 
     return true;
   }

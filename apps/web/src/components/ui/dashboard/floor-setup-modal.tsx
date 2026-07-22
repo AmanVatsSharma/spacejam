@@ -221,6 +221,7 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                     floorId: createdFloorId,
                     type: "MEETING_ROOM",
                     capacity: space.capacity,
+                    pricePerHour: space.basePrice,
                   }
                 }
               });
@@ -233,7 +234,7 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
               const { errors: seatErrors } = await createSeat({
                 variables: {
                   input: {
-                    number,
+                    name: number,
                     floorId: createdFloorId,
                     seatType: space.seatType,
                     price: space.basePrice,
@@ -395,14 +396,35 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
                           <div className="grid grid-cols-[1.5fr_1.5fr_1fr] gap-4 pr-6">
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Product Type</label>
-                              <input 
-                                type="text" 
+                              <select 
                                 value={dist.type} 
                                 onChange={(e) => {
-                                  setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, type: e.target.value } : d) } : f));
+                                  const val = e.target.value;
+                                  let newFormat = dist.format;
+                                  if (val.includes("Cabin")) newFormat = "FC";
+                                  else if (val.includes("Meeting Room")) newFormat = "MR";
+                                  else if (val.includes("Hexagon")) newFormat = "FH";
+                                  else if (val.includes("Dedicated")) newFormat = "DD";
+                                  else if (val.includes("Open Desk")) newFormat = "FD";
+
+                                  setFloors(floors.map(f => f.id === floor.id ? { ...f, distributions: f.distributions.map(d => d.id === dist.id ? { ...d, type: val, format: newFormat } : d) } : f));
                                 }}
                                 className="border border-gray-200 rounded-md px-3 py-2 text-[14px] bg-white focus:outline-none focus:border-[#FF6A2F]" 
-                              />
+                              >
+                                <option value="Open Desk">Open Desk</option>
+                                <option value="Dedicated Desk">Dedicated Desk</option>
+                                <option value="Hexagon Seat">Hexagon Seat</option>
+                                <option value="Cabin (1 Seater)">Cabin (1 Seater)</option>
+                                <option value="Cabin (2 Seater)">Cabin (2 Seater)</option>
+                                <option value="Cabin (4 Seater)">Cabin (4 Seater)</option>
+                                <option value="Cabin (6 Seater)">Cabin (6 Seater)</option>
+                                <option value="Meeting Room (4 Seater)">Meeting Room (4 Seater)</option>
+                                <option value="Meeting Room (6 Seater)">Meeting Room (6 Seater)</option>
+                                <option value="Meeting Room (8 Seater)">Meeting Room (8 Seater)</option>
+                                <option value="Meeting Room (10 Seater)">Meeting Room (10 Seater)</option>
+                                <option value="Meeting Room (12 Seater)">Meeting Room (12 Seater)</option>
+                                <option value="Custom Space">Custom Space</option>
+                              </select>
                             </div>
                             <div className="flex flex-col gap-1">
                               <label className="text-[12px] text-gray-500 font-medium">Space Code Format</label>

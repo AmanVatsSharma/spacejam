@@ -10,7 +10,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 
 import { RecoveryCode } from '../entities/recovery-code.entity';
 
@@ -37,7 +37,7 @@ export class RecoveryCodeRepository {
   /** Look up an unused code that matches the supplied hash. Returns null
    *  if no match (which is the expected case for an attacker guessing). */
   async findUnused(userId: string, codeHash: string): Promise<RecoveryCode | null> {
-    return this.repo.findOne({ where: { userId, codeHash, usedAt: null } });
+    return this.repo.findOne({ where: { userId, codeHash, usedAt: IsNull() } });
   }
 
   /** Atomically consume a code. Returns 1 if consumed, 0 if it was
@@ -53,7 +53,7 @@ export class RecoveryCodeRepository {
   }
 
   async countUnused(userId: string): Promise<number> {
-    return this.repo.count({ where: { userId, usedAt: null } });
+    return this.repo.count({ where: { userId, usedAt: IsNull() } });
   }
 
   async deleteAllForUser(userId: string): Promise<void> {

@@ -10,7 +10,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Seat, SeatStatus, SeatType } from '../entities/seat.entity';
+import { Seat } from '../entities/seat.entity';
+import { SeatStatus, SeatType } from '../../graphql/types/user.type';
 
 export interface SeatFilters {
   floorId?: string;
@@ -66,7 +67,7 @@ export class SeatRepository {
 
     const seats = await queryBuilder
       .leftJoinAndSelect('seat.floor', 'floor')
-      .orderBy('seat.number', 'ASC')
+      .orderBy('seat.name', 'ASC')
       .getMany();
 
     return { seats, total };
@@ -76,16 +77,16 @@ export class SeatRepository {
     return this.seatRepo.find({
       where: { floorId },
       relations: ['floor'],
-      order: { number: 'ASC' },
+      order: { name: 'ASC' },
     });
   }
 
-  async updateStatus(id: string, status: SeatStatus): Promise<Seat> {
+  async updateStatus(id: string, status: SeatStatus): Promise<Seat | null> {
     await this.seatRepo.update(id, { status });
     return this.findById(id);
   }
 
-  async updatePrice(id: string, price: number): Promise<Seat> {
+  async updatePrice(id: string, price: number): Promise<Seat | null> {
     await this.seatRepo.update(id, { price });
     return this.findById(id);
   }

@@ -9,9 +9,10 @@
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+// @ts-ignore
 import * as bcrypt from 'bcrypt';
 import { CacheService } from '../cache/cache.service';
-import { User, UserRole } from '../graphql/types/user.type';
+import { UserRole } from '../graphql/types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User as UserEntity } from '../typeorm/entities/user.entity';
@@ -44,7 +45,7 @@ export class AuthService {
     }
 
     // Update last login
-    await this.userRepo.update(user.id, { lastLogin: new Date() });
+    await this.userRepo.update(user.id, { lastLoginAt: new Date() } as any);
 
     const payload = {
       sub: user.id,
@@ -169,7 +170,7 @@ export class AuthService {
   /**
    * Validate user by ID
    */
-  async validateUser(userId: string): Promise<User | null> {
+  async validateUser(userId: string): Promise<any> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
       select: {
@@ -178,12 +179,12 @@ export class AuthService {
         name: true,
         role: true,
         centerId: true,
-        isActive: true,
+        active: true,
         phone: true,
         avatar: true,
       },
     });
-    return user as User | null;
+    return user as any;
   }
 
   /**

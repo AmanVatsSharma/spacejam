@@ -15,7 +15,6 @@ import {
     IsEmail,
     IsEnum,
     IsInt,
-    IsNumber,
     IsDate,
 } from 'class-validator';
 

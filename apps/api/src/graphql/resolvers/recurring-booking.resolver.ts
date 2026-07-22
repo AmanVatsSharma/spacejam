@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { BadRequestException, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { RecurringBooking } from '../../typeorm/entities/recurring-booking.entity';
-import { RecurrencePattern as RecurrencePatternEnum } from '../../typeorm/entities/recurring-booking.entity';
+import { RecurrencePatternEnum } from '../../graphql/enums/recurrence-pattern.enum';
 import { Event } from '../../typeorm/entities/event.entity';
 import { EventStatus, EventType } from '../types/user.type';
 import { CreateRecurringBookingInput } from '../inputs/recurring-booking.input';
@@ -127,7 +127,7 @@ export class RecurringBookingResolver {
         const existing = await manager.count(Event, {
           where: {
             meetingRoomId: template.roomId,
-            eventDate: dateStr,
+            eventDate: dateStr as any,
             startTime: template.startTime,
             endTime: template.endTime,
             recurringBookingId: template.id,

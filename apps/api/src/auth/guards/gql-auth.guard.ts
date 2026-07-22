@@ -19,7 +19,7 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  override canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -30,7 +30,7 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  getRequest(context: ExecutionContext) {
+  override getRequest(context: ExecutionContext) {
     const ctx = GqlExecutionContext.create(context);
     return ctx.getContext().req;
   }

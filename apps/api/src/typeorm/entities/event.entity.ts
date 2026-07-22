@@ -16,7 +16,6 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-  Index,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { User } from './user.entity';
@@ -138,7 +137,7 @@ export class Event {
   meetingRoom!: MeetingRoom;
 
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.events)
+  @ManyToOne(() => User, (user: any) => user.events)
   @JoinColumn({ name: 'requestedById' })
   requestedBy!: User;
 

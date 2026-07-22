@@ -89,12 +89,12 @@ export class BookingRepository {
     return this.bookingRepo.save(booking);
   }
 
-  async updateStatus(id: string, status: BookingStatus): Promise<Booking> {
+  async updateStatus(id: string, status: BookingStatus): Promise<Booking | null> {
     await this.bookingRepo.update(id, { status });
     return this.findById(id);
   }
 
-  async cancel(id: string): Promise<Booking> {
+  async cancel(id: string): Promise<Booking | null> {
     await this.bookingRepo.update(id, {
       status: BookingStatus.CANCELLED,
       endDate: new Date(),

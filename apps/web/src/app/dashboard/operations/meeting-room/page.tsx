@@ -132,7 +132,7 @@ export default function MeetingRoomsPage() {
       filters: {
         centerId: filters.centerId || undefined,
         meetingRoomId: undefined,
-        type: "MEETING_ROOM",
+        type: "MEETING",
         ...(bounds ? { startDate: bounds.start.toISOString().split('T')[0], endDate: bounds.end.toISOString().split('T')[0] } : {}),
       } as any,
     },

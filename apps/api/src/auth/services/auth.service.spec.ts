@@ -10,6 +10,7 @@
  * Last-updated: 2026-06-21
  */
 import { Test, TestingModule } from '@nestjs/testing';
+import { describe, it, expect, vi as jest, beforeEach, Mock } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
@@ -18,6 +19,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+// @ts-ignore
 import * as bcrypt from 'bcrypt';
 
 import { AuthService } from './auth.service';
@@ -36,11 +38,11 @@ import { SigninInput } from '../dto/signin.input';
 import { SignupInput } from '../dto/signup.input';
 
 type RepoMock = {
-  create: jest.Mock;
-  save: jest.Mock;
-  findOne: jest.Mock;
-  createQueryBuilder: jest.Mock;
-  update: jest.Mock;
+  create: Mock;
+  save: Mock;
+  findOne: Mock;
+  createQueryBuilder: Mock;
+  update: Mock;
 };
 
 const qbMock = () => {
@@ -203,6 +205,7 @@ describe('AuthService', () => {
       save: jest.fn().mockResolvedValue(buildSession()),
       findOne: jest.fn().mockResolvedValue(buildSession()),
       update: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(),
     };
   });
 
@@ -320,7 +323,7 @@ describe('AuthService', () => {
       userRepo.findOne.mockResolvedValue(null);
       service = await setupTestModule(userRepo, sessionRepo);
       await expect(
-        service.requestPasswordReset('nobody@nowhere.test', {}),
+        service.requestPasswordReset('nobody@nowhere.test')
       ).resolves.toBe(true);
     });
   });
@@ -330,8 +333,7 @@ describe('AuthService', () => {
       service = await setupTestModule(userRepo, sessionRepo);
       await expect(
         service.resetPassword(
-          { token: 'no-dot', newPassword: 'password123' } as never,
-          {},
+          { token: 'no-dot', newPassword: 'password123' } as never
         ),
       ).rejects.toBeInstanceOf(BadRequestException);
     });

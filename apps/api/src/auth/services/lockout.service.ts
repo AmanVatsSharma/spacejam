@@ -79,8 +79,8 @@ export class LockoutService {
       await this.cache.increment(this.unknownEmailKey, 1, 60);
       return;
     }
-    if (user.lockoutUntil && user.lockoutUntil.getTime() > Date.now()) {
-      const remaining = Math.ceil((user.lockoutUntil.getTime() - Date.now()) / 1000);
+    if ((user as any).lockoutUntil && (user as any).lockoutUntil.getTime() > Date.now()) {
+      const remaining = Math.ceil(((user as any).lockoutUntil.getTime() - Date.now()) / 1000);
       this.logger.warn(`Login attempt on locked account ${user.id} (${remaining}s remaining)`);
       throw new UnauthorizedException(
         `Account temporarily locked. Try again in ${Math.ceil(remaining / 60)} minute(s).`,
@@ -98,14 +98,14 @@ export class LockoutService {
       await this.cache.increment(this.unknownEmailKey, 1, 60);
       return 0;
     }
-    const newCount = (user.failedLoginCount ?? 0) + 1;
+    const newCount = ((user as any).failedLoginCount ?? 0) + 1;
     const stageIndex = this.stageFor(newCount);
     const lockoutUntil = stageIndex >= 0 ? new Date(Date.now() + LOCKOUT_STAGES_MS[stageIndex]) : null;
     await this.users.update(user.id, {
       failedLoginCount: newCount,
       lastFailedLoginAt: new Date(),
       lockoutUntil,
-    });
+    } as any);
     if (lockoutUntil) {
       this.logger.warn(
         `Account ${user.id} locked until ${lockoutUntil.toISOString()} (failures=${newCount})`,
@@ -116,12 +116,12 @@ export class LockoutService {
 
   /** Reset on successful signin. */
   async recordSuccess(user: User): Promise<void> {
-    if ((user.failedLoginCount ?? 0) === 0 && !user.lockoutUntil) return;
+    if (((user as any).failedLoginCount ?? 0) === 0 && !(user as any).lockoutUntil) return;
     await this.users.update(user.id, {
       failedLoginCount: 0,
       lastFailedLoginAt: null,
       lockoutUntil: null,
-    });
+    } as any);
   }
 
   /** Get current status for the UI (how many failures, locked until when). */
@@ -130,12 +130,12 @@ export class LockoutService {
     lockedUntil: Date | null;
     nextLockoutAt: number | null;
   }> {
-    const count = user.failedLoginCount ?? 0;
+    const count = (user as any).failedLoginCount ?? 0;
     const currentStage = this.stageFor(count);
     const nextThreshold = FAILURE_THRESHOLDS[currentStage + 1] ?? null;
     return {
       failedLoginCount: count,
-      lockedUntil: user.lockoutUntil ?? null,
+      lockedUntil: (user as any).lockoutUntil ?? null,
       nextLockoutAt: nextThreshold,
     };
   }

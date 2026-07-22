@@ -61,7 +61,7 @@ export class DiscountResolver {
     const discount = await this.discountRepo.findOne({ where: { id } });
     if (!discount) throw new NotFoundException('Discount not found');
     await this.cache.invalidatePattern('discounts:*');
-    await this.cache.invalidate(`discount:${id}`);
+    await this.cache.del(`discount:${id}`);
     return discount;
   }
 
@@ -69,7 +69,7 @@ export class DiscountResolver {
   async deleteDiscount(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.discountRepo.delete(id);
     await this.cache.invalidatePattern('discounts:*');
-    await this.cache.invalidate(`discount:${id}`);
+    await this.cache.del(`discount:${id}`);
     return true;
   }
 }

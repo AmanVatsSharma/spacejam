@@ -10,7 +10,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from '../entities/user.entity';
+import { User } from '../entities/user.entity';
+import { UserRole } from '../../graphql/types/user.type';
 
 export interface UserFilters {
   role?: UserRole;
@@ -100,7 +101,7 @@ export class UserRepository {
     return this.userRepo.save(user);
   }
 
-  async update(id: string, userData: Partial<User>): Promise<User> {
+  async update(id: string, userData: Partial<User>): Promise<User | null> {
     await this.userRepo.update(id, userData);
     return this.findById(id);
   }
@@ -111,7 +112,7 @@ export class UserRepository {
 
   async updateLastLogin(id: string): Promise<void> {
     await this.userRepo.update(id, {
-      lastLogin: new Date(),
+      lastLoginAt: new Date(),
     });
   }
 

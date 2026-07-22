@@ -9,9 +9,9 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-21
  */
-import { ApolloServerPlugin, GraphQLRequestListenerValidationDidStart } from '@apollo/server';
+import { ApolloServerPlugin, GraphQLRequestListener } from '@apollo/server';
 import { GraphQLSchema } from 'graphql';
-import { fieldExtensionsEstimator, simpleEstimator, createComplexityLimitRule } from 'graphql-query-complexity';
+import { fieldExtensionsEstimator, simpleEstimator, createComplexityRule } from 'graphql-query-complexity';
 
 export interface ComplexityPluginOptions {
   schema: GraphQLSchema;
@@ -28,16 +28,16 @@ export interface ComplexityPluginOptions {
 export function complexityPlugin(options: ComplexityPluginOptions): ApolloServerPlugin {
   const { schema, maxCost, defaultCost = 1 } = options;
   return {
-    async requestDidStart(): Promise<GraphQLRequestListenerValidationDidStart> {
+    async requestDidStart(): Promise<GraphQLRequestListener<any>> {
       return {
-        async didResolveOperation({ request, document }) {
-          const rule = createComplexityLimitRule(maxCost, {
+        async didResolveOperation({ request, document }: any) {
+          const rule = createComplexityRule({
+            maximumComplexity: maxCost,
             estimators: [
               fieldExtensionsEstimator(),
               simpleEstimator({ defaultComplexity: defaultCost }),
             ],
-            schema,
-            onComplete: (complexity) => {
+            onComplete: (complexity: number) => {
               // We could log this; the plugin is already blocking the query
               // if it exceeds the limit, so this only fires for accepted ones.
               if (process.env.GRAPHQL_DEBUG === '1') {

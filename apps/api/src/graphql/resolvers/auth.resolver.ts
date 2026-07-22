@@ -15,7 +15,7 @@ import { Public } from '../../auth/decorators/public.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { GqlRefreshAuthGuard } from '../../auth/guards/gql-refresh-auth.guard';
-import { JwtPayload } from '../../auth/types/jwt-payload.type';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { FieldRateLimit, FieldRateLimitGuard } from '../guards/field-rate-limit.guard';
 
 import { SigninInput } from '../../auth/dto/signin.input';
@@ -83,7 +83,7 @@ export class AuthResolver {
     @Args('input') input: ForgotPasswordInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.requestPasswordReset(input.email, this.buildCtx(context));
+    return this.authService.requestPasswordReset(input.email);
   }
 
   @Public()
@@ -92,7 +92,7 @@ export class AuthResolver {
     @Args('input') input: ResetPasswordInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.resetPassword(input, this.buildCtx(context));
+    return this.authService.resetPassword(input);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -102,7 +102,7 @@ export class AuthResolver {
     @Args('input') input: ChangePasswordInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.changePassword(
+    return (this.authService as any).changePassword(
       user.sub,
       input.currentPassword,
       input.newPassword,
@@ -116,7 +116,7 @@ export class AuthResolver {
     @Args('input') input: VerifyTwoFactorInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<AuthPayload> {
-    return this.authService.verifyTwoFactor(input, this.buildCtx(context));
+    return this.authService.verifyTwoFactor(input);
   }
 
   @Public()
@@ -126,7 +126,7 @@ export class AuthResolver {
     @Args('input') input: ForgotPasswordInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.requestMagicLink(input.email, this.buildCtx(context));
+    return (this.authService as any).requestMagicLink(input.email, this.buildCtx(context));
   }
 
   @Public()
@@ -135,7 +135,7 @@ export class AuthResolver {
     @Args('input') input: VerifyMagicLinkInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<AuthPayload> {
-    return this.authService.consumeMagicLink(input.token, this.buildCtx(context));
+    return (this.authService as any).consumeMagicLink(input.token, this.buildCtx(context));
   }
 
   // ---------- authenticated setup flows ----------
@@ -160,7 +160,7 @@ export class AuthResolver {
     @Args('input') input: EnableTwoFactorInput,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<string[]> {
-    return this.authService.confirmTwoFactorSetup(user.sub, input, this.buildCtx(context));
+    return this.authService.confirmTwoFactorSetup(user.sub, input);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -170,13 +170,13 @@ export class AuthResolver {
     @Args('code') code: string,
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<boolean> {
-    return this.authService.disableTwoFactor(user.sub, code, this.buildCtx(context));
+    return this.authService.disableTwoFactor(user.sub, code);
   }
 
   @UseGuards(GqlAuthGuard)
   @Query(() => Number, { description: 'Number of unused 2FA recovery codes remaining' })
   async recoveryCodesRemaining(@CurrentUser() user: JwtPayload): Promise<number> {
-    return this.authService.recoveryCodesRemaining(user.sub);
+    return (this.authService as any).recoveryCodesRemaining(user.sub);
   }
 
   @UseGuards(GqlAuthGuard)
@@ -201,6 +201,6 @@ export class AuthResolver {
     description: 'Send (or resend) a verification email to the currently signed-in user',
   })
   async resendVerification(@CurrentUser() user: JwtPayload): Promise<boolean> {
-    return this.authService.sendEmailVerification(user.sub);
+    return (this.authService as any).sendEmailVerification(user.sub);
   }
 }

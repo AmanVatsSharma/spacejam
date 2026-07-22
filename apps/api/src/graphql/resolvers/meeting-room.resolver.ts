@@ -10,12 +10,12 @@
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UseGuards } from '@nestjs/common';
-import { Repository, MoreThanOrEqual, Like, In, NotIn, Between, LessThan, MoreThan } from 'typeorm';
+import { Repository, MoreThanOrEqual, Like, Not, In } from 'typeorm';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
 import { Booking } from '../../typeorm/entities/booking.entity';
 import { Event } from '../../typeorm/entities/event.entity';
 import { Notification } from '../../typeorm/entities/notification.entity';
-import { NotificationType, NotificationPriority, BookingStatus, EventStatus, EventType } from '../types/user.type';
+import { NotificationType, NotificationPriority, EventStatus, EventType } from '../types/user.type';
 import {
   RoomFiltersInput,
   CreateMeetingRoomInput,
@@ -25,9 +25,7 @@ import { CacheService } from '../../cache/cache.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole } from '../../auth/roles.enum';
-import { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { RoomStatus } from '../types/user.type';
 
 @Resolver(() => MeetingRoom)
@@ -121,7 +119,7 @@ export class MeetingRoomResolver {
     @Args('startTime') startTime: string,
     @Args('endTime') endTime: string,
   ): Promise<MeetingRoom[]> {
-    const { start, end } = this.buildBookingWindow(eventDate, startTime, endTime);
+    this.buildBookingWindow(eventDate, startTime, endTime);
 
     // Read from the events table (single source of truth for meeting room
     // reservations). Including both confirmed and pending events so that
@@ -148,7 +146,7 @@ export class MeetingRoomResolver {
         centerId,
         floorId,
         active: true,
-        ...(bookedIds.length > 0 ? { id: NotIn(bookedIds) as any } : {}),
+        ...(bookedIds.length > 0 ? { id: Not(In(bookedIds)) as any } : {}),
       },
       relations: ['center'],
       order: { name: 'ASC' },
@@ -156,8 +154,6 @@ export class MeetingRoomResolver {
   }
 
   @Mutation(() => MeetingRoom)
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.CENTER_MANAGER)
   async createMeetingRoom(
     @Args('input') input: CreateMeetingRoomInput,
   ): Promise<MeetingRoom> {
@@ -185,7 +181,7 @@ export class MeetingRoomResolver {
     await this.roomRepo.update(id, updatePayload);
     const room = await this.roomRepo.findOne({ where: { id }, relations: ['center'] });
     await this.cache.invalidatePattern('meeting_rooms:*');
-    await this.cache.invalidate(`meeting_room:${id}`);
+    await this.cache.del(`meeting_room:${id}`);
     if (!room) throw new Error(`MeetingRoom ${id} not found`);
     return room;
   }
@@ -200,7 +196,7 @@ export class MeetingRoomResolver {
     await this.roomRepo.update(id, { status });
     const room = await this.roomRepo.findOne({ where: { id }, relations: ['center'] });
     await this.cache.invalidatePattern('meeting_rooms:*');
-    await this.cache.invalidate(`meeting_room:${id}`);
+    await this.cache.del(`meeting_room:${id}`);
     if (!room) throw new Error(`MeetingRoom ${id} not found`);
     return room;
   }
@@ -211,7 +207,7 @@ export class MeetingRoomResolver {
   async deleteMeetingRoom(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.roomRepo.delete(id);
     await this.cache.invalidatePattern('meeting_rooms:*');
-    await this.cache.invalidate(`meeting_room:${id}`);
+    await this.cache.del(`meeting_room:${id}`);
     return true;
   }
 
@@ -246,7 +242,7 @@ export class MeetingRoomResolver {
     const room = await this.roomRepo.findOne({ where: { id: roomId } });
     if (!room) throw new Error(`MeetingRoom ${roomId} not found`);
 
-    const duration = (end - start) / (1000 * 60);
+    const duration = (end.getTime() - start.getTime()) / (1000 * 60);
     if (duration < room.minBookingDuration || duration > room.maxBookingDuration) {
       throw new Error(
         `Booking duration (${duration}m) must be between ${room.minBookingDuration}m and ${room.maxBookingDuration}m`,

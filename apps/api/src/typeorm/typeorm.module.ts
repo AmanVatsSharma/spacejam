@@ -8,7 +8,7 @@
  * Last-updated: 2026-07-01
  */
 
-import { DynamicModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeormService } from './typeorm.service';
@@ -91,7 +91,7 @@ const ALL_ENTITIES = [
             synchronize: process.env.NODE_ENV !== 'production',
             logging: process.env.NODE_ENV === 'development',
             extra: {
-              max: parseInt(config.get<string>('DATABASE_POOL_SIZE')) || 10,
+              max: parseInt(config.get<string>('DATABASE_POOL_SIZE') || '10', 10),
               idleTimeoutMillis: 30000,
               connectionTimeoutMillis: 2000,
             },
@@ -102,7 +102,7 @@ const ALL_ENTITIES = [
         return {
           type: 'postgres',
           host: config.get<string>('DATABASE_HOST') || 'localhost',
-          port: parseInt(config.get<string>('DATABASE_PORT')) || 5432,
+          port: parseInt(config.get<string>('DATABASE_PORT') || '5432', 10),
           username: config.get<string>('DATABASE_USER') || 'spacejam',
           password: config.get<string>('DATABASE_PASSWORD') || 'spacejam',
           database: config.get<string>('DATABASE_NAME') || 'spacejam',
@@ -111,7 +111,7 @@ const ALL_ENTITIES = [
           logging: process.env.NODE_ENV === 'development',
           ssl: config.get<string>('DATABASE_SSL') === 'true',
           extra: {
-            max: parseInt(config.get<string>('DATABASE_POOL_SIZE')) || 10,
+            max: parseInt(config.get<string>('DATABASE_POOL_SIZE') || '10', 10),
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
           },

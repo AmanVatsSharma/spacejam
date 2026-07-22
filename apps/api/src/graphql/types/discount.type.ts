@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-12
  */
-import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
+import { ObjectType } from '@nestjs/graphql';
 import { Discount as DiscountEntity } from '../../typeorm/entities/discount.entity';
 
 @ObjectType()

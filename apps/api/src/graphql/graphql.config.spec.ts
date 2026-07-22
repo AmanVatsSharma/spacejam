@@ -14,7 +14,7 @@ import { BadRequestException, UnauthorizedException, ForbiddenException, NotFoun
 import { GraphQLError } from 'graphql';
 
 describe('GraphQL config - formatError mapping', async () => {
-  const config = await buildSchemaOptions({} as any, {} as any);
+  const config = await buildSchemaOptions({} as any);
   const formatError = config.formatError as Function;
 
   it('maps BadRequestException (400) to BAD_USER_INPUT and joins messages', () => {

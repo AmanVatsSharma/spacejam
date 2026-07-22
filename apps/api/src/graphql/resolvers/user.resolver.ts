@@ -7,14 +7,14 @@
  * Last-updated: 2026-07-04
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Args, Context, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole as EntityUserRole } from '../../auth/roles.enum';
-import { JwtPayload } from '../../auth/types/jwt-payload.type';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
@@ -27,11 +27,7 @@ import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
  * The entity role taxonomy (5 tiers) is richer than the GraphQL type
  * (3 tiers), so we map to the closest existing GraphQL enum value.
  */
-function toGraphqlRole(role: EntityUserRole): GraphqlUserRole {
-  if (role === EntityUserRole.SUPER_ADMIN || role === EntityUserRole.ADMIN) return UserRole.ADMIN;
-  if (role === EntityUserRole.CENTER_OWNER || role === EntityUserRole.STAFF) return UserRole.CENTER_MANAGER;
-  return UserRole.MEMBER;
-}
+
 
 function toEntityRole(role: GraphqlUserRole): EntityUserRole {
   if (role === UserRole.ADMIN) return EntityUserRole.ADMIN;

@@ -10,7 +10,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Center, CenterStatus } from '../entities/center.entity';
+import { Center } from '../entities/center.entity';
+import { CenterStatus } from '../../graphql/types/user.type';
 
 export interface CenterFilters {
   status?: CenterStatus;
@@ -86,12 +87,12 @@ export class CenterRepository {
     return this.centerRepo.save(center);
   }
 
-  async update(id: string, centerData: Partial<Center>): Promise<Center> {
+  async update(id: string, centerData: Partial<Center>): Promise<Center | null> {
     await this.centerRepo.update(id, centerData);
     return this.findById(id);
   }
 
-  async updateStatus(id: string, status: CenterStatus): Promise<Center> {
+  async updateStatus(id: string, status: CenterStatus): Promise<Center | null> {
     await this.centerRepo.update(id, { status });
     return this.findById(id);
   }

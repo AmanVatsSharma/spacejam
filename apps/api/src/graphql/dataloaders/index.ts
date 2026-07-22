@@ -86,9 +86,9 @@ export class GqlDataLoaders {
       const rows = await this.bookingRepo.find({ where: { userId: In([...userIds]) } });
       const byUser = new Map<string, Booking[]>();
       for (const r of rows) {
-        const arr = byUser.get(r.userId) ?? [];
+        const arr = byUser.get(r.userId as string) ?? [];
         arr.push(r);
-        byUser.set(r.userId, arr);
+        byUser.set(r.userId as string, arr);
       }
       return userIds.map((id) => byUser.get(id) ?? []);
     });
@@ -120,9 +120,9 @@ export class GqlDataLoaders {
       const rows = await this.invoiceRepo.find({ where: { customerId: In([...customerIds]) } });
       const byCustomer = new Map<string, Invoice[]>();
       for (const r of rows) {
-        const arr = byCustomer.get(r.customerId) ?? [];
+        const arr = byCustomer.get(r.customerId as string) ?? [];
         arr.push(r);
-        byCustomer.set(r.customerId, arr);
+        byCustomer.set(r.customerId as string, arr);
       }
       return customerIds.map((id) => byCustomer.get(id) ?? []);
     });
@@ -148,9 +148,9 @@ export class GqlDataLoaders {
       const rows = await this.depositRepo.find({ where: { customerId: In([...customerIds]) } });
       const byCustomer = new Map<string, Deposit[]>();
       for (const r of rows) {
-        const arr = byCustomer.get(r.customerId) ?? [];
+        const arr = byCustomer.get(r.customerId as string) ?? [];
         arr.push(r);
-        byCustomer.set(r.customerId, arr);
+        byCustomer.set(r.customerId as string, arr);
       }
       return customerIds.map((id) => byCustomer.get(id) ?? []);
     });
@@ -176,9 +176,9 @@ export class GqlDataLoaders {
       const rows = await this.contractRepo.find({ where: { customerId: In([...customerIds]) } });
       const byCustomer = new Map<string, Contract[]>();
       for (const r of rows) {
-        const arr = byCustomer.get(r.customerId) ?? [];
+        const arr = byCustomer.get(r.customerId as string) ?? [];
         arr.push(r);
-        byCustomer.set(r.customerId, arr);
+        byCustomer.set(r.customerId as string, arr);
       }
       return customerIds.map((id) => byCustomer.get(id) ?? []);
     });

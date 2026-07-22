@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { User } from '../../typeorm/entities/user.entity';
 
 // ============================================================================
@@ -97,6 +97,8 @@ registerEnumType(NotificationPriority, { name: 'NotificationPriority' });
 // Object Types
 export enum UserRole {
   ADMIN = 'ADMIN',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  CENTER_OWNER = 'CENTER_OWNER',
   CENTER_MANAGER = 'CENTER_MANAGER',
   MEMBER = 'MEMBER',
   STAFF = 'STAFF',

@@ -17,7 +17,7 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { BookingStatus } from '../../graphql/types/user.type';
 export { BookingStatus };
 import { User } from './user.entity';
@@ -101,7 +101,7 @@ export class Booking {
 
   // Relations
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.bookings)
+  @ManyToOne(() => User, (user: any) => user.bookings)
   @JoinColumn({ name: 'userId' })
   user!: User;
 

@@ -248,7 +248,7 @@ export class CreateSeatInput {
   @Field()
   @IsString()
   @IsNotEmpty()
-  number!: string;
+  name!: string;
 
   @Field(() => ID)
   @IsString()
@@ -280,7 +280,7 @@ export class UpdateSeatInput {
   @Field(() => String, { nullable: true })
   @IsString()
   @IsOptional()
-  number?: string;
+  name?: string;
 
   @Field(() => SeatType, { nullable: true })
   @IsEnum(SeatType)

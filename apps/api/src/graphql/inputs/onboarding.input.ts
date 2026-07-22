@@ -9,7 +9,6 @@
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
 import {
     IsString,
-    IsNotEmpty,
     IsOptional,
     IsEmail,
     IsEnum,

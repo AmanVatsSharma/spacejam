@@ -14,17 +14,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { UserRole } from '../../graphql/types/user.type';
 import { Center } from './center.entity';
-import { Booking } from './booking.entity';
-import { Payment } from './payment.entity';
-import { UserSession } from './user-session.entity';
-import { AuditLog } from './audit-log.entity';
-import { Event } from './event.entity';
 
 @ObjectType()
 @Entity('users')
@@ -101,7 +95,7 @@ export class User {
 
   // Relations
   @Field(() => Center, { nullable: true })
-  @ManyToOne(() => Center, (center) => center.users, { nullable: true })
+  @ManyToOne(() => Center, (center: any) => center.users, { nullable: true })
   @JoinColumn({ name: 'centerId' })
   center!: Center;
 

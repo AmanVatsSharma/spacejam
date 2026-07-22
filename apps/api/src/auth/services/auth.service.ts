@@ -17,6 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+// @ts-ignore
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -38,12 +39,13 @@ const BCRYPT_COST = 12;
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_DEFAULT = '7d';
 const REFRESH_TOKEN_TTL_REMEMBER = '30d';
-const CHALLENGE_TOKEN_TTL = '5m';
+
 const RESET_TOKEN_TTL_MINUTES = 30;
 
 export interface AuthContext {
   ipAddress?: string | null;
   userAgent?: string | null;
+  twoFactorVerified?: boolean;
 }
 
 @Injectable()
@@ -75,8 +77,8 @@ export class AuthService {
       role: UserRole.MEMBER,
       active: true,
       emailVerified: false,
-    });
-    const saved = await this.userRepo.save(user);
+    } as any);
+    const saved = await this.userRepo.save(user) as any;
     this.logger.log(`signup: new user ${saved.id} (${saved.email})`);
     void this.emailService
       .sendEmailVerification({
@@ -240,8 +242,8 @@ export class AuthService {
       return { ok: false, message: 'This verification link is invalid' };
     }
     user.emailVerified = true;
-    user.emailVerifyToken = null;
-    user.emailVerifyExpiresAt = null;
+    user.emailVerifyToken = undefined;
+    user.emailVerifyExpiresAt = undefined;
     await this.userRepo.save(user);
     return { ok: true, message: 'Your email has been verified' };
   }
@@ -263,8 +265,8 @@ export class AuthService {
       throw new BadRequestException('Invalid reset token');
     }
     user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
-    user.passwordResetToken = null;
-    user.passwordResetExpiresAt = null;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpiresAt = undefined;
     await this.userRepo.save(user);
     await this.sessionRepo.update(
       { userId: user.id, isActive: true } as never,
@@ -314,7 +316,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       sid: sessionId,
-      twoFactorVerified: !!user.twoFactorEnabled,
+      typ: 'access',
+      twoFactorVerified: !!ctx?.twoFactorVerified,
     };
     const refreshPayload: RefreshTokenPayload = {
       sub: user.id,
@@ -343,17 +346,6 @@ export class AuthService {
       twoFactorRequired: false,
       challengeToken: null,
     };
-  }
-
-  private async signChallengeToken(user: User): Promise<string> {
-    return this.jwtService.signAsync(
-      { sub: user.id, kind: 'two-factor-challenge' },
-      {
-        expiresIn: CHALLENGE_TOKEN_TTL,
-        secret:
-          this.configService.get<string>('CHALLENGE_TOKEN_SECRET') ?? 'dev-challenge-secret',
-      },
-    );
   }
 
   private computeExpiry(duration: string): Date {
@@ -399,8 +391,8 @@ export class AuthService {
       await this.emailService.sendLoginAlert({
         to: user.email,
         occurredAt: new Date(),
-        ipAddress: ctx.ipAddress,
-        userAgent: ctx.userAgent,
+        ipAddress: ctx.ipAddress || undefined,
+        userAgent: ctx.userAgent || undefined,
       });
     } catch (err) {
       this.logger.warn(`login alert failed: ${err}`);

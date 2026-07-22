@@ -39,11 +39,11 @@ export interface ErrorMaskPluginOptions {
 export function errorMaskPlugin(options: ErrorMaskPluginOptions): ApolloServerPlugin {
   const { enabled, logOriginal = true } = options;
   return {
-    async requestDidStart(): Promise<GraphQLRequestListener> {
+    async requestDidStart(): Promise<GraphQLRequestListener<any>> {
       return {
-        async willSendResponse({ errors, contextValue }) {
+        async willSendResponse({ errors, contextValue }: any) {
           if (!enabled || !errors || errors.length === 0) return;
-          const masked = errors.map((err) => {
+          const masked = errors.map((err: any) => {
             if (logOriginal) {
               const logger = (contextValue as any)?.logger;
               if (logger) {

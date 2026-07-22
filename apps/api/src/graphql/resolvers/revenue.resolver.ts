@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-02
  */
-import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -101,7 +101,7 @@ export class InvoiceResolver {
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     await this.cache.invalidatePattern('invoices:*');
-    await this.cache.invalidate(`invoice:${id}`);
+    await this.cache.del(`invoice:${id}`);
     return invoice;
   }
 
@@ -109,7 +109,7 @@ export class InvoiceResolver {
   async deleteInvoice(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.invoiceRepo.delete(id);
     await this.cache.invalidatePattern('invoices:*');
-    await this.cache.invalidate(`invoice:${id}`);
+    await this.cache.del(`invoice:${id}`);
     return true;
   }
 
@@ -128,7 +128,7 @@ export class InvoiceResolver {
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     await this.cache.invalidatePattern('invoices:*');
-    await this.cache.invalidate(`invoice:${id}`);
+    await this.cache.del(`invoice:${id}`);
     return invoice;
   }
 
@@ -204,14 +204,14 @@ export class DepositResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateDepositInput,
   ): Promise<DepositEntity> {
-    await this.depositRepo.update(id, input);
+    await this.depositRepo.update(id, input as any);
     const deposit = await this.depositRepo.findOne({
       where: { id },
       relations: ['center', 'customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -229,7 +229,7 @@ export class DepositResolver {
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -237,7 +237,7 @@ export class DepositResolver {
   async deleteDeposit(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.depositRepo.delete(id);
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return true;
   }
 
@@ -255,7 +255,7 @@ export class DepositResolver {
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -273,7 +273,7 @@ export class DepositResolver {
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -285,7 +285,7 @@ export class DepositResolver {
     await this.depositRepo.update(id, {
       status: DepositStatus.RELEASE_REQUESTED,
       releaseRequestedDate: new Date(),
-      releaseReason: reason ?? null,
+      releaseReason: (reason ?? null) as any,
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
@@ -293,7 +293,7 @@ export class DepositResolver {
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -304,8 +304,8 @@ export class DepositResolver {
     await this.depositRepo.update(id, {
       status: DepositStatus.RELEASED,
       releasedDate: new Date(),
-      releaseRequestedDate: null,
-      releaseReason: null,
+      releaseRequestedDate: null as any,
+      releaseReason: null as any,
     });
     const deposit = await this.depositRepo.findOne({
       where: { id },
@@ -313,7 +313,7 @@ export class DepositResolver {
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
     await this.cache.invalidatePattern('deposits:*');
-    await this.cache.invalidate(`deposit:${id}`);
+    await this.cache.del(`deposit:${id}`);
     return deposit;
   }
 
@@ -402,7 +402,7 @@ export class ContractResolver {
       skip: filters?.offset ?? 0,
     });
 
-    return contracts as unknown as Contract[];
+    return contracts as unknown as ContractEntity[];
   }
 
   @Query(() => ContractEntity, { nullable: true })
@@ -411,7 +411,7 @@ export class ContractResolver {
       where: { id },
       relations: ['center', 'customer'],
     });
-    return contract as unknown as Contract | null;
+    return contract as unknown as ContractEntity | null;
   }
 
   @Mutation(() => ContractEntity)
@@ -422,6 +422,7 @@ export class ContractResolver {
 
     const newContract = this.contractRepo.create({
       ...input,
+      paymentFrequency: input.paymentFrequency as any,
       contractNumber,
       status: ContractStatus.ACTIVE,
     });
@@ -435,14 +436,14 @@ export class ContractResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateContractInput,
   ): Promise<ContractEntity> {
-    await this.contractRepo.update(id, input);
+    await this.contractRepo.update(id, { ...input, paymentFrequency: input.paymentFrequency as any, status: input.status as any });
     const contract = await this.contractRepo.findOne({
       where: { id },
       relations: ['center', 'customer'],
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
-    await this.cache.invalidate(`contract:${id}`);
+    await this.cache.del(`contract:${id}`);
     return contract;
   }
 
@@ -457,7 +458,7 @@ export class ContractResolver {
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
-    await this.cache.invalidate(`contract:${id}`);
+    await this.cache.del(`contract:${id}`);
     return contract;
   }
 
@@ -476,7 +477,7 @@ export class ContractResolver {
     });
     if (!contract) throw new NotFoundException('Contract not found');
     await this.cache.invalidatePattern('contracts:*');
-    await this.cache.invalidate(`contract:${id}`);
+    await this.cache.del(`contract:${id}`);
     return contract;
   }
 }

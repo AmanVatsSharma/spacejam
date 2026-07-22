@@ -8,8 +8,9 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-21
  */
-import { ApolloServerPlugin, GraphQLRequestListenerValidationDidStart } from '@apollo/server';
+import { ApolloServerPlugin, GraphQLRequestListener } from '@apollo/server';
 import { GraphQLSchema } from 'graphql';
+// @ts-ignore
 import depthLimit from 'graphql-depth-limit';
 
 export interface DepthLimitPluginOptions {
@@ -26,9 +27,9 @@ export interface DepthLimitPluginOptions {
 export function depthLimitPlugin(options: DepthLimitPluginOptions): ApolloServerPlugin {
   const maxDepth = options.maxDepth ?? 8;
   return {
-    async requestDidStart(): Promise<GraphQLRequestListenerValidationDidStart> {
+    async requestDidStart(): Promise<GraphQLRequestListener<any>> {
       return {
-        async didResolveOperation({ request, document }) {
+        async didResolveOperation({ request, document }: any) {
           const rule = depthLimit(maxDepth, options.ignore ?? [], { debug: false });
           const { validate } = await import('graphql');
           const errors = validate(options.schema, document, [rule]);

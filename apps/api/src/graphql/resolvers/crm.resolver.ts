@@ -86,7 +86,7 @@ export class CrmResolver {
   @Mutation(() => LeadEntity)
   async createLead(
     @Args('input') input: CreateLeadInput,
-    @Context() context
+    @Context() context: any
   ): Promise<LeadEntity> {
     const userId = context.req?.user?.id;
     const newLead = this.leadRepo.create({
@@ -110,7 +110,7 @@ export class CrmResolver {
     });
     if (!lead) throw new NotFoundException('Lead not found');
     await this.cache.invalidatePattern('leads:*');
-    await this.cache.invalidate(`lead:${id}`);
+    await this.cache.del(`lead:${id}`);
     return lead;
   }
 
@@ -168,7 +168,7 @@ export class CrmResolver {
   async deleteLead(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
     await this.leadRepo.delete(id);
     await this.cache.invalidatePattern('leads:*');
-    await this.cache.invalidate(`lead:${id}`);
+    await this.cache.del(`lead:${id}`);
     return true;
   }
 
@@ -260,7 +260,7 @@ export class CrmResolver {
     const onboarding = this.onboardingRepo.create({
       leadId: id,
       customerId: customer.id,
-      status: 'IN_PROGRESS',
+      status: 'IN_PROGRESS' as any,
       companyName: companyName ?? lead.company,
       companyAddress: companyAddress ?? lead.location,
       gstNumber,
@@ -290,7 +290,7 @@ export class CrmResolver {
       relations: ['assignedTo'],
     });
     const fullOnboarding = await this.onboardingRepo.findOne({
-      where: { id: savedOnboarding.id },
+      where: { id: (savedOnboarding as any).id },
       relations: ['lead', 'customer', 'assignedTo', 'center'],
     });
 

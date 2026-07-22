@@ -8,7 +8,7 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
-import { UnauthorizedException, BadRequestException, NotFoundException, Scope } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -59,11 +59,11 @@ export class BookingResolver {
       order: { createdAt: 'desc' },
     });
 
-    return bookings as unknown as Booking[];
+    return bookings as unknown as BookingEntity[];
   }
 
   @Query(() => [BookingEntity])
-  async myBookings(@Context() context): Promise<BookingEntity[]> {
+  async myBookings(@Context() context: any): Promise<BookingEntity[]> {
     const userId = context.req.user?.id;
     if (!userId) return [];
 
@@ -73,7 +73,7 @@ export class BookingResolver {
       order: { createdAt: 'desc' },
     });
 
-    return bookings as unknown as Booking[];
+    return bookings as unknown as BookingEntity[];
   }
 
   @Query(() => BookingEntity, { nullable: true })
@@ -83,13 +83,13 @@ export class BookingResolver {
       relations: ['user', 'seat', 'seat.floor', 'center', 'payment'],
     });
 
-    return booking as unknown as Booking | null;
+    return booking as unknown as BookingEntity | null;
   }
 
   @Mutation(() => BookingEntity)
   async createBooking(
     @Args('input') input: CreateBookingInput,
-    @Context() context
+    @Context() context: any
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
     if (!userId) throw new UnauthorizedException('Unauthorized');
@@ -115,7 +115,7 @@ export class BookingResolver {
         .createQueryBuilder('booking')
         .where('booking.seatId = :seatId', { seatId: input.seatId })
         .andWhere('booking.status NOT IN (:...statuses)', {
-          statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW],
+          statuses: [BookingStatus.CANCELLED, BookingStatus.COMPLETED],
         })
         .andWhere('(booking.startTime < :end AND booking.endTime > :start)', { start, end })
         .getOne();
@@ -130,7 +130,7 @@ export class BookingResolver {
     const newBooking = this.bookingRepo.create({
       ...input,
       userId,
-      customerId: input.customerId || null,
+      customerId: input.customerId || undefined,
       centerId: seat.floor.id, // floor has center relation
       totalPrice: seat.price,
     });
@@ -148,15 +148,15 @@ export class BookingResolver {
     });
 
     // Invalidate cache
-    await this.cache.invalidatePattern(`center:${booking.centerId}`);
+    await this.cache.invalidatePattern(`center:${(booking as any).centerId}`);
 
-    return booking;
+    return booking as unknown as BookingEntity;
   }
 
   @Mutation(() => BookingEntity)
   async cancelBooking(
     @Args('id', { type: () => ID }) id: string,
-    @Context() context
+    @Context() context: any
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
     if (!userId) throw new UnauthorizedException('Unauthorized');
@@ -189,7 +189,7 @@ export class BookingResolver {
 
     // Refund payment if completed
     if (updatedBooking?.payment?.status === PaymentStatus.COMPLETED) {
-      await this.paymentRepo.update(updatedBooking.paymentId, {
+      await this.paymentRepo.update(updatedBooking!.paymentId as string, {
         status: PaymentStatus.REFUNDED,
       });
     }
@@ -202,14 +202,14 @@ export class BookingResolver {
     }
     await this.cache.invalidatePattern(`center:*`);
 
-    return updatedBooking;
+    return updatedBooking!;
   }
 
   @Mutation(() => BookingEntity)
   async updateBooking(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateBookingInput,
-    @Context() context
+    @Context() context: any
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
     if (!userId) throw new UnauthorizedException('Unauthorized');
@@ -223,7 +223,7 @@ export class BookingResolver {
       throw new NotFoundException('Booking not found');
     }
 
-    await this.bookingRepo.update(id, input);
+    await this.bookingRepo.update(id, input as any);
 
     const updatedBooking = await this.bookingRepo.findOne({
       where: { id },
@@ -233,13 +233,13 @@ export class BookingResolver {
     await this.pubSub.publish(TRIGGERS.bookingUpdated, { bookingUpdated: updatedBooking });
     await this.cache.invalidatePattern(`center:*`);
 
-    return updatedBooking;
+    return updatedBooking!;
   }
 
   @Mutation(() => BookingEntity)
   async checkInBooking(
     @Args('id', { type: () => ID }) id: string,
-    @Context() context
+    @Context() context: any
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
     if (!userId) throw new UnauthorizedException('Unauthorized');
@@ -280,13 +280,13 @@ export class BookingResolver {
     }
     await this.cache.invalidatePattern(`center:*`);
 
-    return updatedBooking;
+    return updatedBooking!;
   }
 
   @Mutation(() => BookingEntity)
   async checkOutBooking(
     @Args('id', { type: () => ID }) id: string,
-    @Context() context
+    @Context() context: any
   ): Promise<BookingEntity> {
     const userId = context.req.user?.id;
     if (!userId) throw new UnauthorizedException('Unauthorized');
@@ -327,7 +327,7 @@ export class BookingResolver {
     }
     await this.cache.invalidatePattern(`center:*`);
 
-    return updatedBooking;
+    return updatedBooking!;
   }
 
   @Mutation(() => PaymentEntity)
@@ -337,9 +337,9 @@ export class BookingResolver {
   ): Promise<PaymentEntity> {
     // This would integrate with payment gateway (Razorpay/Stripe)
     // For now, simulate payment processing
-    const payment = await this.paymentRepo.update(paymentId, {
+    await this.paymentRepo.update(paymentId, {
       status: PaymentStatus.COMPLETED,
-      method: method,
+      method: method as any,
       transactionId: `TXN-${Date.now()}`,
     });
 
@@ -362,7 +362,7 @@ export class BookingResolver {
       paymentStatusChanged: updatedPayment,
     });
 
-    return updatedPayment;
+    return updatedPayment!;
   }
 
 }

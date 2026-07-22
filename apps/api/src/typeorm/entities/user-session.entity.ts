@@ -55,7 +55,7 @@ export class UserSession {
 
   // Relations
   @Field(() => User)
-  @ManyToOne(() => User, (user) => user.sessions)
+  @ManyToOne(() => User, (user: any) => user.sessions)
   @JoinColumn({ name: 'userId' })
   user!: User;
 }

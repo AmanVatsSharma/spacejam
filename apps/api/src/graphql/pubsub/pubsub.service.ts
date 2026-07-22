@@ -17,7 +17,7 @@ import { PubSub } from 'graphql-subscriptions';
 @Injectable()
 export class PubSubService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PubSubService.name);
-  private pubsub: PubSub;
+  private pubsub!: PubSub;
 
   onModuleInit() {
     this.pubsub = new PubSub();
@@ -26,7 +26,7 @@ export class PubSubService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     if (this.pubsub) {
-      await this.pubsub.close();
+      // PubSub from graphql-subscriptions doesn't have a close method
     }
   }
 

@@ -17,7 +17,7 @@ import {
   SeatStatus,
   SeatType,
 } from '../types/user.type';
-import { DashboardMetrics, MetricTrend, OccupancyDay, OccupancyReport, RevenueMonth, RevenueReport, SeatTypeOccupancy, TimePeriod } from '../types/analytics.type';
+import { DashboardMetrics, MetricTrend, OccupancyDay, OccupancyReport, RevenueReport, SeatTypeOccupancy, TimePeriod } from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
@@ -68,7 +68,7 @@ export class AnalyticsResolver {
       // Calculate metrics
       const totalRevenue = recentBookings
         .filter(b => b.payment?.status === 'COMPLETED')
-        .reduce((sum, b) => sum + b.totalPrice, 0);
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
       const activeBookings = recentBookings.filter(
         b => b.status === BookingStatus.CONFIRMED
@@ -110,7 +110,7 @@ export class AnalyticsResolver {
       });
 
       const pendingAmount = pendingPayments.reduce(
-        (sum, b) => sum + b.totalPrice, 0
+        (sum, b) => sum + (b.totalPrice || 0), 0
       );
 
       // Upcoming maintenance
@@ -124,7 +124,7 @@ export class AnalyticsResolver {
       // ----- Trend calculations (vs. previous 30-day period) -----
       const prevRevenue = prevBookings
         .filter(b => b.payment?.status === 'COMPLETED')
-        .reduce((sum, b) => sum + b.totalPrice, 0);
+        .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
       const prevActiveBookings = prevBookings.filter(
         b => b.status === BookingStatus.CONFIRMED
       ).length;
@@ -196,7 +196,7 @@ export class AnalyticsResolver {
 
         const totalRevenue = bookings
           .filter(b => b.payment?.status === PaymentStatus.COMPLETED)
-          .reduce((sum, b) => sum + b.totalPrice, 0);
+          .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
         // Calculate month-by-month breakdown
         const byMonth: { month: string; revenue: number; target: number }[] = [];
@@ -208,7 +208,7 @@ export class AnalyticsResolver {
 
           const monthRevenue = bookings
             .filter(b => b.createdAt >= monthStart && b.createdAt <= monthEnd)
-            .reduce((sum, b) => sum + b.totalPrice, 0);
+            .reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
           if (monthRevenue > 0) {
             byMonth.push({
@@ -231,7 +231,7 @@ export class AnalyticsResolver {
           } as any,
         });
 
-        const prevRevenue = prevBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+        const prevRevenue = prevBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
         const growth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
         return {
@@ -289,7 +289,7 @@ export class AnalyticsResolver {
     // Daily occupancy
     const byDay: OccupancyDay[] = [];
     const seatTypeOccupancies: SeatTypeOccupancy[] = [];
-    const seatTypes: SeatType[] = ['HOT_DESK', 'DEDICATED', 'CABIN'];
+    const seatTypes: SeatType[] = [SeatType.HOT_DESK, SeatType.DEDICATED, SeatType.CABIN];
 
     for (let d = new Date(dateRange.since); d <= dateRange.until; d.setDate(d.getDate() + 1)) {
       const dayStart = new Date(d);
@@ -318,7 +318,7 @@ export class AnalyticsResolver {
         occupancyRate: totalSeats > 0 ? occupiedSeats / totalSeats : 0,
         revenue: dayBookings
           .filter(b => b.payment?.status === PaymentStatus.COMPLETED)
-          .reduce((sum, b) => sum + b.totalPrice, 0),
+          .reduce((sum, b) => sum + (b.totalPrice || 0), 0),
       });
     }
 

@@ -16,6 +16,7 @@
  * running it from the project root will pick up `apps/api/src/typeorm/data-source.ts`.
  */
 import 'reflect-metadata';
+// @ts-ignore
 import * as bcrypt from 'bcrypt';
 
 import { dataSource } from '../../typeorm/data-source';

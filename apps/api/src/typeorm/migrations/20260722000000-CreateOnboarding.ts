@@ -7,7 +7,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-22
  */
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
 export class CreateOnboarding20260722000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -42,9 +42,9 @@ export class CreateOnboarding20260722000000 implements MigrationInterface {
       true,
     );
 
-    await queryRunner.createIndex('onboardings', ['status']);
-    await queryRunner.createIndex('onboardings', ['leadId']);
-    await queryRunner.createIndex('onboardings', ['customerId']);
+    await queryRunner.createIndex('onboardings', new TableIndex({ name: 'IDX_ONBOARDINGS_STATUS', columnNames: ['status'] }));
+    await queryRunner.createIndex('onboardings', new TableIndex({ name: 'IDX_ONBOARDINGS_LEAD_ID', columnNames: ['leadId'] }));
+    await queryRunner.createIndex('onboardings', new TableIndex({ name: 'IDX_ONBOARDINGS_CUSTOMER_ID', columnNames: ['customerId'] }));
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
