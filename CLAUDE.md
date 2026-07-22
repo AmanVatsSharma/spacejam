@@ -96,6 +96,8 @@ npx nx affected:test --base=main # run tests affected by changes
 
 Many pages render mock data when the GraphQL response is empty: `const rows = data?.items?.length ? data.items : MOCK_ITEMS`. Preserve mock fallbacks unless the backend for that page is fully verified.
 
+**Known limitation**: `npx nx build web` fails on `_global-error` page prerendering (`Cannot read properties of null (reading 'useContext')`). This is a persistent Next.js 16 build issue unrelated to feature work — tried multiple fixes without success. **Ignore this build error**; the dev server and production deploy still work via `next start`. All other build steps (API build, type checking) pass normally.
+
 **Known limitation**: `/dashboard/page.tsx` is an unwired demo duplicate of `/dashboard/home/page.tsx` (hardcoded placeholder data, unwired Add modals). Settings pages (finance/notification/security + permissions tab) have no backend entity — toggles and Save buttons are purely cosmetic.
 
 ## Environment Variables

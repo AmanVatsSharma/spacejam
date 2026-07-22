@@ -290,7 +290,6 @@ export class FloorResolver {
   ) {}
 
   @Query(() => [FloorEntity])
-  @UseGuards(GqlAuthGuard)
   async floors(@Args('centerId', { type: () => ID, nullable: true }) centerId?: string): Promise<FloorEntity[]> {
     const where: any = centerId ? { centerId, active: true } : { active: true };
     const floors = await this.floorRepo.find({
@@ -353,7 +352,6 @@ export class SeatResolver {
   ) {}
 
   @Query(() => [SeatEntity])
-  @UseGuards(GqlAuthGuard)
   async seats(@Args('floorId', { type: () => ID, nullable: true }) floorId?: string): Promise<SeatEntity[]> {
     const where = floorId ? { floorId } : {};
     const seats = await this.seatRepo.find({
@@ -364,7 +362,6 @@ export class SeatResolver {
   }
 
   @Query(() => SeatEntity, { nullable: true })
-  @UseGuards(GqlAuthGuard)
   async seat(@Args('id', { type: () => ID }) id: string): Promise<SeatEntity | null> {
     const seat = await this.seatRepo.findOne({
       where: { id },
