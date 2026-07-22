@@ -10,7 +10,7 @@
  */
 
 import { useMeetingRooms, useCancelRoomBooking, useBulkUpdateStatus, useCreateMeetingRoom, useUpdateMeetingRoom, useDeleteMeetingRoom } from "@/hooks/use-operations";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import styles from "./meeting-room.module.css";
 import { BookRoomModal, BookRoomModalProps } from "../modals/book-room-modal";

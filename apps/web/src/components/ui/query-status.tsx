@@ -9,7 +9,7 @@
  *   - QueryEmpty     — centered empty state with optional message
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-15
+ * Last-updated: 2026-07-22
  */
 
 'use client';
@@ -41,13 +41,34 @@ interface QueryErrorProps {
   message?: string;
   onRetry?: () => void;
   retryLabel?: string;
+  error?: unknown;
+}
+
+function isUnauth(err: unknown): boolean {
+  if (!err) return false;
+  const anyErr = err as { graphQLErrors?: any[]; networkError?: any; message?: string };
+  if (Array.isArray(anyErr.graphQLErrors)) {
+    return anyErr.graphQLErrors.some(
+      (e: any) =>
+        e?.extensions?.code === 'UNAUTHENTICATED' || /unauthor/i.test(e?.message ?? ''),
+    );
+  }
+  return /unauthor/i.test(anyErr.message ?? '');
 }
 
 export function QueryError({
-  message = 'Something went wrong. Please try again.',
+  message,
   onRetry,
   retryLabel = 'Retry',
+  error,
 }: QueryErrorProps) {
+  const unauth = isUnauth(error);
+  const display =
+    message ??
+    (unauth
+      ? 'Your session has expired. Please sign in again.'
+      : 'Something went wrong. Please try again.');
+
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-12">
       <svg
@@ -61,15 +82,25 @@ export function QueryError({
         <circle cx="12" cy="12" r="10" />
         <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
       </svg>
-      <span className="text-sm text-red-500">{message}</span>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="mt-1 px-4 py-2 rounded-lg text-sm font-medium text-[#FF6A2F] border border-[#FF6A2F]/20 hover:bg-orange-50 transition-colors"
-        >
-          {retryLabel}
-        </button>
-      )}
+      <span className="text-sm text-red-500 text-center max-w-sm px-4">{display}</span>
+      <div className="flex gap-2 mt-1">
+        {unauth && typeof window !== 'undefined' && (
+          <button
+            onClick={() => window.location.assign('/signin')}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#FF6A2F] hover:bg-[#e85a25] transition-colors"
+          >
+            Sign in
+          </button>
+        )}
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-[#FF6A2F] border border-[#FF6A2F]/20 hover:bg-orange-50 transition-colors"
+          >
+            {retryLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

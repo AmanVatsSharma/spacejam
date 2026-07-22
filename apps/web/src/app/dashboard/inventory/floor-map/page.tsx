@@ -151,35 +151,44 @@ export default function FloorMapPage() {
   const {
     data: floorsData,
     loading: floorsLoading,
+    error: floorsError,
   } = useQuery<{ floors: any[] }>(GET_FLOORS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
-    variables: activeCenterId ? { centerId: activeCenterId } : {},
+    variables: activeCenterId ? { centerId: activeCenterId } : undefined,
   });
 
   // Load seats for the active floor
   const {
     data: seatsData,
     loading: seatsLoading,
+    error: seatsError,
   } = useQuery<{ seats: any[] }>(GET_SEATS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
-    variables: activeFloorId ? { floorId: activeFloorId } : {},
+    variables: activeFloorId ? { floorId: activeFloorId } : undefined,
   });
 
   const {
     data: metricsData,
     loading: metricsLoading,
+    error: metricsError,
   } = useQuery<{ dashboardMetrics: any }>(GET_DASHBOARD_METRICS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
-    variables: activeCenterId ? { centerId: activeCenterId } : {},
+    variables: activeCenterId ? { centerId: activeCenterId } : undefined,
   });
 
-  const { data: bookingsData } = useQuery(GET_BOOKINGS, {
+  const { data: bookingsData, error: bookingsError } = useQuery(GET_BOOKINGS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
   });
+
+  const isUnauthError = (err: any) =>
+    err?.graphQLErrors?.some(
+      (e: any) =>
+        e.extensions?.code === 'UNAUTHENTICATED' || /unauthor/i.test(e.message),
+    );
 
   // Mutations
   const [createSeat] = useMutation(CREATE_SEAT, {
@@ -398,6 +407,15 @@ export default function FloorMapPage() {
   };
 
   const isLoading = centersLoading || floorsLoading || seatsLoading || metricsLoading;
+
+  const unauthError = isUnauthError(floorsError) || isUnauthError(seatsError) || isUnauthError(metricsError) || isUnauthError(bookingsError);
+
+  // Redirect to signin on auth failure
+  useEffect(() => {
+    if (unauthError && typeof window !== 'undefined') {
+      window.location.assign('/signin');
+    }
+  }, [unauthError]);
 
   return (
     <div className={styles.page}>
