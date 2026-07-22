@@ -181,7 +181,7 @@ export function Sidebar({ activeTab = "dashboard", onTabChange }: SidebarProps) 
       <div className="flex flex-col items-center gap-3 compact:gap-1.5 w-full overflow-y-auto scrollbar-hide" style={{ overscrollBehavior: 'contain' }}>
         {navItems.map((item) => {
           const isActive = onTabChange ? item.id === activeTab : getActiveFromPath(item.href);
-          const IconComponent = icons[item.id];
+          const IconComponent = item.icon;
 
           return (
             <div key={item.id} className="flex flex-col items-center gap-1">
