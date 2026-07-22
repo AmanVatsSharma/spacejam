@@ -1,3 +1,12 @@
+/**
+ * File:        apps/web/src/app/dashboard/settings/security/page.tsx
+ * Module:      Web · Dashboard · Settings · Security
+ * Purpose:     Security & verification settings page with live device management
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-07-22
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -106,8 +115,266 @@ const Icons = {
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
       <polyline points="17 6 23 6 23 12"></polyline>
     </svg>
-  )
+  ),
 };
+
+// ── Pure helpers (no hooks, no component state) ──────────────────────────────
+
+function parseUserAgent(ua: string | null | undefined): { device: string; browser: string; os: string } {
+  if (!ua) return { device: "Unknown", browser: "Unknown", os: "Unknown" };
+  const lower = ua.toLowerCase();
+  let device = "Desktop";
+  let browser = "Unknown";
+  let os = "Unknown";
+  if (lower.includes("mobile") || lower.includes("android") || lower.includes("iphone")) device = "Mobile";
+  else if (lower.includes("tablet") || lower.includes("ipad")) device = "Tablet";
+  if (lower.includes("chrome") && !lower.includes("edg")) browser = "Chrome";
+  else if (lower.includes("safari") && !lower.includes("chrome")) browser = "Safari";
+  else if (lower.includes("firefox")) browser = "Firefox";
+  else if (lower.includes("edg")) browser = "Edge";
+  if (lower.includes("windows")) os = "Windows";
+  else if (lower.includes("mac os") || lower.includes("macintosh")) os = "macOS";
+  else if (lower.includes("linux")) os = "Linux";
+  else if (lower.includes("android")) os = "Android";
+  else if (lower.includes("iphone") || lower.includes("ipad")) os = "iOS";
+  return { device, browser, os };
+}
+
+function formatSessionTime(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Active now";
+  if (diffMins < 60) return `Active ${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `Active ${diffHrs} hour${diffHrs > 1 ? "s" : ""} ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  if (diffDays < 7) return `Active ${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  return `Active since ${date.toLocaleDateString()}`;
+}
+
+function formatExpiry(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    const diffAgo = now.getTime() - date.getTime();
+    const minsAgo = Math.floor(diffAgo / 60000);
+    if (minsAgo < 60) return `Expired ${minsAgo} min${minsAgo > 1 ? "s" : ""} ago`;
+    const hrsAgo = Math.floor(minsAgo / 60);
+    if (hrsAgo < 24) return `Expired ${hrsAgo} hr${hrsAgo > 1 ? "s" : ""} ago`;
+    const daysAgo = Math.floor(hrsAgo / 24);
+    return `Expired ${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
+  }
+  const diffDays = Math.floor(diffMs / 86400000);
+  const diffHrs = Math.floor(diffMs / 3600000);
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 60) return `Expires in ${diffMins} min${diffMins > 1 ? "s" : ""}`;
+  if (diffHrs < 24) return `Expires in ${diffHrs} hr${diffHrs > 1 ? "s" : ""}`;
+  if (diffDays < 7) return `Expires in ${diffDays} day${diffDays > 1 ? "s" : ""}`;
+  return `Expires ${date.toLocaleDateString()}`;
+}
+
+function getCurrentSessionId(): string | null {
+  try {
+    const token = getAccessToken();
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.sid ?? payload.jti ?? payload.sessionId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Inner component (hooks live here, always rendered when tab is active) ────
+
+function DeviceManagementTab({ draft, set }: { draft: Record<string, any>; set: (...args: any[]) => void }) {
+  const { data: sessionsData, loading: sessionsLoading, refetch: refetchSessions } = useQuery(GET_USER_SESSIONS);
+  const [logoutDevice] = useMutation(LOGOUT_DEVICE);
+  const [logoutAllDevices, { loading: logoutAllLoading }] = useMutation(LOGOUT_ALL_DEVICES);
+  const sessions = sessionsData?.myActiveSessions ?? [];
+  const currentSessionId = getCurrentSessionId();
+
+  const handleLogoutDevice = async (sessionId: string) => {
+    try {
+      await logoutDevice({ variables: { id: sessionId } });
+      toast.success("Device logged out");
+      refetchSessions();
+    } catch {
+      toast.error("Failed to logout device");
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    try {
+      const result = await logoutAllDevices();
+      const count = (result.data as any)?.logoutAllDevices ?? 0;
+      toast.success(`Logged out ${count} device(s)`);
+      refetchSessions();
+    } catch {
+      toast.error("Failed to logout all devices");
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.contentCard}>
+        <div className={styles.formHeader}>
+          <div className={styles.formHeaderLeft}>
+            <div className={styles.formIcon}>{Icons.monitor}</div>
+            <h2 className={styles.formTitle}>Active Devices</h2>
+            <span className={styles.inputSub} style={{ marginLeft: "8px" }}>
+              {sessionsLoading ? "Loading..." : `${sessions.length} device${sessions.length !== 1 ? "s" : ""} currently active`}
+            </span>
+          </div>
+          <div
+            className={styles.formHeaderRight}
+            onClick={handleLogoutAll}
+            style={{ cursor: logoutAllLoading ? "not-allowed" : "pointer", opacity: logoutAllLoading ? 0.6 : 1 }}
+          >
+            {Icons.logOut} Logout All Devices
+          </div>
+        </div>
+
+        <div className={styles.deviceList}>
+          {sessionsLoading && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#6B7280" }}>Loading devices...</div>
+          )}
+          {!sessionsLoading && sessions.length === 0 && (
+            <div style={{ padding: "24px", textAlign: "center", color: "#6B7280" }}>No active devices found.</div>
+          )}
+          {sessions.map((session: any) => {
+            const { device, browser, os } = parseUserAgent(session.userAgent);
+            const isCurrent = session.id === currentSessionId;
+            return (
+              <div className={styles.deviceCard} key={session.id}>
+                <div className={styles.deviceInfoLeft}>
+                  <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
+                    {device === "Mobile" || device === "Tablet" ? Icons.smartphone : Icons.monitor}
+                  </div>
+                  <div className={styles.deviceInfoText}>
+                    <div className={styles.deviceNameWrap}>
+                      <span className={styles.deviceName}>{`${os} ${device}`}</span>
+                      {isCurrent && <span className={styles.deviceTagOrange}>Current Device</span>}
+                    </div>
+                    <div className={styles.deviceMeta}>
+                      <span className={styles.deviceMetaItem}>{`🌐 ${browser}`}</span>
+                      <span className={styles.deviceMetaItem}>{`📍 ${session.ipAddress ?? "Unknown location"}`}</span>
+                      <span className={styles.deviceMetaItem}>{`🕒 ${formatSessionTime(session.createdAt)}`}</span>
+                      <span className={styles.deviceMetaItem}>{`⏱ ${formatExpiry(session.expiresAt)}`}</span>
+                    </div>
+                  </div>
+                </div>
+                {isCurrent ? (
+                  <button className={styles.deviceLogoutBtn} disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                    {Icons.logOut} Current
+                  </button>
+                ) : (
+                  <button className={styles.deviceLogoutBtn} onClick={() => handleLogoutDevice(session.id)}>
+                    {Icons.logOut} Logout
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={styles.contentCard}>
+        <div className={styles.formHeader}>
+          <div className={styles.formHeaderLeft}>
+            <div className={styles.formIcon}>{Icons.monitor}</div>
+            <h2 className={styles.formTitle}>Device Rules</h2>
+          </div>
+        </div>
+
+        <div className={styles.toggleCards}>
+          <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
+            <div className={styles.toggleInfo}>
+              <span className={styles.toggleTitle}>Allow Multiple Devices</span>
+              <span className={styles.toggleSub}>Users can be logged in from multiple devices simultaneously</span>
+            </div>
+            <div
+              className={`${styles.toggleSwitch} ${!draft.allowMultipleDevices ? styles.toggleSwitchOff : ""}`}
+              onClick={() => set("allowMultipleDevices", !draft.allowMultipleDevices)}
+            >
+              <div
+                className={styles.toggleKnob}
+                style={{ transform: (draft.allowMultipleDevices as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+              ></div>
+            </div>
+          </div>
+          <div style={{ height: "1px", background: "#F3F4F6" }}></div>
+
+          <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
+            <div className={styles.toggleInfo}>
+              <div className={styles.toggleTitleWrap}>
+                <span className={styles.toggleTitle}>Require Verification for New Devices</span>
+                <span className={styles.tagOrange}>Recommended</span>
+              </div>
+              <span className={styles.toggleSub}>Send verification code when users login from unrecognized devices</span>
+            </div>
+            <div
+              className={`${styles.toggleSwitch} ${!draft.requireVerificationNewDevices ? styles.toggleSwitchOff : ""}`}
+              onClick={() => set("requireVerificationNewDevices", !draft.requireVerificationNewDevices)}
+            >
+              <div
+                className={styles.toggleKnob}
+                style={{ transform: (draft.requireVerificationNewDevices as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.inputGroup} style={{ marginTop: "16px" }}>
+          <label className={styles.inputLabel}>Device Trust Duration</label>
+          <select
+            className={`${styles.inputBox} ${styles.selectBox}`}
+            style={{ background: "#F9FAFB" }}
+            value={(draft.deviceTrustDuration as string) ?? "30 days"}
+            onChange={(e) => set("deviceTrustDuration", e.target.value)}
+          >
+            <option value="7 days">7 days</option>
+            <option value="30 days">30 days</option>
+            <option value="90 days">90 days</option>
+            <option value="Never">Never</option>
+          </select>
+          <span className={styles.inputSub}>How long to trust a device before requiring re-verification</span>
+        </div>
+      </div>
+
+      <div className={styles.bulletListWrap}>
+        <div className={styles.bulletListTitle}>Security Recommendations</div>
+        <ul className={styles.bulletList}>
+          <li>Regularly review and remove unused devices</li>
+          <li>Enable device verification for enhanced security</li>
+          <li>Logout all devices if you suspect unauthorized access</li>
+        </ul>
+      </div>
+
+      <div className={styles.summaryList} style={{ border: "none", background: "#FFFFFF", padding: "16px 0 0 0" }}>
+        <div className={styles.summaryListTitle} style={{ marginBottom: "12px" }}>Active Rules</div>
+        <div className={styles.summaryRow}>
+          <span className={styles.summaryLabel}>Multiple Devices</span>
+          <span className={styles.summaryValueOrange}>Allowed</span>
+        </div>
+        <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
+          <span className={styles.summaryLabel}>Verification</span>
+          <span className={styles.summaryValueOrange}>Required</span>
+        </div>
+        <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
+          <span className={styles.summaryLabel}>Trust Duration</span>
+          <span className={styles.summaryValue} style={{ color: "#1F2937" }}>
+            {(draft.deviceTrustDuration as string) ?? "30 days"}
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 
 export default function SecuritySettingsPage() {
   const [activeTab, setActiveTab] = useState("Authentication");
@@ -132,47 +399,63 @@ export default function SecuritySettingsPage() {
     allowMultipleDevices: true,
     requireVerificationNewDevices: true,
     highValueTransactionThreshold: "10000",
-    sessionTimeout: "30 minutes",
+    sessionTimeout: "30m",
     deviceTrustDuration: "30 days",
   });
 
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changePw, { loading: changePwLoading }] = useMutation(CHANGE_PASSWORD);
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    try {
+      await changePw({ variables: { currentPassword, newPassword } });
+      toast.success("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      toast.error("Failed to update password");
+    }
+  };
+
   return (
     <div className={styles.page}>
-
-      {/* Top Header Card */}
-      <div className={styles.headerCard}>
-        <div className={styles.headerTitleWrap}>
-          <h1 className={styles.headerTitle}>Security & Verification</h1>
-          <p className={styles.headerSubtitle}>Manage authentication, access control, and verification rules</p>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Security & Verification</h1>
+          <span className={styles.subtitle}>Manage authentication, devices, and verification rules</span>
         </div>
-        <div className={styles.headerActions}>
+        <div className={styles.headerRight}>
           <button className={styles.resetBtn} onClick={reset} disabled={saving}>
-            {Icons.reset} Reset Default
+            {Icons.reset} Reset
           </button>
           <button className={styles.saveBtn} onClick={save} disabled={saving}>
-            {Icons.save} {saving ? "Saving…" : "Save Rules"}
+            {Icons.save} {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
 
-      {/* Sub Tabs */}
-      <div className={styles.subTabs}>
-        {["Authentication", "Verification Rules", "Device Management"].map(tab => (
-          <div
-            key={tab}
-            className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </div>
-        ))}
-      </div>
-
-      {/* Split Layout */}
       <div className={styles.splitLayout}>
-
         {/* LEFT COLUMN */}
         <div className={styles.leftCol}>
+          {/* Tabs */}
+          <div className={styles.tabBar}>
+            {["Authentication", "Device Management", "Verification Rules", "Device Rules"].map((tab) => (
+              <button
+                key={tab}
+                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ""}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
           {activeTab === "Authentication" && (
             <>
@@ -186,42 +469,60 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.toggleCards}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#F9FAFB" }}>
                     <div className={styles.toggleTitleWrap}>
                       <div className={styles.iconWrap}>{Icons.mail}</div>
-                      <div className={styles.toggleInfo} style={{ marginLeft: '8px' }}>
+                      <div className={styles.toggleInfo} style={{ marginLeft: "8px" }}>
                         <span className={styles.toggleTitle}>Email Login</span>
                         <span className={styles.toggleSub}>Allow users to login with email and password</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.emailLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('emailLogin', !draft.emailLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.emailLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.emailLogin ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("emailLogin", !draft.emailLogin)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.emailLogin as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#F9FAFB" }}>
                     <div className={styles.toggleTitleWrap}>
                       <div className={styles.iconWrap}>{Icons.smartphone}</div>
-                      <div className={styles.toggleInfo} style={{ marginLeft: '8px' }}>
+                      <div className={styles.toggleInfo} style={{ marginLeft: "8px" }}>
                         <span className={styles.toggleTitle}>OTP Login</span>
                         <span className={styles.toggleSub}>One-time password sent via SMS or email</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.otpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('otpLogin', !draft.otpLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.otpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.otpLogin ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("otpLogin", !draft.otpLogin)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.otpLogin as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#F9FAFB" }}>
                     <div className={styles.toggleTitleWrap}>
                       <div className={styles.iconWrap}>{Icons.fingerprint}</div>
-                      <div className={styles.toggleInfo} style={{ marginLeft: '8px' }}>
+                      <div className={styles.toggleInfo} style={{ marginLeft: "8px" }}>
                         <span className={styles.toggleTitle}>Biometric Login</span>
-                        <span className={styles.toggleSub}>Fingerprint or facial recognition on mobile devices</span>
+                        <span className={styles.toggleSub}>Use fingerprint or face recognition</span>
                       </div>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.biometricLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('biometricLogin', !draft.biometricLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.biometricLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.biometricLogin ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("biometricLogin", !draft.biometricLogin)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.biometricLogin as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -231,7 +532,7 @@ export default function SecuritySettingsPage() {
                 <div className={styles.formHeader}>
                   <div className={styles.formHeaderLeft}>
                     <div className={styles.formIcon}>{Icons.clock}</div>
-                    <h2 className={styles.formTitle}>Session Control</h2>
+                    <h2 className={styles.formTitle}>Session Management</h2>
                   </div>
                 </div>
 
@@ -239,38 +540,49 @@ export default function SecuritySettingsPage() {
                   <label className={styles.inputLabel}>Session Timeout</label>
                   <select
                     className={`${styles.inputBox} ${styles.selectBox}`}
-                    style={{ background: '#F9FAFB' }}
-                    value={draft.sessionTimeout ?? "30 minutes"}
-                    onChange={e => set('sessionTimeout', e.target.value)}
+                    style={{ background: "#F9FAFB" }}
+                    value={(draft.sessionTimeout as string) ?? "30m"}
+                    onChange={(e) => set("sessionTimeout", e.target.value)}
                   >
-                    <option value="15 minutes">15 minutes</option>
-                    <option value="30 minutes">30 minutes</option>
-                    <option value="1 hour">1 hour</option>
-                    <option value="4 hours">4 hours</option>
-                    <option value="1 day">1 day</option>
-                    <option value="Never">Never</option>
+                    <option value="15m">15 minutes</option>
+                    <option value="30m">30 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="4h">4 hours</option>
+                    <option value="1d">1 day</option>
                   </select>
                   <span className={styles.inputSub}>Time before inactive users are automatically logged out</span>
                 </div>
 
-                <div className={styles.toggleCards} style={{ marginTop: '16px' }}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                <div className={styles.toggleCards} style={{ marginTop: "16px" }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#F9FAFB" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Auto Logout on Inactivity</span>
                       <span className={styles.toggleSub}>Automatically log out users after the timeout period</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.autoLogout ? styles.toggleSwitchOff : ''}`} onClick={() => set('autoLogout', !draft.autoLogout)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.autoLogout ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.autoLogout ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("autoLogout", !draft.autoLogout)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.autoLogout as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#F9FAFB" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Allow Concurrent Sessions</span>
                       <span className={styles.toggleSub}>Users can be logged in on multiple devices simultaneously</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.concurrentSessions ? styles.toggleSwitchOff : ''}`} onClick={() => set('concurrentSessions', !draft.concurrentSessions)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.concurrentSessions ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.concurrentSessions ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("concurrentSessions", !draft.concurrentSessions)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.concurrentSessions as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -285,7 +597,7 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.toggleCards}>
-                  <div className={styles.toggleCard} style={{ background: '#FFF9F6', borderColor: '#FFE4D6' }}>
+                  <div className={styles.toggleCard} style={{ background: "#FFF9F6", borderColor: "#FFE4D6" }}>
                     <div className={styles.toggleInfo}>
                       <div className={styles.toggleTitleWrap}>
                         <span className={styles.toggleTitle}>Require OTP on Login</span>
@@ -293,33 +605,107 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Add an additional OTP verification step during login</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.requireOtpLogin ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireOtpLogin', !draft.requireOtpLogin)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.requireOtpLogin ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.requireOtpLogin ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("requireOtpLogin", !draft.requireOtpLogin)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.requireOtpLogin as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
+
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Require Device Verification</span>
                       <span className={styles.toggleSub}>Verify new devices before allowing login</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.requireDeviceVerification ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireDeviceVerification', !draft.requireDeviceVerification)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.requireDeviceVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.requireDeviceVerification ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("requireDeviceVerification", !draft.requireDeviceVerification)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.requireDeviceVerification as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#F9FAFB' }}>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
+
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>IP Restriction</span>
                       <span className={styles.toggleSub}>Restrict access to specific IP addresses or ranges</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.ipRestriction ? styles.toggleSwitchOff : ''}`} onClick={() => set('ipRestriction', !draft.ipRestriction)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.ipRestriction ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.ipRestriction ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("ipRestriction", !draft.ipRestriction)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.ipRestriction as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              <div className={styles.contentCard}>
+                <div className={styles.formHeader}>
+                  <div className={styles.formHeaderLeft}>
+                    <div className={styles.formIcon}>{Icons.lock}</div>
+                    <h2 className={styles.formTitle}>Change Password</h2>
+                  </div>
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Current Password</label>
+                  <input
+                    type="password"
+                    className={styles.inputBox}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>New Password</label>
+                  <input
+                    type="password"
+                    className={styles.inputBox}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Confirm New Password</label>
+                  <input
+                    type="password"
+                    className={styles.inputBox}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  className={styles.saveBtn}
+                  onClick={handleChangePassword}
+                  disabled={changePwLoading || !currentPassword || !newPassword || !confirmPassword}
+                  style={{ marginTop: "8px", width: "100%" }}
+                >
+                  {changePwLoading ? "Updating..." : "Update Password"}
+                </button>
+              </div>
             </>
+          )}
+
+          {activeTab === "Device Management" && (
+            <DeviceManagementTab draft={draft} set={set} />
           )}
 
           {activeTab === "Verification Rules" && (
@@ -333,7 +719,7 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.toggleCards}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <div className={styles.toggleTitleWrap}>
                         <span className={styles.toggleTitle}>Refund OTP Required</span>
@@ -341,30 +727,48 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require OTP verification for all refund transactions</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.refundOtp ? styles.toggleSwitchOff : ''}`} onClick={() => set('refundOtp', !draft.refundOtp)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.refundOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.refundOtp ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("refundOtp", !draft.refundOtp)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.refundOtp as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                  <div style={{ height: '1px', background: '#F3F4F6' }}></div>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Deposit Release OTP</span>
                       <span className={styles.toggleSub}>OTP verification required when releasing security deposits</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.depositOtp ? styles.toggleSwitchOff : ''}`} onClick={() => set('depositOtp', !draft.depositOtp)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.depositOtp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.depositOtp ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("depositOtp", !draft.depositOtp)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.depositOtp as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                  <div style={{ height: '1px', background: '#F3F4F6' }}></div>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Account Freeze Confirmation</span>
                       <span className={styles.toggleSub}>Require confirmation before freezing user accounts</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.accountFreeze ? styles.toggleSwitchOff : ''}`} onClick={() => set('accountFreeze', !draft.accountFreeze)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.accountFreeze ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.accountFreeze ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("accountFreeze", !draft.accountFreeze)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.accountFreeze as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -379,29 +783,41 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.toggleCards}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Require Admin Approval for Refunds</span>
                       <span className={styles.toggleSub}>All refund requests must be approved by an admin</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.adminRefunds ? styles.toggleSwitchOff : ''}`} onClick={() => set('adminRefunds', !draft.adminRefunds)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.adminRefunds ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.adminRefunds ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("adminRefunds", !draft.adminRefunds)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.adminRefunds as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                  <div style={{ height: '1px', background: '#F3F4F6' }}></div>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Require Admin Approval for Deposits</span>
                       <span className={styles.toggleSub}>Manual approval needed for deposit releases</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.adminDeposits ? styles.toggleSwitchOff : ''}`} onClick={() => set('adminDeposits', !draft.adminDeposits)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.adminDeposits ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.adminDeposits ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("adminDeposits", !draft.adminDeposits)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.adminDeposits as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                  <div style={{ height: '1px', background: '#F3F4F6' }}></div>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <div className={styles.toggleTitleWrap}>
                         <span className={styles.toggleTitle}>Multi-Step Verification</span>
@@ -409,8 +825,14 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require multiple verification steps for high-risk operations</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.multiStep ? styles.toggleSwitchOff : ''}`} onClick={() => set('multiStep', !draft.multiStep)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.multiStep ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.multiStep ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("multiStep", !draft.multiStep)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.multiStep as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -429,14 +851,14 @@ export default function SecuritySettingsPage() {
                   <input
                     type="text"
                     className={styles.inputBox}
-                    value={draft.highValueTransactionThreshold ?? "10000"}
-                    onChange={e => set('highValueTransactionThreshold', e.target.value)}
+                    value={(draft.highValueTransactionThreshold as string) ?? "10000"}
+                    onChange={(e) => set("highValueTransactionThreshold", e.target.value)}
                   />
                   <span className={styles.inputSub}>Transactions above this amount are flagged as high-value</span>
                 </div>
 
-                <div className={styles.toggleCards} style={{ marginTop: '16px' }}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF', padding: '0' }}>
+                <div className={styles.toggleCards} style={{ marginTop: "16px" }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF", padding: "0" }}>
                     <div className={styles.toggleInfo}>
                       <div className={styles.toggleTitleWrap}>
                         <span className={styles.toggleTitle}>Enable Extra Verification Above Threshold</span>
@@ -444,8 +866,14 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Require additional OTP and admin approval for high-value transactions</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.extraVerification ? styles.toggleSwitchOff : ''}`} onClick={() => set('extraVerification', !draft.extraVerification)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.extraVerification ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.extraVerification ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("extraVerification", !draft.extraVerification)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.extraVerification as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -453,174 +881,8 @@ export default function SecuritySettingsPage() {
             </>
           )}
 
-          {activeTab === "Device Management" && (
+          {activeTab === "Device Rules" && (
             <>
-              {(() => {
-                const { data: sessionsData, loading: sessionsLoading, refetch: refetchSessions } = useQuery(GET_USER_SESSIONS);
-                const [logoutDevice] = useMutation(LOGOUT_DEVICE);
-                const [logoutAllDevices, { loading: logoutAllLoading }] = useMutation(LOGOUT_ALL_DEVICES);
-                const { user } = useAuth();
-                const sessions = sessionsData?.myActiveSessions ?? [];
-
-                // Decode JWT to extract session identifier for current-device detection.
-                const getCurrentSessionId = (): string | null => {
-                  try {
-                    const token = getAccessToken();
-                    if (!token) return null;
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    return payload.sid ?? payload.jti ?? payload.sessionId ?? null;
-                  } catch {
-                    return null;
-                  }
-                };
-                const currentSessionId = getCurrentSessionId();
-
-                const handleLogoutDevice = async (sessionId: string) => {
-                  try {
-                    await logoutDevice({ variables: { id: sessionId } });
-                    toast.success('Device logged out');
-                    refetchSessions();
-                  } catch {
-                    toast.error('Failed to logout device');
-                  }
-                };
-
-                const handleLogoutAll = async () => {
-                  try {
-                    const count = await logoutAllDevices();
-                    toast.success(`Logged out ${count} device(s)`);
-                    refetchSessions();
-                  } catch {
-                    toast.error('Failed to logout all devices');
-                  }
-                };
-
-                const parseUserAgent = (ua: string | null | undefined): { device: string; browser: string; os: string } => {
-                  if (!ua) return { device: 'Unknown', browser: 'Unknown', os: 'Unknown' };
-                  const lower = ua.toLowerCase();
-                  let device = 'Desktop';
-                  let browser = 'Unknown';
-                  let os = 'Unknown';
-
-                  if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) device = 'Mobile';
-                  else if (lower.includes('tablet') || lower.includes('ipad')) device = 'Tablet';
-
-                  if (lower.includes('chrome') && !lower.includes('edg')) browser = 'Chrome';
-                  else if (lower.includes('safari') && !lower.includes('chrome')) browser = 'Safari';
-                  else if (lower.includes('firefox')) browser = 'Firefox';
-                  else if (lower.includes('edg')) browser = 'Edge';
-
-                  if (lower.includes('windows')) os = 'Windows';
-                  else if (lower.includes('mac os') || lower.includes('macintosh')) os = 'macOS';
-                  else if (lower.includes('linux')) os = 'Linux';
-                  else if (lower.includes('android')) os = 'Android';
-                  else if (lower.includes('iphone') || lower.includes('ipad')) os = 'iOS';
-
-                  return { device, browser, os };
-                };
-
-                const formatSessionTime = (iso: string): string => {
-                  const date = new Date(iso);
-                  const now = new Date();
-                  const diffMs = now.getTime() - date.getTime();
-                  const diffMins = Math.floor(diffMs / 60000);
-                  if (diffMins < 1) return 'Active now';
-                  if (diffMins < 60) return `Active ${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-                  const diffHrs = Math.floor(diffMins / 60);
-                  if (diffHrs < 24) return `Active ${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
-                  const diffDays = Math.floor(diffHrs / 24);
-                  if (diffDays < 7) return `Active ${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-                  return `Active since ${date.toLocaleDateString()}`;
-                };
-
-                const formatExpiry = (iso: string): string => {
-                  const date = new Date(iso);
-                  const now = new Date();
-                  const diffMs = date.getTime() - now.getTime();
-                  if (diffMs <= 0) {
-                    const diffAgo = now.getTime() - date.getTime();
-                    const minsAgo = Math.floor(diffAgo / 60000);
-                    if (minsAgo < 60) return `Expired ${minsAgo} min${minsAgo > 1 ? 's' : ''} ago`;
-                    const hrsAgo = Math.floor(minsAgo / 60);
-                    if (hrsAgo < 24) return `Expired ${hrsAgo} hr${hrsAgo > 1 ? 's' : ''} ago`;
-                    const daysAgo = Math.floor(hrsAgo / 24);
-                    return `Expired ${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`;
-                  }
-                  const diffDays = Math.floor(diffMs / 86400000);
-                  const diffHrs = Math.floor(diffMs / 3600000);
-                  const diffMins = Math.floor(diffMs / 60000);
-                  if (diffMins < 60) return `Expires in ${diffMins} min${diffMins > 1 ? 's' : ''}`;
-                  if (diffHrs < 24) return `Expires in ${diffHrs} hr${diffHrs > 1 ? 's' : ''}`;
-                  if (diffDays < 7) return `Expires in ${diffDays} day${diffDays > 1 ? 's' : ''}`;
-                  return `Expires ${date.toLocaleDateString()}`;
-                };
-
-                return (
-                  <>
-                    <div className={styles.contentCard}>
-                      <div className={styles.formHeader}>
-                        <div className={styles.formHeaderLeft}>
-                          <div className={styles.formIcon}>{Icons.monitor}</div>
-                          <h2 className={styles.formTitle}>Active Devices</h2>
-                          <span className={styles.inputSub} style={{ marginLeft: '8px' }}>
-                            {sessionsLoading ? 'Loading...' : `${sessions.length} device${sessions.length !== 1 ? 's' : ''} currently active`}
-                          </span>
-                        </div>
-                        <div
-                          className={styles.formHeaderRight}
-                          onClick={handleLogoutAll}
-                          style={{ cursor: logoutAllLoading ? 'not-allowed' : 'pointer', opacity: logoutAllLoading ? 0.6 : 1 }}
-                        >
-                          {Icons.logOut} Logout All Devices
-                        </div>
-                      </div>
-
-                      <div className={styles.deviceList}>
-                        {sessionsLoading && (
-                          <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>Loading devices...</div>
-                        )}
-                        {!sessionsLoading && sessions.length === 0 && (
-                          <div style={{ padding: '24px', textAlign: 'center', color: '#6B7280' }}>No active devices found.</div>
-                        )}
-                        {sessions.map((session: any) => {
-                          const { device, browser, os } = parseUserAgent(session.userAgent);
-                          const isCurrent = session.id === currentSessionId;
-                          return (
-                            <div className={styles.deviceCard} key={session.id}>
-                              <div className={styles.deviceInfoLeft}>
-                                <div className={`${styles.iconWrap} ${styles.iconWrapOutline}`}>
-                                  {device === 'Mobile' ? Icons.smartphone : device === 'Tablet' ? Icons.smartphone : Icons.monitor}
-                                </div>
-                                <div className={styles.deviceInfoText}>
-                                  <div className={styles.deviceNameWrap}>
-                                    <span className={styles.deviceName}>{`${os} ${device}`}</span>
-                                    {isCurrent && <span className={styles.deviceTagOrange}>Current Device</span>}
-                                  </div>
-                                  <div className={styles.deviceMeta}>
-                                    <span className={styles.deviceMetaItem}>{`🌐 ${browser}`}</span>
-                                    <span className={styles.deviceMetaItem}>{`📍 ${session.ipAddress ?? 'Unknown location'}`}</span>
-                                    <span className={styles.deviceMetaItem}>{`🕒 ${formatSessionTime(session.createdAt)}`}</span>
-                                    <span className={styles.deviceMetaItem}>{`⏱ ${formatExpiry(session.expiresAt)}`}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {isCurrent ? (
-                                <button className={styles.deviceLogoutBtn} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>{Icons.logOut} Current</button>
-                              ) : (
-                                <button
-                                  className={styles.deviceLogoutBtn}
-                                  onClick={() => handleLogoutDevice(session.id)}
-                                >{Icons.logOut} Logout</button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
               <div className={styles.contentCard}>
                 <div className={styles.formHeader}>
                   <div className={styles.formHeaderLeft}>
@@ -630,18 +892,24 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.toggleCards}>
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleTitle}>Allow Multiple Devices</span>
                       <span className={styles.toggleSub}>Users can be logged in from multiple devices simultaneously</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.allowMultipleDevices ? styles.toggleSwitchOff : ''}`} onClick={() => set('allowMultipleDevices', !draft.allowMultipleDevices)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.allowMultipleDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.allowMultipleDevices ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("allowMultipleDevices", !draft.allowMultipleDevices)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.allowMultipleDevices as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
-                  <div style={{ height: '1px', background: '#F3F4F6' }}></div>
+                  <div style={{ height: "1px", background: "#F3F4F6" }}></div>
 
-                  <div className={styles.toggleCard} style={{ border: 'none', background: '#FFFFFF' }}>
+                  <div className={styles.toggleCard} style={{ border: "none", background: "#FFFFFF" }}>
                     <div className={styles.toggleInfo}>
                       <div className={styles.toggleTitleWrap}>
                         <span className={styles.toggleTitle}>Require Verification for New Devices</span>
@@ -649,19 +917,25 @@ export default function SecuritySettingsPage() {
                       </div>
                       <span className={styles.toggleSub}>Send verification code when users login from unrecognized devices</span>
                     </div>
-                    <div className={`${styles.toggleSwitch} ${!draft.requireVerificationNewDevices ? styles.toggleSwitchOff : ''}`} onClick={() => set('requireVerificationNewDevices', !draft.requireVerificationNewDevices)}>
-                      <div className={styles.toggleKnob} style={{ transform: draft.requireVerificationNewDevices ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
+                    <div
+                      className={`${styles.toggleSwitch} ${!draft.requireVerificationNewDevices ? styles.toggleSwitchOff : ""}`}
+                      onClick={() => set("requireVerificationNewDevices", !draft.requireVerificationNewDevices)}
+                    >
+                      <div
+                        className={styles.toggleKnob}
+                        style={{ transform: (draft.requireVerificationNewDevices as boolean) ? "translateX(24px)" : "translateX(0px)", transition: "transform 0.2s" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
 
-                <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
+                <div className={styles.inputGroup} style={{ marginTop: "16px" }}>
                   <label className={styles.inputLabel}>Device Trust Duration</label>
                   <select
                     className={`${styles.inputBox} ${styles.selectBox}`}
-                    style={{ background: '#F9FAFB' }}
-                    value={draft.deviceTrustDuration ?? "30 days"}
-                    onChange={e => set('deviceTrustDuration', e.target.value)}
+                    style={{ background: "#F9FAFB" }}
+                    value={(draft.deviceTrustDuration as string) ?? "30 days"}
+                    onChange={(e) => set("deviceTrustDuration", e.target.value)}
                   >
                     <option value="7 days">7 days</option>
                     <option value="30 days">30 days</option>
@@ -673,12 +947,10 @@ export default function SecuritySettingsPage() {
               </div>
             </>
           )}
-
         </div>
 
         {/* RIGHT COLUMN */}
         <div className={styles.rightCol}>
-
           {activeTab === "Authentication" && (
             <div className={styles.contentCardSmallPadding}>
               <div className={styles.rightPanelTitleWrap}>
@@ -696,133 +968,19 @@ export default function SecuritySettingsPage() {
                 </div>
 
                 <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.fingerprint}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Biometric Authentication</span>
+                    <span className={styles.infoBoxText}>Use fingerprint or face recognition for quick and secure access without remembering passwords.</span>
+                  </div>
+                </div>
+
+                <div className={styles.infoBox}>
                   <div className={styles.infoBoxIcon}>{Icons.clock}</div>
                   <div className={styles.infoBoxContent}>
                     <span className={styles.infoBoxTitle}>Session Management</span>
-                    <span className={styles.infoBoxText}>Session timeout logs users out after <b>30 minutes</b> of inactivity to prevent unauthorized access from unattended devices.</span>
+                    <span className={styles.infoBoxText}>Automatic session timeout protects against unauthorized access from unattended devices.</span>
                   </div>
-                </div>
-              </div>
-
-              <div className={styles.warningBox} style={{ marginTop: '16px' }}>
-                <div className={styles.warningBoxIcon}>{Icons.alertTriangle}</div>
-                <div className={styles.infoBoxContent}>
-                  <span className={styles.warningBoxTitle}>Device Verification Disabled</span>
-                  <span className={styles.warningBoxText}>Users can login from any device without verification. Consider enabling for enhanced security.</span>
-                </div>
-              </div>
-
-              <div className={styles.bulletListWrap}>
-                <div className={styles.bulletListTitle}>Security Best Practices</div>
-                <ul className={styles.bulletList}>
-                  <li>Enable OTP for all admin and manager accounts</li>
-                  <li>Enable device verification to prevent unauthorized access</li>
-                  <li>Disable concurrent sessions for financial operations</li>
-                </ul>
-              </div>
-
-              <div className={styles.summaryList} style={{ border: 'none', background: '#FFFFFF' }}>
-                <div className={styles.summaryListTitle} style={{ marginBottom: '12px' }}>Active Security Features</div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>OTP Required</span>
-                  <span className={styles.summaryValueOrange}>Yes</span>
-                </div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Auto Logout</span>
-                  <span className={styles.summaryValueOrange}>Enabled</span>
-                </div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Concurrent Sessions</span>
-                  <span className={styles.summaryValueOrange}>Restricted</span>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {activeTab === "Verification Rules" && (
-            <div className={styles.contentCardSmallPadding}>
-              <div className={styles.rightPanelTitleWrap}>
-                <div className={styles.rightPanelTitleIcon}>{Icons.shield}</div>
-                <h3 className={styles.rightPanelTitle}>Risk & Impact</h3>
-              </div>
-
-              <div className={styles.infoBoxList}>
-                <div className={styles.infoBox}>
-                  <div className={styles.infoBoxIcon}>{Icons.shieldCheck}</div>
-                  <div className={styles.infoBoxContent}>
-                    <span className={styles.infoBoxTitle}>Transaction Security</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ color: '#FF7847' }}>✓</span>
-                        <span className={styles.infoBoxText}>Refund transactions require OTP verification</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ color: '#FF7847' }}>✓</span>
-                        <span className={styles.infoBoxText}>Deposit releases require OTP verification</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ color: '#FF7847' }}>✓</span>
-                        <span className={styles.infoBoxText}>Account freeze requires confirmation</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={styles.infoBox}>
-                  <div className={styles.infoBoxIcon}>{Icons.clipboardCheck}</div>
-                  <div className={styles.infoBoxContent}>
-                    <span className={styles.infoBoxTitle}>Approval Requirements</span>
-                    <ul className={styles.bulletList} style={{ marginTop: '8px' }}>
-                      <li>Refund actions require admin approval</li>
-                      <li>Multi-step verification enabled for critical operations</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className={styles.infoBox}>
-                  <div className={styles.infoBoxIcon}>{Icons.trendingUp}</div>
-                  <div className={styles.infoBoxContent}>
-                    <span className={styles.infoBoxTitle}>High-Value Transactions</span>
-                    <span className={styles.infoBoxText}>Transactions above <b>₹10,000</b> require OTP verification and admin approval.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.bulletListWrap}>
-                <div className={styles.bulletListTitle}>Example Scenarios</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ background: '#FFFFFF', padding: '12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1F2937' }}>Regular Refund (₹2,500)</span>
-                    <ul className={styles.bulletList} style={{ marginTop: '8px' }}>
-                      <li>OTP required</li>
-                      <li>Admin approval needed</li>
-                    </ul>
-                  </div>
-                  <div style={{ background: '#FFFFFF', padding: '12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#1F2937' }}>High-Value Refund (₹15,000)</span>
-                    <ul className={styles.bulletList} style={{ marginTop: '8px' }}>
-                      <li>OTP verification required</li>
-                      <li>Admin approval mandatory</li>
-                      <li>Multi-step verification active</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.summaryList} style={{ border: 'none', background: '#FFFFFF' }}>
-                <div className={styles.summaryListTitle} style={{ marginBottom: '12px' }}>Active Verifications</div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Refund OTP</span>
-                  <span className={styles.summaryValueOrange}>Required</span>
-                </div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Admin Approval</span>
-                  <span className={styles.summaryValueOrange}>Active</span>
-                </div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Multi-Step</span>
-                  <span className={styles.summaryValueOrange}>Enabled</span>
                 </div>
               </div>
             </div>
@@ -831,49 +989,49 @@ export default function SecuritySettingsPage() {
           {activeTab === "Device Management" && (
             <div className={styles.contentCardSmallPadding}>
               <div className={styles.rightPanelTitleWrap}>
-                <div className={styles.rightPanelTitleIcon}>{Icons.shield}</div>
-                <h3 className={styles.rightPanelTitle}>Device Activity</h3>
+                <div className={styles.rightPanelTitleIcon}>{Icons.monitor}</div>
+                <h3 className={styles.rightPanelTitle}>Device Summary</h3>
               </div>
 
               <div className={styles.infoBoxList}>
                 <div className={styles.statBox}>
-                  <div className={styles.infoBoxIcon}>{Icons.monitor}</div>
+                  <div className={styles.statBoxIconWrap}>{Icons.monitor}</div>
                   <div className={styles.statBoxContent}>
-                    <span className={styles.statBoxTitle}>Active Devices</span>
+                    <span className={styles.statBoxTitle}>Active Sessions</span>
                     <span className={styles.statBoxValue}>3</span>
-                    <span className={styles.statBoxSub}>Devices currently logged in</span>
+                    <span className={styles.statBoxSub}>Across 3 devices</span>
                   </div>
                 </div>
 
                 <div className={styles.statBox}>
-                  <div className={styles.infoBoxIcon}>{Icons.clock}</div>
+                  <div className={styles.statBoxIconWrap}>{Icons.alertTriangle}</div>
                   <div className={styles.statBoxContent}>
                     <span className={styles.statBoxTitle}>Last Login</span>
-                    <span className={styles.statBoxText}>2 hours ago <span style={{ color: '#6B7280', fontWeight: '400' }}>from Mumbai, Maharashtra</span></span>
+                    <span className={styles.statBoxText}>2 hours ago <span style={{ color: "#6B7280", fontWeight: "400" }}>from Mumbai, Maharashtra</span></span>
                     <span className={styles.statBoxSub}>MacBook Pro • Chrome 120</span>
                   </div>
                 </div>
               </div>
 
-              <div className={styles.summaryList} style={{ border: 'none', background: '#FFFFFF', padding: '16px 0' }}>
-                <div className={styles.summaryListTitle} style={{ marginBottom: '12px' }}>Device Types</div>
+              <div className={styles.summaryList} style={{ border: "none", background: "#FFFFFF", padding: "16px 0" }}>
+                <div className={styles.summaryListTitle} style={{ marginBottom: "12px" }}>Device Types</div>
                 <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#FF7847' }}>{Icons.monitor}</span> Desktop
+                  <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ color: "#FF7847" }}>{Icons.monitor}</span> Desktop
                   </span>
-                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
                 </div>
-                <div className={styles.summaryRow} style={{ marginTop: '12px' }}>
-                  <span className={styles.summaryLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#FF7847' }}>{Icons.smartphone}</span> Mobile
+                <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
+                  <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ color: "#FF7847" }}>{Icons.smartphone}</span> Mobile
                   </span>
-                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
                 </div>
-                <div className={styles.summaryRow} style={{ marginTop: '12px' }}>
-                  <span className={styles.summaryLabel} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#FF7847' }}>{Icons.monitor}</span> Tablet
+                <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
+                  <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ color: "#FF7847" }}>{Icons.monitor}</span> Tablet
                   </span>
-                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
                 </div>
               </div>
 
@@ -886,29 +1044,95 @@ export default function SecuritySettingsPage() {
                 </ul>
               </div>
 
-              <div className={styles.summaryList} style={{ border: 'none', background: '#FFFFFF', padding: '16px 0 0 0' }}>
-                <div className={styles.summaryListTitle} style={{ marginBottom: '12px' }}>Active Rules</div>
+              <div className={styles.summaryList} style={{ border: "none", background: "#FFFFFF", padding: "16px 0 0 0" }}>
+                <div className={styles.summaryListTitle} style={{ marginBottom: "12px" }}>Active Rules</div>
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryLabel}>Multiple Devices</span>
                   <span className={styles.summaryValueOrange}>Allowed</span>
                 </div>
-                <div className={styles.summaryRow} style={{ marginTop: '12px' }}>
+                <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel}>Verification</span>
                   <span className={styles.summaryValueOrange}>Required</span>
                 </div>
-                <div className={styles.summaryRow} style={{ marginTop: '12px' }}>
+                <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel}>Trust Duration</span>
-                  <span className={styles.summaryValue} style={{ color: '#1F2937' }}>{draft.deviceTrustDuration ?? "30 days"}</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>30 days</span>
                 </div>
               </div>
-
             </div>
           )}
 
+          {activeTab === "Verification Rules" && (
+            <div className={styles.contentCardSmallPadding}>
+              <div className={styles.rightPanelTitleWrap}>
+                <div className={styles.rightPanelTitleIcon}>{Icons.shieldCheck}</div>
+                <h3 className={styles.rightPanelTitle}>Verification Overview</h3>
+              </div>
+
+              <div className={styles.infoBoxList}>
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.shieldCheck}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Transaction OTP</span>
+                    <span className={styles.infoBoxText}>Critical financial operations require OTP verification to prevent unauthorized transactions.</span>
+                  </div>
+                </div>
+
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.clipboardCheck}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Approval Workflows</span>
+                    <span className={styles.infoBoxText}>High-value operations require admin approval before execution.</span>
+                  </div>
+                </div>
+
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.trendingUp}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Risk-Based Rules</span>
+                    <span className={styles.infoBoxText}>Transactions above the threshold require additional verification steps.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "Device Rules" && (
+            <div className={styles.contentCardSmallPadding}>
+              <div className={styles.rightPanelTitleWrap}>
+                <div className={styles.rightPanelTitleIcon}>{Icons.monitor}</div>
+                <h3 className={styles.rightPanelTitle}>Device Policy</h3>
+              </div>
+
+              <div className={styles.infoBoxList}>
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.monitor}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Multi-Device Access</span>
+                    <span className={styles.infoBoxText}>Users can access their account from multiple devices simultaneously for convenience.</span>
+                  </div>
+                </div>
+
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.lock}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>New Device Verification</span>
+                    <span className={styles.infoBoxText}>Unrecognized devices trigger an OTP verification before granting access.</span>
+                  </div>
+                </div>
+
+                <div className={styles.infoBox}>
+                  <div className={styles.infoBoxIcon}>{Icons.clock}</div>
+                  <div className={styles.infoBoxContent}>
+                    <span className={styles.infoBoxTitle}>Trust Duration</span>
+                    <span className={styles.infoBoxText}>Devices are trusted for a configurable period before re-verification is required.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
       </div>
-
     </div>
   );
 }

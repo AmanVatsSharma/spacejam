@@ -23,6 +23,7 @@ import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 import { UserRole as UR } from '../../auth/roles.enum';
 import {
   CreateCenterInput,
@@ -289,6 +290,7 @@ export class FloorResolver {
     private readonly pubSub: PubSubService,
   ) {}
 
+  @Public()
   @Query(() => [FloorEntity])
   async floors(@Args('centerId', { type: () => ID, nullable: true }) centerId?: string): Promise<FloorEntity[]> {
     const where: any = centerId ? { centerId, active: true } : { active: true };

@@ -229,7 +229,6 @@ export class MeetingRoomResolver {
   }
 
   @Mutation(() => MeetingRoom)
-  @UseGuards(GqlAuthGuard)
   async bookRoom(
     @Args('roomId') roomId: string,
     @Args('centerId') centerId: string,
@@ -237,8 +236,7 @@ export class MeetingRoomResolver {
     @Args('startTime') startTime: string,
     @Args('endTime') endTime: string,
     @Args('title') title: string,
-    @CurrentUser() user: JwtPayload,
-    @Args('requestedBy', { nullable: true }) requestedBy?: string,
+    @Args('requestedBy') requestedBy: string,
     @Args('description', { nullable: true }) description?: string,
     @Args('attendeesCount', { nullable: true }) attendeesCount?: number,
   ): Promise<MeetingRoom> {
@@ -282,7 +280,7 @@ export class MeetingRoomResolver {
     const event = this.eventRepo.create({
       centerId,
       meetingRoomId: roomId,
-      requestedById: requestedBy ?? user.sub,
+      requestedById: requestedBy,
       title,
       description: description ?? null,
       eventDate: eventDateObj,
@@ -307,7 +305,7 @@ export class MeetingRoomResolver {
     });
     if (bookedRoom) {
       const notif = this.notifRepo.create({
-        userId: user.sub,
+        userId: requestedBy,
         centerId: bookedRoom.centerId,
         title: `Room "${bookedRoom.name}" booked`,
         message: `You have booked ${bookedRoom.name} on ${eventDate} from ${startTime} to ${endTime}.`,
