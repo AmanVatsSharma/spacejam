@@ -10,7 +10,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { RevenueService } from './revenue.service';
 
-@Controller('api/revenue')
+@Controller('revenue')
 export class RevenueController {
   constructor(private readonly revenueService: RevenueService) {}
 

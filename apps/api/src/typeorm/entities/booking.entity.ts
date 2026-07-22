@@ -25,6 +25,7 @@ import { Seat } from './seat.entity';
 import { Center } from './center.entity';
 import { Payment } from './payment.entity';
 import { MeetingRoom } from './meeting-room.entity';
+import { Customer } from './customer.entity';
 
 @ObjectType()
 @Entity('bookings')
@@ -36,6 +37,15 @@ export class Booking {
   @Field(() => ID, { nullable: true })
   @Column({ name: 'userId', nullable: true })
   userId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'customerId', type: 'uuid', nullable: true })
+  customerId?: string;
+
+  @Field(() => Customer, { nullable: true })
+  @ManyToOne(() => Customer, (customer) => customer.bookings)
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
 
   @Field(() => ID)
   @Column({ name: 'seatId', nullable: true })

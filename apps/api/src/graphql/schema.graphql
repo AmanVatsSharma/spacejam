@@ -105,6 +105,10 @@ type Query {
   discounts(filters: DiscountFiltersInput): [Discount!]!
   discount(id: ID!): Discount
 
+  # Audit Log
+  auditLogs(filters: AuditLogFiltersInput): [AuditLog!]!
+  auditLogStatistics(filters: AuditLogFiltersInput): AuditLogStatistics!
+
   # Notifications
   notifications(filters: NotificationFiltersInput): [Notification!]!
   notification(id: ID!): Notification

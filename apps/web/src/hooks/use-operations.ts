@@ -36,7 +36,7 @@ const GET_MEETING_ROOM = gql`
       id name roomType capacity status locationName floorId centerId
       minBookingDuration maxBookingDuration amenities hourlyRate active
       center { id name }
-      bookings { id title eventDate startTime endTime status }
+      bookings { id startDate endDate status }
     }
   }
 `;

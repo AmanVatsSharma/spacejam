@@ -72,7 +72,7 @@ export function AddRequestModal({ open, onClose }: AddRequestModalProps) {
     }
 
     const input: Record<string, unknown> = {
-      requestType: form.type,
+      type: form.type,
       title: form.title.trim(),
       description: form.description.trim(),
       urgency: form.urgency,

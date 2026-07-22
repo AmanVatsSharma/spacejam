@@ -47,6 +47,7 @@ export class BookingResolver {
     if (filters) {
       if (filters.centerId) where.centerId = filters.centerId;
       if (filters.userId) where.userId = filters.userId;
+      if (filters.customerId) where.customerId = filters.customerId;
       if (filters.status) where.status = filters.status;
       if (filters.startDate) where.startDate = { gte: filters.startDate };
       if (filters.endDate) where.endDate = { lte: filters.endDate };
@@ -54,7 +55,7 @@ export class BookingResolver {
 
     const bookings = await this.bookingRepo.find({
       where,
-      relations: ['user', 'seat', 'seat.floor', 'center', 'payment'],
+      relations: ['user', 'seat', 'seat.floor', 'center', 'payment', 'customer'],
       order: { createdAt: 'desc' },
     });
 
@@ -129,6 +130,7 @@ export class BookingResolver {
     const newBooking = this.bookingRepo.create({
       ...input,
       userId,
+      customerId: input.customerId || null,
       centerId: seat.floor.id, // floor has center relation
       totalPrice: seat.price,
     });

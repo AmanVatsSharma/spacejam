@@ -12,18 +12,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { CrmResolver } from '../graphql/resolvers/crm.resolver';
 import { CustomerResolver } from '../graphql/resolvers/customer.resolver';
+import { OnboardingResolver } from '../graphql/resolvers/onboarding.resolver';
 import { Lead } from '../typeorm/entities/lead.entity';
 import { Customer } from '../typeorm/entities/customer.entity';
+import { Onboarding } from '../typeorm/entities/onboarding.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Lead, Customer]),
+    TypeOrmModule.forFeature([Lead, Customer, Onboarding]),
     CacheModule,
   ],
   providers: [
     CrmResolver,
     CustomerResolver,
+    OnboardingResolver,
   ],
-  exports: [CrmResolver, CustomerResolver],
+  exports: [CrmResolver, CustomerResolver, OnboardingResolver],
 })
 export class CrmModule { }

@@ -7,14 +7,14 @@
  * Last-updated: 2026-07-20
  */
 import { Field, InputType, ID, Int } from '@nestjs/graphql';
-import { RecurrencePattern as RecurrencePatternEnum } from '../../typeorm/entities/recurring-booking.entity';
+import { RecurrencePatternEnum } from '../enums/recurrence-pattern.enum';
 
 @InputType()
 export class CreateRecurringBookingInput {
   @Field() title!: string;
   @Field(() => ID) roomId!: string;
   @Field(() => ID) centerId!: string;
-  @Field(() => ID) userId!: string;
+  @Field(() => ID, { nullable: true }) userId?: string;
   @Field(() => RecurrencePatternEnum) pattern!: RecurrencePatternEnum;
   @Field(() => [Int], { nullable: true }) daysOfWeek?: number[];
   @Field() startDate!: string;

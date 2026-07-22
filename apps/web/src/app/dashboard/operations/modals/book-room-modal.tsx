@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { useQuery } from "@apollo/client";
 import { useBookRoom, useMeetingRooms } from "@/hooks/use-operations";
 import { useRecurringBookingMutations } from "@/hooks/use-enterprise";
-import { GET_BOOKINGS } from "@/lib/apollo/operations";
+import { GET_EVENTS } from "@/lib/apollo/operations";
 
 export interface BookRoomModalProps {
   open: boolean;
@@ -91,33 +91,30 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
   const attendeesExceedCapacity =
     roomCapacity !== null && attendees > 0 && attendees > roomCapacity;
 
-  const conflictQuery = useQuery(GET_BOOKINGS, {
+  const conflictQuery = useQuery(GET_EVENTS, {
     variables: {
       filters: {
-        centerId: selectedRoom?.centerId ?? centerId ?? undefined,
-        startDate: form.eventDate ? new Date(form.eventDate) : undefined,
-        endDate: form.eventDate
-          ? new Date(new Date(form.eventDate).getTime() + 24 * 60 * 60 * 1000)
-          : undefined,
-      },
+        meetingRoomId: form.roomId,
+        eventDate: form.eventDate,
+        type: "MEETING_ROOM",
+      } as any,
     },
     skip: !form.roomId || !form.eventDate,
     fetchPolicy: "cache-and-network",
   });
 
   const conflictingBookings = useMemo(() => {
-    if (!conflictQuery.data?.bookings || !form.roomId || !form.startTime || !form.endTime) {
+    if (!conflictQuery.data?.events || !form.roomId || !form.startTime || !form.endTime) {
       return [];
     }
     const selectedStart = new Date(`${form.eventDate}T${form.startTime}`).getTime();
     const selectedEnd = new Date(`${form.eventDate}T${form.endTime}`).getTime();
-    return conflictQuery.data.bookings.filter((b: any) => {
-      if (!b.meetingRoom?.id || b.meetingRoom.id !== form.roomId) return false;
-      if (["CANCELLED", "NO_SHOW"].includes(b.status)) return false;
-      const bStart = new Date(b.startDate).getTime();
-      const bEnd = new Date(b.endDate).getTime();
-      if (isNaN(bStart) || isNaN(bEnd)) return false;
-      return bStart < selectedEnd && bEnd > selectedStart;
+    return conflictQuery.data.events.filter((ev: any) => {
+      if (ev.status === 'CANCELLED') return false;
+      const evStart = new Date(`${ev.eventDate}T${ev.startTime ?? '00:00'}`).getTime();
+      const evEnd = new Date(`${ev.eventDate}T${ev.endTime ?? '23:59'}`).getTime();
+      if (isNaN(evStart) || isNaN(evEnd)) return false;
+      return evStart < selectedEnd && evEnd > selectedStart;
     });
   }, [conflictQuery.data, form.roomId, form.eventDate, form.startTime, form.endTime]);
 

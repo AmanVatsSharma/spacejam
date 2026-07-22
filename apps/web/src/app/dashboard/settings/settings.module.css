@@ -645,3 +645,31 @@
   animation: fadeInUp 0.4s ease-out forwards;
   animation-delay: calc(var(--i) * 60ms);
 }
+
+/* ---------------- Audit Log ---------------- */
+.auditLogContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+.auditLogTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.auditLogTable th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 2px solid #E5E7EB;
+  color: #6A7282;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.auditLogTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #F3F4F6;
+  color: #1F1F1F;
+  vertical-align: top;
+}
+.auditLogTable tr:hover td {
+  background: #FBF6F4;
+}

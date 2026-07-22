@@ -16,7 +16,7 @@ import styles from "./meeting-room.module.css";
 import { BookRoomModal, BookRoomModalProps } from "../modals/book-room-modal";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 import { useQuery } from "@apollo/client";
-import { GET_BOOKINGS, GET_MY_CENTERS } from "@/lib/apollo/operations";
+import { GET_EVENTS, GET_MY_CENTERS } from "@/lib/apollo/operations";
 import { ViewDetailsModal } from "./view-details-modal";
 import { MeetingRoomFormModal } from "./meeting-room-form-modal";
 
@@ -101,66 +101,6 @@ export default function MeetingRoomsPage() {
   } as any);
   const { cancelBooking } = useCancelRoomBooking();
 
-  const { data: bookingsData } = useQuery(GET_BOOKINGS);
-
-  const displayRooms: RoomCard[] = rooms.map((r: any) => ({
-    id: r.id,
-    name: r.name,
-    capacity: r.capacity ?? 4,
-    status: (r.status ?? "AVAILABLE").toLowerCase() as RoomStatus,
-    booking: undefined,
-  }));
-
-  const roomIdToBooking = useMemo(() => {
-    if (!bookingsData?.bookings || !displayRooms.length) return {} as Record<string, any>;
-    const roomIds = new Set(displayRooms.map((r: any) => r.id));
-    const map: Record<string, any> = {};
-    bookingsData.bookings.forEach((b: any) => {
-      if (b.meetingRoom?.id && roomIds.has(b.meetingRoom.id) && (b.status === 'CONFIRMED' || b.status === 'BOOKED')) {
-        map[b.meetingRoom.id] = b;
-      }
-    });
-    return map;
-  }, [bookingsData, displayRooms]);
-
-  const handleExtend = (room: RoomCard) => {
-    const existing = roomIdToBooking[room.id];
-    if (existing) {
-      const startDate = existing.startDate ? new Date(existing.startDate) : null;
-      const endDate = existing.endDate ? new Date(existing.endDate) : null;
-      const formatTime = (d: Date | null) => d && !isNaN(d.getTime()) ? d.toTimeString().slice(0, 5) : "";
-      const formatDate = (d: Date | null) => d && !isNaN(d.getTime()) ? d.toISOString().slice(0, 10) : "";
-      setSelectedRoomId(room.id);
-      setPrefillBooking({
-        eventDate: formatDate(startDate),
-        startTime: formatTime(startDate),
-        endTime:   formatTime(endDate),
-        title:     existing.title ?? "",
-      });
-      setShowBookRoom(true);
-    } else {
-      setSelectedRoomId(room.id);
-      setPrefillBooking(undefined);
-      setShowBookRoom(true);
-    }
-  };
-
-  const handleBook = (room: RoomCard) => {
-    setSelectedRoomId(room.id);
-    setPrefillBooking(undefined);
-    setShowBookRoom(true);
-  };
-
-  const [prefillBooking, setPrefillBooking] = useState<BookRoomModalProps['prefillBooking']>(undefined);
-  const [showRoomForm, setShowRoomForm] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<any>(null);
-  const [confirmDeleteRoom, setConfirmDeleteRoom] = useState<any>(null);
-  const { create } = useCreateMeetingRoom();
-  const { update } = useUpdateMeetingRoom();
-  const { deleteRoom } = useDeleteMeetingRoom();
-
-  const availableCount = displayRooms.filter(r => r.status === "available").length;
-
   type DateRange = "today" | "week" | "month" | "all";
   const [dateRange, setDateRange] = useState<DateRange>("all");
 
@@ -187,23 +127,92 @@ export default function MeetingRoomsPage() {
 
   const bounds = dateRangeBounds(dateRange);
 
+  const { data: eventsData } = useQuery(GET_EVENTS, {
+    variables: {
+      filters: {
+        centerId: filters.centerId || undefined,
+        meetingRoomId: undefined,
+        type: "MEETING_ROOM",
+        ...(bounds ? { startDate: bounds.start.toISOString().split('T')[0], endDate: bounds.end.toISOString().split('T')[0] } : {}),
+      } as any,
+    },
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+
+  const displayRooms: RoomCard[] = rooms.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    capacity: r.capacity ?? 4,
+    status: (r.status ?? "AVAILABLE").toLowerCase() as RoomStatus,
+    booking: undefined,
+  }));
+
+  const roomIdToBooking = useMemo(() => {
+    if (!eventsData?.events || !displayRooms.length) return {} as Record<string, any>;
+    const roomIds = new Set(displayRooms.map((r: any) => r.id));
+    const map: Record<string, any> = {};
+    eventsData.events.forEach((ev: any) => {
+      if (ev.meetingRoom?.id && roomIds.has(ev.meetingRoom.id) && (ev.status === 'CONFIRMED' || ev.status === 'PENDING')) {
+        map[ev.meetingRoom.id] = ev;
+      }
+    });
+    return map;
+  }, [eventsData, displayRooms]);
+
+  const handleExtend = (room: RoomCard) => {
+    const existing = roomIdToBooking[room.id];
+    if (existing) {
+      const startTime = existing.startTime ? existing.startTime.slice(0, 5) : "";
+      const endTime = existing.endTime ? existing.endTime.slice(0, 5) : "";
+      setSelectedRoomId(room.id);
+      setPrefillBooking({
+        eventDate: existing.eventDate,
+        startTime,
+        endTime,
+        title:     existing.title ?? "",
+      });
+      setShowBookRoom(true);
+    } else {
+      setSelectedRoomId(room.id);
+      setPrefillBooking(undefined);
+      setShowBookRoom(true);
+    }
+  };
+
+  const handleBook = (room: RoomCard) => {
+    setSelectedRoomId(room.id);
+    setPrefillBooking(undefined);
+    setShowBookRoom(true);
+  };
+
+  const [prefillBooking, setPrefillBooking] = useState<BookRoomModalProps['prefillBooking']>(undefined);
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [confirmDeleteRoom, setConfirmDeleteRoom] = useState<any>(null);
+  const { create } = useCreateMeetingRoom();
+  const { update } = useUpdateMeetingRoom();
+  const { deleteRoom } = useDeleteMeetingRoom();
+
+  const availableCount = displayRooms.filter(r => r.status === "available").length;
+
   const { bookingCount, totalHours, peakUsageStr } = useMemo(() => {
     const filtered = bounds
-      ? bookingsData?.bookings?.filter((b: any) => {
-          const start = new Date(b.startDate).getTime();
-          return !isNaN(start) && start >= bounds.start.getTime() && start <= bounds.end.getTime();
-        }) ?? []
-      : bookingsData?.bookings ?? [];
+      ? (eventsData?.events ?? []).filter((ev: any) => {
+          const evTime = new Date(`${ev.eventDate}T${ev.startTime ?? '00:00'}`).getTime();
+          return !isNaN(evTime) && evTime >= bounds.start.getTime() && evTime <= bounds.end.getTime();
+        })
+      : eventsData?.events ?? [];
 
     if (!filtered.length || !displayRooms.length) return { bookingCount: 0, totalHours: 0, peakUsageStr: "No data" };
     const roomIds = new Set(displayRooms.map((r: any) => r.id));
-    const validBookings = filtered.filter((b: any) => b.meetingRoom?.id && roomIds.has(b.meetingRoom.id));
+    const validBookings = filtered.filter((ev: any) => ev.meetingRoom?.id && roomIds.has(ev.meetingRoom.id));
 
     const count = validBookings.length;
     let hours = 0;
-    validBookings.forEach((b: any) => {
-      const start = new Date(b.startDate).getTime();
-      const end = new Date(b.endDate).getTime();
+    validBookings.forEach((ev: any) => {
+      const start = new Date(`${ev.eventDate}T${ev.startTime ?? '00:00'}`).getTime();
+      const end = new Date(`${ev.eventDate}T${ev.endTime ?? '00:00'}`).getTime();
       if (!isNaN(start) && !isNaN(end)) {
          hours += (end - start) / (1000 * 60 * 60);
       }
@@ -212,8 +221,8 @@ export default function MeetingRoomsPage() {
     let peakStr = "No data";
     if (count > 0) {
       const hourCounts: Record<number, number> = {};
-      validBookings.forEach((b: any) => {
-         const h = new Date(b.startDate).getHours();
+      validBookings.forEach((ev: any) => {
+         const h = new Date(`${ev.eventDate}T${ev.startTime ?? '00:00'}`).getHours();
          if (!isNaN(h)) hourCounts[h] = (hourCounts[h] || 0) + 1;
       });
       let maxHour = -1;
@@ -230,9 +239,9 @@ export default function MeetingRoomsPage() {
          peakStr = `${hr12} ${ampm} - ${nextHr12} ${nextAmpm}`;
       }
     }
-    
+
     return { bookingCount: count, totalHours: Math.round(hours), peakUsageStr: peakStr };
-  }, [bookingsData, displayRooms]);
+  }, [eventsData, displayRooms, bounds]);
 
   return (
     <div className={styles.page}>

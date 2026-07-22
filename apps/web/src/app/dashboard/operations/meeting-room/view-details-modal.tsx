@@ -6,11 +6,11 @@
  * Purpose:     Modal showing meeting room details + active booking + cancel action
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-06
+ * Last-updated: 2026-07-22
  */
 
 import { useQuery } from "@apollo/client";
-import { GET_BOOKINGS } from "@/lib/apollo/operations";
+import { GET_EVENTS } from "@/lib/apollo/operations";
 import { useMemo } from "react";
 
 export interface ViewDetailsModalProps {
@@ -21,13 +21,25 @@ export interface ViewDetailsModalProps {
 }
 
 export function ViewDetailsModal({ open, onClose, room, onCancelBooking }: ViewDetailsModalProps) {
-  const { data, loading } = useQuery(GET_BOOKINGS, { skip: !open || !room?.id });
+  const { data, loading } = useQuery(GET_EVENTS, {
+    variables: {
+      filters: {
+        meetingRoomId: room?.id,
+        type: "MEETING_ROOM",
+      } as any,
+    },
+    skip: !open || !room?.id,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
 
   const activeBooking = useMemo(() => {
-    if (!data?.bookings || !room?.id) return null;
-    return data.bookings.find((b: any) =>
-      b.meetingRoom?.id === room.id &&
-      (b.status === 'CONFIRMED' || b.status === 'PENDING' || b.status === 'BOOKED')
+    if (!data?.events || !room?.id) return null;
+    const today = new Date().toISOString().split('T')[0];
+    return data.events.find((ev: any) =>
+      ev.meetingRoom?.id === room.id &&
+      (ev.status === 'CONFIRMED' || ev.status === 'PENDING') &&
+      ev.eventDate >= today
     ) ?? null;
   }, [data, room?.id]);
 
@@ -78,7 +90,7 @@ export function ViewDetailsModal({ open, onClose, room, onCancelBooking }: ViewD
               <div className="bg-orange-50 border border-orange-100 rounded-lg p-3">
                 <p className="text-sm font-medium text-gray-900">{activeBooking.title ?? 'Booking'}</p>
                 <p className="text-xs text-gray-600 mt-1">
-                  {activeBooking.startDate ?? activeBooking.startTime} → {activeBooking.endDate ?? activeBooking.endTime}
+                  {activeBooking.eventDate} · {activeBooking.startTime} → {activeBooking.endTime}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">Status: {activeBooking.status}</p>
                 <button

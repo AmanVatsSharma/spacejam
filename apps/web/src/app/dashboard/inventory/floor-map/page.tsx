@@ -130,7 +130,7 @@ export default function FloorMapPage() {
 
   // Add Space modal state
   const [showAddModal, setShowAddModal] = useState(false);
-  const [seatNumber, setSeatNumber] = useState("");
+  const [seatName, setSeatName] = useState("");
   const [seatType, setSeatType] = useState("HOT_DESK");
   const [seatPrice, setSeatPrice] = useState("");
   const [adding, setAdding] = useState(false);
@@ -201,34 +201,35 @@ export default function FloorMapPage() {
   const seats = seatsData?.seats ?? [];
   const metrics = metricsData?.dashboardMetrics;
 
-  // Auto-select first floor when floors load
-  const activeFloor = useMemo(
-    () => floors.find((f: any) => f.id === activeFloorId) ?? floors[0] ?? null,
-    [floors, activeFloorId]
-  );
-
-  // Auto-select first center when centers load
   const activeCenter = useMemo(
-    () =>
-      (centersData?.centers ?? []).find((c: any) => c.id === activeCenterId)
-      ?? (centersData?.centers ?? [])[0]
-      ?? null,
+    () => (centersData?.centers ?? []).find((c: any) => c.id === activeCenterId) ?? null,
     [centersData, activeCenterId]
   );
 
-  // Auto-select first floor when center changes or floors load
+  const activeFloor = useMemo(
+    () => floors.find((f: any) => f.id === activeFloorId) ?? null,
+    [floors, activeFloorId]
+  );
+
+  // Auto-select first center when centers load and none selected
+  useEffect(() => {
+    const centers = centersData?.centers ?? [];
+    if (centers.length > 0 && !activeCenterId) {
+      setActiveCenterId(centers[0].id);
+    }
+  }, [centersData, activeCenterId]);
+
+  // Auto-select first floor when floors load for active center and none selected
   useEffect(() => {
     if (floors.length > 0 && !activeFloorId) {
       setActiveFloorId(floors[0].id);
     }
   }, [floors, activeFloorId]);
 
-  // Auto-select first center
+  // Reset floor when center changes
   useEffect(() => {
-    if (activeCenterId === null && centersData?.centers?.length) {
-      setActiveCenterId(centersData.centers[0].id);
-    }
-  }, [centersData, activeCenterId]);
+    setActiveFloorId(null);
+  }, [activeCenterId]);
 
   // Filter seats by status + the left-bar search query
   const filteredSeats = useMemo(() => {
@@ -343,7 +344,7 @@ export default function FloorMapPage() {
 
   // Submit Add Space modal
   const handleAddSpaceSubmit = async () => {
-    if (!seatNumber.trim()) {
+    if (!seatName.trim()) {
       toast.error("Enter a space name/number");
       return;
     }
@@ -353,15 +354,15 @@ export default function FloorMapPage() {
         variables: {
           input: {
             floorId: activeFloorId,
-            number: seatNumber.trim(),
+            name: seatName.trim(),
             seatType,
             status: "AVAILABLE",
             ...(seatPrice ? { price: Number(seatPrice) } : {}),
           },
         },
       });
-      toast.success(`Space "${seatNumber}" added`);
-      setSeatNumber(""); setSeatPrice("");
+      toast.success(`Space "${seatName}" added`);
+      setSeatName(""); setSeatPrice("");
       setShowAddModal(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add space");
@@ -410,14 +411,70 @@ export default function FloorMapPage() {
             <h1 className={styles.headerTitle}>Floor Map</h1>
             <p className={styles.headerSubtitle}>Visualize space usage and real-time occupancy</p>
           </div>
-          <button
-            className={styles.addSpaceBtn + ' active:scale-[0.97] transition-transform duration-150'}
-            onClick={handleAddSpace}
-            disabled={!activeFloorId}
-            title={!activeFloorId ? "Select a center and floor first" : "Add a new space"}
-          >
-            {Icons.plus} Add Space
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <select
+              value={activeCenterId ?? ''}
+              onChange={(e) => {
+                setActiveCenterId(e.target.value || null);
+                setActiveFloorId(null);
+              }}
+              disabled={centersLoading}
+              style={{
+                padding: '8px 32px 8px 12px',
+                borderRadius: 8,
+                border: '1px solid #E5E7EB',
+                background: '#fff',
+                fontSize: 13,
+                color: '#1F1F1F',
+                appearance: 'none',
+                backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236A7282%22 stroke-width=%222%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E")',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">{centersLoading ? 'Loading…' : 'Select center'}</option>
+              {(centersData?.centers ?? []).map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {floorsLoading ? (
+              <span style={{ fontSize: 13, color: '#6A7282' }}>Loading floors…</span>
+            ) : floors.length > 0 ? (
+              <select
+                value={activeFloorId ?? ''}
+                onChange={(e) => setActiveFloorId(e.target.value || null)}
+                style={{
+                  padding: '8px 32px 8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E5E7EB',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#1F1F1F',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236A7282%22 stroke-width=%222%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">Select floor</option>
+                {floors.map((f: any) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            ) : activeCenterId && !floorsLoading ? (
+              <span style={{ fontSize: 13, color: '#6A7282' }}>No floors found</span>
+            ) : null}
+            <button
+              className={styles.addSpaceBtn + ' active:scale-[0.97] transition-transform duration-150'}
+              onClick={handleAddSpace}
+              disabled={!activeFloorId}
+              title={!activeFloorId ? "Select a center and floor first" : "Add a new space"}
+            >
+              {Icons.plus} Add Space
+            </button>
+          </div>
         </div>
 
         {/* Filter Bar */}
@@ -516,8 +573,9 @@ export default function FloorMapPage() {
         {/* Map Container */}
         <div className={styles.mapContainerCard}>
 
-          {/* Floor Tabs — from server floors */}
+          {/* Center + Floor Tabs — from server floors */}
           <div className={styles.floorTabsWrap}>
+            {/* Floor tabs */}
             {floorsLoading && floors.length === 0 ? (
               <div className={styles.floorTab}>Loading…</div>
             ) : floors.length === 0 ? (
@@ -676,7 +734,7 @@ export default function FloorMapPage() {
                         <div className={styles.roomDot}></div>
                       </div>
                       <div className={styles.roomCapacity}>
-                        {Icons.chair} {seat.features?.length ?? 1}
+                        {Icons.chair} {seat.amenities?.length ?? 1}
                       </div>
                       <div className={styles.roomStatus}>{statusText[displayStatus]}</div>
                     </div>
@@ -877,8 +935,8 @@ export default function FloorMapPage() {
                 <input
                   type="text"
                   placeholder="e.g. A1, Cabin 3, Desk 12"
-                  value={seatNumber}
-                  onChange={(e) => setSeatNumber(e.target.value)}
+                  value={seatName}
+                  onChange={(e) => setSeatName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddSpaceSubmit()}
                   className="px-4 py-3 bg-gray-50 rounded-lg text-[14px] border border-transparent focus:border-[#FF6A2F] outline-none"
                   autoFocus

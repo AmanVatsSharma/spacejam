@@ -20,6 +20,8 @@ import { UserRole, LeadStatus, LeadSource } from '../../graphql/types/user.type'
 import { User } from './user.entity';
 import { Center } from './center.entity';
 
+import { Customer } from './customer.entity';
+
 @Entity('leads')
 @ObjectType()
 export class Lead {
@@ -74,6 +76,14 @@ export class Lead {
   @Field(() => ID, { nullable: true })
   @Column({ name: 'centerId', type: 'uuid', nullable: true })
   centerId!: string | null;
+
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'customerId', type: 'uuid', nullable: true })
+  customerId!: string | null;
+
+  @ManyToOne(() => Customer, (customer) => customer.leads)
+  @JoinColumn({ name: 'customerId' })
+  customer?: Customer;
 
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', nullable: true })

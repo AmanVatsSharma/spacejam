@@ -170,6 +170,7 @@ export enum LeadSource {
   EMAIL = 'Email',
 }
 
+registerEnumType(RecurrencePatternEnum, { name: 'RecurrencePattern' });
 registerEnumType(LeadStatus, { name: 'LeadStatus' });
 registerEnumType(LeadSource, { name: 'LeadSource' });
 
@@ -208,6 +209,14 @@ export enum DepositType {
   ADVANCE = 'Advance',
   OTHER = 'Other',
 }
+
+export enum OnboardingStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+}
+
+registerEnumType(OnboardingStatus, { name: 'OnboardingStatus' });
 
 export enum CustomerStatus {
   ACTIVE = 'Active',

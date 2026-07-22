@@ -313,6 +313,58 @@ export const CONVERT_LEAD = gql`
   }
 `;
 
+export const CONVERT_LEAD_WITH_ONBOARDING = gql`
+  mutation ConvertLeadWithOnboarding(
+    $id: ID!
+    $companyName: String
+    $companyAddress: String
+    $gstNumber: String
+    $planType: String
+    $seatCount: Int
+    $contactName: String
+    $contactEmail: String
+    $contactPhone: String
+    $emergencyContact: String
+    $emergencyPhone: String
+    $idProofUrl: String
+    $agreementUrl: String
+    $notes: String
+  ) {
+    convertLeadWithOnboarding(
+      id: $id
+      companyName: $companyName
+      companyAddress: $companyAddress
+      gstNumber: $gstNumber
+      planType: $planType
+      seatCount: $seatCount
+      contactName: $contactName
+      contactEmail: $contactEmail
+      contactPhone: $contactPhone
+      emergencyContact: $emergencyContact
+      emergencyPhone: $emergencyPhone
+      idProofUrl: $idProofUrl
+      agreementUrl: $agreementUrl
+      notes: $notes
+    ) {
+      lead {
+        id
+        status
+        customerId
+      }
+      customer {
+        id
+        name
+        email
+      }
+      onboarding {
+        id
+        status
+        companyName
+      }
+    }
+  }
+`;
+
 export const DELETE_LEAD = gql`
   mutation DeleteLead($id: ID!) {
     deleteLead(id: $id)
@@ -332,6 +384,108 @@ export const LEAD_PIPELINE_STATS = gql`
     negotiation: leadCount(status: NEGOTIATION)
     converted: leadCount(status: CONVERTED)
     cold: leadCount(status: COLD)
+  }
+`;
+
+/* ========================= Onboarding ========================= */
+
+export const GET_ONBOARDINGS = gql`
+  query GetOnboardings($filters: OnboardingFiltersInput) {
+    onboardings(filters: $filters) {
+      id
+      companyName
+      companyAddress
+      gstNumber
+      planType
+      seatCount
+      contactName
+      contactEmail
+      contactPhone
+      status
+      notes
+      leadId
+      customerId
+      completedAt
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_ONBOARDING = gql`
+  query GetOnboarding($id: ID!) {
+    onboarding(id: $id) {
+      id
+      companyName
+      companyAddress
+      gstNumber
+      planType
+      seatCount
+      contactName
+      contactEmail
+      contactPhone
+      status
+      notes
+      leadId
+      customerId
+      completedAt
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_ONBOARDING = gql`
+  mutation CreateOnboarding($input: CreateOnboardingInput!) {
+    createOnboarding(input: $input) {
+      id
+      companyName
+      status
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_ONBOARDING = gql`
+  mutation UpdateOnboarding($id: ID!, $input: UpdateOnboardingInput!) {
+    updateOnboarding(id: $id, input: $input) {
+      id
+      companyName
+      status
+      updatedAt
+    }
+  }
+`;
+
+export const ADVANCE_ONBOARDING_STATUS = gql`
+  mutation AdvanceOnboardingStatus($id: ID!) {
+    advanceOnboardingStatus(id: $id) {
+      id
+      status
+      completedAt
+    }
+  }
+`;
+
+export const COMPLETE_ONBOARDING = gql`
+  mutation CompleteOnboarding($id: ID!) {
+    completeOnboarding(id: $id) {
+      id
+      status
+      completedAt
+    }
+  }
+`;
+
+export const DELETE_ONBOARDING = gql`
+  mutation DeleteOnboarding($id: ID!) {
+    deleteOnboarding(id: $id)
+  }
+`;
+
+export const ONBOARDING_COUNT = gql`
+  query OnboardingCount($status: OnboardingStatus) {
+    onboardingCount(status: $status)
   }
 `;
 
@@ -1158,11 +1312,11 @@ export const GET_SEATS = gql`
   query GetSeats($floorId: ID) {
     seats(floorId: $floorId) {
       id
-      number
+      name
       seatType
-      features
       status
       price
+      amenities
       location
       createdAt
       updatedAt
@@ -1244,7 +1398,7 @@ export const UPDATE_SEAT = gql`
   mutation UpdateSeat($id: ID!, $input: UpdateSeatInput!) {
     updateSeat(id: $id, input: $input) {
       id
-      number
+      name
       seatType
       status
       price
@@ -1554,6 +1708,22 @@ export const UPDATE_PROFILE = gql`
   }
 `;
 
+export const GET_AUDIT_LOGS = gql`
+  query GetAuditLogs($filters: AuditLogFiltersInput) {
+    auditLogs(filters: $filters) {
+      id
+      action
+      entityType
+      entityId
+      userId
+      changes
+      ipAddress
+      userAgent
+      createdAt
+    }
+  }
+`;
+
 export const DELETE_USER = gql`
   mutation DeleteUser($id: ID!) {
     deleteUser(id: $id)
@@ -1613,6 +1783,32 @@ export const GET_UPCOMING_EVENTS = gql`
       eventType
       status
       meetingRoom { id name }
+    }
+  }
+`;
+
+export const GET_EVENTS = gql`
+  query GetEvents($filters: EventFiltersInput) {
+    events(filters: $filters) {
+      id
+      centerId
+      meetingRoomId
+      title
+      description
+      company
+      eventDate
+      startTime
+      endTime
+      durationMinutes
+      attendeesCount
+      eventType
+      status
+      cost
+      notes
+      createdAt
+      updatedAt
+      meetingRoom { id name }
+      requestedBy { id name email }
     }
   }
 `;

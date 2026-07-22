@@ -74,7 +74,10 @@ export class RecurringBookingResolver {
       if (!valid) throw new BadRequestException('daysOfWeek must be integers 0-6 (Sun=0)');
     }
 
-    const rb = this.repo.create(input);
+    const rb = this.repo.create({
+      ...input,
+      userId: input.userId ?? user?.id,
+    });
     const saved = await this.repo.save(rb);
     await this.expandRecurring(saved.id, user);
     const result = await this.repo.findOne({

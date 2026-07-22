@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { GET_USERS, DELETE_USER, SET_USER_ACTIVE } from "@/lib/apollo/operations";
+import { GET_USERS, DELETE_USER, SET_USER_ACTIVE, UPDATE_PROFILE, GET_AUDIT_LOGS } from "@/lib/apollo/operations";
 import { useSettingsGroup } from "@/hooks/use-settings";
 import styles from "./settings.module.css";
 
@@ -143,6 +143,14 @@ export default function SettingsAccessPage() {
   const [setUserActiveMut] = useMutation(SET_USER_ACTIVE, {
     refetchQueries: [{ query: GET_USERS, variables: { limit: 50, offset: 0 } }],
   });
+  const [updateProfileMut] = useMutation(UPDATE_PROFILE, {
+    refetchQueries: [{ query: GET_USERS, variables: { limit: 50, offset: 0 } }],
+  });
+
+  const { data: auditData, loading: auditLoading } = useQuery(GET_AUDIT_LOGS, {
+    variables: { filters: { limit: 50, offset: 0 } },
+    fetchPolicy: 'cache-and-network',
+  });
 
   // Permissions persist under Center.settings.permissions (per-center matrix).
   const { draft: perms, set: setPerm, save: savePerms } = useSettingsGroup("permissions", {
@@ -180,11 +188,22 @@ export default function SettingsAccessPage() {
 
   async function handleSaveChanges() {
     if (!activeUser) return;
-    if (activeTab === "Permissions") {
-      await savePerms();
-      return;
+    try {
+      if (activeTab === "Permissions") {
+        await savePerms();
+      } else if (activeTab === "Security") {
+        await saveSec();
+      } else if (activeTab === "Notifications") {
+        await saveNotif();
+      } else if (activeTab === "Profile") {
+        if (editingName !== activeUser.name) {
+          await updateProfileMut({ variables: { name: editingName } });
+        }
+      }
+      toast.success("Changes saved");
+    } catch {
+      toast.error("Could not save changes");
     }
-    toast.success("Profile changes saved");
   }
 
   async function handleSuspend() {
@@ -265,7 +284,7 @@ export default function SettingsAccessPage() {
 
       {/* Sub Tabs */}
       <div className={styles.subTabs}>
-        {["Profile", "Permissions", "Centers", "Security", "Notifications"].map(tab => (
+        {["Profile", "Permissions", "Centers", "Security", "Notifications", "Audit Log"].map(tab => (
           <div 
             key={tab} 
             className={`${styles.subTab} ${activeTab === tab ? styles.subTabActive : ''}`}
@@ -521,6 +540,39 @@ export default function SettingsAccessPage() {
                 <button className={styles.saveBtn} onClick={async () => { await saveNotif(); }}>Save Notification Settings</button>
               </div>
             </>
+          ) : activeTab === "Audit Log" ? (
+            <div className={styles.auditLogContainer}>
+              {auditLoading ? (
+                <div className={styles.loadingState}>Loading audit log...</div>
+              ) : auditData?.auditLogs?.length ? (
+                <table className={styles.auditLogTable}>
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Entity</th>
+                      <th>IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditData.auditLogs.map((log: any) => (
+                      <tr key={log.id}>
+                        <td>{new Date(log.createdAt).toLocaleString()}</td>
+                        <td>{log.userId || "—"}</td>
+                        <td>{log.action}</td>
+                        <td>{log.entityType || "—"}</td>
+                        <td>{log.ipAddress || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}>
+                  No audit log entries found.
+                </div>
+              )}
+            </div>
           ) : (
             <div style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}>
               Select a tab to manage {activeTab.toLowerCase()}.

@@ -24,7 +24,7 @@ import { User } from './user.entity';
 import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
 import { Event } from './event.entity';
-import { RecurrencePatternEnum } from '../../graphql/types/user.type';
+import { RecurrencePatternEnum } from '../../graphql/enums/recurrence-pattern.enum';
 
 @ObjectType()
 @Entity('recurring_bookings')

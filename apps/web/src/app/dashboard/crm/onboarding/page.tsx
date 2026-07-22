@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { CREATE_CUSTOMER, GET_CUSTOMERS } from "@/lib/apollo/operations";
+import {
+  CREATE_CUSTOMER,
+  GET_CUSTOMERS,
+  CONVERT_LEAD_WITH_ONBOARDING,
+  GET_LEAD,
+  CREATE_DEPOSIT,
+  CREATE_CONTRACT,
+  CREATE_INVOICE,
+} from "@/lib/apollo/operations";
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
 const STEPS = [
@@ -22,10 +30,30 @@ export default function OnboardingWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [leadPrefilled, setLeadPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("leadId");
+    if (id) setLeadId(id);
+  }, []);
+
+  const { data: leadData } = useQuery(GET_LEAD, {
+    variables: { id: leadId },
+    skip: !leadId,
+  });
 
   const [createCustomer] = useMutation(CREATE_CUSTOMER, {
     refetchQueries: [{ query: GET_CUSTOMERS }],
   });
+  const [convertLeadWithOnboarding] = useMutation(CONVERT_LEAD_WITH_ONBOARDING, {
+    refetchQueries: [{ query: GET_CUSTOMERS }],
+  });
+  const [createDeposit] = useMutation(CREATE_DEPOSIT);
+  const [createContract] = useMutation(CREATE_CONTRACT);
+  const [createInvoice] = useMutation(CREATE_INVOICE);
 
   // Form State - Step 1 (Basic Information) — kept controlled so data
   // isn't lost when navigating between steps and so it can drive the
@@ -39,6 +67,20 @@ export default function OnboardingWizardPage() {
     company: "",
     gst: "",
   });
+
+  // Prefill from lead (only once per leadId)
+  useEffect(() => {
+    if (!leadData?.lead || leadPrefilled) return;
+    const lead = leadData.lead;
+    setBasicInfo((prev) => ({
+      ...prev,
+      name: lead.name || prev.name,
+      email: lead.email || prev.email,
+      phone: lead.phone || prev.phone,
+      company: lead.company || prev.company,
+    }));
+    setLeadPrefilled(true);
+  }, [leadData, leadPrefilled]);
 
   const [userRoles, setUserRoles] = useState([
     { id: 1, role: "Head User/HR", name: "", phone: "" },
@@ -144,24 +186,64 @@ export default function OnboardingWizardPage() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      await createCustomer({
-        variables: {
-          input: {
-            name: basicInfo.name || "New Client",
-            email: basicInfo.email || "",
-            phone: basicInfo.phone || "",
-            company: basicInfo.company || "",
-            status: "Active",
+      let customerId: string;
+      if (leadId && leadData?.lead) {
+        const result = await convertLeadWithOnboarding({
+          variables: {
+            id: leadId,
+            contactName: basicInfo.name,
+            contactEmail: basicInfo.email,
+            contactPhone: basicInfo.phone,
+            companyName: basicInfo.company,
+            gstNumber: basicInfo.gst,
           },
-        },
-      });
-      toast.success("Customer onboarded successfully!");
-      router.push("/dashboard/crm/customers");
+        });
+        customerId = result.data.convertLeadWithOnboarding.customer.id;
+        toast.success("Lead converted to customer!");
+      } else {
+        const result = await createCustomer({
+          variables: {
+            input: {
+              name: basicInfo.name || "New Client",
+              email: basicInfo.email || "",
+              phone: basicInfo.phone || "",
+              company: basicInfo.company || "",
+              status: "Active",
+            },
+          },
+        });
+        customerId = result.data.createCustomer.id;
+        toast.success("Customer onboarded successfully!");
+      }
+
+      // Create revenue records in parallel — failures are non-fatal
+      const today = new Date().toISOString().slice(0, 10);
+      const customerName = basicInfo.name || "New Client";
+      Promise.all([
+        createDeposit({
+          variables: {
+            input: { customerId, customerName, amount: 0, type: "Security", receivedDate: today, notes: "Auto-created during onboarding" },
+          },
+        }).catch(() => {}),
+        createContract({
+          variables: {
+            input: { customerId, customerName, startDate: today, endDate: today, amount: 0, planName: "Standard", paymentFrequency: "Monthly", autoRenew: false },
+          },
+        }).catch(() => {}),
+        createInvoice({
+          variables: {
+            input: { customerId, customerName, amount: 0, status: "Pending", planName: "Standard" },
+          },
+        }).catch(() => {}),
+      ]);
+
+      router.push(`/dashboard/crm/customers/${customerId}`);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create customer. Please try again.");
+      toast.error("Failed to complete onboarding. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

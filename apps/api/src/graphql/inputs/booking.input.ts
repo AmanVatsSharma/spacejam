@@ -16,6 +16,11 @@ export class CreateBookingInput {
   @IsNotEmpty()
   seatId!: string;
 
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  customerId?: string;
+
   @Field()
   @IsDate()
   @IsNotEmpty()
@@ -53,6 +58,11 @@ export class BookingFiltersInput {
   @IsUUID()
   @IsOptional()
   meetingRoomId?: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsUUID()
+  @IsOptional()
+  customerId?: string;
 
   @Field(() => ID, { nullable: true })
   @IsUUID()

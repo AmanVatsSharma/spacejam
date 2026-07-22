@@ -116,14 +116,14 @@ export function AddEventModal({ open, onClose, event }: AddEventModalProps) {
 
     const input: Record<string, unknown> = {
       title: form.title.trim(),
-      eventType: form.type,
+      type: form.type,
       eventDate: form.eventDate,
       startTime: form.startTime,
       endTime: form.endTime,
+      attendeesCount: form.attendeesCount ? Number(form.attendeesCount) : 0,
     };
     if (form.description.trim()) input.description = form.description.trim();
     if (form.company.trim()) input.company = form.company.trim();
-    if (form.attendeesCount) input.attendeesCount = Number(form.attendeesCount);
     if (form.meetingRoomId) input.meetingRoomId = form.meetingRoomId;
     if (form.specialRequests.trim()) input.specialRequests = form.specialRequests.trim();
 

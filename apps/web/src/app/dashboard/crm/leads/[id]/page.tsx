@@ -160,22 +160,8 @@ export default function LeadDetailsPage() {
   };
 
   const handleConvertToClient = async () => {
-    try {
-      await convertLead({ variables: { id: leadId } });
-      toast.success("Lead converted to client");
-      setShowConvertClient(false);
-      // Find the newly created customer by email and navigate to their detail page
-      const customersData = await refetchCustomers();
-      const newCustomer = customersData.data?.customers?.find(
-        (c: any) => c.email === lead?.email,
-      );
-      if (newCustomer) {
-        router.push(`/dashboard/crm/customers/${newCustomer.id}`);
-      }
-    } catch (err) {
-      console.error("Failed to convert lead:", err);
-      toast.error("Could not convert lead");
-    }
+    setShowConvertClient(false);
+    router.push(`/dashboard/crm/onboarding?leadId=${leadId}`);
   };
 
   const handleViewCustomer = async () => {
