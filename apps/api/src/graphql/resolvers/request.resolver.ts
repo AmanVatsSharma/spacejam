@@ -182,7 +182,16 @@ export class RequestResolver {
     const user = context.req?.user;
 
     const request = this.requestRepo.create({
-      ...input,
+      title: input.title,
+      description: input.description,
+      requestType: input.type,
+      urgency: input.urgency || 'MEDIUM',
+      dueDate: input.dueDate,
+      centerId: input.centerId,
+      assignedToId: input.assignedToId,
+      cost: input.cost,
+      attachedFile: input.attachedFile,
+      metadata: input.metadata,
       requestedById: user?.id,
       status: RequestStatus.PENDING,
     });

@@ -7,13 +7,26 @@
  * Last-updated: 2026-07-02
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
+import {
+  BadRequestException,
+  UseGuards,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual, In } from 'typeorm';
 import { Event } from '../../typeorm/entities/event.entity';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
 import { EventStatus } from '../../graphql/types/user.type';
-import { CreateEventInput, UpdateEventInput, EventFiltersInput, EventStatistics, CreateEventPayload } from '../inputs/event.input';
+import {
+  CreateEventInput,
+  UpdateEventInput,
+  EventFiltersInput,
+  EventStatistics,
+  CreateEventPayload,
+} from '../inputs/event.input';
 import { CacheService } from '../../cache/cache.service';
 
 @Resolver(() => Event)
@@ -27,7 +40,9 @@ export class EventResolver {
   ) {}
 
   @Query(() => [Event])
-  async events(@Args('filters', { nullable: true }) filters?: EventFiltersInput): Promise<Event[]> {
+  async events(
+    @Args('filters', { nullable: true }) filters?: EventFiltersInput,
+  ): Promise<Event[]> {
     const where: any = {};
 
     if (filters) {
@@ -55,7 +70,9 @@ export class EventResolver {
   }
 
   @Query(() => Event, { nullable: true })
-  async event(@Args('id', { type: () => ID }) id: string): Promise<Event | null> {
+  async event(
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<Event | null> {
     return this.eventRepo.findOne({
       where: { id },
       relations: ['center', 'meetingRoom', 'requestedBy'],
@@ -63,7 +80,9 @@ export class EventResolver {
   }
 
   @Query(() => [Event])
-  async todayEvents(@Args('centerId', { nullable: true }) centerId?: string): Promise<Event[]> {
+  async todayEvents(
+    @Args('centerId', { nullable: true }) centerId?: string,
+  ): Promise<Event[]> {
     const today = new Date().toISOString().split('T')[0];
     const filters: EventFiltersInput = {
       startDate: today,
@@ -75,7 +94,9 @@ export class EventResolver {
   }
 
   @Query(() => [Event])
-  async upcomingEvents(@Args('centerId', { nullable: true }) centerId?: string): Promise<Event[]> {
+  async upcomingEvents(
+    @Args('centerId', { nullable: true }) centerId?: string,
+  ): Promise<Event[]> {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
@@ -89,7 +110,9 @@ export class EventResolver {
   }
 
   @Query(() => [Event])
-  async pastEvents(@Args('centerId', { nullable: true }) centerId?: string): Promise<Event[]> {
+  async pastEvents(
+    @Args('centerId', { nullable: true }) centerId?: string,
+  ): Promise<Event[]> {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -103,19 +126,39 @@ export class EventResolver {
   }
 
   @Query(() => EventStatistics)
-  async eventStatistics(@Args('centerId', { nullable: true }) centerId?: string): Promise<any> {
+  async eventStatistics(
+    @Args('centerId', { nullable: true }) centerId?: string,
+  ): Promise<any> {
     const where = centerId ? { centerId } : {};
 
     const total = await this.eventRepo.count({ where });
-    const pending = await this.eventRepo.count({ where: { ...where, status: EventStatus.PENDING } });
-    const confirmed = await this.eventRepo.count({ where: { ...where, status: EventStatus.CONFIRMED } });
-    const completed = await this.eventRepo.count({ where: { ...where, status: EventStatus.COMPLETED } });
-    const cancelled = await this.eventRepo.count({ where: { ...where, status: EventStatus.CANCELLED } });
+    const pending = await this.eventRepo.count({
+      where: { ...where, status: EventStatus.PENDING },
+    });
+    const confirmed = await this.eventRepo.count({
+      where: { ...where, status: EventStatus.CONFIRMED },
+    });
+    const completed = await this.eventRepo.count({
+      where: { ...where, status: EventStatus.COMPLETED },
+    });
+    const cancelled = await this.eventRepo.count({
+      where: { ...where, status: EventStatus.CANCELLED },
+    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = await this.eventRepo.count({
+      where: {
+        ...where,
+        eventDate: MoreThanOrEqual(today),
+        status: In([EventStatus.PENDING, EventStatus.CONFIRMED]),
+      },
+    });
 
     return {
       totalEvents: total,
       pendingEvents: pending,
       confirmedEvents: confirmed,
+      upcomingEvents: upcoming,
       completedEvents: completed,
       cancelledEvents: cancelled,
     };
@@ -152,7 +195,10 @@ export class EventResolver {
 
     if (floorId) baseWhere.floorId = floorId;
 
-    const rooms = await this.roomRepo.find({ where: baseWhere, relations: ['center'] });
+    const rooms = await this.roomRepo.find({
+      where: baseWhere,
+      relations: ['center'],
+    });
 
     const availableRooms = [];
 
@@ -185,7 +231,10 @@ export class EventResolver {
         meetingRoomId: roomId,
         centerId,
         eventDate: eventDate as any,
-        status: (await import('typeorm')).In([EventStatus.PENDING, EventStatus.CONFIRMED]) as any,
+        status: (await import('typeorm')).In([
+          EventStatus.PENDING,
+          EventStatus.CONFIRMED,
+        ]) as any,
         startTime: (await import('typeorm')).LessThan(endTime),
         endTime: (await import('typeorm')).MoreThan(startTime),
       },
@@ -200,6 +249,26 @@ export class EventResolver {
     @Context() context: any,
   ): Promise<any> {
     const user = context.req?.user;
+
+    if (!input.centerId && input.meetingRoomId) {
+      const room = await this.roomRepo.findOne({
+        where: { id: input.meetingRoomId },
+      });
+      if (room) input.centerId = room.centerId;
+    }
+
+    if (!input.centerId) {
+      // Fallback: derive from any available center so the event can be created
+      const fallbackCenter = await this.roomRepo.manager
+        .getRepository('centers')
+        .createQueryBuilder('c')
+        .select('c.id', 'id')
+        .limit(1)
+        .getRawOne<{ id: string }>();
+      if (fallbackCenter?.id) {
+        input.centerId = fallbackCenter.id;
+      }
+    }
 
     const event = this.eventRepo.create({
       ...input,
@@ -225,7 +294,15 @@ export class EventResolver {
   async updateEvent(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEventInput,
+    @Context() context: any,
   ): Promise<any> {
+    if (!user) {
+      return {
+        success: false as const,
+        error: 'You must be logged in to update events',
+        event: null,
+      };
+    }
     await this.eventRepo.update(id, input);
 
     const updated = await this.eventRepo.findOne({
@@ -246,7 +323,15 @@ export class EventResolver {
   async updateEventStatus(
     @Args('id', { type: () => ID }) id: string,
     @Args('status', { type: () => EventStatus }) status: EventStatus,
+    @Context() context: any,
   ): Promise<any> {
+    if (!user) {
+      return {
+        success: false as const,
+        error: 'You must be logged in to update events',
+        event: null,
+      };
+    }
     await this.eventRepo.update(id, { status });
 
     const updated = await this.eventRepo.findOne({
@@ -264,7 +349,13 @@ export class EventResolver {
   }
 
   @Mutation(() => Boolean)
-  async cancelEvent(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+  async cancelEvent(
+    @Args('id', { type: () => ID }) id: string,
+    @Context() context: any,
+  ): Promise<boolean> {
+    if (!user) {
+      throw new UnauthorizedException('You must be logged in to cancel events');
+    }
     await this.eventRepo.update(id, {
       status: EventStatus.CANCELLED,
     });
@@ -276,7 +367,13 @@ export class EventResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteEvent(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+  async deleteEvent(
+    @Args('id', { type: () => ID }) id: string,
+    @Context() context: any,
+  ): Promise<boolean> {
+    if (!user) {
+      throw new UnauthorizedException('You must be logged in to delete events');
+    }
     await this.eventRepo.delete(id);
 
     await this.cache.invalidatePattern('events:*');
@@ -289,7 +386,8 @@ export class EventResolver {
   async myEvents(
     @Args('requestedBy', { nullable: true }) requestedBy?: string,
     @Args('centerId', { nullable: true }) centerId?: string,
-    @Args('status', { type: () => EventStatus, nullable: true }) status?: EventStatus,
+    @Args('status', { type: () => EventStatus, nullable: true })
+    status?: EventStatus,
   ): Promise<Event[]> {
     const where: any = {};
 
