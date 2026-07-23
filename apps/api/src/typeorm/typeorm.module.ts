@@ -88,7 +88,7 @@ const ALL_ENTITIES = [
             type: 'postgres',
             url: dbUrl,
             entities: ALL_ENTITIES,
-            synchronize: process.env.NODE_ENV !== 'production',
+            synchronize: false,
             logging: process.env.NODE_ENV === 'development',
             extra: {
               max: parseInt(config.get<string>('DATABASE_POOL_SIZE') || '10', 10),
@@ -107,7 +107,7 @@ const ALL_ENTITIES = [
           password: config.get<string>('DATABASE_PASSWORD') || 'spacejam',
           database: config.get<string>('DATABASE_NAME') || 'spacejam',
           entities: ALL_ENTITIES,
-          synchronize: true,
+          synchronize: false,
           logging: process.env.NODE_ENV === 'development',
           ssl: config.get<string>('DATABASE_SSL') === 'true',
           extra: {

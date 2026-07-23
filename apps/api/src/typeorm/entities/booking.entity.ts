@@ -123,7 +123,7 @@ export class Booking {
   @Column({ name: 'meetingRoomId', type: 'uuid', nullable: true })
   meetingRoomId!: string | null;
 
-  @Column({ name: 'eventDate', type: 'date', nullable: true })
+  @Column({ name: 'eventDate', type: 'timestamp', nullable: true })
   eventDate!: Date | null;
 
   @Column({ name: 'title', type: 'varchar', nullable: true })

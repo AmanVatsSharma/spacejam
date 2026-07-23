@@ -66,7 +66,7 @@ export class Event {
   company!: string | null;
 
   @Field()
-  @Column({ name: 'eventDate', type: 'date' })
+  @Column({ name: 'eventDate', type: 'timestamp' })
   eventDate!: Date;
 
   @Field()

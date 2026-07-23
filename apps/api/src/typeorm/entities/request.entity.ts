@@ -73,11 +73,11 @@ export class Request {
   status!: RequestStatus;
 
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'dueDate', type: 'date', nullable: true })
+  @Column({ name: 'dueDate', type: 'timestamp', nullable: true })
   dueDate!: Date | null;
 
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'completedDate', type: 'date', nullable: true })
+  @Column({ name: 'completedDate', type: 'timestamp', nullable: true })
   completedDate!: Date | null;
 
   @Field(() => String, { nullable: true })

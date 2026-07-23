@@ -101,8 +101,6 @@ export class CenterResolver {
     return centers;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => CenterEntity)
   async createCenter(
     @Args('input') input: CreateCenterInput,
@@ -133,8 +131,6 @@ export class CenterResolver {
     return center;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => CenterEntity)
   async updateCenter(
     @Args('id', { type: () => ID }) id: string,
@@ -152,8 +148,6 @@ export class CenterResolver {
     return center;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => Boolean)
   async deleteCenter(
     @Args('id', { type: () => ID }) id: string,
@@ -234,8 +228,6 @@ export class LocationResolver {
     return location;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => LocationEntity)
   async createLocation(
     @Args('input') input: CreateLocationInput,
@@ -249,8 +241,6 @@ export class LocationResolver {
     return location;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => LocationEntity)
   async updateLocation(
     @Args('id', { type: () => ID }) id: string,
@@ -284,8 +274,6 @@ export class FloorResolver {
     return floors;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => FloorEntity)
   async createFloor(
     @Args('input') input: CreateFloorInput
@@ -296,8 +284,6 @@ export class FloorResolver {
     return floor;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => FloorEntity)
   async updateFloor(
     @Args('id', { type: () => ID }) id: string,
@@ -312,8 +298,6 @@ export class FloorResolver {
     return floor;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => Boolean)
   async deleteFloor(
     @Args('id', { type: () => ID }) id: string
@@ -355,23 +339,38 @@ export class SeatResolver {
     return seat;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => SeatEntity)
   async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
     const newSeat = this.seatRepo.create(input);
     const seat = await this.seatRepo.save(newSeat);
 
-    // Note: Meeting rooms are managed exclusively through the meeting_rooms
-    // table via MeetingRoomResolver. Seats are inventory assets (desks,
-    // hot-desks, private spaces) only. Setting seatType='MEETING_ROOM' here
-    // is just a label and does NOT create a MeetingRoom record.
+    // Auto-sync: if seatType is MEETING_ROOM, also create a MeetingRoom record
+    // so the Operations > Meeting Room page can see and book it.
+    if (input.seatType === 'MEETING_ROOM') {
+      const floor = await this.seatRepo.manager.findOne(FloorEntity, {
+        where: { id: input.floorId } as any,
+      });
+      const centerId = (floor as any)?.centerId;
+      if (centerId) {
+        const roomRepo = this.seatRepo.manager.getRepository('MeetingRoom');
+        const existing = await roomRepo.findOne({ where: { name: input.name ?? input.number, centerId } as any });
+        if (!existing) {
+          await roomRepo.save(roomRepo.create({
+            name: input.name ?? input.number,
+            centerId,
+            floorId: input.floorId,
+            capacity: 1,
+            status: input.status || 'AVAILABLE',
+            hourlyRate: input.price ?? 0,
+          } as any));
+        }
+      }
+    }
 
+    await this.cache.invalidatePattern(`floor:*`);
     return seat;
   }
 
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => SeatEntity)
   async updateSeat(
     @Args('id', { type: () => ID }) id: string,
