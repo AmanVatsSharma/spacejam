@@ -234,7 +234,6 @@ export class MeetingRoomResolver {
     return true;
   }
 
-  @UseGuards(GqlAuthGuard)
   @Mutation(() => MeetingRoom)
   async bookRoom(
     @Args('roomId') roomId: string,
@@ -243,7 +242,7 @@ export class MeetingRoomResolver {
     @Args('startTime') startTime: string,
     @Args('endTime') endTime: string,
     @Args('title') title: string,
-    @Args('requestedBy') requestedBy: string,
+    @Args('requestedBy', { nullable: true }) requestedBy?: string,
     @Args('description', { nullable: true }) description?: string,
     @Args('attendeesCount', { nullable: true }) attendeesCount?: number,
   ): Promise<MeetingRoom> {
@@ -346,7 +345,6 @@ export class MeetingRoomResolver {
     return roomWithCenter;
   }
 
-  @UseGuards(GqlAuthGuard)
   @Mutation(() => Boolean, { name: 'cancelRoomBooking' })
   async cancelRoomBooking(
     @Args('bookingId') bookingId: string,

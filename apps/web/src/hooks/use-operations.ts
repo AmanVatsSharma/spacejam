@@ -257,7 +257,7 @@ const BOOK_ROOM = gql`
     $startTime: String!
     $endTime: String!
     $title: String!
-    $requestedBy: String!
+    $requestedBy: String
     $description: String
     $attendeesCount: Int
   ) {

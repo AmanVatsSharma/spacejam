@@ -295,7 +295,7 @@ export class EventResolver {
   async updateEvent(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEventInput,
-    @Context() context: any,
+    @CurrentUser() user: any,
   ): Promise<any> {
     if (!user) {
       return {
