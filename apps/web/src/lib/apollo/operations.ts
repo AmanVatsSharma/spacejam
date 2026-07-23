@@ -892,7 +892,7 @@ export const RENEW_CONTRACT = gql`
 /* ========================= Revenue — Discounts ========================= */
 
 export const GET_DISCOUNTS = gql`
-  query GetDiscounts($centerId: ID) {
+  query GetDiscounts($centerId: String) {
     discounts(centerId: $centerId) {
       id
       code
@@ -1451,7 +1451,7 @@ export const GET_BOOKINGS = gql`
       }
       seat {
         id
-        number
+        name
         seatType
         status
         price
@@ -1467,7 +1467,7 @@ export const GET_BOOKINGS = gql`
       meetingRoom {
         id
         name
-        type
+        status
       }
       payment {
         id
@@ -1498,7 +1498,7 @@ export const GET_BOOKING = gql`
       }
       seat {
         id
-        number
+        name
         seatType
         status
         price
@@ -1514,7 +1514,7 @@ export const GET_BOOKING = gql`
       meetingRoom {
         id
         name
-        type
+        status
       }
       payment {
         id
@@ -1537,7 +1537,7 @@ export const GET_MY_BOOKINGS = gql`
       createdAt
       seat {
         id
-        number
+        name
         seatType
         floor {
           id
@@ -1570,7 +1570,7 @@ export const CREATE_BOOKING = gql`
       }
       seat {
         id
-        number
+        name
         seatType
         status
         price
@@ -1582,7 +1582,7 @@ export const CREATE_BOOKING = gql`
       meetingRoom {
         id
         name
-        type
+        status
       }
       payment {
         id
@@ -1626,7 +1626,7 @@ export const UPDATE_BOOKING = gql`
       updatedAt
       seat {
         id
-        number
+        name
         seatType
         status
         price
@@ -1912,7 +1912,7 @@ export const CREATE_NOTIFICATION = gql`
       centerId
       title
       message
-      type
+      status
       priority
       read
       actionUrl

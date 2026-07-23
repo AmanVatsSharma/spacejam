@@ -92,14 +92,14 @@ export default function MeetingRoomsPage() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>(undefined);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [filters, setFilters] = useState({ centerId: "", floorId: "", status: "", minCapacity: "" });
-  const { data: centersData } = useQuery(GET_MY_CENTERS);
+  const { data: centersData, error: centersError } = useQuery(GET_MY_CENTERS);
   const { rooms, loading, error, refetch } = useMeetingRooms({
     centerId: filters.centerId || undefined,
     floorId: filters.floorId || undefined,
     status: filters.status || undefined,
     minCapacity: filters.minCapacity ? Number(filters.minCapacity) : undefined,
   } as any);
-  const { cancelBooking } = useCancelRoomBooking();
+  const { cancel: cancelBooking } = useCancelRoomBooking();
 
   type DateRange = "today" | "week" | "month" | "all";
   const [dateRange, setDateRange] = useState<DateRange>("all");
@@ -127,7 +127,7 @@ export default function MeetingRoomsPage() {
 
   const bounds = dateRangeBounds(dateRange);
 
-  const { data: eventsData } = useQuery(GET_EVENTS, {
+  const { data: eventsData, error: eventsError } = useQuery(GET_EVENTS, {
     variables: {
       filters: {
         centerId: filters.centerId || undefined,
@@ -190,9 +190,9 @@ export default function MeetingRoomsPage() {
   const [showRoomForm, setShowRoomForm] = useState(false);
   const [editingRoom, setEditingRoom] = useState<any>(null);
   const [confirmDeleteRoom, setConfirmDeleteRoom] = useState<any>(null);
-  const { create } = useCreateMeetingRoom();
-  const { update } = useUpdateMeetingRoom();
-  const { deleteRoom } = useDeleteMeetingRoom();
+  const { create: createRoom } = useCreateMeetingRoom();
+  const { update: updateRoom } = useUpdateMeetingRoom();
+  const { remove: deleteRoom } = useDeleteMeetingRoom();
 
   const availableCount = displayRooms.filter(r => r.status === "available").length;
 
@@ -487,7 +487,12 @@ export default function MeetingRoomsPage() {
         onClose={() => setSelectedRoom(null)}
         room={selectedRoom}
         onCancelBooking={async (bookingId) => {
-          await cancelBooking(bookingId, selectedRoom?.id);
+          const ok = await cancelBooking(bookingId, selectedRoom?.id);
+          if (!ok) {
+            toast.error("Failed to cancel booking");
+            return;
+          }
+          toast.success("Booking cancelled");
           setSelectedRoom(null);
           refetch();
         }}
@@ -498,16 +503,20 @@ export default function MeetingRoomsPage() {
         editingRoom={editingRoom}
         defaultCenterId={filters.centerId || undefined}
         onSubmit={async (input) => {
-          if (editingRoom) {
-            await update(editingRoom.id, input as any);
-            toast.success(`Room "${input.name}" updated`);
-          } else {
-            await create(input as any);
-            toast.success(`Room "${input.name}" created`);
+          try {
+            if (editingRoom) {
+              await updateRoom(editingRoom.id, input as any);
+              toast.success(`Room "${input.name}" updated`);
+            } else {
+              await createRoom(input as any);
+              toast.success(`Room "${input.name}" created`);
+            }
+            setShowRoomForm(false);
+            setEditingRoom(null);
+            refetch();
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to save room");
           }
-          setShowRoomForm(false);
-          setEditingRoom(null);
-          refetch();
         }}
       />
       {confirmDeleteRoom && (

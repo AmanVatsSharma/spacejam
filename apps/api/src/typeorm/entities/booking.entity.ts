@@ -68,7 +68,7 @@ export class Booking {
   endDate?: Date;
 
   @Field(() => BookingStatus)
-  @Column({ type: 'enum', enum: BookingStatus, default: BookingStatus.PENDING })
+  @Column({ type: 'enum', enum: BookingStatus, default: 'PENDING' })
   status!: BookingStatus;
 
   @Field(() => String, { nullable: true })

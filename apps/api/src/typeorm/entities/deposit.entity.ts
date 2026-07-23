@@ -44,11 +44,11 @@ export class Deposit {
   amount!: number;
 
   @Field(() => DepositType)
-  @Column({ type: 'enum', enum: DepositType, default: DepositType.SECURITY })
+  @Column({ type: 'enum', enum: DepositType, default: 'SECURITY' })
   depositType!: DepositType;
 
   @Field(() => DepositStatus)
-  @Column({ type: 'enum', enum: DepositStatus, default: DepositStatus.HELD })
+  @Column({ type: 'enum', enum: DepositStatus, default: 'HELD' })
   status!: DepositStatus;
 
   @Field()

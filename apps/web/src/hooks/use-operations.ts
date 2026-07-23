@@ -3,133 +3,215 @@
 /**
  * File:        apps/web/src/hooks/use-operations.ts
  * Module:      Web · Hooks · Operations
- * Purpose:     Apollo-based data layer for operations (Meeting Rooms, Events, Requests)
+ * Purpose:     Apollo-based data layer for operations (Meeting Rooms, Events, Bookings, Payments)
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-02
+ * Last-updated: 2026-07-23
  */
 import { useState } from 'react';
-import { useQuery, useMutation, useApolloClient, gql } from '@apollo/client';
+import { useQuery, useApolloClient, gql } from '@apollo/client';
 import {
   GET_BOOKINGS,
   CANCEL_ROOM_BOOKING,
   BULK_UPDATE_STATUS,
+  GET_EVENTS,
 } from '@/lib/apollo/operations';
+import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════
 // GraphQL Documents
 // ═══════════════════════════════════════════════════════
 
-const GET_MEETING_ROOMS = gql`
-  query GetMeetingRooms($filters: RoomFiltersInput) {
-    meetingRooms(filters: $filters) {
-      id name roomType capacity status locationName floorId centerId
-      minBookingDuration maxBookingDuration amenities hourlyRate active
-      createdAt updatedAt
+const GET_BOOKING_BY_ID = gql`
+  query GetBookingById($id: ID!) {
+    booking(id: $id) {
+      id
+      seatId
+      userId
+      status
+      startTime
+      endTime
+      totalPrice
+      paymentId
+      customerId
+      seat {
+        id
+        seatNumber
+        status
+        floor {
+          id
+          name
+          centerId
+        }
+      }
+      user {
+        id
+        name
+        email
+      }
+      payment {
+        id
+        status
+        method
+        amount
+      }
     }
   }
 `;
 
-const GET_MEETING_ROOM = gql`
-  query GetMeetingRoom($id: ID!) {
-    meetingRoom(id: $id) {
-      id name roomType capacity status locationName floorId centerId
-      minBookingDuration maxBookingDuration amenities hourlyRate active
-      center { id name }
-      bookings { id startDate endDate status }
-    }
-  }
-`;
-
-const GET_AVAILABLE_ROOMS = gql`
-  query GetAvailableRooms($centerId: String, $capacity: Int) {
-    availableRooms(centerId: $centerId, capacity: $capacity) {
-      id name roomType capacity status locationName amenities hourlyRate
-    }
-  }
-`;
-
-const GET_ROOM_AVAILABILITY = gql`
-  query GetRoomAvailability($centerId: String!, $floorId: String!, $eventDate: String!, $startTime: String!, $endTime: String!) {
-    roomAvailability(centerId: $centerId, floorId: $floorId, eventDate: $eventDate, startTime: $startTime, endTime: $endTime) {
-      id name roomType capacity status amenities hourlyRate
-    }
-  }
-`;
-
-const GET_EVENTS = gql`
-  query GetEvents($filters: EventFiltersInput) {
-    events(filters: $filters) {
-      id centerId meetingRoomId requestedById title description company
-      eventDate startTime endTime durationMinutes attendeesCount
-      eventType status specialRequests addons cost notes
-      createdAt updatedAt
-      meetingRoom { id name }
-      requestedBy { id name email }
-    }
-  }
-`;
-
-const GET_EVENT = gql`
-  query GetEvent($id: ID!) {
+const GET_EVENT_BY_ID = gql`
+  query GetEventById($id: ID!) {
     event(id: $id) {
-      id centerId meetingRoomId requestedById title description company
-      eventDate startTime endTime durationMinutes attendeesCount
-      eventType status specialRequests addons cost notes
-      meetingRoom { id name roomType capacity }
-      requestedBy { id name email }
+      id
+      title
+      description
+      startDate
+      endDate
+      isRecurring
+      recurrenceRule
+      maxAttendees
+      centerId
+      eventType
+      status
+      startTime
+      endTime
     }
   }
 `;
 
-const GET_EVENT_STATISTICS = gql`
-  query GetEventStatistics($centerId: String) {
-    eventStatistics(centerId: $centerId) {
-      totalEvents pendingEvents confirmedEvents completedEvents cancelledEvents
+const CREATE_EVENT = gql`
+  mutation CreateEvent($input: CreateEventInput!) {
+    createEvent(input: $input) {
+      id
+      title
+      startDate
+      endDate
+      status
     }
   }
 `;
 
-const GET_REQUESTS = gql`
-  query GetRequests($filters: RequestFiltersInput) {
-    requests(filters: $filters) {
-      id centerId requestedById assignedToId requestType title description
-      urgency status dueDate completedDate resolution cost attachedFile
-      createdAt updatedAt
-      requestedBy { id name }
-      assignedTo { id name }
+const UPDATE_EVENT = gql`
+  mutation UpdateEvent($id: ID!, $input: UpdateEventInput!) {
+    updateEvent(id: $id, input: $input) {
+      id
+      title
+      startDate
+      endDate
+      status
     }
   }
 `;
 
-const GET_REQUEST = gql`
-  query GetRequest($id: ID!) {
-    request(id: $id) {
-      id centerId requestedById assignedToId requestType title description
-      urgency status dueDate completedDate resolution cost attachedFile
-      createdAt updatedAt
-      requestedBy { id name }
-      assignedTo { id name }
+const DELETE_EVENT = gql`
+  mutation DeleteEvent($id: ID!) {
+    deleteEvent(id: $id)
+  }
+`;
+
+const CREATE_BOOKING = gql`
+  mutation CreateBooking($input: CreateBookingInput!) {
+    createBooking(input: $input) {
+      id
+      seatId
+      userId
+      status
+      startTime
+      endTime
+      totalPrice
+      paymentId
+      customerId
     }
   }
 `;
 
-const GET_REQUEST_STATISTICS = gql`
-  query GetRequestStatistics($centerId: String) {
-    requestStats(centerId: $centerId) {
-      totalRequests pendingRequests inProgressRequests completedRequests cancelledRequests highUrgencyRequests
+const UPDATE_BOOKING = gql`
+  mutation UpdateBooking($id: ID!, $input: UpdateBookingInput!) {
+    updateBooking(id: $id, input: $input) {
+      id
+      seatId
+      userId
+      status
+      startTime
+      endTime
+      totalPrice
+      paymentId
+      customerId
     }
   }
 `;
 
-// ═══════════════════════════════════════════════════════
-// Mutations — Meeting Rooms
-// ═══════════════════════════════════════════════════════
+const PROCESS_PAYMENT = gql`
+  mutation ProcessPayment($paymentId: ID!, $method: String!) {
+    processPayment(paymentId: $paymentId, method: $method) {
+      id
+      bookingId
+      status
+      method
+      amount
+      transactionId
+    }
+  }
+`;
+
+const MEETING_ROOMS = gql`
+  query MeetingRooms($filters: RoomFiltersInput) {
+    meetingRooms(filters: $filters) {
+      id
+      name
+      capacity
+      status
+      floorId
+      centerId
+      roomType
+      hourlyRate
+      minBookingDuration
+      maxBookingDuration
+      active
+      center {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const MEETING_ROOM_BY_ID = gql`
+  query MeetingRoom($id: ID!) {
+    meetingRoom(id: $id) {
+      id
+      name
+      capacity
+      status
+      floorId
+      centerId
+      roomType
+      hourlyRate
+      active
+      center {
+        id
+        name
+      }
+      floor {
+        id
+        name
+      }
+    }
+  }
+`;
 
 const CREATE_MEETING_ROOM = gql`
   mutation CreateMeetingRoom($input: CreateMeetingRoomInput!) {
     createMeetingRoom(input: $input) {
-      id name roomType capacity status locationName floorId amenities hourlyRate active
+      id
+      name
+      capacity
+      status
+      floorId
+      centerId
+      roomType
+      hourlyRate
+      active
     }
   }
 `;
@@ -137,15 +219,15 @@ const CREATE_MEETING_ROOM = gql`
 const UPDATE_MEETING_ROOM = gql`
   mutation UpdateMeetingRoom($id: ID!, $input: UpdateMeetingRoomInput!) {
     updateMeetingRoom(id: $id, input: $input) {
-      id name roomType capacity status locationName floorId amenities hourlyRate active
-    }
-  }
-`;
-
-const UPDATE_ROOM_STATUS = gql`
-  mutation UpdateRoomStatus($id: ID!, $status: String!) {
-    updateRoomStatus(id: $id, status: $status) {
-      id name status
+      id
+      name
+      capacity
+      status
+      floorId
+      centerId
+      roomType
+      hourlyRate
+      active
     }
   }
 `;
@@ -157,80 +239,81 @@ const DELETE_MEETING_ROOM = gql`
 `;
 
 const BOOK_ROOM = gql`
-  mutation BookRoom($roomId: String!, $centerId: String!, $eventDate: String!, $startTime: String!, $endTime: String!, $title: String!, $requestedBy: String) {
-    bookRoom(roomId: $roomId, centerId: $centerId, eventDate: $eventDate, startTime: $startTime, endTime: $endTime, title: $title, requestedBy: $requestedBy) {
-      id name status
+  mutation BookRoom(
+    $roomId: String!
+    $centerId: String!
+    $eventDate: String!
+    $startTime: String!
+    $endTime: String!
+    $title: String!
+    $requestedBy: String!
+    $description: String
+    $attendeesCount: Int
+  ) {
+    bookRoom(
+      roomId: $roomId
+      centerId: $centerId
+      eventDate: $eventDate
+      startTime: $startTime
+      endTime: $endTime
+      title: $title
+      requestedBy: $requestedBy
+      description: $description
+      attendeesCount: $attendeesCount
+    ) {
+      id
+      name
+      status
     }
   }
 `;
 
 // ═══════════════════════════════════════════════════════
-// Mutations — Events
+// Requests (service requests: maintenance, IT, etc.)
 // ═══════════════════════════════════════════════════════
 
-const CREATE_EVENT = gql`
-  mutation CreateEvent($input: CreateEventInput!) {
-    createEvent(input: $input) {
-      success event { id title eventDate startTime endTime status cost }
-      error
+const GET_REQUESTS = gql`
+  query GetRequests($filters: RequestFiltersInput) {
+    requests(filters: $filters) {
+      id
+      title
+      description
+      requestType
+      status
+      centerId
+      requestedById
+      assignedToId
+      urgency
+      dueDate
+      resolution
+      cost
+      createdAt
+      updatedAt
+      center {
+        id
+        name
+      }
+      requestedBy {
+        id
+        name
+      }
+      assignedTo {
+        id
+        name
+      }
     }
   }
 `;
 
-const UPDATE_EVENT = gql`
-  mutation UpdateEvent($id: ID!, $input: UpdateEventInput!) {
-    updateEvent(id: $id, input: $input) {
-      success event { id title eventDate startTime endTime status cost }
-      error
-    }
-  }
-`;
-
-const UPDATE_EVENT_STATUS = gql`
-  mutation UpdateEventStatus($id: ID!, $status: EventStatus!) {
-    updateEventStatus(id: $id, status: $status) {
-      success event { id title eventDate startTime endTime status cost }
-      error
-    }
-  }
-`;
-
-const CANCEL_EVENT = gql`
-  mutation CancelEvent($id: ID!) {
-    cancelEvent(id: $id)
-  }
-`;
-
-const DELETE_EVENT = gql`
-  mutation DeleteEvent($id: ID!) {
-    deleteEvent(id: $id)
-  }
-`;
-
-// ═══════════════════════════════════════════════════════
-// Mutations — Requests
-// ═══════════════════════════════════════════════════════
-
-const CREATE_REQUEST = gql`
-  mutation CreateRequest($input: CreateRequestInput!) {
-    createRequest(input: $input) {
-      id title requestType urgency status dueDate cost
-    }
-  }
-`;
-
-const UPDATE_REQUEST = gql`
-  mutation UpdateRequest($id: ID!, $input: UpdateRequestInput!) {
-    updateRequest(id: $id, input: $input) {
-      id title requestType urgency status dueDate resolution cost
-    }
-  }
-`;
-
-const ASSIGN_REQUEST = gql`
-  mutation AssignRequest($id: ID!, $assignedToId: String!) {
-    assignRequest(id: $id, assignedToId: $assignedToId) {
-      id title urgency status assignedTo { id name }
+const GET_REQUEST_STATS = gql`
+  query GetRequestStats($centerId: String) {
+    requestStats(centerId: $centerId) {
+      totalRequests
+      pendingRequests
+      inProgressRequests
+      completedRequests
+      cancelledRequests
+      highUrgencyRequests
     }
   }
 `;
@@ -238,15 +321,10 @@ const ASSIGN_REQUEST = gql`
 const APPROVE_REQUEST = gql`
   mutation ApproveRequest($id: ID!) {
     approveRequest(id: $id) {
-      id title status requestType urgency
-    }
-  }
-`;
-
-const COMPLETE_REQUEST = gql`
-  mutation CompleteRequest($id: ID!, $resolution: String) {
-    completeRequest(id: $id, resolution: $resolution) {
-      id title status completedDate resolution
+      id
+      title
+      status
+      updatedAt
     }
   }
 `;
@@ -254,7 +332,34 @@ const COMPLETE_REQUEST = gql`
 const REJECT_REQUEST = gql`
   mutation RejectRequest($id: ID!, $resolution: String!) {
     rejectRequest(id: $id, resolution: $resolution) {
-      id title status resolution
+      id
+      title
+      status
+      updatedAt
+    }
+  }
+`;
+
+const COMPLETE_REQUEST = gql`
+  mutation CompleteRequest($id: ID!, $resolution: String) {
+    completeRequest(id: $id, resolution: $resolution) {
+      id
+      title
+      status
+      updatedAt
+    }
+  }
+`;
+
+const ASSIGN_REQUEST = gql`
+  mutation AssignRequest($id: ID!, $assignedToId: String!) {
+    assignRequest(id: $id, assignedToId: $assignedToId) {
+      id
+      title
+      status
+      assignedToId
+      assignedToName
+      updatedAt
     }
   }
 `;
@@ -265,671 +370,778 @@ const CANCEL_REQUEST = gql`
   }
 `;
 
-const DELETE_REQUEST = gql`
-  mutation DeleteRequest($id: ID!) {
-    deleteRequest(id: $id)
+const UPDATE_REQUEST = gql`
+  mutation UpdateRequest($id: ID!, $input: UpdateRequestInput!) {
+    updateRequest(id: $id, input: $input) {
+      id
+      title
+      description
+      status
+      priority
+      urgency
+      updatedAt
+    }
+  }
+`;
+
+const CREATE_REQUEST = gql`
+  mutation CreateRequest($input: CreateRequestInput!) {
+    createRequest(input: $input) {
+      id
+      title
+      description
+      type
+      status
+      priority
+      urgency
+      createdAt
+    }
   }
 `;
 
 // ═══════════════════════════════════════════════════════
-// Types
+// Event status / stats
 // ═══════════════════════════════════════════════════════
 
-export type RoomStatus = 'AVAILABLE' | 'BOOKED' | 'OCCUPIED' | 'MAINTENANCE';
-export type EventStatusType = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
-export type EventTypeOption = 'MEETING' | 'CONFERENCE' | 'WORKSHOP' | 'TRAINING' | 'SOCIAL' | 'OTHER';
-export type RequestStatusType = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
-export type RequestTypeOption = 'PRINTER' | 'UPGRADE' | 'SERVICES' | 'EVENTS' | 'MAINTENANCE' | 'CLEANING' | 'SECURITY' | 'OTHER';
-export type UrgencyType = 'LOW' | 'MEDIUM' | 'HIGH';
+const GET_EVENT_STATS = gql`
+  query GetEventStats($centerId: String) {
+    eventStatistics(centerId: $centerId) {
+      totalEvents
+      pendingEvents
+      confirmedEvents
+      completedEvents
+      cancelledEvents
+    }
+  }
+`;
 
-export interface RoomFilters {
-  centerId?: string;
-  floorId?: string;
-  type?: string;
-  status?: RoomStatus;
-  minCapacity?: number;
-  search?: string;
-  limit?: number;
-  offset?: number;
-}
+const UPDATE_EVENT_STATUS = gql`
+  mutation UpdateEventStatus($id: ID!, $status: EventStatus!) {
+    updateEventStatus(id: $id, status: $status) {
+      id
+      title
+      status
+      updatedAt
+    }
+  }
+`;
 
-export interface EventFilters {
-  status?: EventStatusType;
-  type?: EventTypeOption;
-  centerId?: string;
-  meetingRoomId?: string;
-  startDate?: string;
-  endDate?: string;
-  search?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export interface RequestFilters {
-  status?: RequestStatusType;
-  type?: RequestTypeOption;
-  centerId?: string;
-  assignedToId?: string;
-  requestedById?: string;
-  urgency?: UrgencyType;
-  search?: string;
-  pendingOnly?: boolean;
-  limit?: number;
-  offset?: number;
-}
+const CANCEL_EVENT = gql`
+  mutation CancelEvent($id: ID!) {
+    cancelEvent(id: $id)
+  }
+`;
 
 // ═══════════════════════════════════════════════════════
-// Hooks — Meeting Rooms
+// Booking hooks
 // ═══════════════════════════════════════════════════════
 
-export function useMeetingRooms(filters?: RoomFilters) {
-  const { data, loading, error, refetch } = useQuery(GET_MEETING_ROOMS, {
+export function useBookings(filters?: { centerId?: string; userId?: string; customerId?: string; status?: string; startDate?: string; endDate?: string }) {
+  return useQuery(GET_BOOKINGS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
-
-  return {
-    rooms: data?.meetingRooms ?? [],
-    loading,
-    error,
-    refetch,
-  };
 }
 
-export function useMeetingRoom(id: string) {
-  const { data, loading, error } = useQuery(GET_MEETING_ROOM, {
+export function useBookingById(id: string | null) {
+  return useQuery(GET_BOOKING_BY_ID, {
     variables: { id },
     skip: !id,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
+}
 
-  return {
-    room: data?.meetingRoom ?? null,
-    loading,
-    error,
+export function useCreateBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const create = async (input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_BOOKING,
+        variables: { input },
+        refetchQueries: [{ query: GET_BOOKINGS }],
+      });
+      toast.success('Booking created successfully');
+      return data?.createBooking;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create booking');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  return { create, loading };
 }
 
-export function useAvailableRooms(centerId?: string, minCapacity?: number) {
-  const { data, loading, error, refetch } = useQuery(GET_AVAILABLE_ROOMS, {
-    variables: { centerId, capacity: minCapacity },
-    skip: !centerId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
+export function useUpdateBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
 
-  return {
-    rooms: data?.availableRooms ?? [],
-    loading,
-    error,
-    refetch,
+  const update = async (id: string, input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_BOOKING,
+        variables: { id, input },
+      });
+      toast.success('Booking updated successfully');
+      return data?.updateBooking;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update booking');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  return { update, loading };
 }
 
-export function useRoomAvailability(
-  centerId: string,
-  floorId: string,
-  eventDate: string,
-  startTime: string,
-  endTime: string,
-) {
-  const { data, loading, error, refetch } = useQuery(GET_ROOM_AVAILABILITY, {
-    variables: { centerId, floorId, eventDate, startTime, endTime },
-    skip: !centerId,
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
+export function useCancelBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
 
-  return {
-    availableRooms: data?.roomAvailability ?? [],
-    loading,
-    error,
-    refetch,
+  const cancel = async (id: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CANCEL_ROOM_BOOKING,
+        variables: { bookingId: id },
+        refetchQueries: [{ query: GET_BOOKINGS }],
+      });
+      toast.success('Booking cancelled successfully');
+      return data?.cancelRoomBooking;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel booking');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  return { cancel, loading };
 }
 
-export function useCreateMeetingRoom() {
+export function useProcessPayment() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
 
-  const [mutation] = useMutation(CREATE_MEETING_ROOM, {
-    errorPolicy: 'all',
-  });
-
-  async function create(input: Record<string, unknown>) {
-    setSaving(true);
+  const process = async (paymentId: string, method: string): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { input } });
-      if (result.errors?.length) throw new Error(result.errors[0].message);
-      await client.refetchQueries({ include: ['GetMeetingRooms'] });
-      return result.data?.createMeetingRoom ?? null;
+      const { data } = await client.mutate({
+        mutation: PROCESS_PAYMENT,
+        variables: { paymentId, method },
+        refetchQueries: [{ query: GET_BOOKINGS }],
+      });
+      toast.success('Payment processed successfully');
+      return data?.processPayment;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to process payment');
+      throw err;
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { create, saving };
-}
-
-export function useUpdateMeetingRoom() {
-  const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
-
-  const [mutation] = useMutation(UPDATE_MEETING_ROOM, {
-    errorPolicy: 'all',
-  });
-
-  async function update(id: string, input: Record<string, unknown>) {
-    setSaving(true);
-    try {
-      const result = await mutation({ variables: { id, input } });
-      if (result.errors?.length) throw new Error(result.errors[0].message);
-      await client.refetchQueries({ include: ['GetMeetingRooms'] });
-      return result.data?.updateMeetingRoom ?? null;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return { update, saving };
-}
-
-export function useUpdateRoomStatus() {
-  const client = useApolloClient();
-  const [updating, setUpdating] = useState(false);
-
-  const [mutation] = useMutation(UPDATE_ROOM_STATUS, {
-    errorPolicy: 'all',
-  });
-
-  async function updateStatus(id: string, status: string) {
-    setUpdating(true);
-    try {
-      const result = await mutation({ variables: { id, status } });
-      await client.refetchQueries({ include: ['GetMeetingRooms'] });
-      return result.data?.updateRoomStatus ?? null;
-    } finally {
-      setUpdating(false);
-    }
-  }
-
-  return { updateStatus, updating };
-}
-
-export function useDeleteMeetingRoom() {
-  const client = useApolloClient();
-  const [deleting, setDeleting] = useState(false);
-
-  const [mutation] = useMutation(DELETE_MEETING_ROOM, {
-    errorPolicy: 'all',
-  });
-
-  async function remove(id: string) {
-    setDeleting(true);
-    try {
-      const result = await mutation({ variables: { id } });
-      if (result.errors?.length) throw new Error(result.errors[0].message);
-      await client.refetchQueries({ include: ['GetMeetingRooms'] });
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  return { deleteRoom: remove, deleting };
-}
-
-export function useBookRoom() {
-  const client = useApolloClient();
-  const [booking, setBooking] = useState(false);
-
-  const [mutation] = useMutation(BOOK_ROOM, {
-    errorPolicy: 'all',
-  });
-
-  async function book(vars: {
-    roomId: string;
-    centerId: string;
-    eventDate: string;
-    startTime: string;
-    endTime: string;
-    title: string;
-    requestedBy?: string;
-  }) {
-    setBooking(true);
-    try {
-      const result = await mutation({ variables: vars });
-      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetEvents'] });
-      return result.data?.bookRoom ?? null;
-    } finally {
-      setBooking(false);
-    }
-  }
-
-  return { book, booking };
-}
-
-export function useCancelRoomBooking() {
-  const client = useApolloClient();
-  const [cancelling, setCancelling] = useState(false);
-  const [cancel] = useMutation(CANCEL_ROOM_BOOKING, {
-    refetchQueries: ['GetMeetingRooms', 'GetTodayEvents', 'GetUpcomingEvents'],
-  });
-  async function cancelBooking(bookingId: string, roomId: string) {
-    setCancelling(true);
-    try {
-      await cancel({ variables: { bookingId, roomId } });
-      await client.refetchQueries({ include: ['GetMeetingRooms', 'GetTodayEvents', 'GetUpcomingEvents'] });
-    } finally {
-      setCancelling(false);
-    }
-  }
-  return { cancelBooking, cancelling };
+  return { process, loading };
 }
 
 export function useBulkUpdateStatus() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [updating, setUpdating] = useState(false);
-  const [bulkUpdate] = useMutation(BULK_UPDATE_STATUS, {
-    refetchQueries: ['GetMeetingRooms'],
-  });
-  async function update(roomIds: string[], status: string) {
-    setUpdating(true);
+
+  const bulkUpdate = async (ids: string[], status: string): Promise<any> => {
+    setLoading(true);
     try {
-      await bulkUpdate({ variables: { roomIds, status } });
-      await client.refetchQueries({ include: ['GetMeetingRooms'] });
+      const { data } = await client.mutate({
+        mutation: BULK_UPDATE_STATUS,
+        variables: { roomIds: ids, status },
+        refetchQueries: [{ query: GET_BOOKINGS }],
+      });
+      toast.success(`Updated ${ids.length} bookings`);
+      return data?.bulkUpdateStatus;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to bulk update');
+      throw err;
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
-  }
-  return { update, updating };
+  };
+
+  return { bulkUpdate, loading };
 }
 
-
 // ═══════════════════════════════════════════════════════
-// Hooks — Events
+// Events
 // ═══════════════════════════════════════════════════════
 
-export function useEvents(filters?: EventFilters) {
-  const { data, loading, error, refetch } = useQuery(GET_EVENTS, {
+export function useEvents(filters?: { centerId?: string; status?: string }) {
+  const result = useQuery(GET_EVENTS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
-
-  return {
-    events: data?.events ?? [],
-    data,
-    loading,
-    error,
-    refetch,
-  };
+  const { data, loading, error } = result;
+  return { events: data?.events ?? [], loading, error };
 }
 
-export function useEvent(id: string) {
-  const { data, loading, error } = useQuery(GET_EVENT, {
+export function useEventById(id: string | null) {
+  return useQuery(GET_EVENT_BY_ID, {
     variables: { id },
     skip: !id,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
-
-  return {
-    event: data?.event ?? null,
-    loading,
-    error,
-  };
-}
-
-export function useEventStats(centerId?: string) {
-  const { data, loading, error } = useQuery(GET_EVENT_STATISTICS, {
-    variables: { centerId },
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-
-  return {
-    stats: data?.eventStatistics ?? {
-      totalEvents: 0,
-      pendingEvents: 0,
-      confirmedEvents: 0,
-      completedEvents: 0,
-      cancelledEvents: 0,
-    },
-    loading,
-    error,
-  };
 }
 
 export function useCreateEvent() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
 
-  const [mutation] = useMutation(CREATE_EVENT, {
-    errorPolicy: 'all',
-  });
-
-  async function create(input: Record<string, unknown>) {
-    setSaving(true);
+  const create = async (input: any): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { input } });
-      if (result.errors?.length) {
-        return { success: false, error: result.errors[0].message, event: null };
-      }
-      await client.refetchQueries({ include: ['GetEvents'] });
-      return result.data?.createEvent ?? { success: false, error: 'Unknown error', event: null };
+      const { data } = await client.mutate({
+        mutation: CREATE_EVENT,
+        variables: { input },
+      });
+      toast.success('Event created successfully');
+      return data?.createEvent;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create event');
+      throw err;
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { create, saving };
+  return { create, saving: loading };
 }
 
 export function useUpdateEvent() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
 
-  const [mutation] = useMutation(UPDATE_EVENT, {
-    errorPolicy: 'all',
-  });
-
-  async function update(id: string, input: Record<string, unknown>) {
-    setSaving(true);
+  const update = async (id: string, input: any): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { id, input } });
-      await client.refetchQueries({ include: ['GetEvents'] });
-      return result.data?.updateEvent ?? { success: false, error: 'Unknown error', event: null };
+      const { data } = await client.mutate({
+        mutation: UPDATE_EVENT,
+        variables: { id, input },
+      });
+      toast.success('Event updated successfully');
+      return data?.updateEvent;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update event');
+      throw err;
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { update, saving };
+  return { update, saving: loading };
 }
 
-export function useUpdateEventStatus() {
+export function useDeleteEvent() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
 
-  const [mutation] = useMutation(UPDATE_EVENT_STATUS, {
-    errorPolicy: 'all',
-  });
-
-  async function updateStatus(id: string, status: EventStatusType) {
-    setSaving(true);
+  const remove = async (id: string): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { id, status } });
-      await client.refetchQueries({ include: ['GetEvents'] });
-      return result.data?.updateEventStatus ?? { success: false, error: 'Unknown error', event: null };
+      const { data } = await client.mutate({
+        mutation: DELETE_EVENT,
+        variables: { id },
+      });
+      toast.success('Event deleted successfully');
+      return data?.deleteEvent;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete event');
+      throw err;
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { updateStatus, saving };
-}
-
-export function useCancelEvent() {
-  const client = useApolloClient();
-  const [cancelling, setCancelling] = useState(false);
-
-  const [mutation] = useMutation(CANCEL_EVENT, {
-    errorPolicy: 'all',
-  });
-
-  async function cancel(id: string) {
-    setCancelling(true);
-    try {
-      const result = await mutation({ variables: { id } });
-      await client.refetchQueries({ include: ['GetEvents'] });
-      return !result.errors?.length;
-    } catch {
-      return false;
-    } finally {
-      setCancelling(false);
-    }
-  }
-
-  return { cancel, cancelling };
+  return { remove, loading };
 }
 
 // ═══════════════════════════════════════════════════════
-// Hooks — Requests
+// Meeting Rooms
 // ═══════════════════════════════════════════════════════
 
-export function useRequests(filters?: RequestFilters) {
-  const { data, loading, error, refetch } = useQuery(GET_REQUESTS, {
+export function useMeetingRooms(filters?: { centerId?: string; floorId?: string; status?: string; minCapacity?: number; search?: string; limit?: number; offset?: number }) {
+  const result = useQuery(MEETING_ROOMS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
-
-  return {
-    requests: data?.requests ?? [],
-    loading,
-    error,
-    refetch,
-  };
+  const { data, loading, error, refetch } = result;
+  return { rooms: data?.meetingRooms ?? [], loading, error, refetch };
 }
 
-export function useRequest(id: string) {
-  const { data, loading, error } = useQuery(GET_REQUEST, {
+export function useMeetingRoomById(id: string | null) {
+  return useQuery(MEETING_ROOM_BY_ID, {
     variables: { id },
     skip: !id,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
+}
 
-  return {
-    request: data?.request ?? null,
-    loading,
-    error,
+export function useCancelRoomBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const cancel = async (bookingId: string, roomId: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CANCEL_ROOM_BOOKING,
+        variables: { bookingId, roomId },
+      });
+      toast.success('Booking cancelled');
+      return data?.cancelRoomBooking ?? true;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel booking');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  return { cancel, loading };
+}
+
+export function useCreateMeetingRoom() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const create = async (input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_MEETING_ROOM,
+        variables: { input },
+      });
+      toast.success('Room created successfully');
+      return data?.createMeetingRoom;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create room');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, loading };
+}
+
+export function useUpdateMeetingRoom() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const update = async (id: string, input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_MEETING_ROOM,
+        variables: { id, input },
+      });
+      toast.success('Room updated successfully');
+      return data?.updateMeetingRoom;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update room');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, loading };
+}
+
+export function useDeleteMeetingRoom() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const remove = async (id: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: DELETE_MEETING_ROOM,
+        variables: { id },
+      });
+      toast.success('Room deleted');
+      return data?.deleteMeetingRoom;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete room');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { remove, loading };
+}
+
+export function useBookRoom() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const book = async (input: { roomId: string; centerId?: string; eventDate: string; startTime: string; endTime: string; title: string; requestedBy?: string; description?: string; attendeesCount?: number }): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: BOOK_ROOM,
+        variables: {
+          roomId: input.roomId,
+          centerId: input.centerId ?? "",
+          eventDate: input.eventDate,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          title: input.title,
+          requestedBy: input.requestedBy ?? "",
+          description: input.description,
+          attendeesCount: input.attendeesCount,
+        },
+        refetchQueries: [{ query: MEETING_ROOMS }],
+      });
+      toast.success('Room booked successfully');
+      return data?.bookRoom;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to book room');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { book, booking: null, loading } as const;
+}
+
+export function useCreateRoomBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  return [
+    async (input: any): Promise<any> => {
+      setLoading(true);
+      try {
+        const { data } = await client.mutate({
+          mutation: BOOK_ROOM,
+          variables: {
+            roomId: input.roomId,
+            centerId: input.centerId ?? "",
+            eventDate: input.eventDate,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            title: input.title,
+            requestedBy: input.requestedBy ?? "",
+            description: input.description,
+            attendeesCount: input.attendeesCount,
+          },
+          refetchQueries: [{ query: MEETING_ROOMS }],
+        });
+        toast.success('Room booked successfully');
+        return data?.bookRoom;
+      } catch (err: any) {
+        toast.error(err?.message || 'Failed to book room');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    loading,
+  ] as const;
+}
+
+export function useUpdateRoomBooking() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  return [
+    async (id: string, input: any): Promise<any> => {
+      setLoading(true);
+      try {
+        const { data } = await client.mutate({
+          mutation: UPDATE_EVENT,
+          variables: { id, input },
+        });
+        toast.success('Room booking updated');
+        return data?.updateEvent;
+      } catch (err: any) {
+        toast.error(err?.message || 'Failed to update room booking');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    loading,
+  ] as const;
+}
+
+// ═══════════════════════════════════════════════════════
+// Requests (service requests: maintenance, IT, etc.)
+// ═══════════════════════════════════════════════════════
+
+export function useRequests(filters?: { centerId?: string; status?: string; type?: string; limit?: number; offset?: number }) {
+  const result = useQuery(GET_REQUESTS, {
+    variables: { filters },
+    fetchPolicy: 'cache-and-network',
+  });
+  const { data, loading, error } = result;
+  return { requests: data?.requests ?? [], loading, error };
 }
 
 export function useRequestStats(centerId?: string) {
-  const { data, loading, error } = useQuery(GET_REQUEST_STATISTICS, {
+  const result = useQuery(GET_REQUEST_STATS, {
     variables: { centerId },
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
   });
-
-  return {
-    stats: data?.requestStats ?? {
-      totalRequests: 0,
-      pendingRequests: 0,
-      inProgressRequests: 0,
-      completedRequests: 0,
-      cancelledRequests: 0,
-      highUrgencyRequests: 0,
-    },
-    loading,
-    error,
-  };
-}
-
-export function useCreateRequest() {
-  const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
-
-  const [mutation] = useMutation(CREATE_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function create(input: Record<string, unknown>) {
-    setSaving(true);
-    try {
-      const result = await mutation({ variables: { input } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.createRequest ?? null;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return { create, saving };
-}
-
-export function useUpdateRequest() {
-  const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
-
-  const [mutation] = useMutation(UPDATE_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function update(id: string, input: Record<string, unknown>) {
-    setSaving(true);
-    try {
-      const result = await mutation({ variables: { id, input } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.updateRequest ?? null;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return { update, saving };
-}
-
-export function useAssignRequest() {
-  const client = useApolloClient();
-  const [assigning, setAssigning] = useState(false);
-
-  const [mutation] = useMutation(ASSIGN_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function assign(id: string, assignedToId: string) {
-    setAssigning(true);
-    try {
-      const result = await mutation({ variables: { id, assignedToId } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.assignRequest ?? null;
-    } finally {
-      setAssigning(false);
-    }
-  }
-
-  return { assign, assigning };
+  const { data, loading, error } = result;
+  return { stats: data?.requestStats ?? {}, loading, error };
 }
 
 export function useApproveRequest() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [approving, setApproving] = useState(false);
 
-  const [mutation] = useMutation(APPROVE_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function approve(id: string) {
-    setApproving(true);
+  const approve = async (id: string): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { id } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.approveRequest ?? null;
+      const { data } = await client.mutate({
+        mutation: APPROVE_REQUEST,
+        variables: { id },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request approved');
+      return data?.approveRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to approve request');
+      throw err;
     } finally {
-      setApproving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { approve, approving };
-}
-
-export function useCompleteRequest() {
-  const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
-
-  const [mutation] = useMutation(COMPLETE_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function complete(id: string, resolution?: string) {
-    setSaving(true);
-    try {
-      const result = await mutation({ variables: { id, resolution } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.completeRequest ?? null;
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return { complete, saving };
+  return { approve, approving: loading };
 }
 
 export function useRejectRequest() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [saving, setSaving] = useState(false);
 
-  const [mutation] = useMutation(REJECT_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function reject(id: string, resolution: string) {
-    setSaving(true);
+  const reject = async (id: string, resolution: string): Promise<any> => {
+    setLoading(true);
     try {
-      const result = await mutation({ variables: { id, resolution } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return result.data?.rejectRequest ?? null;
+      const { data } = await client.mutate({
+        mutation: REJECT_REQUEST,
+        variables: { id, resolution },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request rejected');
+      return data?.rejectRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to reject request');
+      throw err;
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { reject, saving };
+  return { reject, saving: loading };
+}
+
+export function useCompleteRequest() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const complete = async (id: string, resolution?: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: COMPLETE_REQUEST,
+        variables: { id, resolution },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request completed');
+      return data?.completeRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to complete request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { complete, completing: loading };
+}
+
+export function useAssignRequest() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const assign = async (id: string, assignedToId: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: ASSIGN_REQUEST,
+        variables: { id, assignedToId },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request assigned');
+      return data?.assignRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to assign request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { assign, assigning: loading };
 }
 
 export function useCancelRequest() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [cancelling, setCancelling] = useState(false);
 
-  const [mutation] = useMutation(CANCEL_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function cancel(id: string) {
-    setCancelling(true);
+  const cancel = async (id: string): Promise<boolean> => {
+    setLoading(true);
     try {
-      await mutation({ variables: { id } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return true;
-    } catch {
-      return false;
+      const { data } = await client.mutate({
+        mutation: CANCEL_REQUEST,
+        variables: { id },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request cancelled');
+      return data?.cancelRequest ?? true;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel request');
+      throw err;
     } finally {
-      setCancelling(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { cancelRequest: cancel, cancelling };
-
+  return { cancel, cancelling: loading };
 }
 
-export function useDeleteRequest() {
+export function useUpdateRequest() {
+  const [loading, setLoading] = useState(false);
   const client = useApolloClient();
-  const [deleting, setDeleting] = useState(false);
 
-  const [mutation] = useMutation(DELETE_REQUEST, {
-    errorPolicy: 'all',
-  });
-
-  async function remove(id: string) {
-    setDeleting(true);
+  const update = async (id: string, input: any): Promise<any> => {
+    setLoading(true);
     try {
-      await mutation({ variables: { id } });
-      await client.refetchQueries({ include: ['GetRequests'] });
-      return true;
-    } catch {
+      const { data } = await client.mutate({
+        mutation: UPDATE_REQUEST,
+        variables: { id, input },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request updated');
+      return data?.updateRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, saving: loading };
+}
+
+export function useCreateRequest() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const create = async (input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_REQUEST,
+        variables: { input },
+        refetchQueries: [{ query: GET_REQUESTS }],
+      });
+      toast.success('Request created');
+      return data?.createRequest;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create request');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, saving: loading };
+}
+
+// ═══════════════════════════════════════════════════════
+// Event stats / status
+// ═══════════════════════════════════════════════════════
+
+export function useEventStats(centerId?: string) {
+  const result = useQuery(GET_EVENT_STATS, {
+    variables: { centerId },
+    fetchPolicy: 'cache-and-network',
+  });
+  const { data, loading, error } = result;
+  return { stats: data?.eventStatistics ?? {}, loading, error };
+}
+
+export function useUpdateEventStatus() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const updateStatus = async (id: string, status: string): Promise<{ success: boolean; event?: any; error?: string }> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_EVENT_STATUS,
+        variables: { id, status },
+      });
+      toast.success('Event status updated');
+      return { success: true, event: data?.updateEventStatus };
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update event status');
+      return { success: false, error: err?.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { updateStatus, updating: loading };
+}
+
+export function useCancelEvent() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const cancel = async (id: string): Promise<boolean> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CANCEL_EVENT,
+        variables: { id },
+      });
+      toast.success('Event cancelled');
+      return data?.cancelEvent ?? true;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel event');
       return false;
     } finally {
-      setDeleting(false);
+      setLoading(false);
     }
-  }
+  };
 
-  return { deleteRequest: remove, deleting };
+  return { cancel, cancelling: loading };
 }
+
+// ═══════════════════════════════════════════════════════
+// Type aliases
+// ═══════════════════════════════════════════════════════
+
+export type EventStatusType = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+export type EventTypeOption = "MEETING" | "MEETING_ROOM" | "CONFERENCE" | "WORKSHOP" | "TRAINING" | "SOCIAL" | "OTHER";

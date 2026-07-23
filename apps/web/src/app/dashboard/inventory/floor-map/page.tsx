@@ -142,6 +142,7 @@ export default function FloorMapPage() {
   const {
     data: centersData,
     loading: centersLoading,
+    error: centersError,
   } = useQuery<{ centers: any[] }>(GET_CENTERS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
@@ -408,7 +409,7 @@ export default function FloorMapPage() {
 
   const isLoading = centersLoading || floorsLoading || seatsLoading || metricsLoading;
 
-  const unauthError = isUnauthError(floorsError) || isUnauthError(seatsError) || isUnauthError(metricsError) || isUnauthError(bookingsError);
+  const unauthError = isUnauthError(centersError) || isUnauthError(floorsError) || isUnauthError(seatsError) || isUnauthError(metricsError) || isUnauthError(bookingsError);
 
   // Redirect to signin on auth failure
   useEffect(() => {
@@ -482,7 +483,9 @@ export default function FloorMapPage() {
                 ))}
               </select>
             ) : activeCenterId && !floorsLoading ? (
-              <span style={{ fontSize: 13, color: '#6A7282' }}>No floors found</span>
+              <span style={{ fontSize: 13, color: '#6A7282' }}>
+                {floorsError ? 'Failed to load floors' : 'No floors yet for this center'}
+              </span>
             ) : null}
             <button
               className={styles.addSpaceBtn + ' active:scale-[0.97] transition-transform duration-150'}

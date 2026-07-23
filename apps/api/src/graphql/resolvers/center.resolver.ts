@@ -8,7 +8,8 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
-import { UnauthorizedException, NotFoundException, UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { NotFoundException, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { CenterStatus } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,10 +20,9 @@ import { Floor as FloorEntity } from '../../typeorm/entities/floor.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 // Meeting rooms are managed exclusively through MeetingRoomResolver.
 import { PubSubService } from '../pubsub/pubsub.service';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
 import { Public } from '../../auth/decorators/public.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UserRole as UR } from '../../auth/roles.enum';
 import {
   CreateCenterInput,
@@ -34,6 +34,7 @@ import {
   CreateSeatInput,
   UpdateSeatInput,
 } from '../inputs/center.input';
+import { deepMergeSettings } from '../../common/utils/settings.util';
 
 export const CENTER_TRIGGERS = {
   centerUpdated: 'center.updated',
@@ -41,31 +42,10 @@ export const CENTER_TRIGGERS = {
 } as const;
 
 /**
- * Recursively merge `incoming` into `target`. Plain object values are
- * merged key-by-key (so updating settings.finance doesn't wipe
- * settings.security); everything else is overwritten by the incoming value.
+ * Deep-merge a partial settings object into Center.settings so that
+ * updating one group (finance) never wipes another (security).
+ * @see src/common/utils/settings.util.ts
  */
-function deepMergeSettings(
-  target: Record<string, any>,
-  incoming: Record<string, any>,
-): Record<string, any> {
-  const out: Record<string, any> = { ...target };
-  for (const [key, value] of Object.entries(incoming)) {
-    if (
-      value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      out[key] &&
-      typeof out[key] === 'object' &&
-      !Array.isArray(out[key])
-    ) {
-      out[key] = deepMergeSettings(out[key], value);
-    } else {
-      out[key] = value;
-    }
-  }
-  return out;
-}
 
 @Resolver(() => CenterEntity)
 export class CenterResolver {
@@ -121,6 +101,8 @@ export class CenterResolver {
     return centers;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => CenterEntity)
   async createCenter(
     @Args('input') input: CreateCenterInput,
@@ -151,6 +133,8 @@ export class CenterResolver {
     return center;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => CenterEntity)
   async updateCenter(
     @Args('id', { type: () => ID }) id: string,
@@ -168,6 +152,8 @@ export class CenterResolver {
     return center;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => Boolean)
   async deleteCenter(
     @Args('id', { type: () => ID }) id: string,
@@ -248,6 +234,8 @@ export class LocationResolver {
     return location;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => LocationEntity)
   async createLocation(
     @Args('input') input: CreateLocationInput,
@@ -261,6 +249,8 @@ export class LocationResolver {
     return location;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => LocationEntity)
   async updateLocation(
     @Args('id', { type: () => ID }) id: string,
@@ -294,6 +284,8 @@ export class FloorResolver {
     return floors;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => FloorEntity)
   async createFloor(
     @Args('input') input: CreateFloorInput
@@ -304,9 +296,9 @@ export class FloorResolver {
     return floor;
   }
 
-  @Mutation(() => FloorEntity)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  @Mutation(() => FloorEntity)
   async updateFloor(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateFloorInput
@@ -320,9 +312,9 @@ export class FloorResolver {
     return floor;
   }
 
-  @Mutation(() => Boolean)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  @Mutation(() => Boolean)
   async deleteFloor(
     @Args('id', { type: () => ID }) id: string
   ): Promise<boolean> {
@@ -363,6 +355,8 @@ export class SeatResolver {
     return seat;
   }
 
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   @Mutation(() => SeatEntity)
   async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
     const newSeat = this.seatRepo.create(input);
@@ -376,9 +370,9 @@ export class SeatResolver {
     return seat;
   }
 
-  @Mutation(() => SeatEntity)
   @UseGuards(GqlAuthGuard, RolesGuard)
   @Roles(UR.ADMIN, UR.CENTER_MANAGER)
+  @Mutation(() => SeatEntity)
   async updateSeat(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateSeatInput
@@ -400,8 +394,6 @@ export class SeatResolver {
   }
 
   @Mutation(() => Boolean)
-  @UseGuards(GqlAuthGuard, RolesGuard)
-  @Roles(UR.ADMIN, UR.CENTER_MANAGER)
   async deleteSeat(
     @Args('id', { type: () => ID }) id: string
   ): Promise<boolean> {

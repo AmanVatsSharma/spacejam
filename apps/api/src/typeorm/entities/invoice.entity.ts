@@ -65,7 +65,7 @@ export class Invoice {
   totalAmount!: number;
 
   @Field(() => InvoiceStatus)
-  @Column({ type: 'enum', enum: InvoiceStatus, default: InvoiceStatus.DRAFT })
+  @Column({ type: 'enum', enum: InvoiceStatus, default: 'DRAFT' })
   status!: InvoiceStatus;
 
   @Field()

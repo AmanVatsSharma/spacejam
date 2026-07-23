@@ -42,7 +42,7 @@ export class Center {
   locationId!: string;
 
   @Field(() => CenterStatus)
-  @Column({ type: 'enum', enum: CenterStatus, default: CenterStatus.ACTIVE })
+  @Column({ type: 'enum', enum: CenterStatus, default: 'ACTIVE' })
   status!: CenterStatus;
 
   @Field(() => String, { nullable: true })
