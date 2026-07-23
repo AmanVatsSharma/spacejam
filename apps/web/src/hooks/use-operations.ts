@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * File:        apps/web/src/hooks/use-operations.ts
@@ -26,18 +26,19 @@ const GET_BOOKING_BY_ID = gql`
   query GetBookingById($id: ID!) {
     booking(id: $id) {
       id
-      seatId
-      userId
+      startDate
+      endDate
       status
-      startTime
-      endTime
       totalPrice
-      paymentId
-      customerId
+      notes
+      createdAt
+      updatedAt
       seat {
         id
-        seatNumber
+        name
+        seatType
         status
+        price
         floor {
           id
           name
@@ -446,7 +447,14 @@ const CANCEL_EVENT = gql`
 // Booking hooks
 // ═══════════════════════════════════════════════════════
 
-export function useBookings(filters?: { centerId?: string; userId?: string; customerId?: string; status?: string; startDate?: string; endDate?: string }) {
+export function useBookings(filters?: {
+  centerId?: string;
+  userId?: string;
+  customerId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
   return useQuery(GET_BOOKINGS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
@@ -678,10 +686,19 @@ export function useDeleteEvent() {
 // Meeting Rooms
 // ═══════════════════════════════════════════════════════
 
-export function useMeetingRooms(filters?: { centerId?: string; floorId?: string; status?: string; minCapacity?: number; search?: string; limit?: number; offset?: number }) {
+export function useMeetingRooms(filters?: {
+  centerId?: string;
+  floorId?: string;
+  status?: string;
+  minCapacity?: number;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
   const result = useQuery(MEETING_ROOMS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
   });
   const { data, loading, error, refetch } = result;
   return { rooms: data?.meetingRooms ?? [], loading, error, refetch };
@@ -795,19 +812,29 @@ export function useBookRoom() {
   const [loading, setLoading] = useState(false);
   const client = useApolloClient();
 
-  const book = async (input: { roomId: string; centerId?: string; eventDate: string; startTime: string; endTime: string; title: string; requestedBy?: string; description?: string; attendeesCount?: number }): Promise<any> => {
+  const book = async (input: {
+    roomId: string;
+    centerId?: string;
+    eventDate: string;
+    startTime: string;
+    endTime: string;
+    title: string;
+    requestedBy?: string;
+    description?: string;
+    attendeesCount?: number;
+  }): Promise<any> => {
     setLoading(true);
     try {
       const { data } = await client.mutate({
         mutation: BOOK_ROOM,
         variables: {
           roomId: input.roomId,
-          centerId: input.centerId ?? "",
+          centerId: input.centerId ?? '',
           eventDate: input.eventDate,
           startTime: input.startTime,
           endTime: input.endTime,
           title: input.title,
-          requestedBy: input.requestedBy ?? "",
+          requestedBy: input.requestedBy ?? '',
           description: input.description,
           attendeesCount: input.attendeesCount,
         },
@@ -838,12 +865,12 @@ export function useCreateRoomBooking() {
           mutation: BOOK_ROOM,
           variables: {
             roomId: input.roomId,
-            centerId: input.centerId ?? "",
+            centerId: input.centerId ?? '',
             eventDate: input.eventDate,
             startTime: input.startTime,
             endTime: input.endTime,
             title: input.title,
-            requestedBy: input.requestedBy ?? "",
+            requestedBy: input.requestedBy ?? '',
             description: input.description,
             attendeesCount: input.attendeesCount,
           },
@@ -891,7 +918,13 @@ export function useUpdateRoomBooking() {
 // Requests (service requests: maintenance, IT, etc.)
 // ═══════════════════════════════════════════════════════
 
-export function useRequests(filters?: { centerId?: string; status?: string; type?: string; limit?: number; offset?: number }) {
+export function useRequests(filters?: {
+  centerId?: string;
+  status?: string;
+  type?: string;
+  limit?: number;
+  offset?: number;
+}) {
   const result = useQuery(GET_REQUESTS, {
     variables: { filters },
     fetchPolicy: 'cache-and-network',
@@ -1101,7 +1134,10 @@ export function useUpdateEventStatus() {
   const [loading, setLoading] = useState(false);
   const client = useApolloClient();
 
-  const updateStatus = async (id: string, status: string): Promise<{ success: boolean; event?: any; error?: string }> => {
+  const updateStatus = async (
+    id: string,
+    status: string,
+  ): Promise<{ success: boolean; event?: any; error?: string }> => {
     setLoading(true);
     try {
       const { data } = await client.mutate({
@@ -1149,5 +1185,13 @@ export function useCancelEvent() {
 // Type aliases
 // ═══════════════════════════════════════════════════════
 
-export type EventStatusType = "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED" | "REJECTED";
-export type EventTypeOption = "MEETING" | "MEETING_ROOM" | "CONFERENCE" | "WORKSHOP" | "TRAINING" | "SOCIAL" | "OTHER";
+export type EventStatusType =
+  'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
+export type EventTypeOption =
+  | 'MEETING'
+  | 'MEETING_ROOM'
+  | 'CONFERENCE'
+  | 'WORKSHOP'
+  | 'TRAINING'
+  | 'SOCIAL'
+  | 'OTHER';

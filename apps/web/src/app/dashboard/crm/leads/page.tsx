@@ -1,4 +1,4 @@
-"use client";
+'use client';
 /**
  * File:        apps/web/src/app/dashboard/crm/leads/page.tsx
  * Module:      Web · Dashboard · CRM · Lead Management
@@ -10,7 +10,6 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-01
  */
-
 
 import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -28,7 +27,11 @@ import {
   ScheduleVisitModal,
   SendProposalModal,
 } from '@/components/ui/dashboard';
-import { QueryLoading, QueryError, QueryEmpty } from '@/components/ui/query-status';
+import {
+  QueryLoading,
+  QueryError,
+  QueryEmpty,
+} from '@/components/ui/query-status';
 import styles from './leads.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -71,7 +74,10 @@ interface GetLeadsVars {
  * Helper: resolve leads — Apollo data only
  * ────────────────────────────────────────────────── */
 function useLeads() {
-  const { data, loading, error, refetch } = useQuery<GetLeadsData, GetLeadsVars>(GET_LEADS);
+  const { data, loading, error, refetch } = useQuery<
+    GetLeadsData,
+    GetLeadsVars
+  >(GET_LEADS);
   const leads = data?.leads ?? [];
   return { leads, loading, error, refetch };
 }
@@ -92,79 +98,196 @@ const Icon = {
   Search: (
     <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none">
       <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-      <path d="M21 21l-4.3-4.3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M21 21l-4.3-4.3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   Caret: (
     <svg className={styles.selectCaret} viewBox="0 0 10 6" fill="none">
-      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1 1l4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   PillCaret: (
-    <svg className="caret" viewBox="0 0 10 6" fill="none" style={{ width: 9, height: 5 }}>
-      <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className="caret"
+      viewBox="0 0 10 6"
+      fill="none"
+      style={{ width: 9, height: 5 }}
+    >
+      <path
+        d="M1 1l4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Plus: (
     <svg viewBox="0 0 14 14" fill="none">
-      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M7 1v12M1 7h12"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   Phone: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Mail: (
     <svg viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="14"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M3 7l9 6 9-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Calendar: (
     <svg viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <rect
+        x="3"
+        y="4"
+        width="18"
+        height="18"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M16 2v4M8 2v4M3 10h18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   Note: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 2v6h6M9 13h6M9 17h6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   Edit: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Download: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Check: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Users: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Trend: (
     <svg viewBox="0 0 24 24" fill="none">
-      <polyline points="3 17 9 11 13 15 21 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points="14 7 21 7 21 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline
+        points="3 17 9 11 13 15 21 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polyline
+        points="14 7 21 7 21 14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
   Clock: (
     <svg viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M12 6v6l4 2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   ),
   Target: (
@@ -176,7 +299,13 @@ const Icon = {
   ),
   IndRupee: (
     <svg viewBox="0 0 24 24" fill="none">
-      <path d="M6 3h12M6 8h12M6 13l8 8M6 13h3a5 5 0 0 0 0-10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 3h12M6 8h12M6 13l8 8M6 13h3a5 5 0 0 0 0-10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   ),
 };
@@ -189,7 +318,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | LeadStatus>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
   const [sort, setSort] = useState<'Recent' | 'Name' | 'Budget'>('Recent');
-  const [selectedId, setSelectedId] = useState<string>('l3');
+  const [selectedId, setSelectedId] = useState<string>('');
   const [showAddLead, setShowAddLead] = useState(false);
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
   const [showSendProposal, setShowSendProposal] = useState(false);
@@ -248,13 +377,16 @@ export default function LeadsPage() {
     errorPolicy: 'all',
   });
 
-  const pipelineCounts = useMemo(() => ({
-    new: pipelineData?.new ?? 0,
-    visited: pipelineData?.visited ?? 0,
-    negotiation: pipelineData?.negotiation ?? 0,
-    converted: pipelineData?.converted ?? 0,
-    cold: pipelineData?.cold ?? 0,
-  }), [pipelineData]);
+  const pipelineCounts = useMemo(
+    () => ({
+      new: pipelineData?.new ?? 0,
+      visited: pipelineData?.visited ?? 0,
+      negotiation: pipelineData?.negotiation ?? 0,
+      converted: pipelineData?.converted ?? 0,
+      cold: pipelineData?.cold ?? 0,
+    }),
+    [pipelineData],
+  );
 
   const handleDeleteLead = useCallback(
     async (leadId: string) => {
@@ -309,18 +441,49 @@ export default function LeadsPage() {
       ? Math.round((converted / leads.length) * 100)
       : 0;
     return [
-      { label: 'Total Leads', value: String(leads.length), trend: '+12% this month', icon: Icon.Users },
-      { label: 'Active Pipeline', value: String(leads.filter((l) => l.status !== 'Cold' && l.status !== 'Converted').length), trend: '+8% this week', icon: Icon.IndRupee },
-      { label: 'Conversion Rate', value: `${conversionRate}%`, trend: '+5% vs last month', icon: Icon.Target },
-      { label: 'Avg Response', value: '2.4h', trend: '−18% vs last month', icon: Icon.Clock },
+      {
+        label: 'Total Leads',
+        value: String(leads.length),
+        trend: '+12% this month',
+        icon: Icon.Users,
+      },
+      {
+        label: 'Active Pipeline',
+        value: String(
+          leads.filter((l) => l.status !== 'Cold' && l.status !== 'Converted')
+            .length,
+        ),
+        trend: '+8% this week',
+        icon: Icon.IndRupee,
+      },
+      {
+        label: 'Conversion Rate',
+        value: `${conversionRate}%`,
+        trend: '+5% vs last month',
+        icon: Icon.Target,
+      },
+      {
+        label: 'Avg Response',
+        value: '2.4h',
+        trend: '−18% vs last month',
+        icon: Icon.Clock,
+      },
     ];
   }, [leads]);
 
   const pipeline = [
     { name: 'Inquiry', count: pipelineCounts.new, cls: styles.tileInquiry },
     { name: 'Visited', count: pipelineCounts.visited, cls: styles.tileVisited },
-    { name: 'Negotiate', count: pipelineCounts.negotiation, cls: styles.tileNegotiate },
-    { name: 'Converted', count: pipelineCounts.converted, cls: styles.tileConverted },
+    {
+      name: 'Negotiate',
+      count: pipelineCounts.negotiation,
+      cls: styles.tileNegotiate,
+    },
+    {
+      name: 'Converted',
+      count: pipelineCounts.converted,
+      cls: styles.tileConverted,
+    },
     { name: 'Cold', count: pipelineCounts.cold, cls: styles.tileCold },
   ];
 
@@ -337,7 +500,8 @@ export default function LeadsPage() {
             )}
           </div>
           <p className={styles.headerSub}>
-            Manage your leads, track their progress and convert them into customers.
+            Manage your leads, track their progress and convert them into
+            customers.
           </p>
         </div>
 
@@ -359,7 +523,9 @@ export default function LeadsPage() {
               <div className={styles.selectBtn}>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | LeadStatus)}
+                  onChange={(e) =>
+                    setStatusFilter(e.target.value as 'all' | LeadStatus)
+                  }
                   className="appearance-none bg-transparent outline-none cursor-pointer text-inherit"
                   aria-label="Filter by status"
                 >
@@ -403,7 +569,11 @@ export default function LeadsPage() {
                 className={styles.selectBtn}
                 onClick={() =>
                   setSort((p) =>
-                    p === 'Recent' ? 'Name' : p === 'Name' ? 'Budget' : 'Recent',
+                    p === 'Recent'
+                      ? 'Name'
+                      : p === 'Name'
+                        ? 'Budget'
+                        : 'Recent',
                   )
                 }
               >
@@ -413,7 +583,10 @@ export default function LeadsPage() {
             </div>
             <button
               type="button"
-              className={styles.clearBtn + " transition-all duration-200 active:scale-[0.97]"}
+              className={
+                styles.clearBtn +
+                ' transition-all duration-200 active:scale-[0.97]'
+              }
               onClick={() => {
                 setSearch('');
                 setStatusFilter('all');
@@ -424,7 +597,10 @@ export default function LeadsPage() {
             </button>
             <button
               type="button"
-              className={styles.addLeadBtn + " active:scale-[0.97] transition-transform duration-150"}
+              className={
+                styles.addLeadBtn +
+                ' active:scale-[0.97] transition-transform duration-150'
+              }
               onClick={() => setShowAddLead(true)}
             >
               {Icon.Plus} Add Lead
@@ -435,7 +611,10 @@ export default function LeadsPage() {
         {/* Stats */}
         <div className={styles.statsGrid}>
           {stats.map((s) => (
-            <div key={s.label} className={`${styles.statCard} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}>
+            <div
+              key={s.label}
+              className={`${styles.statCard} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+            >
               <div className={styles.statIconWrap}>{s.icon}</div>
               <h3 className={styles.statValue}>{s.value}</h3>
               <p className={styles.statLabel}>{s.label}</p>
@@ -449,7 +628,11 @@ export default function LeadsPage() {
           <h2 className={styles.pipelineTitle}>Lead Pipeline</h2>
           <div className={styles.pipelineGrid}>
             {pipeline.map((p, i) => (
-              <div key={p.name} className={`${styles.pipelineTile} ${p.cls} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`} style={{animationDelay: `${i * 60}ms`}}>
+              <div
+                key={p.name}
+                className={`${styles.pipelineTile} ${p.cls} transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
                 <h4>{p.name}</h4>
                 <p>{p.count}</p>
               </div>
@@ -482,13 +665,19 @@ export default function LeadsPage() {
                 ) : error && filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-12">
-                      <QueryError message="Unable to load leads." onRetry={() => refetch()} />
+                      <QueryError
+                        message="Unable to load leads."
+                        onRetry={() => refetch()}
+                      />
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-12">
-                      <QueryEmpty message="No leads found" hint="Add your first lead to get started." />
+                      <QueryEmpty
+                        message="No leads found"
+                        hint="Add your first lead to get started."
+                      />
                     </td>
                   </tr>
                 ) : (
@@ -496,7 +685,11 @@ export default function LeadsPage() {
                     <tr
                       key={l.id}
                       onClick={() => setSelectedId(l.id)}
-                      className={l.id === selectedId ? `${styles.selectedRow} transition-colors duration-150 hover:bg-[#F9FAFB]` : `transition-colors duration-150 hover:bg-[#F9FAFB] cursor-pointer`}
+                      className={
+                        l.id === selectedId
+                          ? `${styles.selectedRow} transition-colors duration-150 hover:bg-[#F9FAFB]`
+                          : `transition-colors duration-150 hover:bg-[#F9FAFB] cursor-pointer`
+                      }
                       style={{ cursor: 'pointer' }}
                     >
                       <td className={styles.leadNameCell}>{l.name}</td>
@@ -527,7 +720,9 @@ export default function LeadsPage() {
         <aside className="w-full xl:w-[320px] flex flex-col gap-6 shrink-0 mt-[160px] xl:mt-0">
           <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6 flex flex-col">
             <div className="flex items-start justify-between mb-6">
-              <h3 className="text-[18px] font-bold text-gray-900">Lead Details</h3>
+              <h3 className="text-[18px] font-bold text-gray-900">
+                Lead Details
+              </h3>
             </div>
 
             <div className="flex flex-col gap-5 mb-8">
@@ -538,23 +733,32 @@ export default function LeadsPage() {
                 { label: 'COMPANY', value: selected.company },
                 {
                   label: 'INTERESTED PLAN',
-                  value: selected.requirement ? String(selected.requirement).split('·')[0].trim() : '—',
+                  value: selected.requirement
+                    ? String(selected.requirement).split('·')[0].trim()
+                    : '—',
                 },
                 { label: 'TEAM SIZE', value: selected.teamSize ?? '—' },
-                { label: 'PREFERRED MOVE-IN DATE', value: selected.moveInDate ?? '—' },
+                {
+                  label: 'PREFERRED MOVE-IN DATE',
+                  value: selected.moveInDate ?? '—',
+                },
               ].map(({ label, value }) => (
                 <div key={label} className="flex flex-col gap-1">
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                     {label}
                   </span>
-                  <span className="text-[14px] font-semibold text-gray-900">{value}</span>
+                  <span className="text-[14px] font-semibold text-gray-900">
+                    {value}
+                  </span>
                 </div>
               ))}
             </div>
 
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => router.push('/dashboard/crm/leads/' + selected.id)}
+                onClick={() =>
+                  router.push('/dashboard/crm/leads/' + selected.id)
+                }
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-colors shadow-sm active:scale-[0.97]"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
@@ -564,7 +768,12 @@ export default function LeadsPage() {
                     strokeWidth="1.8"
                     strokeLinejoin="round"
                   />
-                  <path d="M14 2v6h6M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path
+                    d="M14 2v6h6M9 13h6M9 17h6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
                 </svg>
                 Lead Details
               </button>
@@ -573,8 +782,22 @@ export default function LeadsPage() {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-[#344054] rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm active:scale-[0.97]"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                  <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
-                  <path d="M3 7l9 6 9-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="M3 7l9 6 9-6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 Send Proposal
               </button>
@@ -590,8 +813,20 @@ export default function LeadsPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
                 Convert to Client
               </button>
@@ -599,14 +834,22 @@ export default function LeadsPage() {
           </div>
 
           <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 p-6">
-            <h3 className="text-[18px] font-bold text-gray-900 mb-4">Quick Actions</h3>
+            <h3 className="text-[18px] font-bold text-gray-900 mb-4">
+              Quick Actions
+            </h3>
             <div className="flex flex-col gap-3">
               {[
                 {
                   label: 'Add Lead',
                   icon: (
                     <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" stroke="currentColor" strokeWidth="1.8" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 4v16m8-8H4"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      />
                     </svg>
                   ),
                   onClick: () => setShowAddLead(true),
@@ -615,19 +858,30 @@ export default function LeadsPage() {
                   label: 'Import Leads',
                   icon: (
                     <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   ),
-                  onClick: () => { },
+                  onClick: () =>
+                    toast.info('Import leads from CSV coming soon'),
                 },
                 {
                   label: 'Manage Sources',
                   icon: (
                     <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="1.5" />
+                      <path
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
                     </svg>
                   ),
-                  onClick: () => { },
+                  onClick: () => toast.info('Manage lead sources coming soon'),
                 },
               ].map(({ label, icon, onClick }) => (
                 <button
@@ -645,9 +899,20 @@ export default function LeadsPage() {
       )}
 
       {/* Dialogs */}
-      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} onAdd={handleAddLead} />
-      <ScheduleVisitModal open={showScheduleVisit} onClose={() => setShowScheduleVisit(false)} />
-      <SendProposalModal open={showSendProposal} onClose={() => setShowSendProposal(false)} leadId={selected?.id} />
+      <AddLeadModal
+        open={showAddLead}
+        onClose={() => setShowAddLead(false)}
+        onAdd={handleAddLead}
+      />
+      <ScheduleVisitModal
+        open={showScheduleVisit}
+        onClose={() => setShowScheduleVisit(false)}
+      />
+      <SendProposalModal
+        open={showSendProposal}
+        onClose={() => setShowSendProposal(false)}
+        leadId={selected?.id}
+      />
     </div>
   );
 }

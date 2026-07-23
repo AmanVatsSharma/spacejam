@@ -1536,6 +1536,9 @@ export const CREATE_SEAT = gql`
   }
 `;
 
+// NOTE: CreateSeatInput uses 'number' (not 'name') as the seat identifier field.
+// The Seat return type uses 'name'. Always pass { number: '...' } in the input.
+
 export const CREATE_MEETING_ROOM = gql`
   mutation CreateMeetingRoom($input: CreateMeetingRoomInput!) {
     createMeetingRoom(input: $input) {
@@ -1663,7 +1666,6 @@ export const GET_BOOKINGS = gql`
       meetingRoom {
         id
         name
-        status
       }
       payment {
         id
@@ -1710,7 +1712,6 @@ export const GET_BOOKING = gql`
       meetingRoom {
         id
         name
-        status
       }
       payment {
         id
@@ -1778,7 +1779,6 @@ export const CREATE_BOOKING = gql`
       meetingRoom {
         id
         name
-        status
       }
       payment {
         id
@@ -1960,8 +1960,15 @@ export const GET_TODAY_EVENTS = gql`
       notes
       createdAt
       updatedAt
-      meetingRoom { id name }
-      requestedBy { id name email }
+      meetingRoom {
+        id
+        name
+      }
+      requestedBy {
+        id
+        name
+        email
+      }
     }
   }
 `;
@@ -1978,7 +1985,10 @@ export const GET_UPCOMING_EVENTS = gql`
       endTime
       eventType
       status
-      meetingRoom { id name }
+      meetingRoom {
+        id
+        name
+      }
     }
   }
 `;
@@ -2001,10 +2011,19 @@ export const GET_EVENTS = gql`
       status
       cost
       notes
+      addons
+      specialRequests
       createdAt
       updatedAt
-      meetingRoom { id name }
-      requestedBy { id name email }
+      meetingRoom {
+        id
+        name
+      }
+      requestedBy {
+        id
+        name
+        email
+      }
     }
   }
 `;
@@ -2040,8 +2059,15 @@ export const GET_NOTIFICATIONS = gql`
       metadata
       createdAt
       updatedAt
-      user { id name email }
-      center { id name }
+      user {
+        id
+        name
+        email
+      }
+      center {
+        id
+        name
+      }
     }
   }
 `;

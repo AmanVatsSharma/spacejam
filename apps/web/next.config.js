@@ -15,6 +15,12 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  webpack: (config, { dev }) => {
+    if (!dev) {
+      config.optimization.concatenateModules = false;
+    }
+    return config;
+  },
   /**
    * Proxy /api/graphql requests to the NestJS backend.
    * Production backend listens on localhost:4000. Dev uses 3001.
@@ -33,8 +39,6 @@ const nextConfig = {
   },
 };
 
-const plugins = [
-  withNx,
-];
+const plugins = [withNx];
 
 module.exports = composePlugins(...plugins)(nextConfig);

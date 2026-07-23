@@ -32,17 +32,17 @@ export class Event {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'centerId' })
-  centerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'centerId', nullable: true })
+  centerId?: string;
 
-  @Field(() => ID)
-  @Column({ name: 'meetingRoomId', type: 'uuid' })
-  meetingRoomId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'meetingRoomId', type: 'uuid', nullable: true })
+  meetingRoomId?: string;
 
-  @Field(() => ID)
-  @Column({ name: 'requestedById' })
-  requestedById!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'requestedById', nullable: true })
+  requestedById?: string;
 
   @Field(() => ID, { nullable: true })
   @Column({ name: 'recurringBookingId', type: 'uuid', nullable: true })
@@ -89,7 +89,7 @@ export class Event {
   @Column({
     type: 'enum',
     enum: EventType,
-    default: EventType.MEETING_ROOM,
+    default: 'MEETING_ROOM',
   })
   eventType!: EventType;
 
@@ -97,7 +97,7 @@ export class Event {
   @Column({
     type: 'enum',
     enum: EventStatus,
-    default: EventStatus.PENDING,
+    default: 'PENDING',
   })
   status!: EventStatus;
 

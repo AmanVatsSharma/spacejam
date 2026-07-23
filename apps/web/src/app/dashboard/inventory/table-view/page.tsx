@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "@apollo/client";
-import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
-import { SeatBookModal } from "./seat-book-modal";
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useQuery, useMutation } from '@apollo/client';
+import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
+import { SeatBookModal } from './seat-book-modal';
 
 import {
   GET_SEATS,
@@ -14,37 +14,73 @@ import {
   UPDATE_SEAT,
   DELETE_SEAT,
   GET_BOOKINGS,
-} from "@/lib/apollo/operations";
-import { ContextMenu } from "@/components/ui/context-menu";
-import styles from "./table-view.module.css";
+} from '@/lib/apollo/operations';
+import { ContextMenu } from '@/components/ui/context-menu';
+import styles from './table-view.module.css';
 
-const SEAT_TYPES = ["HOT_DESK", "DEDICATED", "CABIN", "MEETING_ROOM"] as const;
+const SEAT_TYPES = ['HOT_DESK', 'DEDICATED', 'CABIN', 'MEETING_ROOM'] as const;
 
 const Icons = {
   export: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
       <polyline points="7 10 12 15 17 10"></polyline>
       <line x1="12" y1="15" x2="12" y2="3"></line>
     </svg>
   ),
   plus: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <line x1="12" y1="5" x2="12" y2="19"></line>
       <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
   ),
   search: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="11" cy="11" r="8"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
   ),
   chevronDown: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="6 9 12 15 18 9"></polyline>
     </svg>
-  )
+  ),
 };
 
 function formatCurrency(amount: number): string {
@@ -57,17 +93,31 @@ function formatCurrency(amount: number): string {
 
 export default function TableViewPage() {
   const [activeDropdown, setActiveDropdown] = useState<number | null>(0);
-  const [search, setSearch] = useState("");
-  const [rowMenu, setRowMenu] = useState<{ rowId: string; x: number; y: number } | null>(null);
+  const [search, setSearch] = useState('');
+  const [rowMenu, setRowMenu] = useState<{
+    rowId: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Filter state — driven by live data where possible
-  const [locationId, setLocationId] = useState<string>("all");
-  const [floorId, setFloorId] = useState<string>("all");
-  const [product, setProduct] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
+  const [locationId, setLocationId] = useState<string>('all');
+  const [subLocationId, setSubLocationId] = useState<string>('all');
+  const [floorId, setFloorId] = useState<string>('all');
+  const [product, setProduct] = useState<string>('all');
+  const [status, setStatus] = useState<string>('all');
 
   // Book seat modal state
-  const [bookModal, setBookModal] = useState<{ seatId: string; seatName: string } | null>(null);
+  const [bookModal, setBookModal] = useState<{
+    seatId: string;
+    seatName: string;
+  } | null>(null);
+
+  // Add Space modal state
+  const [showAddSpaceModal, setShowAddSpaceModal] = useState(false);
+  const [newSeatNumber, setNewSeatNumber] = useState('');
+  const [newSeatType, setNewSeatType] = useState('HOT_DESK');
+  const [newSeatPrice, setNewSeatPrice] = useState('5000');
 
   // Live centers data (drives the Location filter options)
   const { data: centersData } = useQuery<{ myCenters: any[] }>(GET_MY_CENTERS, {
@@ -79,15 +129,19 @@ export default function TableViewPage() {
   // Floors for the selected center (drives the Floor filter options)
   const selectedCenter = centers.find((c: any) => c.id === locationId) ?? null;
   const floorsForCenter = useMemo(() => {
-    if (locationId === "all") return [];
+    if (locationId === 'all') return [];
     return selectedCenter?.floors ?? [];
   }, [locationId, selectedCenter]);
 
   // Live seats data
-  const { data: seatsData, loading, error } = useQuery(GET_SEATS, {
+  const {
+    data: seatsData,
+    loading,
+    error,
+  } = useQuery(GET_SEATS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
-    variables: floorId !== "all" ? { floorId } : {},
+    variables: floorId !== 'all' ? { floorId } : {},
   });
 
   const seats = seatsData?.seats ?? [];
@@ -113,9 +167,9 @@ export default function TableViewPage() {
     const activeBookingsBySeat = new Map();
     if (bookingsData?.bookings) {
       bookingsData.bookings.forEach((b: any) => {
-        if (b.status === "CONFIRMED" || b.status === "CHECKED_IN") {
+        if (b.status === 'CONFIRMED' || b.status === 'CHECKED_IN') {
           if (b.seat?.id) {
-             activeBookingsBySeat.set(b.seat.id, b);
+            activeBookingsBySeat.set(b.seat.id, b);
           }
         }
       });
@@ -123,29 +177,31 @@ export default function TableViewPage() {
 
     return seats.map((seat: any) => {
       const b = activeBookingsBySeat.get(seat.id);
-      let assignedTo = "-";
-      let startDate = "-";
-      let endDate = "-";
-      
+      let assignedTo = '-';
+      let startDate = '-';
+      let endDate = '-';
+
       if (b) {
-        assignedTo = b.user?.name || b.user?.email || "Assigned";
-        startDate = b.startDate ? new Date(b.startDate).toLocaleDateString() : "-";
-        endDate = b.endDate ? new Date(b.endDate).toLocaleDateString() : "-";
-      } else if (seat.status === "OCCUPIED") {
-        assignedTo = "Assigned";
+        assignedTo = b.user?.name || b.user?.email || 'Assigned';
+        startDate = b.startDate
+          ? new Date(b.startDate).toLocaleDateString()
+          : '-';
+        endDate = b.endDate ? new Date(b.endDate).toLocaleDateString() : '-';
+      } else if (seat.status === 'OCCUPIED') {
+        assignedTo = 'Assigned';
       }
 
       return {
         id: seat.id,
         spaceName: seat.name ?? `Seat ${seat.id}`,
-        location: seat.location ?? "—",
-        floor: seat.floor?.name ?? "—",
+        location: seat.location ?? '—',
+        floor: seat.floor?.name ?? '—',
         floorId: seat.floor?.id ?? null,
-        type: seat.seatType ?? "—",
+        type: seat.seatType ?? '—',
         capacity: 1,
-        price: seat.price ? formatCurrency(seat.price) : "—",
-        gst: "18%",
-        status: seat.status ?? "Available",
+        price: seat.price ? formatCurrency(seat.price) : '—',
+        gst: '18%',
+        status: seat.status ?? 'Available',
         assignedTo,
         startDate,
         endDate,
@@ -158,91 +214,92 @@ export default function TableViewPage() {
 
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((item: any) =>
-        item.spaceName?.toLowerCase().includes(q) ||
-        item.type?.toLowerCase().includes(q) ||
-        item.status?.toLowerCase().includes(q)
+      result = result.filter(
+        (item: any) =>
+          item.spaceName?.toLowerCase().includes(q) ||
+          item.type?.toLowerCase().includes(q) ||
+          item.status?.toLowerCase().includes(q),
       );
     }
 
-    if (locationId !== "all") {
+    if (locationId !== 'all') {
       const centerName = selectedCenter?.name?.toLowerCase();
-      result = result.filter((item: any) =>
-        item.location?.toLowerCase() === centerName ||
-        item.location?.toLowerCase().includes(centerName ?? "___")
+      result = result.filter(
+        (item: any) =>
+          item.location?.toLowerCase() === centerName ||
+          item.location?.toLowerCase().includes(centerName ?? '___'),
       );
     }
 
-    if (floorId !== "all") {
+    if (floorId !== 'all') {
       result = result.filter((item: any) => item.floorId === floorId);
     }
 
-    if (product !== "all") {
+    if (subLocationId !== 'all') {
+      result = result.filter((item: any) => item.floorId === subLocationId);
+    }
+
+    if (product !== 'all') {
       result = result.filter((item: any) => item.type === product);
     }
 
-    if (status !== "all") {
-      result = result.filter((item: any) =>
-        String(item.status).toUpperCase() === status
+    if (status !== 'all') {
+      result = result.filter(
+        (item: any) => String(item.status).toUpperCase() === status,
       );
     }
 
     return result;
-  }, [inventoryData, search, locationId, selectedCenter, floorId, product, status]);
+  }, [
+    inventoryData,
+    search,
+    locationId,
+    selectedCenter,
+    floorId,
+    subLocationId,
+    product,
+    status,
+  ]);
 
   const clearAllFilters = () => {
-    setLocationId("all");
-    setFloorId("all");
-    setProduct("all");
-    setStatus("all");
-    setSearch("");
+    setLocationId('all');
+    setFloorId('all');
+    setProduct('all');
+    setStatus('all');
+    setSearch('');
   };
 
   const toggleDropdown = (index: number) => {
     setActiveDropdown(activeDropdown === index ? null : index);
   };
 
-  // Add Space: collect number + type + price, then call CREATE_SEAT.
-  // Uses window.prompt as a lightweight form — requires a floor context,
-  // so we fall back to the first floor of the selected center.
-  const handleAddSpace = async () => {
+  // Add Space: opens a modal form for number + type + price.
+  const openAddSpaceModal = () => {
     if (!centers.length) {
-      toast.error("No centers available to add a seat to.");
+      toast.error('No centers available to add a seat to.');
       return;
     }
-    const center = locationId !== "all"
-      ? selectedCenter
-      : centers[0];
+    const center = locationId !== 'all' ? selectedCenter : centers[0];
     const centerFloors = center?.floors ?? [];
     if (!centerFloors.length) {
-      toast.error("Selected center has no floors. Add a floor first.");
+      toast.error('Selected center has no floors. Add a floor first.');
       return;
     }
+    setNewSeatNumber('');
+    setNewSeatType('HOT_DESK');
+    setNewSeatPrice('5000');
+    setShowAddSpaceModal(true);
+  };
 
-    const number = window.prompt("Enter seat number (e.g. A-101):");
-    if (number == null) return;
-    if (!number.trim()) {
-      toast.error("Seat number is required.");
+  const submitAddSpace = async () => {
+    if (!newSeatNumber.trim()) {
+      toast.error('Seat number is required.');
       return;
     }
-
-    const typeInput = window.prompt(
-      `Seat type (one of: ${SEAT_TYPES.join(", ")}):`,
-      "HOT_DESK"
-    );
-    if (typeInput == null) return;
-    const seatType = (SEAT_TYPES as readonly string[]).includes(typeInput.toUpperCase())
-      ? typeInput.toUpperCase()
-      : "HOT_DESK";
-
-    const priceInput = window.prompt("Monthly price (INR, optional):", "5000");
-    if (priceInput == null) return;
-    const price = Number(priceInput);
-    const pricePayload = Number.isFinite(price) && price > 0 ? price : undefined;
-
-    // Prefer the floor selected in the filter, else the center's first floor.
+    const center = locationId !== 'all' ? selectedCenter : centers[0];
+    const centerFloors = center?.floors ?? [];
     const targetFloorId =
-      floorId !== "all" && centerFloors.some((f: any) => f.id === floorId)
+      floorId !== 'all' && centerFloors.some((f: any) => f.id === floorId)
         ? floorId
         : centerFloors[0].id;
 
@@ -251,19 +308,21 @@ export default function TableViewPage() {
         variables: {
           input: {
             floorId: targetFloorId,
-            number: number.trim(),
-            seatType,
-            status: "AVAILABLE",
-            ...(pricePayload != null ? { price: pricePayload } : {}),
+            number: newSeatNumber.trim(),
+            seatType: newSeatType,
+            status: 'AVAILABLE',
+            ...(Number(newSeatPrice) > 0
+              ? { price: Number(newSeatPrice) }
+              : {}),
           },
         },
       });
-      toast.success("Seat added");
-      // Keep the floor filter in sync if we used the center's first floor.
+      toast.success('Seat added');
+      setShowAddSpaceModal(false);
       if (floorId !== targetFloorId) setFloorId(targetFloorId);
     } catch (err) {
-      console.error("Failed to create seat:", err);
-      toast.error("Could not add seat. Please try again.");
+      console.error('Failed to create seat:', err);
+      toast.error('Could not add seat. Please try again.');
     }
   };
 
@@ -277,42 +336,67 @@ export default function TableViewPage() {
           input: { status: newStatus },
         },
       });
-      toast.success("Status updated");
+      toast.success('Status updated');
     } catch (err) {
-      console.error("Failed to update seat status:", err);
-      toast.error("Could not update status. Please try again.");
+      console.error('Failed to update seat status:', err);
+      toast.error('Could not update status. Please try again.');
     }
   };
 
   const handleLocationChange = (value: string) => {
     setLocationId(value);
-    setFloorId("all"); // reset floor when center changes
+    setFloorId('all');
+    setSubLocationId('all');
   };
 
   return (
     <div className={styles.page}>
-
       {/* Top Header Card */}
       <div className={styles.headerCard}>
         <div className={styles.headerTitleWrap}>
           <h1 className={styles.headerTitle}>Inventory Overview</h1>
-          <p className={styles.headerSubtitle}>Manage all spaces, pricing, and occupancy</p>
+          <p className={styles.headerSubtitle}>
+            Manage all spaces, pricing, and occupancy
+          </p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBox}>
             <span className={styles.searchIcon}>{Icons.search}</span>
-            <input type="text" placeholder="Search spaces..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input
+              type="text"
+              placeholder="Search spaces..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <button
             onClick={() => {
-              const headers = ["Space Name", "Floor", "Type", "Status", "Price"];
-              const rows = inventoryData.map((s: any) => [s.spaceName, s.floor, s.type, s.status, s.price]);
-              const csv = [headers, ...rows].map((r: any[]) => r.map((v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
-              const blob = new Blob([csv], { type: "text/csv" });
+              const headers = [
+                'Space Name',
+                'Floor',
+                'Type',
+                'Status',
+                'Price',
+              ];
+              const rows = inventoryData.map((s: any) => [
+                s.spaceName,
+                s.floor,
+                s.type,
+                s.status,
+                s.price,
+              ]);
+              const csv = [headers, ...rows]
+                .map((r: any[]) =>
+                  r
+                    .map((v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+                    .join(','),
+                )
+                .join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
               const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
+              const a = document.createElement('a');
               a.href = url;
-              a.download = `inventory-${new Date().toISOString().split("T")[0]}.csv`;
+              a.download = `inventory-${new Date().toISOString().split('T')[0]}.csv`;
               a.click();
               URL.revokeObjectURL(url);
               toast.success(`Exported ${inventoryData.length} spaces`);
@@ -322,7 +406,7 @@ export default function TableViewPage() {
             {Icons.export} Export CSV
           </button>
           <button
-            onClick={handleAddSpace}
+            onClick={openAddSpaceModal}
             className={`${styles.addSpaceBtn} active:scale-[0.97] transition-transform duration-150`}
           >
             {Icons.plus} Add Space
@@ -334,7 +418,12 @@ export default function TableViewPage() {
       <div className={styles.filterBar}>
         <div className={styles.searchBox}>
           <div className={styles.searchBoxIcon}>{Icons.search}</div>
-          <input type="text" placeholder="Search Space Name and Company" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Search Space Name and Company"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <select
@@ -344,23 +433,37 @@ export default function TableViewPage() {
         >
           <option value="all">Location</option>
           {centers.map((center: any) => (
-            <option key={center.id} value={center.id}>{center.name}</option>
+            <option key={center.id} value={center.id}>
+              {center.name}
+            </option>
           ))}
         </select>
 
-        <select className={styles.filterSelect} value="all" disabled>
+        <select
+          className={styles.filterSelect}
+          value={subLocationId}
+          onChange={(e) => setSubLocationId(e.target.value)}
+          disabled={locationId === 'all'}
+        >
           <option value="all">Sub-Location</option>
+          {floorsForCenter.map((floor: any) => (
+            <option key={floor.id} value={floor.id}>
+              {floor.name}
+            </option>
+          ))}
         </select>
 
         <select
           className={styles.filterSelect}
           value={floorId}
           onChange={(e) => setFloorId(e.target.value)}
-          disabled={locationId === "all"}
+          disabled={locationId === 'all'}
         >
           <option value="all">Floor</option>
           {floorsForCenter.map((floor: any) => (
-            <option key={floor.id} value={floor.id}>{floor.name}</option>
+            <option key={floor.id} value={floor.id}>
+              {floor.name}
+            </option>
           ))}
         </select>
 
@@ -418,19 +521,40 @@ export default function TableViewPage() {
           <tbody>
             {loading && filteredData.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                <td
+                  colSpan={12}
+                  style={{
+                    textAlign: 'center',
+                    padding: '48px',
+                    color: '#9ca3af',
+                  }}
+                >
                   Loading inventory…
                 </td>
               </tr>
             ) : error && filteredData.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                <td
+                  colSpan={12}
+                  style={{
+                    textAlign: 'center',
+                    padding: '48px',
+                    color: '#9ca3af',
+                  }}
+                >
                   Unable to load inventory. Please try again.
                 </td>
               </tr>
             ) : filteredData.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ textAlign: 'center', padding: '48px', color: '#9ca3af' }}>
+                <td
+                  colSpan={12}
+                  style={{
+                    textAlign: 'center',
+                    padding: '48px',
+                    color: '#9ca3af',
+                  }}
+                >
                   No spaces found.
                 </td>
               </tr>
@@ -438,54 +562,89 @@ export default function TableViewPage() {
               filteredData.map((row: any, index: number) => (
                 <tr
                   key={row.id}
-                  onContextMenu={(e) => { e.preventDefault(); setRowMenu({ rowId: row.id, x: e.clientX, y: e.clientY }); }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setRowMenu({ rowId: row.id, x: e.clientX, y: e.clientY });
+                  }}
                   className="transition-colors duration-150 hover:bg-[#F9FAFB]"
-                  style={{ animation: 'fadeInUp 0.4s ease-out forwards', opacity: 0, animationDelay: `calc(${index} * 50ms)` }}
+                  style={{
+                    animation: 'fadeInUp 0.4s ease-out forwards',
+                    opacity: 0,
+                    animationDelay: `calc(${index} * 50ms)`,
+                  }}
                 >
                   <td className={styles.colSpaceName}>
-                    <div style={{ width: '120px', lineHeight: '1.4' }}>{row.spaceName}</div>
+                    <div style={{ width: '120px', lineHeight: '1.4' }}>
+                      {row.spaceName}
+                    </div>
                   </td>
                   <td>{row.location}</td>
                   <td>
-                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.floor}</div>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>
+                      {row.floor}
+                    </div>
                   </td>
                   <td>
-                    <div style={{ width: '80px', lineHeight: '1.4' }}>{row.type}</div>
+                    <div style={{ width: '80px', lineHeight: '1.4' }}>
+                      {row.type}
+                    </div>
                   </td>
                   <td>{row.capacity}</td>
                   <td style={{ fontWeight: 600 }}>{row.price}</td>
                   <td>{row.gst}</td>
                   <td>
-                    <span className={`${styles.badge} ${row.status === 'Occupied' || row.status === 'OCCUPIED' ? styles.badgeOccupied :
-                      row.status === 'Available' || row.status === 'AVAILABLE' ? styles.badgeAvailable :
-                      row.status === 'Reserved' || row.status === 'RESERVED' ? styles.badgeReserved :
-                        styles.badgeMaintenance
-                      }`}>
+                    <span
+                      className={`${styles.badge} ${
+                        row.status === 'Occupied' || row.status === 'OCCUPIED'
+                          ? styles.badgeOccupied
+                          : row.status === 'Available' ||
+                              row.status === 'AVAILABLE'
+                            ? styles.badgeAvailable
+                            : row.status === 'Reserved' ||
+                                row.status === 'RESERVED'
+                              ? styles.badgeReserved
+                              : styles.badgeMaintenance
+                      }`}
+                    >
                       {row.status}
                     </span>
                   </td>
                   <td>
-                    <div style={{ width: '120px', lineHeight: '1.4' }}>{row.assignedTo}</div>
+                    <div style={{ width: '120px', lineHeight: '1.4' }}>
+                      {row.assignedTo}
+                    </div>
                   </td>
                   <td>
-                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.startDate}</div>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>
+                      {row.startDate}
+                    </div>
                   </td>
                   <td>
-                    <div style={{ width: '60px', lineHeight: '1.4' }}>{row.endDate}</div>
+                    <div style={{ width: '60px', lineHeight: '1.4' }}>
+                      {row.endDate}
+                    </div>
                   </td>
                   <td className={styles.actionCell}>
-                    {row.status === 'AVAILABLE' || row.status === 'Available' ? (
+                    {row.status === 'AVAILABLE' ||
+                    row.status === 'Available' ? (
                       <button
-                        onClick={() => setBookModal({ seatId: row.id, seatName: row.spaceName })}
+                        onClick={() =>
+                          setBookModal({
+                            seatId: row.id,
+                            seatName: row.spaceName,
+                          })
+                        }
                         className="px-3 py-1.5 bg-[#FF6A2F] text-white text-[12px] font-semibold rounded-lg hover:bg-[#E55A20] transition-colors active:scale-[0.97]"
                       >
                         Book
                       </button>
-                    ) : row.status === 'OCCUPIED' || row.status === 'Occupied' ? (
+                    ) : row.status === 'OCCUPIED' ||
+                      row.status === 'Occupied' ? (
                       <span className="inline-block px-3 py-1.5 bg-red-50 text-red-700 text-[12px] font-medium rounded-lg border border-red-100">
                         Occupied
                       </span>
-                    ) : row.status === 'RESERVED' || row.status === 'Reserved' ? (
+                    ) : row.status === 'RESERVED' ||
+                      row.status === 'Reserved' ? (
                       <span className="inline-block px-3 py-1.5 bg-green-50 text-green-700 text-[12px] font-medium rounded-lg border border-green-100">
                         Reserved
                       </span>
@@ -494,27 +653,42 @@ export default function TableViewPage() {
                         Maintenance
                       </span>
                     )}
-                    <div className={styles.actionBtn} onClick={() => toggleDropdown(index)}>
+                    <div
+                      className={styles.actionBtn}
+                      onClick={() => toggleDropdown(index)}
+                    >
                       {Icons.chevronDown}
                     </div>
                     {activeDropdown === index && (
                       <div className={styles.actionDropdown}>
                         <div
                           className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, "OCCUPIED")}
-                        >Occupied</div>
+                          onClick={() => handleStatusChange(row.id, 'OCCUPIED')}
+                        >
+                          Occupied
+                        </div>
                         <div
                           className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, "AVAILABLE")}
-                        >Available</div>
+                          onClick={() =>
+                            handleStatusChange(row.id, 'AVAILABLE')
+                          }
+                        >
+                          Available
+                        </div>
                         <div
                           className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, "MAINTENANCE")}
-                        >Maintenance</div>
-                      <div
+                          onClick={() =>
+                            handleStatusChange(row.id, 'MAINTENANCE')
+                          }
+                        >
+                          Maintenance
+                        </div>
+                        <div
                           className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, "RESERVED")}
-                        >Reserved</div>
+                          onClick={() => handleStatusChange(row.id, 'RESERVED')}
+                        >
+                          Reserved
+                        </div>
                       </div>
                     )}
                   </td>
@@ -533,14 +707,57 @@ export default function TableViewPage() {
           y={rowMenu.y}
           onClose={() => setRowMenu(null)}
           items={[
-            { label: "Book Seat", onClick: () => { setBookModal({ seatId: rowMenu.rowId, seatName: "" }); setRowMenu(null); } },
-            { divider: true, label: "", onClick: () => {} },
-            { label: "Mark Available", onClick: () => { handleStatusChange(rowMenu.rowId, "AVAILABLE"); setRowMenu(null); } },
-            { label: "Mark Occupied", onClick: () => { handleStatusChange(rowMenu.rowId, "OCCUPIED"); setRowMenu(null); } },
-            { label: "Mark Reserved", onClick: () => { handleStatusChange(rowMenu.rowId, "RESERVED"); setRowMenu(null); } },
-            { label: "Mark Maintenance", onClick: () => { handleStatusChange(rowMenu.rowId, "MAINTENANCE"); setRowMenu(null); } },
-            { divider: true, label: "", onClick: () => {} },
-            { label: "Delete seat", destructive: true, onClick: () => { if (confirm("Delete this seat? This cannot be undone.")) { deleteSeat({ variables: { id: rowMenu.rowId } }).then(() => toast.success("Seat deleted")).catch((err) => toast.error(err.message ?? "Failed to delete seat")); } setRowMenu(null); } },
+            {
+              label: 'Book Seat',
+              onClick: () => {
+                setBookModal({ seatId: rowMenu.rowId, seatName: '' });
+                setRowMenu(null);
+              },
+            },
+            { divider: true, label: '', onClick: () => {} },
+            {
+              label: 'Mark Available',
+              onClick: () => {
+                handleStatusChange(rowMenu.rowId, 'AVAILABLE');
+                setRowMenu(null);
+              },
+            },
+            {
+              label: 'Mark Occupied',
+              onClick: () => {
+                handleStatusChange(rowMenu.rowId, 'OCCUPIED');
+                setRowMenu(null);
+              },
+            },
+            {
+              label: 'Mark Reserved',
+              onClick: () => {
+                handleStatusChange(rowMenu.rowId, 'RESERVED');
+                setRowMenu(null);
+              },
+            },
+            {
+              label: 'Mark Maintenance',
+              onClick: () => {
+                handleStatusChange(rowMenu.rowId, 'MAINTENANCE');
+                setRowMenu(null);
+              },
+            },
+            { divider: true, label: '', onClick: () => {} },
+            {
+              label: 'Delete seat',
+              destructive: true,
+              onClick: () => {
+                if (confirm('Delete this seat? This cannot be undone.')) {
+                  deleteSeat({ variables: { id: rowMenu.rowId } })
+                    .then(() => toast.success('Seat deleted'))
+                    .catch((err) =>
+                      toast.error(err.message ?? 'Failed to delete seat'),
+                    );
+                }
+                setRowMenu(null);
+              },
+            },
           ]}
         />
       )}
@@ -551,8 +768,74 @@ export default function TableViewPage() {
           open={!!bookModal}
           onClose={() => setBookModal(null)}
           seatId={bookModal.seatId}
-          seatName={bookModal.seatName || ""}
+          seatName={bookModal.seatName || ''}
         />
+      )}
+
+      {showAddSpaceModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
+          onClick={() => setShowAddSpaceModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Add New Space
+            </h3>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Seat Number
+            </label>
+            <input
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]/30"
+              placeholder="e.g. A-101"
+              value={newSeatNumber}
+              onChange={(e) => setNewSeatNumber(e.target.value)}
+              autoFocus
+            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type
+            </label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]/30"
+              value={newSeatType}
+              onChange={(e) => setNewSeatType(e.target.value)}
+            >
+              {SEAT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Monthly Price (INR)
+            </label>
+            <input
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]/30"
+              type="number"
+              min="0"
+              value={newSeatPrice}
+              onChange={(e) => setNewSeatPrice(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg text-sm border border-gray-200 hover:bg-gray-50"
+                onClick={() => setShowAddSpaceModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg text-sm bg-[#FF6A2F] text-white hover:bg-[#e55a20]"
+                onClick={submitAddSpace}
+              >
+                Add Space
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

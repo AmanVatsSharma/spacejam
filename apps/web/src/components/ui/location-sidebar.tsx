@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Location {
   id: string;
@@ -31,6 +31,12 @@ export function LocationSidebar({ locations, onLocationSelect, onAddSubLocation 
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>(
     Object.fromEntries(locations.map((l) => [l.id, l.expanded ?? false]))
   );
+
+  useEffect(() => {
+    setExpandedLocations(
+      Object.fromEntries(locations.map((l) => [l.id, l.expanded ?? false]))
+    );
+  }, [locations]);
 
   const toggleLocation = (locationId: string) => {
     setExpandedLocations((prev) => ({

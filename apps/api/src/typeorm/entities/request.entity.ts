@@ -28,13 +28,13 @@ export class Request {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'centerId' })
-  centerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'centerId', nullable: true })
+  centerId?: string;
 
-  @Field(() => ID)
-  @Column({ name: 'requestedById' })
-  requestedById!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'requestedById', nullable: true })
+  requestedById?: string;
 
   @Field(() => ID, { nullable: true })
   @Column({ name: 'assignedToId', type: 'uuid', nullable: true })
@@ -56,14 +56,19 @@ export class Request {
   description!: string;
 
   @Field()
-  @Column({ name: 'urgency', type: 'enum', enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' })
+  @Column({
+    name: 'urgency',
+    type: 'enum',
+    enum: ['LOW', 'MEDIUM', 'HIGH'],
+    default: 'MEDIUM',
+  })
   urgency!: 'LOW' | 'MEDIUM' | 'HIGH';
 
   @Field(() => RequestStatus)
   @Column({
     type: 'enum',
     enum: RequestStatus,
-    default: RequestStatus.PENDING,
+    default: 'PENDING',
   })
   status!: RequestStatus;
 
