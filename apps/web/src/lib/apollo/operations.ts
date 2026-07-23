@@ -1267,6 +1267,12 @@ export const ADD_CUSTOMER_DOCUMENT = gql`
   }
 `;
 
+export const REMOVE_CUSTOMER_DOCUMENT = gql`
+  mutation RemoveCustomerDocument($id: ID!) {
+    removeCustomerDocument(id: $id)
+  }
+`;
+
 /* ========================= CRM — Customer financial detail ========================= */
 
 export const GET_CUSTOMER_DEPOSITS = gql`

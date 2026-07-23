@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-02
  */
 
-import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, ID, Context } from '@nestjs/graphql';
 import {
   BadRequestException,
   UseGuards,
@@ -246,9 +246,11 @@ export class EventResolver {
   @Mutation(() => CreateEventPayload)
   async createEvent(
     @Args('input') input: CreateEventInput,
-    @Context() context: any,
+    @CurrentUser() user: any,
   ): Promise<any> {
-    const user = context.req?.user;
+    if (!user) {
+      return { success: false as const, error: 'You must be logged in to create events', event: null };
+    }
 
     if (!input.centerId && input.meetingRoomId) {
       const room = await this.roomRepo.findOne({
@@ -258,7 +260,6 @@ export class EventResolver {
     }
 
     if (!input.centerId) {
-      // Fallback: derive from any available center so the event can be created
       const fallbackCenter = await this.roomRepo.manager
         .getRepository('centers')
         .createQueryBuilder('c')
