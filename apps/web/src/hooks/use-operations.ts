@@ -82,11 +82,16 @@ const GET_EVENT_BY_ID = gql`
 const CREATE_EVENT = gql`
   mutation CreateEvent($input: CreateEventInput!) {
     createEvent(input: $input) {
-      id
-      title
-      startDate
-      endDate
-      status
+      success
+      error
+      event {
+        id
+        title
+        startTime
+        endTime
+        eventDate
+        status
+      }
     }
   }
 `;
@@ -94,11 +99,16 @@ const CREATE_EVENT = gql`
 const UPDATE_EVENT = gql`
   mutation UpdateEvent($id: ID!, $input: UpdateEventInput!) {
     updateEvent(id: $id, input: $input) {
-      id
-      title
-      startDate
-      endDate
-      status
+      success
+      error
+      event {
+        id
+        title
+        startTime
+        endTime
+        eventDate
+        status
+      }
     }
   }
 `;
@@ -607,10 +617,8 @@ export function useCreateEvent() {
         mutation: CREATE_EVENT,
         variables: { input },
       });
-      toast.success('Event created successfully');
       return data?.createEvent;
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to create event');
       throw err;
     } finally {
       setLoading(false);
@@ -631,10 +639,8 @@ export function useUpdateEvent() {
         mutation: UPDATE_EVENT,
         variables: { id, input },
       });
-      toast.success('Event updated successfully');
       return data?.updateEvent;
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update event');
       throw err;
     } finally {
       setLoading(false);

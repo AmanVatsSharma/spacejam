@@ -1023,10 +1023,52 @@ export const GET_CUSTOMER = gql`
       totalSpent
       lastBooking
       location
+      centerId
       teamSize
       joinDate
       notes
       createdAt
+      updatedAt
+      gstNumber
+      companyAddress
+      companyType
+      employeeCount
+      industry
+      website
+      planType
+      alternateEmail
+      alternatePhone
+      dob
+      emergencyContactName
+      emergencyContactPhone
+      communicationChannel
+      center {
+        id
+        name
+      }
+      employees {
+        id
+        name
+        email
+        phone
+        role
+        department
+        seatNumber
+        status
+        invitedAt
+        joinedAt
+        createdAt
+      }
+      documents {
+        id
+        name
+        documentType
+        fileUrl
+        fileSize
+        mimeType
+        uploadedAt
+        createdAt
+      }
     }
   }
 `;
@@ -1060,7 +1102,26 @@ export const UPDATE_CUSTOMER = gql`
       totalBookings
       totalSpent
       lastBooking
+      centerId
+      teamSize
+      location
+      joinDate
+      notes
+      gstNumber
+      companyAddress
+      companyType
+      employeeCount
+      industry
+      website
+      planType
+      alternateEmail
+      alternatePhone
+      dob
+      emergencyContactName
+      emergencyContactPhone
+      communicationChannel
       createdAt
+      updatedAt
     }
   }
 `;
@@ -1068,6 +1129,141 @@ export const UPDATE_CUSTOMER = gql`
 export const DELETE_CUSTOMER = gql`
   mutation DeleteCustomer($id: ID!) {
     deleteCustomer(id: $id)
+  }
+`;
+
+/* ── Customer extended data (employees + documents) ── */
+
+export const GET_CUSTOMER_EMPLOYEES = gql`
+  query GetCustomerEmployees($customerId: ID!) {
+    customerEmployees(customerId: $customerId) {
+      id
+      customerId
+      name
+      email
+      phone
+      role
+      department
+      seatNumber
+      status
+      invitedAt
+      joinedAt
+      createdAt
+    }
+  }
+`;
+
+export const GET_CUSTOMER_DOCUMENTS = gql`
+  query GetCustomerDocuments($customerId: ID!) {
+    customerDocuments(customerId: $customerId) {
+      id
+      customerId
+      name
+      documentType
+      fileUrl
+      fileSize
+      mimeType
+      uploadedAt
+      createdAt
+    }
+  }
+`;
+
+export const ADD_CUSTOMER_EMPLOYEE = gql`
+  mutation AddCustomerEmployee(
+    $customerId: ID!
+    $name: String!
+    $email: String!
+    $phone: String
+    $role: String
+    $department: String
+    $seatNumber: String
+  ) {
+    addCustomerEmployee(
+      customerId: $customerId
+      name: $name
+      email: $email
+      phone: $phone
+      role: $role
+      department: $department
+      seatNumber: $seatNumber
+    ) {
+      id
+      name
+      email
+      phone
+      role
+      department
+      seatNumber
+      status
+      createdAt
+    }
+  }
+`;
+
+export const UPDATE_CUSTOMER_EMPLOYEE = gql`
+  mutation UpdateCustomerEmployee(
+    $id: ID!
+    $name: String
+    $email: String
+    $phone: String
+    $role: String
+    $department: String
+    $seatNumber: String
+    $status: String
+  ) {
+    updateCustomerEmployee(
+      id: $id
+      name: $name
+      email: $email
+      phone: $phone
+      role: $role
+      department: $department
+      seatNumber: $seatNumber
+      status: $status
+    ) {
+      id
+      name
+      email
+      role
+      department
+      seatNumber
+      status
+    }
+  }
+`;
+
+export const REMOVE_CUSTOMER_EMPLOYEE = gql`
+  mutation RemoveCustomerEmployee($id: ID!) {
+    removeCustomerEmployee(id: $id)
+  }
+`;
+
+export const ADD_CUSTOMER_DOCUMENT = gql`
+  mutation AddCustomerDocument(
+    $customerId: ID!
+    $name: String!
+    $documentType: String!
+    $fileUrl: String!
+    $fileSize: Int
+    $mimeType: String
+  ) {
+    addCustomerDocument(
+      customerId: $customerId
+      name: $name
+      documentType: $documentType
+      fileUrl: $fileUrl
+      fileSize: $fileSize
+      mimeType: $mimeType
+    ) {
+      id
+      name
+      documentType
+      fileUrl
+      fileSize
+      mimeType
+      createdAt
+    }
   }
 `;
 
