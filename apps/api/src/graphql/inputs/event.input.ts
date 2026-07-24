@@ -75,10 +75,10 @@ export class CreateEventInput {
   @IsOptional()
   notes?: string;
 
-  @Field()
+  @Field({ nullable: true })
   @IsString()
-  @IsNotEmpty()
-  meetingRoomId!: string;
+  @IsOptional()
+  meetingRoomId?: string;
 
   @Field({ nullable: true })
   @IsString()

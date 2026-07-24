@@ -1,0 +1,1 @@
+{"operationName":"GetDiscounts","variables":{},"query":"query GetDiscounts($centerId: ID) {\n  discounts(centerId: $centerId) {\n    id\n    code\n    percentage\n    maxAmount\n    description\n    isActive\n    validFrom\n    validUntil\n    minOrderAmount\n    usageLimit\n    usedCount\n    applicableTo\n    centerId\n    createdAt\n    updatedAt\n    __typename\n  }\n}"}

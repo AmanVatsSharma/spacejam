@@ -55,7 +55,7 @@ export class EventTicketTier {
   soldCount!: number;
 
   @Field(() => String, { nullable: true })
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   earlyBirdEndDate!: string | null;
 
   @Field(() => String, { nullable: true })

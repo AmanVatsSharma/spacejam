@@ -65,7 +65,7 @@ export class Customer {
     totalSpent!: number;
 
     @Field(() => Date, { nullable: true })
-    @Column({ type: 'date', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     lastBooking?: Date;
 
     @Field(() => ID, { nullable: true })
@@ -81,7 +81,7 @@ export class Customer {
     location?: string;
 
     @Field(() => Date, { nullable: true })
-    @Column({ type: 'date', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     joinDate?: Date;
 
     @Field(() => String, { nullable: true })

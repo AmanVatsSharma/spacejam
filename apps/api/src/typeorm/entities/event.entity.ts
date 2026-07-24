@@ -126,20 +126,20 @@ export class Event {
   updatedAt!: Date;
 
   // Relations
-  @Field(() => Center)
+  @Field(() => Center, { nullable: true })
   @ManyToOne(() => Center, (center) => center.events)
   @JoinColumn({ name: 'centerId' })
-  center!: Center;
+  center?: Center;
 
-  @Field(() => MeetingRoom)
+  @Field(() => MeetingRoom, { nullable: true })
   @ManyToOne(() => MeetingRoom, (room) => room.events)
   @JoinColumn({ name: 'meetingRoomId' })
-  meetingRoom!: MeetingRoom;
+  meetingRoom?: MeetingRoom;
 
-  @Field(() => User)
+  @Field(() => User, { nullable: true })
   @ManyToOne(() => User, (user: any) => user.events)
   @JoinColumn({ name: 'requestedById' })
-  requestedBy!: User;
+  requestedBy?: User;
 
   @Field(() => [EventAttendee])
   @OneToMany(() => EventAttendee, (a) => a.event)

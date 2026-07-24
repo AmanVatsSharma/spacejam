@@ -1,0 +1,1 @@
+{"operationName":"GetEventStats","variables":{},"query":"query GetEventStats($centerId: String) {\n  eventStatistics(centerId: $centerId) {\n    total\n    upcoming\n    past\n    today\n    cancelled\n    byType {\n      conference\n      workshop\n      training\n      social\n      other\n      __typename\n    }\n    __typename\n  }\n}"}

@@ -76,11 +76,11 @@ export class RecurringBooking {
   daysOfWeek!: number[] | null;
 
   @Field()
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   startDate!: string;
 
   @Field()
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   endDate!: string;
 
   @Field()

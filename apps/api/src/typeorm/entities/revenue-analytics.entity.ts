@@ -30,7 +30,7 @@ export class RevenueAnalytics {
   centerId!: string;
 
   @Field()
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   date!: Date;
 
   @Field(() => Float)

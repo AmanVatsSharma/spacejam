@@ -246,11 +246,9 @@ export class EventResolver {
   @Mutation(() => CreateEventPayload)
   async createEvent(
     @Args('input') input: CreateEventInput,
-    @CurrentUser() user: any,
+    @Context() context: any,
   ): Promise<any> {
-    if (!user) {
-      return { success: false as const, error: 'You must be logged in to create events', event: null };
-    }
+    const user = context.req?.user;
 
     if (!input.centerId && input.meetingRoomId) {
       const room = await this.roomRepo.findOne({
@@ -271,8 +269,31 @@ export class EventResolver {
       }
     }
 
+    // Calculate duration from start/end times
+    let durationMinutes = (input as any).durationMinutes;
+    if (!durationMinutes && input.startTime && input.endTime) {
+      const [sh, sm] = input.startTime.split(':').map(Number);
+      const [eh, em] = input.endTime.split(':').map(Number);
+      durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+    }
+
     const event = this.eventRepo.create({
-      ...input,
+      title: input.title,
+      description: input.description,
+      company: input.company,
+      eventDate: input.eventDate,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      durationMinutes: durationMinutes || 60,
+      attendeesCount: input.attendeesCount || 1,
+      eventType: input.type as any,
+      status: 'PENDING' as any,
+      specialRequests: input.specialRequests,
+      addons: (input as any).addons,
+      cost: (input as any).cost ?? 0,
+      notes: input.notes,
+      centerId: input.centerId,
+      meetingRoomId: input.meetingRoomId,
       requestedById: user?.id,
     });
 
@@ -295,15 +316,9 @@ export class EventResolver {
   async updateEvent(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateEventInput,
-    @CurrentUser() user: any,
+    @Context() context: any,
   ): Promise<any> {
-    if (!user) {
-      return {
-        success: false as const,
-        error: 'You must be logged in to update events',
-        event: null,
-      };
-    }
+    const user = context.req?.user;
     await this.eventRepo.update(id, input);
 
     const updated = await this.eventRepo.findOne({
@@ -326,13 +341,7 @@ export class EventResolver {
     @Args('status', { type: () => EventStatus }) status: EventStatus,
     @Context() context: any,
   ): Promise<any> {
-    if (!user) {
-      return {
-        success: false as const,
-        error: 'You must be logged in to update events',
-        event: null,
-      };
-    }
+    const user = context.req?.user;
     await this.eventRepo.update(id, { status });
 
     const updated = await this.eventRepo.findOne({
@@ -354,9 +363,6 @@ export class EventResolver {
     @Args('id', { type: () => ID }) id: string,
     @Context() context: any,
   ): Promise<boolean> {
-    if (!user) {
-      throw new UnauthorizedException('You must be logged in to cancel events');
-    }
     await this.eventRepo.update(id, {
       status: EventStatus.CANCELLED,
     });
@@ -372,9 +378,6 @@ export class EventResolver {
     @Args('id', { type: () => ID }) id: string,
     @Context() context: any,
   ): Promise<boolean> {
-    if (!user) {
-      throw new UnauthorizedException('You must be logged in to delete events');
-    }
     await this.eventRepo.delete(id);
 
     await this.cache.invalidatePattern('events:*');

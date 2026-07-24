@@ -94,7 +94,7 @@ export class Equipment {
   purchasePrice!: number | null;
 
   @Field(() => Date, { nullable: true })
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   purchaseDate!: string | null;
 
   @Field(() => Int, { nullable: true })
@@ -111,7 +111,7 @@ export class Equipment {
   assignedUser!: User | null;
 
   @Field(() => Date, { nullable: true })
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   assignedAt!: string | null;
 
   @Field(() => String, { nullable: true })

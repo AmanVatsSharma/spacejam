@@ -1,0 +1,1 @@
+{"query": "mutation Signin($input: SigninInput!) { signin(input: $input) { accessToken refreshToken user { id email name role } } }", "variables": {"input": {"email": "admin@spacejam.com", "password": "Admin@123"}}

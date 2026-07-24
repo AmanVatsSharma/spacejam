@@ -92,7 +92,7 @@ export class ScheduledReport {
   enabled!: boolean;
 
   @Field(() => String, { nullable: true })
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   lastSentAt!: string | null;
 
   @Field()

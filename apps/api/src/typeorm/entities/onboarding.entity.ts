@@ -107,7 +107,7 @@ export class Onboarding {
 
     // Date the onboarding was finalised (when status flips to COMPLETED)
     @Field({ nullable: true })
-    @Column({ type: 'date', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     completedAt?: Date;
 
     @Field({ nullable: true })
