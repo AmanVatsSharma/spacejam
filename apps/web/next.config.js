@@ -8,6 +8,9 @@ const { composePlugins, withNx } = require('@nx/next');
  **/
 const nextConfig = {
   nx: {},
+  // Standalone output is required for the production deploy workflow:
+  // we ship .next/standalone + .next/static + .next/BUILD_ID to the server.
+  output: 'standalone',
   transpilePackages: ['@spacejam/ui'],
   generateBuildId: () => `build-${Date.now()}`,
   skipTrailingSlashRedirect: true,

@@ -33,6 +33,8 @@ import { Deposit } from './entities/deposit.entity';
 import { Invoice } from './entities/invoice.entity';
 import { Contract } from './entities/contract.entity';
 import { Customer } from './entities/customer.entity';
+import { CustomerDocument } from './entities/customer-document.entity';
+import { CustomerEmployee } from './entities/customer-employee.entity';
 import { Notification } from './entities/notification.entity';
 import { Discount } from './entities/discount.entity';
 import { Equipment } from './entities/equipment.entity';
@@ -62,6 +64,8 @@ const ALL_ENTITIES = [
   Event,
   Request,
   Customer,
+  CustomerDocument,
+  CustomerEmployee,
   Deposit,
   Invoice,
   Contract,
