@@ -1151,11 +1151,13 @@ export const GET_CUSTOMER_EMPLOYEES = gql`
       phone
       role
       department
+      seatId
       seatNumber
       status
       invitedAt
       joinedAt
       createdAt
+      seat { id name seatType status }
     }
   }
 `;
@@ -1173,110 +1175,6 @@ export const GET_CUSTOMER_DOCUMENTS = gql`
       uploadedAt
       createdAt
     }
-  }
-`;
-
-export const ADD_CUSTOMER_EMPLOYEE = gql`
-  mutation AddCustomerEmployee(
-    $customerId: ID!
-    $name: String!
-    $email: String!
-    $phone: String
-    $role: String
-    $department: String
-    $seatNumber: String
-  ) {
-    addCustomerEmployee(
-      customerId: $customerId
-      name: $name
-      email: $email
-      phone: $phone
-      role: $role
-      department: $department
-      seatNumber: $seatNumber
-    ) {
-      id
-      name
-      email
-      phone
-      role
-      department
-      seatNumber
-      status
-      createdAt
-    }
-  }
-`;
-
-export const UPDATE_CUSTOMER_EMPLOYEE = gql`
-  mutation UpdateCustomerEmployee(
-    $id: ID!
-    $name: String
-    $email: String
-    $phone: String
-    $role: String
-    $department: String
-    $seatNumber: String
-    $status: String
-  ) {
-    updateCustomerEmployee(
-      id: $id
-      name: $name
-      email: $email
-      phone: $phone
-      role: $role
-      department: $department
-      seatNumber: $seatNumber
-      status: $status
-    ) {
-      id
-      name
-      email
-      role
-      department
-      seatNumber
-      status
-    }
-  }
-`;
-
-export const REMOVE_CUSTOMER_EMPLOYEE = gql`
-  mutation RemoveCustomerEmployee($id: ID!) {
-    removeCustomerEmployee(id: $id)
-  }
-`;
-
-export const ADD_CUSTOMER_DOCUMENT = gql`
-  mutation AddCustomerDocument(
-    $customerId: ID!
-    $name: String!
-    $documentType: String!
-    $fileUrl: String!
-    $fileSize: Int
-    $mimeType: String
-  ) {
-    addCustomerDocument(
-      customerId: $customerId
-      name: $name
-      documentType: $documentType
-      fileUrl: $fileUrl
-      fileSize: $fileSize
-      mimeType: $mimeType
-    ) {
-      id
-      name
-      documentType
-      fileUrl
-      fileSize
-      mimeType
-      createdAt
-    }
-  }
-`;
-
-export const REMOVE_CUSTOMER_DOCUMENT = gql`
-  mutation RemoveCustomerDocument($id: ID!) {
-    removeCustomerDocument(id: $id)
   }
 `;
 

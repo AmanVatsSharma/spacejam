@@ -31,7 +31,15 @@ import {
   CREATE_CONTRACT,
   CREATE_INVOICE,
   UPDATE_CUSTOMER,
+  GET_SEATS,
 } from "@/lib/apollo/operations";
+import {
+  useCreateCustomerEmployee,
+  useUpdateCustomerEmployee,
+  useDeleteCustomerEmployee,
+  useCreateCustomerDocument,
+  useDeleteCustomerDocument,
+} from "@/hooks/use-customer-team";
 import styles from "./customer-detail.module.css";
 
 type Tab = "overview" | "employees" | "activity" | "documents";
@@ -1080,9 +1088,19 @@ export default function CustomerDetailPage() {
             </>
           )}
 
-          {activeTab === "employees" && <EmployeesList employees={[]} />}
+          {activeTab === "employees" && (
+            <EmployeesList
+              employees={customer?.employees ?? []}
+              customerId={customerId}
+            />
+          )}
           {activeTab === "activity" && <ActivityList activities={[]} />}
-          {activeTab === "documents" && <DocumentsList documents={[]} />}
+          {activeTab === "documents" && (
+            <DocumentsList
+              documents={customer?.documents ?? []}
+              customerId={customerId}
+            />
+          )}
         </div>
 
         {/* Right column */}
@@ -1275,8 +1293,89 @@ function ActionButton({
   );
 }
 
-/* ----- Employees tab (matches Figma node 0:23393) ----- */
-function EmployeesList({ employees }: { employees: Employee[] }) {
+/* ----- Employees tab (real CRUD backed by CustomerEmployee resolver) ----- */
+function EmployeesList({ employees, customerId }: { employees: any[]; customerId: string }) {
+  const { create: createEmp, loading: creating } = useCreateCustomerEmployee(customerId);
+  const { update: updateEmp, loading: updating } = useUpdateCustomerEmployee(customerId);
+  const { remove: removeEmp } = useDeleteCustomerEmployee(customerId);
+
+  // Inline add/edit form state
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "", email: "", phone: "", role: "Member", department: "", seatId: "",
+  });
+
+  // Seat picker — fetch seats for the customer's center so the assign dropdown
+  // pulls from the real Inventory module.
+  const { data: seatsData } = useQuery<{ seats: any[] }>(GET_SEATS, {
+    fetchPolicy: "cache-first",
+    errorPolicy: "all",
+  });
+  const seats = seatsData?.seats ?? [];
+
+  const resetForm = () => {
+    setForm({ name: "", email: "", phone: "", role: "Member", department: "", seatId: "" });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const openAdd = () => {
+    setForm({ name: "", email: "", phone: "", role: "Member", department: "", seatId: "" });
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (emp: any) => {
+    setForm({
+      name: emp.name ?? "",
+      email: emp.email ?? "",
+      phone: emp.phone ?? "",
+      role: emp.role ?? "Member",
+      department: emp.department ?? "",
+      seatId: emp.seatId ?? "",
+    });
+    setEditingId(emp.id);
+    setShowForm(true);
+  };
+
+  const submit = async () => {
+    if (!form.name.trim() || !form.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
+    const payload: Record<string, any> = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      role: form.role.trim() || "Member",
+    };
+    if (form.phone.trim()) payload.phone = form.phone.trim();
+    if (form.department.trim()) payload.department = form.department.trim();
+    payload.seatId = form.seatId || null;
+    try {
+      if (editingId) {
+        await updateEmp(editingId, payload);
+      } else {
+        await createEmp({ customerId, ...payload });
+      }
+      resetForm();
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!window.confirm("Remove this team member?")) return;
+    try {
+      await removeEmp(id);
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const seatLabel = (emp: any) =>
+    emp.seat?.name ?? emp.seatNumber ?? "Unassigned";
+
   return (
     <section className={styles.employeesCard}>
       <header className={styles.employeesHeader}>
@@ -1284,12 +1383,35 @@ function EmployeesList({ employees }: { employees: Employee[] }) {
         <button
           type="button"
           className={styles.addEmployeeBtn}
-          onClick={() => toast.info("Employee management coming soon")}
+          onClick={openAdd}
+          disabled={creating || updating}
         >
           {Icons.userPlus}
           <span>Add Employee</span>
         </button>
       </header>
+
+      {showForm && (
+        <div className={styles.empForm} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "16px", background: "#F9FAFB", borderRadius: "12px", marginBottom: "16px" }}>
+          <input placeholder="Full name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
+          <input placeholder="Email *" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={inputStyle} />
+          <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
+          <input placeholder="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} style={inputStyle} />
+          <input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} style={inputStyle} />
+          <select value={form.seatId} onChange={(e) => setForm({ ...form, seatId: e.target.value })} style={inputStyle}>
+            <option value="">No seat assigned</option>
+            {seats.map((s: any) => (
+              <option key={s.id} value={s.id}>{s.name} ({s.seatType})</option>
+            ))}
+          </select>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button type="button" onClick={resetForm} style={btnSecondary}>Cancel</button>
+            <button type="button" onClick={submit} disabled={creating || updating} style={btnPrimary}>
+              {creating || updating ? "Saving…" : editingId ? "Update Member" : "Add Member"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {employees.length === 0 ? (
         <EmptyState title="No team members" body="No team members have been added for this customer yet." />
@@ -1304,37 +1426,33 @@ function EmployeesList({ employees }: { employees: Employee[] }) {
           </div>
 
           <div className={styles.empBody} role="rowgroup">
-            {employees.map((emp) => (
-              <div key={emp.email} className={styles.empRow} role="row">
+            {employees.map((emp: any) => (
+              <div key={emp.id ?? emp.email} className={styles.empRow} role="row">
                 <div className={styles.empCell} role="cell">
                   <div className={styles.empName}>{emp.name}</div>
                   <div className={styles.empEmail}>{emp.email}</div>
                 </div>
                 <div className={styles.empCell} role="cell">
-                  <span className={styles.empRole}>{emp.role}</span>
+                  <span className={styles.empRole}>{emp.role ?? "Member"}</span>
                 </div>
                 <div className={styles.empCell} role="cell">
-                  <span className={styles.empSeatBadge}>{emp.seat}</span>
+                  <span className={styles.empSeatBadge}>{seatLabel(emp)}</span>
                 </div>
                 <div className={styles.empCell} role="cell">
                   <span className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}>
-                    {emp.status}
+                    {emp.status ?? "active"}
                   </span>
                 </div>
                 <div className={styles.empCell} role="cell">
                   <div className={styles.empActions}>
-                    {emp.actions.includes("edit") && (
-                      <button type="button" className={styles.empActionBtn}>
-                        {Icons.edit}
-                        <span>Edit</span>
-                      </button>
-                    )}
-                    {emp.actions.includes("remove") && (
-                      <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`}>
-                        {Icons.trash}
-                        <span>Remove</span>
-                      </button>
-                    )}
+                    <button type="button" className={styles.empActionBtn} onClick={() => openEdit(emp)}>
+                      {Icons.edit}
+                      <span>Edit</span>
+                    </button>
+                    <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`} onClick={() => handleRemove(emp.id)}>
+                      {Icons.trash}
+                      <span>Remove</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1345,6 +1463,23 @@ function EmployeesList({ employees }: { employees: Employee[] }) {
     </section>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1px solid #E5E7EB",
+  fontSize: "14px",
+  background: "#fff",
+  outline: "none",
+};
+const btnPrimary: React.CSSProperties = {
+  padding: "10px 18px", borderRadius: "8px", border: "none",
+  background: "#FF6A2F", color: "#fff", fontWeight: 600, fontSize: "14px", cursor: "pointer",
+};
+const btnSecondary: React.CSSProperties = {
+  padding: "10px 18px", borderRadius: "8px", border: "1px solid #E5E7EB",
+  background: "#fff", color: "#374151", fontWeight: 600, fontSize: "14px", cursor: "pointer",
+};
 
 function ActivityList({ activities }: { activities: Activity[] }) {
   return (
@@ -1386,7 +1521,54 @@ function ActivityList({ activities }: { activities: Activity[] }) {
   );
 }
 
-function DocumentsList({ documents }: { documents: Document[] }) {
+function DocumentsList({ documents, customerId }: { documents: any[]; customerId: string }) {
+  const { create: createDoc, loading: creating } = useCreateCustomerDocument(customerId);
+  const { remove: removeDoc } = useDeleteCustomerDocument(customerId);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    documentType: "id_proof",
+    fileUrl: "",
+    mimeType: "",
+  });
+
+  const resetForm = () => {
+    setForm({ name: "", documentType: "id_proof", fileUrl: "", mimeType: "" });
+    setShowForm(false);
+  };
+
+  const submit = async () => {
+    if (!form.name.trim() || !form.fileUrl.trim()) {
+      toast.error("Document name and file URL are required");
+      return;
+    }
+    try {
+      await createDoc({
+        customerId,
+        name: form.name.trim(),
+        documentType: form.documentType,
+        fileUrl: form.fileUrl.trim(),
+        mimeType: form.mimeType.trim() || null,
+      });
+      resetForm();
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!window.confirm("Delete this document?")) return;
+    try {
+      await removeDoc(id);
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const fmtDate = (iso?: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("en-GB") : "—";
+
   return (
     <section className={styles.documentsCard}>
       <header className={styles.documentsHeader}>
@@ -1394,44 +1576,73 @@ function DocumentsList({ documents }: { documents: Document[] }) {
         <button
           type="button"
           className={styles.documentsUploadBtn}
-          onClick={() => toast.info("Document upload coming soon")}
+          onClick={() => setShowForm((v) => !v)}
+          disabled={creating}
         >
           {Icons.upload}
           <span>Upload Document</span>
         </button>
       </header>
 
+      {showForm && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "16px", background: "#F9FAFB", borderRadius: "12px", marginBottom: "16px" }}>
+          <input placeholder="Document name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
+          <select value={form.documentType} onChange={(e) => setForm({ ...form, documentType: e.target.value })} style={inputStyle}>
+            <option value="id_proof">ID Proof</option>
+            <option value="agreement">Agreement</option>
+            <option value="kyc">KYC</option>
+            <option value="gst_certificate">GST Certificate</option>
+            <option value="other">Other</option>
+          </select>
+          <input placeholder="File URL (https://...)" value={form.fileUrl} onChange={(e) => setForm({ ...form, fileUrl: e.target.value })} style={inputStyle} />
+          <input placeholder="MIME type (optional)" value={form.mimeType} onChange={(e) => setForm({ ...form, mimeType: e.target.value })} style={inputStyle} />
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button type="button" onClick={resetForm} style={btnSecondary}>Cancel</button>
+            <button type="button" onClick={submit} disabled={creating} style={btnPrimary}>
+              {creating ? "Saving…" : "Add Document"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {documents.length === 0 ? (
         <EmptyState title="No documents" body="No documents have been uploaded for this customer yet." />
       ) : (
         <div className={styles.documentsList}>
-          {documents.map((d) => (
+          {documents.map((d: any) => (
             <article key={d.id} className={styles.documentsRow}>
               <div
-                className={`${styles.documentsIconWrap} ${d.variant === "image" ? styles.documentsIconWrapImage : ""}`}
+                className={`${styles.documentsIconWrap}`}
                 aria-hidden="true"
               >
-                {d.variant === "pdf" ? Icons.filePdf : Icons.fileImage}
+                {/image/i.test(d.mimeType ?? "") ? Icons.fileImage : Icons.filePdf}
               </div>
 
               <div className={styles.documentsMeta}>
                 <p className={styles.documentsName}>{d.name}</p>
                 <p className={styles.documentsSub}>
-                  {d.type} · {d.size} · Uploaded {d.uploadedAt}
+                  {d.documentType} · Uploaded {fmtDate(d.uploadedAt ?? d.createdAt)}
                 </p>
               </div>
 
               <div className={styles.documentsActions}>
-                <button type="button" className={styles.documentsViewBtn}>
+                <a
+                  href={d.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.documentsViewBtn}
+                  style={{ textDecoration: "none" }}
+                >
                   {Icons.view}
                   <span>View</span>
-                </button>
+                </a>
                 <button
                   type="button"
                   className={styles.documentsDownloadBtn}
-                  aria-label={`Download ${d.name}`}
+                  aria-label={`Delete ${d.name}`}
+                  onClick={() => handleRemove(d.id)}
                 >
-                  {Icons.download}
+                  {Icons.trash}
                 </button>
               </div>
             </article>
