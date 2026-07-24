@@ -1053,11 +1053,18 @@ export const GET_CUSTOMER = gql`
         phone
         role
         department
+        seatId
         seatNumber
         status
         invitedAt
         joinedAt
         createdAt
+        seat {
+          id
+          name
+          seatType
+          status
+        }
       }
       documents {
         id
@@ -2240,3 +2247,54 @@ export const DELETE_AUTOMATION = gql`
     deleteAutomation(id: $id)
   }
 `;
+
+// ─── Customer Employees (Team Members) ────────────────────────────────────
+
+export const CREATE_CUSTOMER_EMPLOYEE = gql`
+  mutation CreateCustomerEmployee($input: CreateCustomerEmployeeInput!) {
+    createCustomerEmployee(input: $input) {
+      id name email phone role department seatId status invitedAt joinedAt createdAt
+      seat { id name seatType status }
+    }
+  }
+`;
+
+export const UPDATE_CUSTOMER_EMPLOYEE = gql`
+  mutation UpdateCustomerEmployee($id: ID!, $input: UpdateCustomerEmployeeInput!) {
+    updateCustomerEmployee(id: $id, input: $input) {
+      id name email phone role department seatId status invitedAt joinedAt createdAt
+      seat { id name seatType status }
+    }
+  }
+`;
+
+export const DELETE_CUSTOMER_EMPLOYEE = gql`
+  mutation DeleteCustomerEmployee($id: ID!) {
+    deleteCustomerEmployee(id: $id)
+  }
+`;
+
+// ─── Customer Documents ───────────────────────────────────────────────────
+
+export const CREATE_CUSTOMER_DOCUMENT = gql`
+  mutation CreateCustomerDocument($input: CreateCustomerDocumentInput!) {
+    createCustomerDocument(input: $input) {
+      id name documentType fileUrl fileSize mimeType uploadedAt createdAt
+    }
+  }
+`;
+
+export const UPDATE_CUSTOMER_DOCUMENT = gql`
+  mutation UpdateCustomerDocument($id: ID!, $input: UpdateCustomerDocumentInput!) {
+    updateCustomerDocument(id: $id, input: $input) {
+      id name documentType fileUrl fileSize mimeType uploadedAt createdAt
+    }
+  }
+`;
+
+export const DELETE_CUSTOMER_DOCUMENT = gql`
+  mutation DeleteCustomerDocument($id: ID!) {
+    deleteCustomerDocument(id: $id)
+  }
+`;
+

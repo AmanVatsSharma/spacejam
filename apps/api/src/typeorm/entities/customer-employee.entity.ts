@@ -16,12 +16,15 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Customer } from './customer.entity';
+import { Seat } from './seat.entity';
 
 @Entity('customer_employees')
 @ObjectType()
+@Index(['customerId'])
 export class CustomerEmployee {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')
@@ -58,6 +61,21 @@ export class CustomerEmployee {
   @Column({ type: 'varchar', length: 100, nullable: true })
   department?: string;
 
+  /**
+   * Seat assignment — real FK to the Inventory module (seats table).
+   * Replaces the old free-text `seatNumber`. The legacy seatNumber column is
+   * kept (nullable) so old rows still load; the Seat relation is the source
+   * of truth going forward.
+   */
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'seatId', type: 'uuid', nullable: true })
+  seatId?: string | null;
+
+  @Field(() => Seat, { nullable: true })
+  @ManyToOne(() => Seat, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'seatId' })
+  seat?: Seat | null;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 50, nullable: true })
   seatNumber?: string;
@@ -82,3 +100,4 @@ export class CustomerEmployee {
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 }
+
