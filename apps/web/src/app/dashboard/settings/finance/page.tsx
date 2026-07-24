@@ -109,6 +109,16 @@ export default function FinanceSettingsPage() {
     gracePeriodDays: "3",
     invoicePrefix: "SJ",
     gstPercent: "18",
+    // Previously-unbound controls (now persisted):
+    holdDuration: "15", // days
+    refundablePercent: 80, // % of booking refundable
+    cancellationFeePercent: 15, // % cancellation fee
+    downgradeFeePercent: 10, // % downgrade fee
+    applicableConditions: "Anytime", // when downgrades allowed
+    eventRefundTimelineDays: "7", // days before event for full refund
+    latePaymentPenaltyPercent: 5, // % late-payment penalty
+    defaultDueDate: "7", // days from invoice date
+    reminderIntervals: [1, 3, 7], // days before due date
   });
 
   return (
@@ -164,10 +174,14 @@ export default function FinanceSettingsPage() {
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Hold Duration</label>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`}>
-                    <option>10 Days</option>
-                    <option>15 Days</option>
-                    <option>30 Days</option>
+                  <select
+                    className={`${styles.inputBox} ${styles.selectBox}`}
+                    value={draft.holdDuration}
+                    onChange={(e) => set('holdDuration', e.target.value)}
+                  >
+                    <option value="10">10 Days</option>
+                    <option value="15">15 Days</option>
+                    <option value="30">30 Days</option>
                   </select>
                 </div>
               </div>
@@ -175,11 +189,20 @@ export default function FinanceSettingsPage() {
               <div className={styles.rangeGroup}>
                 <div className={styles.rangeHeader}>
                   <span className={styles.inputLabel}>Refundable Percentage</span>
-                  <span className={styles.rangeValue}>80%</span>
+                  <span className={styles.rangeValue}>{draft.refundablePercent}%</span>
                 </div>
                 <div className={styles.rangeBarWrapper}>
-                  <div className={styles.rangeBarFill} style={{ width: '80%' }}></div>
+                  <div className={styles.rangeBarFill} style={{ width: `${draft.refundablePercent}%` }}></div>
                 </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={draft.refundablePercent}
+                  onChange={(e) => set('refundablePercent', Number(e.target.value))}
+                  style={{ width: '100%', accentColor: '#FF6A2F' }}
+                  aria-label="Refundable percentage"
+                />
                 <span className={styles.inputSub}>Percentage of booking amount refundable on cancellation</span>
               </div>
 
@@ -323,10 +346,19 @@ export default function FinanceSettingsPage() {
                 </div>
 
                 <div className={styles.rangeGroup}>
-                  <span className={styles.inputLabel}>Cancellation Fee: 15%</span>
+                  <span className={styles.inputLabel}>Cancellation Fee: {draft.cancellationFeePercent}%</span>
                   <div className={styles.rangeBarWrapper}>
-                    <div className={styles.rangeBarFill} style={{ width: '15%' }}></div>
+                    <div className={styles.rangeBarFill} style={{ width: `${draft.cancellationFeePercent}%` }}></div>
                   </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={draft.cancellationFeePercent}
+                    onChange={(e) => set('cancellationFeePercent', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: '#FF6A2F' }}
+                    aria-label="Cancellation fee percentage"
+                  />
                   <span className={styles.inputSub}>Percentage of booking amount charged as cancellation fee</span>
                 </div>
 
@@ -347,17 +379,32 @@ export default function FinanceSettingsPage() {
                 </div>
 
                 <div className={styles.rangeGroup}>
-                  <span className={styles.inputLabel}>Downgrade Fee: 10%</span>
+                  <span className={styles.inputLabel}>Downgrade Fee: {draft.downgradeFeePercent}%</span>
                   <div className={styles.rangeBarWrapper}>
-                    <div className={styles.rangeBarFill} style={{ width: '10%' }}></div>
+                    <div className={styles.rangeBarFill} style={{ width: `${draft.downgradeFeePercent}%` }}></div>
                   </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={draft.downgradeFeePercent}
+                    onChange={(e) => set('downgradeFeePercent', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: '#FF6A2F' }}
+                    aria-label="Downgrade fee percentage"
+                  />
                   <span className={styles.inputSub}>Fee charged when downgrading membership tier</span>
                 </div>
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <span className={styles.inputLabel}>Applicable Conditions</span>
-                  <select className={`${styles.inputBox} ${styles.selectBox}`}>
-                    <option>Anytime</option>
+                  <select
+                    className={`${styles.inputBox} ${styles.selectBox}`}
+                    value={draft.applicableConditions}
+                    onChange={(e) => set('applicableConditions', e.target.value)}
+                  >
+                    <option value="Anytime">Anytime</option>
+                    <option value="End of cycle">End of cycle</option>
+                    <option value="With approval">With approval</option>
                   </select>
                   <span className={styles.inputSub}>When members can downgrade their plan</span>
                 </div>
@@ -372,8 +419,16 @@ export default function FinanceSettingsPage() {
                 <div className={styles.inputGroup}>
                   <span className={styles.inputLabel}>Refund Timeline</span>
                   <div className={styles.inlineInputGroup}>
-                    <select className={`${styles.inputBox} ${styles.selectBox}`} style={{ width: '80px' }}>
-                      <option>7</option>
+                    <select
+                      className={`${styles.inputBox} ${styles.selectBox}`}
+                      style={{ width: '80px' }}
+                      value={draft.eventRefundTimelineDays}
+                      onChange={(e) => set('eventRefundTimelineDays', e.target.value)}
+                    >
+                      <option value="3">3</option>
+                      <option value="7">7</option>
+                      <option value="14">14</option>
+                      <option value="30">30</option>
                     </select>
                     <span className={styles.inputSub}>days before event</span>
                   </div>
@@ -398,10 +453,19 @@ export default function FinanceSettingsPage() {
                 </div>
 
                 <div className={styles.rangeGroup}>
-                  <span className={styles.inputLabel}>Late Payment Penalty: 5%</span>
+                  <span className={styles.inputLabel}>Late Payment Penalty: {draft.latePaymentPenaltyPercent}%</span>
                   <div className={styles.rangeBarWrapper}>
-                    <div className={styles.rangeBarFill} style={{ width: '5%' }}></div>
+                    <div className={styles.rangeBarFill} style={{ width: `${draft.latePaymentPenaltyPercent}%` }}></div>
                   </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={draft.latePaymentPenaltyPercent}
+                    onChange={(e) => set('latePaymentPenaltyPercent', Number(e.target.value))}
+                    style={{ width: '100%', accentColor: '#FF6A2F' }}
+                    aria-label="Late payment penalty percentage"
+                  />
                   <span className={styles.inputSub}>Additional charge for late payments</span>
                 </div>
 
@@ -440,8 +504,13 @@ export default function FinanceSettingsPage() {
 
                 <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
                   <label className={styles.inputLabel}>Default Due Date</label>
-                  <input type="text" className={styles.inputBox} />
-                  <span className={styles.inputSub}>Payment due within this period from invoice date</span>
+                  <input
+                    type="text"
+                    className={styles.inputBox}
+                    value={draft.defaultDueDate}
+                    onChange={(e) => set('defaultDueDate', e.target.value)}
+                  />
+                  <span className={styles.inputSub}>Payment due within this period (days) from invoice date</span>
                 </div>
               </div>
 
@@ -454,11 +523,25 @@ export default function FinanceSettingsPage() {
                 <div className={styles.inputGroup}>
                   <span className={styles.inputLabel}>Reminder Intervals</span>
                   <div className={styles.pillGroup}>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>1 day</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>3 days</div>
-                    <div className={`${styles.pill} ${styles.pillActive}`}>7 days</div>
-                    <div className={styles.pill}>14 days</div>
-                    <div className={styles.pill}>30 days</div>
+                    {[1, 3, 7, 14, 30].map((days) => {
+                      const active = (draft.reminderIntervals ?? []).includes(days);
+                      return (
+                        <div
+                          key={days}
+                          className={`${styles.pill} ${active ? styles.pillActive : ''}`}
+                          onClick={() => {
+                            const current: number[] = draft.reminderIntervals ?? [];
+                            const next = active
+                              ? current.filter((d) => d !== days)
+                              : [...current, days].sort((a, b) => a - b);
+                            set('reminderIntervals', next);
+                          }}
+                          style={{ cursor: 'pointer', userSelect: 'none' }}
+                        >
+                          {days} day{days > 1 ? 's' : ''}
+                        </div>
+                      );
+                    })}
                   </div>
                   <span className={styles.inputSub}>Automatic payment reminders will be sent at these intervals before due date</span>
                 </div>

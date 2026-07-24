@@ -100,14 +100,26 @@ export class BookingResolver {
       relations: ['floor'],
     });
 
-    if (!seat || seat.status !== SeatStatus.AVAILABLE) {
+    if (!seat) {
+      throw new BadRequestException('Seat not found');
+    }
+    // Allow booking from AVAILABLE or RESERVED; OCCUPIED/MAINTENANCE block it.
+    if (
+      seat.status !== SeatStatus.AVAILABLE &&
+      seat.status !== SeatStatus.RESERVED
+    ) {
       throw new BadRequestException('Seat is not available');
     }
 
+    // CreateBookingInput exposes startTime/endTime, but the entity columns are
+    // startDate/endDate (booking.entity.ts:62-68). Map them explicitly so the
+    // booking window actually persists — the old `...input` spread silently
+    // dropped them.
+    const start = input.startTime ? new Date(input.startTime) : undefined;
+    const end = input.endTime ? new Date(input.endTime) : undefined;
+
     // Check for time-range conflicts (only for non-HOT_DESK seats where time matters)
-    if (seat.seatType !== 'HOT_DESK' && input.startTime && input.endTime) {
-      const start = new Date(input.startTime);
-      const end = new Date(input.endTime);
+    if (seat.seatType !== 'HOT_DESK' && start && end) {
       if (end <= start) {
         throw new BadRequestException('End time must be after start time');
       }
@@ -117,7 +129,10 @@ export class BookingResolver {
         .andWhere('booking.status NOT IN (:...statuses)', {
           statuses: [BookingStatus.CANCELLED, BookingStatus.COMPLETED],
         })
-        .andWhere('(booking.startTime < :end AND booking.endTime > :start)', { start, end })
+        .andWhere('(booking.startDate < :end AND booking.endDate > :start)', {
+          start,
+          end,
+        })
         .getOne();
 
       if (conflict) {
@@ -128,16 +143,21 @@ export class BookingResolver {
     }
 
     const newBooking = this.bookingRepo.create({
-      ...input,
       userId,
+      seatId: input.seatId,
       customerId: input.customerId || undefined,
-      centerId: seat.floor.id, // floor has center relation
+      notes: input.notes,
+      // seat.floor.centerId holds the real center; the old code wrongly
+      // assigned seat.floor.id (the floor id) to centerId.
+      centerId: seat.floor?.centerId ?? seat.centerId ?? undefined,
+      startDate: start,
+      endDate: end,
       totalPrice: seat.price,
     });
 
     const booking = await this.bookingRepo.save(newBooking);
 
-    // Update seat status
+    // Update seat status to RESERVED
     await this.seatRepo.update(input.seatId, { status: SeatStatus.RESERVED });
 
     // Publish events for real-time updates

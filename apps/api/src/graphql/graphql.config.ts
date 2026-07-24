@@ -70,6 +70,13 @@ export async function buildSchemaOptions(
     plugins: [], // Metrics plugin removed to avoid circular dependency
     context: async ({ req, res, connectionParams, extra }: any) => {
       const loaders = buildRequestLoaders(dataSource);
+      // Populate req.user from the Bearer token so resolvers that read
+      // context.req.user (e.g. booking.resolver) work without per-resolver
+      // @UseGuards. Mirrors JwtStrategy.validate's output shape exactly
+      // (jwt.strategy.ts:46-51). Non-blocking: if there's no token or it is
+      // invalid/expired, req.user stays undefined and resolvers that don't
+      // read it are unaffected; those that do will 401 cleanly.
+      hydrateUserFromToken(req);
       return { req, res, connectionParams, extra, loaders };
     },
     subscriptions: {
@@ -154,6 +161,42 @@ async function buildValidationRules(
     }),
     depthLimit(maxDepth),
   ];
+}
+
+/**
+ * Extracts the user from the `Authorization: Bearer <token>` header and
+ * attaches it to `req.user`. Lazy-requires jsonwebtoken to avoid pulling it
+ * into the module-eval graph (mirrors the lazy requires in buildRequestLoaders).
+ * Silent on failure: any missing/invalid/expired token simply leaves
+ * req.user undefined. The payload shape matches JwtStrategy.validate
+ * (sub -> id, email, role, sid -> sessionId).
+ */
+function hydrateUserFromToken(req: any): void {
+  try {
+    const auth: string | undefined =
+      req?.headers?.authorization || req?.headers?.Authorization;
+    if (!auth || typeof auth !== 'string' || !auth.startsWith('Bearer ')) return;
+    const token = auth.slice(7);
+    if (!token) return;
+    const jwt = require('jsonwebtoken');
+    const secret = process.env.JWT_SECRET ?? 'dev-jwt-secret';
+    const payload = jwt.verify(token, secret) as {
+      sub?: string;
+      email?: string;
+      role?: string;
+      sid?: string;
+    };
+    if (payload && payload.sub) {
+      req.user = {
+        id: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        sessionId: payload.sid,
+      };
+    }
+  } catch {
+    // Invalid/expired token: leave req.user unset.
+  }
 }
 
 function buildRequestLoaders(dataSource: DataSource): GqlDataLoaders {

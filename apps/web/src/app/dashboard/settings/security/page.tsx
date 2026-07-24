@@ -408,6 +408,31 @@ export default function SecuritySettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changePw, { loading: changePwLoading }] = useMutation(CHANGE_PASSWORD);
 
+  // Live device/session data for the Device Summary sidebar (previously the
+  // sidebar showed hardcoded "Active Sessions: 3" / "2 hours ago from Mumbai"
+  // next to the live device list). Reuses the same query DeviceManagementTab
+  // runs — Apollo dedupes via the cache.
+  const { data: sessionsData } = useQuery(GET_USER_SESSIONS, {
+    fetchPolicy: "cache-and-network",
+  });
+  const sessions: any[] = sessionsData?.myActiveSessions ?? [];
+  const lastSession = sessions[0]; // myActiveSessions is ordered DESC by createdAt
+  const lastSessionParsed = lastSession
+    ? parseUserAgent(lastSession.userAgent)
+    : null;
+  // Derive device-type counts from session user-agents for the sidebar.
+  const deviceTypeCounts = sessions.reduce(
+    (acc: { Desktop: number; Mobile: number; Tablet: number }, s: any) => {
+      const { device } = parseUserAgent(s.userAgent);
+      const key = /mobile|android|iphone/i.test(device) ? "Mobile"
+        : /tablet|ipad/i.test(device) ? "Tablet"
+        : "Desktop";
+      acc[key as "Desktop" | "Mobile" | "Tablet"]++;
+      return acc;
+    },
+    { Desktop: 0, Mobile: 0, Tablet: 0 },
+  );
+
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
@@ -998,8 +1023,8 @@ export default function SecuritySettingsPage() {
                   <div className={styles.statBoxIconWrap}>{Icons.monitor}</div>
                   <div className={styles.statBoxContent}>
                     <span className={styles.statBoxTitle}>Active Sessions</span>
-                    <span className={styles.statBoxValue}>3</span>
-                    <span className={styles.statBoxSub}>Across 3 devices</span>
+                    <span className={styles.statBoxValue}>{sessions.length}</span>
+                    <span className={styles.statBoxSub}>Across {sessions.length} device{sessions.length !== 1 ? "s" : ""}</span>
                   </div>
                 </div>
 
@@ -1007,8 +1032,23 @@ export default function SecuritySettingsPage() {
                   <div className={styles.statBoxIconWrap}>{Icons.alertTriangle}</div>
                   <div className={styles.statBoxContent}>
                     <span className={styles.statBoxTitle}>Last Login</span>
-                    <span className={styles.statBoxText}>2 hours ago <span style={{ color: "#6B7280", fontWeight: "400" }}>from Mumbai, Maharashtra</span></span>
-                    <span className={styles.statBoxSub}>MacBook Pro • Chrome 120</span>
+                    <span className={styles.statBoxText}>
+                      {lastSession ? (
+                        <>
+                          {formatSessionTime(lastSession.createdAt)}{" "}
+                          <span style={{ color: "#6B7280", fontWeight: "400" }}>
+                            from {lastSession.ipAddress || "unknown location"}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ color: "#6B7280", fontWeight: "400" }}>No active sessions</span>
+                      )}
+                    </span>
+                    <span className={styles.statBoxSub}>
+                      {lastSessionParsed
+                        ? `${lastSessionParsed.device} • ${lastSessionParsed.browser}`
+                        : "—"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1019,19 +1059,19 @@ export default function SecuritySettingsPage() {
                   <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ color: "#FF7847" }}>{Icons.monitor}</span> Desktop
                   </span>
-                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>{deviceTypeCounts.Desktop}</span>
                 </div>
                 <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ color: "#FF7847" }}>{Icons.smartphone}</span> Mobile
                   </span>
-                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>{deviceTypeCounts.Mobile}</span>
                 </div>
                 <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ color: "#FF7847" }}>{Icons.monitor}</span> Tablet
                   </span>
-                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>1</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>{deviceTypeCounts.Tablet}</span>
                 </div>
               </div>
 
@@ -1048,15 +1088,15 @@ export default function SecuritySettingsPage() {
                 <div className={styles.summaryListTitle} style={{ marginBottom: "12px" }}>Active Rules</div>
                 <div className={styles.summaryRow}>
                   <span className={styles.summaryLabel}>Multiple Devices</span>
-                  <span className={styles.summaryValueOrange}>Allowed</span>
+                  <span className={styles.summaryValueOrange}>{draft.allowMultipleDevices ? "Allowed" : "Blocked"}</span>
                 </div>
                 <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel}>Verification</span>
-                  <span className={styles.summaryValueOrange}>Required</span>
+                  <span className={styles.summaryValueOrange}>{draft.requireDeviceVerification ? "Required" : "Optional"}</span>
                 </div>
                 <div className={styles.summaryRow} style={{ marginTop: "12px" }}>
                   <span className={styles.summaryLabel}>Trust Duration</span>
-                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>30 days</span>
+                  <span className={styles.summaryValue} style={{ color: "#1F2937" }}>{draft.deviceTrustDuration ?? "30 days"}</span>
                 </div>
               </div>
             </div>

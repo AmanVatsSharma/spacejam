@@ -3,15 +3,19 @@
 /**
  * File:        apps/web/src/app/dashboard/inventory/table-view/seat-book-modal.tsx
  * Module:      Web · Dashboard · Inventory · Seat Book Modal
- * Purpose:     Book a seat for a date range — sets seat status to RESERVED
+ * Purpose:     Book a seat for a date range — creates a real Booking record
+ *              (createBooking mutation) and flips the seat to RESERVED.
+ *              Previously this only set the seat status and discarded the
+ *              guest/date/notes fields.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-21
+ * Last-updated: 2026-07-24
  */
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useUpdateSeat } from "@/hooks/use-inventory";
+import { useCreateBooking } from "@/hooks/use-operations";
 
 export interface SeatBookModalProps {
   open: boolean;
@@ -32,7 +36,8 @@ export function SeatBookModal({ open, onClose, seatId, seatName }: SeatBookModal
   const [form, setForm] = useState(emptyForm);
   const [touched, setTouched] = useState(false);
 
-  const { updateSeat, loading: booking } = useUpdateSeat();
+  const { updateSeat } = useUpdateSeat();
+  const { create: createBooking, loading: booking } = useCreateBooking();
 
   // Reset form when modal opens/closes.
   useEffect(() => {
@@ -75,17 +80,29 @@ export function SeatBookModal({ open, onClose, seatId, seatName }: SeatBookModal
     }
 
     try {
-      const result = await updateSeat({
-        id: seatId,
-        input: { status: "RESERVED" },
+      // Create a real booking record. Guest info is folded into notes because
+      // the Booking entity has no guest columns (structured guest fields are
+      // a follow-up). CreateBookingInput uses startTime/endTime (Date), which
+      // the resolver maps to the entity's startDate/endDate columns.
+      const guestLine = `Guest: ${form.guestName.trim()} (${form.guestEmail.trim()})`;
+      const notes = form.notes.trim()
+        ? `${guestLine}\n${form.notes.trim()}`
+        : guestLine;
+
+      await createBooking({
+        seatId,
+        startTime: new Date(form.dateFrom),
+        endTime: new Date(`${form.dateTo}T23:59:59`),
+        notes,
       });
 
-      if (result) {
-        toast.success(`Seat "${seatName}" booked successfully`);
-        onClose();
-      } else {
-        toast.error("Could not book the seat. Please try again.");
-      }
+      // The resolver already flips the seat to RESERVED, but the inventory
+      // list/floor-map read seat status from GET_SEATS — force a refresh of
+      // the seat row so the UI reflects the new state immediately.
+      await updateSeat({ id: seatId, input: { status: "RESERVED" } });
+
+      toast.success(`Seat "${seatName}" booked successfully`);
+      onClose();
     } catch (err) {
       toast.error(
         `Failed to book seat: ${err instanceof Error ? err.message : "Unknown error"}`

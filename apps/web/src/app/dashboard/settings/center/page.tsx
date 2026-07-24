@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { GET_MY_CENTERS, UPDATE_CENTER } from "@/lib/apollo/operations";
+import { GET_MY_CENTERS } from "@/lib/apollo/operations";
+import { useUpdateCenterSettings } from "@/hooks/use-settings";
 import styles from "./center.module.css";
 
 const Icons = {
@@ -96,9 +97,11 @@ export default function CenterSettingsPage() {
     errorPolicy: 'all',
   });
 
-  const [updateCenter] = useMutation(UPDATE_CENTER, {
-    refetchQueries: [{ query: GET_MY_CENTERS }],
-  });
+  // Persist via the deep-merge updateCenterSettings mutation (NOT updateCenter,
+  // whose UpdateCenterInput has no `settings` field — so the old Save silently
+  // dropped everything). Deep-merge also prevents clobbering sibling groups
+  // (finance/security/notifications) written by other settings pages.
+  const { update: updateCenterSettings } = useUpdateCenterSettings();
 
   const centers = centersData?.myCenters ?? [];
   const primaryCenter = centers[0];
@@ -130,74 +133,79 @@ export default function CenterSettingsPage() {
   const [maintenanceWindowEnd, setMaintenanceWindowEnd] = useState("6:00 AM");
   const [cleaningBufferDuration, setCleaningBufferDuration] = useState("30");
 
-  // Hydrate toggles from persisted Center.settings once the center loads.
-  const savedOps = (primaryCenter?.settings as Record<string, any> | null)?.operations ?? null;
+  // Hydrate from persisted Center.settings once the center loads. Reads all
+  // three groups (bookingDefaults, workspaceDefaults, operations) — previously
+  // only `operations` was read, so the other two tabs always reloaded blank.
+  const savedSettings = (primaryCenter?.settings as Record<string, any> | null) ?? null;
+  const savedBooking = savedSettings?.bookingDefaults ?? null;
+  const savedWorkspace = savedSettings?.workspaceDefaults ?? null;
+  const savedOps = savedSettings?.operations ?? null;
   useEffect(() => {
-    if (!savedOps) return;
-    if (typeof savedOps.lastMinuteBooking === 'boolean') setLastMinuteBooking(savedOps.lastMinuteBooking);
-    if (typeof savedOps.overbooking === 'boolean') setOverbooking(savedOps.overbooking);
-    if (typeof savedOps.autoAssign === 'boolean') setAutoAssign(savedOps.autoAssign);
-    if (typeof savedOps.seatSwitching === 'boolean') setSeatSwitching(savedOps.seatSwitching);
-    if (typeof savedOps.realTimeOccupancy === 'boolean') setRealTimeOccupancy(savedOps.realTimeOccupancy);
-    if (typeof savedOps.emergencyOverride === 'boolean') setEmergencyOverride(savedOps.emergencyOverride);
     // Booking Defaults
-    if (savedOps.bookingCutoffTime) setBookingCutoffTime(savedOps.bookingCutoffTime);
-    if (savedOps.cancellationWindow) setCancellationWindow(savedOps.cancellationWindow);
-    if (savedOps.roomBufferDuration) setRoomBufferDuration(savedOps.roomBufferDuration);
-    if (savedOps.maxBookingsPerDay) setMaxBookingsPerDay(savedOps.maxBookingsPerDay);
+    if (savedBooking) {
+      if (typeof savedBooking.lastMinuteBooking === 'boolean') setLastMinuteBooking(savedBooking.lastMinuteBooking);
+      if (typeof savedBooking.overbooking === 'boolean') setOverbooking(savedBooking.overbooking);
+      if (savedBooking.bookingCutoffTime) setBookingCutoffTime(savedBooking.bookingCutoffTime);
+      if (savedBooking.cancellationWindow) setCancellationWindow(savedBooking.cancellationWindow);
+      if (savedBooking.roomBufferDuration) setRoomBufferDuration(savedBooking.roomBufferDuration);
+      if (savedBooking.maxBookingsPerDay) setMaxBookingsPerDay(savedBooking.maxBookingsPerDay);
+    }
     // Workspace Defaults
-    if (savedOps.seatVisibility) setSeatVisibility(savedOps.seatVisibility);
-    if (savedOps.roomNamingFormat) setRoomNamingFormat(savedOps.roomNamingFormat);
-    if (savedOps.defaultAvailabilityStatus) setDefaultAvailabilityStatus(savedOps.defaultAvailabilityStatus);
+    if (savedWorkspace) {
+      if (typeof savedWorkspace.autoAssign === 'boolean') setAutoAssign(savedWorkspace.autoAssign);
+      if (typeof savedWorkspace.seatSwitching === 'boolean') setSeatSwitching(savedWorkspace.seatSwitching);
+      if (typeof savedWorkspace.realTimeOccupancy === 'boolean') setRealTimeOccupancy(savedWorkspace.realTimeOccupancy);
+      if (savedWorkspace.seatVisibility) setSeatVisibility(savedWorkspace.seatVisibility);
+      if (savedWorkspace.roomNamingFormat) setRoomNamingFormat(savedWorkspace.roomNamingFormat);
+      if (savedWorkspace.defaultAvailabilityStatus) setDefaultAvailabilityStatus(savedWorkspace.defaultAvailabilityStatus);
+    }
     // Operational Defaults
-    if (savedOps.openingTime) setOpeningTime(savedOps.openingTime);
-    if (savedOps.closingTime) setClosingTime(savedOps.closingTime);
-    if (Array.isArray(savedOps.workingDays)) setWorkingDays(savedOps.workingDays);
-    if (savedOps.meetingRoomLimit) setMeetingRoomLimit(savedOps.meetingRoomLimit);
-    if (savedOps.eventDurationLimit) setEventDurationLimit(savedOps.eventDurationLimit);
-    if (savedOps.maintenanceWindowStart) setMaintenanceWindowStart(savedOps.maintenanceWindowStart);
-    if (savedOps.maintenanceWindowEnd) setMaintenanceWindowEnd(savedOps.maintenanceWindowEnd);
-    if (savedOps.cleaningBufferDuration) setCleaningBufferDuration(savedOps.cleaningBufferDuration);
-  }, [savedOps]);
+    if (savedOps) {
+      if (typeof savedOps.emergencyOverride === 'boolean') setEmergencyOverride(savedOps.emergencyOverride);
+      if (savedOps.openingTime) setOpeningTime(savedOps.openingTime);
+      if (savedOps.closingTime) setClosingTime(savedOps.closingTime);
+      if (Array.isArray(savedOps.workingDays)) setWorkingDays(savedOps.workingDays);
+      if (savedOps.meetingRoomLimit) setMeetingRoomLimit(savedOps.meetingRoomLimit);
+      if (savedOps.eventDurationLimit) setEventDurationLimit(savedOps.eventDurationLimit);
+      if (savedOps.maintenanceWindowStart) setMaintenanceWindowStart(savedOps.maintenanceWindowStart);
+      if (savedOps.maintenanceWindowEnd) setMaintenanceWindowEnd(savedOps.maintenanceWindowEnd);
+      if (savedOps.cleaningBufferDuration) setCleaningBufferDuration(savedOps.cleaningBufferDuration);
+    }
+  }, [savedBooking, savedWorkspace, savedOps]);
 
   const handleSave = async () => {
     if (!primaryCenter) return;
     setSaving(true);
     try {
-      await updateCenter({
-        variables: {
-          id: primaryCenter.id,
-          input: {
-            settings: {
-              bookingDefaults: {
-                lastMinuteBooking,
-                overbooking,
-                bookingCutoffTime,
-                cancellationWindow,
-                roomBufferDuration,
-                maxBookingsPerDay,
-              },
-              workspaceDefaults: {
-                autoAssign,
-                seatSwitching,
-                realTimeOccupancy,
-                seatVisibility,
-                roomNamingFormat,
-                defaultAvailabilityStatus,
-              },
-              operations: {
-                emergencyOverride,
-                openingTime,
-                closingTime,
-                workingDays,
-                meetingRoomLimit,
-                eventDurationLimit,
-                maintenanceWindowStart,
-                maintenanceWindowEnd,
-                cleaningBufferDuration,
-              },
-            },
-          },
+      // updateCenterSettings deep-merges into Center.settings, so this won't
+      // wipe sibling groups (finance/security/notifications) saved elsewhere.
+      await updateCenterSettings(primaryCenter.id, {
+        bookingDefaults: {
+          lastMinuteBooking,
+          overbooking,
+          bookingCutoffTime,
+          cancellationWindow,
+          roomBufferDuration,
+          maxBookingsPerDay,
+        },
+        workspaceDefaults: {
+          autoAssign,
+          seatSwitching,
+          realTimeOccupancy,
+          seatVisibility,
+          roomNamingFormat,
+          defaultAvailabilityStatus,
+        },
+        operations: {
+          emergencyOverride,
+          openingTime,
+          closingTime,
+          workingDays,
+          meetingRoomLimit,
+          eventDurationLimit,
+          maintenanceWindowStart,
+          maintenanceWindowEnd,
+          cleaningBufferDuration,
         },
       });
       toast.success("Center defaults saved");

@@ -126,12 +126,16 @@ const CREATE_BOOKING = gql`
       id
       seatId
       userId
-      status
-      startTime
-      endTime
-      totalPrice
-      paymentId
       customerId
+      centerId
+      status
+      startDate
+      endDate
+      totalPrice
+      notes
+      paymentId
+      createdAt
+      updatedAt
     }
   }
 `;
