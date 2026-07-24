@@ -1542,8 +1542,9 @@ export const CREATE_SEAT = gql`
   }
 `;
 
-// NOTE: CreateSeatInput uses 'number' (not 'name') as the seat identifier field.
-// The Seat return type uses 'name'. Always pass { number: '...' } in the input.
+// NOTE: CreateSeatInput requires `name` (string, @IsNotEmpty) as the seat
+// identifier — the backend rejects inputs missing `name`. The `number` field
+// does NOT exist on CreateSeatInput. Always pass { name: '...' } in the input.
 
 export const CREATE_MEETING_ROOM = gql`
   mutation CreateMeetingRoom($input: CreateMeetingRoomInput!) {

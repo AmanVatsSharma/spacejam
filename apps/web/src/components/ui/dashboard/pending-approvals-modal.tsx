@@ -27,7 +27,7 @@ export function PendingApprovalsModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [activeFilter, setActiveFilter] = useState<"All" | "MAINTENANCE" | "IT_SUPPORT" | "CLEANING" | "OTHER">("All");
+  const [activeFilter, setActiveFilter] = useState<"All" | "MAINTENANCE" | "CLEANING" | "SECURITY" | "UPGRADE" | "SERVICES" | "EVENTS" | "OTHER">("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { requests, loading } = useRequests();
@@ -112,8 +112,12 @@ export function PendingApprovalsModal({
   const labelForType = (type: string) => {
     switch (type) {
       case "MAINTENANCE": return "Maintenance";
-      case "IT_SUPPORT": return "IT Support";
       case "CLEANING": return "Cleaning";
+      case "SECURITY": return "Security";
+      case "UPGRADE": return "Upgrade";
+      case "SERVICES": return "Services";
+      case "EVENTS": return "Events";
+      case "PRINTER": return "Printer";
       default: return "Other";
     }
   };
@@ -163,7 +167,7 @@ export function PendingApprovalsModal({
           {/* Toolbar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-wrap">
-              {(["All", "MAINTENANCE", "IT_SUPPORT", "CLEANING", "OTHER"] as const).map((filter) => (
+              {(["All", "MAINTENANCE", "CLEANING", "SECURITY", "UPGRADE", "SERVICES", "EVENTS", "OTHER"] as const).map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}

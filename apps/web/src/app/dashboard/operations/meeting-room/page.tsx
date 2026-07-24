@@ -39,6 +39,14 @@ type RoomCard = {
   capacity: number;
   status: RoomStatus;
   booking?: BookingInfo;
+  // Carried through from the MEETING_ROOMS query so the Edit and View Details
+  // modals can pre-fill correctly (previously discarded by displayRooms, which
+  // left those modals opening blank).
+  centerId?: string | null;
+  floorId?: string | null;
+  roomType?: string | null;
+  hourlyRate?: number | null;
+  amenities?: string[] | null;
 };
 
 const STATUS_PILL: Record<
@@ -65,10 +73,12 @@ function RoomCard({
   room,
   onBook,
   onExtend,
+  onView,
 }: {
   room: RoomCard;
   onBook?: (room: RoomCard) => void;
   onExtend?: (room: RoomCard) => void;
+  onView?: (room: RoomCard) => void;
 }) {
   const pill = STATUS_PILL[room.status];
   const action = ACTION_BTN[room.status];
@@ -138,6 +148,7 @@ function RoomCard({
         onClick={() => {
           if (room.status === 'occupied') onExtend?.(room);
           else if (room.status === 'available') onBook?.(room);
+          else if (room.status === 'booked') onView?.(room);
         }}
       >
         {action.label}
@@ -238,6 +249,11 @@ export default function MeetingRoomsPage() {
     capacity: r.capacity ?? 4,
     status: (r.status ?? 'AVAILABLE').toLowerCase() as RoomStatus,
     booking: undefined,
+    centerId: r.centerId ?? null,
+    floorId: r.floorId ?? null,
+    roomType: r.roomType ?? null,
+    hourlyRate: r.hourlyRate ?? null,
+    amenities: r.amenities ?? null,
   }));
 
   const roomIdToBooking = useMemo(() => {
@@ -283,6 +299,12 @@ export default function MeetingRoomsPage() {
     setSelectedRoomId(room.id);
     setPrefillBooking(undefined);
     setShowBookRoom(true);
+  };
+
+  // "View Booking" action on booked-status cards opens the same View Details
+  // modal the table view uses.
+  const handleView = (room: RoomCard) => {
+    setSelectedRoom(room);
   };
 
   const [prefillBooking, setPrefillBooking] =
@@ -749,6 +771,7 @@ export default function MeetingRoomsPage() {
                 room={room}
                 onBook={handleBook}
                 onExtend={handleExtend}
+                onView={handleView}
               />
             ))}
           </section>

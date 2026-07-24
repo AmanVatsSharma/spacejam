@@ -18,10 +18,16 @@ export interface AddRequestModalProps {
   onClose: () => void;
 }
 
+// Values must match the backend `RequestType` enum
+// (apps/api/src/graphql/types/user.type.ts): PRINTER, UPGRADE, SERVICES,
+// EVENTS, MAINTENANCE, CLEANING, SECURITY, OTHER. (IT_SUPPORT is not a valid
+// enum value and would be rejected by the backend.)
 const REQUEST_TYPES: { value: string; label: string }[] = [
   { value: "MAINTENANCE", label: "Maintenance" },
-  { value: "IT_SUPPORT", label: "IT Support" },
   { value: "CLEANING", label: "Cleaning" },
+  { value: "SECURITY", label: "Security" },
+  { value: "UPGRADE", label: "Upgrade" },
+  { value: "SERVICES", label: "Services" },
   { value: "OTHER", label: "Other" },
 ];
 

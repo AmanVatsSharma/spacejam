@@ -9,7 +9,6 @@
 
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UseGuards } from '@nestjs/common';
 // Note: Guards removed from mutations to allow operation without auth context.
 // Re-enable when proper JWT auth is wired end-to-end.
 import { Repository, MoreThanOrEqual, Like, Not, In } from 'typeorm';
@@ -29,10 +28,6 @@ import {
   UpdateMeetingRoomInput,
 } from '../inputs/meeting-room.input';
 import { CacheService } from '../../cache/cache.service';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { UserRole } from '../../auth/roles.enum';
 import { RoomStatus } from '../types/user.type';
 
 @Resolver(() => MeetingRoom)

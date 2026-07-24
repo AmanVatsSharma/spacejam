@@ -176,6 +176,7 @@ const MEETING_ROOMS = gql`
       centerId
       roomType
       hourlyRate
+      amenities
       minBookingDuration
       maxBookingDuration
       active

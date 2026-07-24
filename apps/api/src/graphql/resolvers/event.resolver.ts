@@ -8,13 +8,6 @@
  */
 
 import { Resolver, Query, Args, Mutation, ID, Context } from '@nestjs/graphql';
-import {
-  BadRequestException,
-  UseGuards,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, In } from 'typeorm';
 import { Event } from '../../typeorm/entities/event.entity';
@@ -318,8 +311,15 @@ export class EventResolver {
     @Args('input') input: UpdateEventInput,
     @Context() context: any,
   ): Promise<any> {
-    const user = context.req?.user;
-    await this.eventRepo.update(id, input);
+    // The GraphQL input exposes the event category as `type`, but the DB
+    // column / entity field is `eventType` (mirrors createEvent at L289).
+    // Map it explicitly so editing the type actually persists; everything
+    // else passes through unchanged.
+    const { type, ...rest } = input as any;
+    const patch: any = { ...rest };
+    if (type !== undefined) patch.eventType = type;
+
+    await this.eventRepo.update(id, patch);
 
     const updated = await this.eventRepo.findOne({
       where: { id },
@@ -341,7 +341,6 @@ export class EventResolver {
     @Args('status', { type: () => EventStatus }) status: EventStatus,
     @Context() context: any,
   ): Promise<any> {
-    const user = context.req?.user;
     await this.eventRepo.update(id, { status });
 
     const updated = await this.eventRepo.findOne({

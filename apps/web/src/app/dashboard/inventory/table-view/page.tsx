@@ -308,7 +308,9 @@ export default function TableViewPage() {
         variables: {
           input: {
             floorId: targetFloorId,
-            number: newSeatNumber.trim(),
+            // CreateSeatInput requires `name` (not `number`) — the backend
+            // rejects inputs missing name (@IsNotEmpty).
+            name: newSeatNumber.trim(),
             seatType: newSeatType,
             status: 'AVAILABLE',
             ...(Number(newSeatPrice) > 0

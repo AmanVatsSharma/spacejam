@@ -72,7 +72,7 @@ function makeResolver(centers: any[] = [makeCenter()]) {
   const cache = buildMockCache();
   const repo = buildMockCenterRepo(centers);
   const pubSub = buildMockPubSub();
-  const resolver = new CenterResolver(cache, repo, {} as any, pubSub);
+  const resolver = new CenterResolver(cache as any, repo as any, {} as any, pubSub as any);
   return { resolver, cache, repo, pubSub };
 }
 
@@ -107,7 +107,7 @@ describe('CenterResolver — Settings', () => {
   // ── updateCenterSettings mutation ───────────────────────────────────
   describe('updateCenterSettings', () => {
     it('deep-merges partial settings without wiping sibling keys', async () => {
-      const { resolver, cache } = makeResolver([
+      const { resolver } = makeResolver([
         makeCenter({
           id: 'c1',
           settings: {

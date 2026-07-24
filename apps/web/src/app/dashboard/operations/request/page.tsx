@@ -76,7 +76,7 @@ export default function RequestsPage() {
   const { approve } = useApproveRequest();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<"All Categories" | "Events" | "Printer" | "Upgrade" | "Services">("All Categories");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All Categories");
   const [statusFilter, setStatusFilter] = useState<"All Statuses" | "Pending" | "Approved" | "Rejected">("All Statuses");
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [openStatusMenu, setOpenStatusMenu] = useState<string | null>(null);
@@ -99,14 +99,17 @@ export default function RequestsPage() {
 
   const requestList: {
     id: string;
-    requestType: "Events" | "Printer" | "Upgrade" | "Services";
+    requestType: string;
     requestedBy: string;
     details: string;
     date: string;
     status: "Pending" | "Approved" | "Rejected" | "Completed" | "Cancelled";
   }[] = requests.map((r: any) => ({
       id: r.id,
-      requestType: (r.requestType ?? "Services") as "Events" | "Printer" | "Upgrade" | "Services",
+      // requestType is the raw backend RequestType enum value
+      // (PRINTER, UPGRADE, SERVICES, EVENTS, MAINTENANCE, CLEANING, SECURITY,
+      // OTHER). Keep it verbatim so the category filter matches exactly.
+      requestType: (r.requestType ?? "OTHER") as string,
       requestedBy: r.requestedBy?.name ?? "Unknown",
       details: r.title,
       date: r.dueDate ? new Date(r.dueDate).toLocaleDateString("en-GB") : new Date(r.createdAt).toLocaleDateString("en-GB"),
@@ -197,7 +200,7 @@ export default function RequestsPage() {
             <div className="relative">
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as any)}
                 className="appearance-none pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-[14px] text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-[#FF7847] focus:border-[#FF7847] cursor-pointer min-w-[150px] shadow-sm">
-                <option>All Categories</option><option>Events</option><option>Printer</option><option>Upgrade</option><option>Services</option>
+                <option>All Categories</option><option value="MAINTENANCE">Maintenance</option><option value="CLEANING">Cleaning</option><option value="SECURITY">Security</option><option value="UPGRADE">Upgrade</option><option value="SERVICES">Services</option><option value="EVENTS">Events</option><option value="OTHER">Other</option>
               </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">{Icons.chevronDown}</span>
             </div>

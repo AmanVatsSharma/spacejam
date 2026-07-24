@@ -24,6 +24,8 @@ import { Contract } from './contract.entity';
 import { Invoice } from './invoice.entity';
 import { Lead } from './lead.entity';
 import { Booking } from './booking.entity';
+import { CustomerDocument } from './customer-document.entity';
+import { CustomerEmployee } from './customer-employee.entity';
 
 @Entity('customers')
 @ObjectType()
@@ -113,6 +115,14 @@ export class Customer {
     @Field(() => [Booking], { nullable: true })
     @OneToMany(() => Booking, (booking) => booking.customer)
     bookings?: Booking[];
+
+    @Field(() => [CustomerDocument], { nullable: true })
+    @OneToMany(() => CustomerDocument, (doc) => doc.customer)
+    documents?: CustomerDocument[];
+
+    @Field(() => [CustomerEmployee], { nullable: true })
+    @OneToMany(() => CustomerEmployee, (emp) => emp.customer)
+    employees?: CustomerEmployee[];
 
     @Field(() => Date)
     @CreateDateColumn({ name: 'createdAt' })

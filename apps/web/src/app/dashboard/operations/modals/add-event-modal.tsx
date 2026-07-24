@@ -38,10 +38,16 @@ export interface AddEventModalProps {
   };
 }
 
+// Values must match the backend `EventType` enum
+// (apps/api/src/graphql/types/user.type.ts). Includes every user-selectable
+// kind; MEETING_ROOM is excluded because it is the system-generated type used
+// by the Meeting Room booking flow, not a free-form event category.
 const EVENT_TYPES: { value: string; label: string }[] = [
   { value: "MEETING", label: "Meeting" },
   { value: "WORKSHOP", label: "Workshop" },
   { value: "CONFERENCE", label: "Conference" },
+  { value: "TRAINING", label: "Training" },
+  { value: "SOCIAL", label: "Social" },
   { value: "OTHER", label: "Other" },
 ];
 

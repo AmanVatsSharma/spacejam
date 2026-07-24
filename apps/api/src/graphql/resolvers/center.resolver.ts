@@ -8,8 +8,7 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
-import { NotFoundException, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { CenterStatus } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,9 +20,6 @@ import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 // Meeting rooms are managed exclusively through MeetingRoomResolver.
 import { PubSubService } from '../pubsub/pubsub.service';
 import { Public } from '../../auth/decorators/public.decorator';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { UserRole as UR } from '../../auth/roles.enum';
 import {
   CreateCenterInput,
   UpdateCenterInput,
@@ -353,10 +349,10 @@ export class SeatResolver {
       const centerId = (floor as any)?.centerId;
       if (centerId) {
         const roomRepo = this.seatRepo.manager.getRepository('MeetingRoom');
-        const existing = await roomRepo.findOne({ where: { name: input.name ?? input.number, centerId } as any });
+        const existing = await roomRepo.findOne({ where: { name: input.name, centerId } as any });
         if (!existing) {
           await roomRepo.save(roomRepo.create({
-            name: input.name ?? input.number,
+            name: input.name,
             centerId,
             floorId: input.floorId,
             capacity: 1,

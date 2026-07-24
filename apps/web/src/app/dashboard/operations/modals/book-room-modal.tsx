@@ -193,6 +193,7 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
           startTime: form.startTime,
           endTime: form.endTime,
           title: form.title.trim(),
+          attendeesCount: attendees > 0 ? attendees : undefined,
         });
 
         if (result) {

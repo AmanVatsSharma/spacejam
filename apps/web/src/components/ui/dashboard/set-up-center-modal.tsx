@@ -19,7 +19,7 @@ interface SetUpCenterModalProps {
   onCreated?: (center: { id: string }) => void;
 }
 
-type SeatType = "HOT_DESK" | "DEDICATED" | "CABIN";
+type SeatType = "HOT_DESK" | "DEDICATED" | "CABIN" | "MEETING_ROOM";
 
 interface CreatedFloor {
   id: string;
@@ -62,6 +62,7 @@ const SEAT_TYPE_LABEL: Record<SeatType, string> = {
   HOT_DESK: "Hot Desk",
   DEDICATED: "Dedicated Desk",
   CABIN: "Cabin",
+  MEETING_ROOM: "Meeting Room",
 };
 
 export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModalProps) {
@@ -240,7 +241,10 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
       return;
     }
     const input: Record<string, unknown> = {
-      number,
+      // CreateSeatInput requires `name` (not `number`) — backend rejects
+      // inputs missing name (@IsNotEmpty). Keep the local `number` var for
+      // display in the seatsByFloor list.
+      name: number,
       floorId: selectedFloorId,
       seatType,
     };
@@ -561,6 +565,7 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
                       <option value="HOT_DESK">Hot Desk</option>
                       <option value="DEDICATED">Dedicated Desk</option>
                       <option value="CABIN">Cabin</option>
+                      <option value="MEETING_ROOM">Meeting Room</option>
                     </select>
                     <div className="absolute right-3 top-2.5 pointer-events-none text-gray-400">
                       <ChevronDownIcon />
