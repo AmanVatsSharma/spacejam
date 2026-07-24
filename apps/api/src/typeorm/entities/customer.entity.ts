@@ -90,6 +90,60 @@ export class Customer {
     @Column({ type: 'text', nullable: true })
     notes?: string;
 
+    // ─── Onboarding fields (added by AddCustomerOnboardingFields migration).
+    // The DB columns already exist; these expose them to GraphQL.
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    gstNumber?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    companyAddress?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    companyType?: string;
+
+    @Field(() => Int, { nullable: true })
+    @Column({ type: 'int', nullable: true })
+    employeeCount?: number;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    industry?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    website?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    planType?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    alternateEmail?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    alternatePhone?: string;
+
+    @Field(() => Date, { nullable: true })
+    @Column({ type: 'date', nullable: true })
+    dob?: Date;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    emergencyContactName?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    emergencyContactPhone?: string;
+
+    @Field(() => String, { nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    communicationChannel?: string;
+
     // Relations
     @Field(() => Center, { nullable: true })
     @ManyToOne(() => Center, { eager: false })

@@ -230,7 +230,10 @@ export default function MeetingRoomsPage() {
       filters: {
         centerId: filters.centerId || undefined,
         meetingRoomId: undefined,
-        type: 'MEETING',
+        // bookRoom stores meeting room reservations as eventType MEETING_ROOM,
+        // so filter by that (not 'MEETING') or the stats/booking lookups come
+        // back empty.
+        type: 'MEETING_ROOM',
         ...(bounds
           ? {
               startDate: bounds.start.toISOString().split('T')[0],

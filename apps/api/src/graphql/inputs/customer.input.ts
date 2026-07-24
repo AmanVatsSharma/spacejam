@@ -122,6 +122,73 @@ export class UpdateCustomerInput {
     @IsString()
     @IsOptional()
     notes?: string;
+
+    // ─── Onboarding fields (mirrors Customer entity / onboarding migration).
+    // Exposed as optional so onboarding/edit can persist them via updateCustomer.
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    gstNumber?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    companyAddress?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    companyType?: string;
+
+    @Field({ nullable: true })
+    @IsInt()
+    @IsOptional()
+    employeeCount?: number;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    industry?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    website?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    planType?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    alternateEmail?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    alternatePhone?: string;
+
+    @Field({ nullable: true })
+    @IsDate()
+    @IsOptional()
+    dob?: Date;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    emergencyContactName?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    emergencyContactPhone?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    communicationChannel?: string;
 }
 
 @InputType()

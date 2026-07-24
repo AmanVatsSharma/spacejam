@@ -10,13 +10,13 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { ContextMenu } from "@/components/ui/context-menu";
 import { SeatBookModal } from "@/app/dashboard/inventory/table-view/seat-book-modal";
 import {
-  GET_CENTERS,
+  GET_MY_CENTERS,
   GET_FLOORS,
   GET_SEATS,
   GET_DASHBOARD_METRICS,
@@ -117,10 +117,18 @@ function seatTypeLabel(type: string): string {
 
 export default function FloorMapPage() {
   const router = useRouter();
+  // Read deep-link params (?centerId=...&floorId=...) so the inventory page's
+  // "View Floor Map" button can open the exact floor. Previously the page
+  // ignored these and always auto-selected the first center/floor.
+  const searchParams = useSearchParams();
 
-  // Active center and floor selection
-  const [activeCenterId, setActiveCenterId] = useState<string | null>(null);
-  const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
+  // Active center and floor selection — seeded from URL params when present.
+  const [activeCenterId, setActiveCenterId] = useState<string | null>(
+    () => searchParams.get("centerId"),
+  );
+  const [activeFloorId, setActiveFloorId] = useState<string | null>(
+    () => searchParams.get("floorId"),
+  );
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   // Search queries and zoom for the floor map
@@ -143,7 +151,7 @@ export default function FloorMapPage() {
     data: centersData,
     loading: centersLoading,
     error: centersError,
-  } = useQuery<{ centers: any[] }>(GET_CENTERS, {
+  } = useQuery<{ myCenters: any[] }>(GET_MY_CENTERS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
   });
@@ -212,7 +220,7 @@ export default function FloorMapPage() {
   const metrics = metricsData?.dashboardMetrics;
 
   const activeCenter = useMemo(
-    () => (centersData?.centers ?? []).find((c: any) => c.id === activeCenterId) ?? null,
+    () => (centersData?.myCenters ?? []).find((c: any) => c.id === activeCenterId) ?? null,
     [centersData, activeCenterId]
   );
 
@@ -223,7 +231,7 @@ export default function FloorMapPage() {
 
   // Auto-select first center when centers load and none selected
   useEffect(() => {
-    const centers = centersData?.centers ?? [];
+    const centers = centersData?.myCenters ?? [];
     if (centers.length > 0 && !activeCenterId) {
       setActiveCenterId(centers[0].id);
     }
@@ -453,7 +461,7 @@ export default function FloorMapPage() {
               }}
             >
               <option value="">{centersLoading ? 'Loading…' : 'Select center'}</option>
-              {(centersData?.centers ?? []).map((c: any) => (
+              {(centersData?.myCenters ?? []).map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>

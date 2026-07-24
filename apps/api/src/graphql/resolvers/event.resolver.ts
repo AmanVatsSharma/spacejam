@@ -40,7 +40,9 @@ export class EventResolver {
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      if (filters.type) where.type = filters.type;
+      // The filter input exposes `type`, but the entity column is `eventType`
+      // (mirrors createEvent/updateEvent). Map it so filtering by type works.
+      if (filters.type) where.eventType = filters.type;
       if (filters.centerId) where.centerId = filters.centerId;
       if (filters.meetingRoomId) where.meetingRoomId = filters.meetingRoomId;
       if (filters.startDate || filters.endDate) {

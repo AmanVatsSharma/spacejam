@@ -148,6 +148,11 @@ export default function InventoryPage() {
       openSeats: floor.seats?.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length ?? 0,
       cabins: floor.seats?.filter((s: any) => normalizeStatus(s.seatType) === "CABIN").length ?? 0,
       occupancy: stats.occupancyRate,
+      // Wire the prominent "View Floor Map" button on each card (previously
+      // the prop was omitted, so the button rendered as a disabled no-op).
+      onViewFloorMap: (floorId: string) => {
+        router.push(`/dashboard/inventory/floor-map?centerId=${selectedCenterId}&floorId=${floorId}`);
+      },
       contextMenuItems: [
         {
           label: "View floor map",
