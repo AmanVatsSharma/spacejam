@@ -15,6 +15,10 @@ import {
   CANCEL_ROOM_BOOKING,
   BULK_UPDATE_STATUS,
   GET_EVENTS,
+  GET_AUTOMATIONS,
+  CREATE_AUTOMATION,
+  UPDATE_AUTOMATION,
+  DELETE_AUTOMATION,
 } from '@/lib/apollo/operations';
 import { toast } from 'sonner';
 
@@ -1200,3 +1204,96 @@ export type EventTypeOption =
   | 'TRAINING'
   | 'SOCIAL'
   | 'OTHER';
+
+// ═══════════════════════════════════════════════════════
+// Notification Automations (Settings > Notifications > Automations)
+// ═══════════════════════════════════════════════════════
+
+export function useAutomations(centerId?: string) {
+  const { data, loading, error, refetch } = useQuery(GET_AUTOMATIONS, {
+    variables: centerId ? { centerId } : undefined,
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
+  return {
+    automations: data?.automations ?? [],
+    loading,
+    error,
+    refetch,
+  };
+}
+
+export function useCreateAutomation() {
+  const client = useApolloClient();
+  const [loading, setLoading] = useState(false);
+
+  const create = async (input: Record<string, any>): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_AUTOMATION,
+        variables: { input },
+        refetchQueries: [{ query: GET_AUTOMATIONS }],
+      });
+      toast.success('Automation created');
+      return data?.createAutomation;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create automation');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, loading };
+}
+
+export function useUpdateAutomation() {
+  const client = useApolloClient();
+  const [loading, setLoading] = useState(false);
+
+  const update = async (id: string, input: Record<string, any>): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_AUTOMATION,
+        variables: { id, input },
+        refetchQueries: [{ query: GET_AUTOMATIONS }],
+      });
+      toast.success('Automation updated');
+      return data?.updateAutomation;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update automation');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, loading };
+}
+
+export function useDeleteAutomation() {
+  const client = useApolloClient();
+  const [loading, setLoading] = useState(false);
+
+  const remove = async (id: string): Promise<boolean> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: DELETE_AUTOMATION,
+        variables: { id },
+        refetchQueries: [{ query: GET_AUTOMATIONS }],
+      });
+      toast.success('Automation deleted');
+      return Boolean(data?.deleteAutomation);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to delete automation');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { remove, loading };
+}

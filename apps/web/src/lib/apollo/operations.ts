@@ -2178,3 +2178,65 @@ export const DELETE_NOTIFICATION = gql`
     deleteNotification(id: $id)
   }
 `;
+
+// ─── Notification Automations (Settings > Notifications > Automations) ────
+
+export const GET_AUTOMATIONS = gql`
+  query GetAutomations($centerId: ID) {
+    automations(centerId: $centerId) {
+      id
+      centerId
+      name
+      triggerEvent
+      channel
+      template
+      variables
+      delayMinutes
+      enabled
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_AUTOMATION = gql`
+  mutation CreateAutomation($input: CreateNotificationAutomationInput!) {
+    createAutomation(input: $input) {
+      id
+      centerId
+      name
+      triggerEvent
+      channel
+      template
+      variables
+      delayMinutes
+      enabled
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_AUTOMATION = gql`
+  mutation UpdateAutomation($id: ID!, $input: UpdateNotificationAutomationInput!) {
+    updateAutomation(id: $id, input: $input) {
+      id
+      centerId
+      name
+      triggerEvent
+      channel
+      template
+      variables
+      delayMinutes
+      enabled
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_AUTOMATION = gql`
+  mutation DeleteAutomation($id: ID!) {
+    deleteAutomation(id: $id)
+  }
+`;

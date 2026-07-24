@@ -1,12 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "@apollo/client";
 import { useAuth } from "@/contexts/auth-context";
 import { useSettingsGroup } from "@/hooks/use-settings";
 import { SEND_NOTIFICATION } from "@/lib/apollo/operations";
+import {
+  useAutomations,
+  useCreateAutomation,
+  useDeleteAutomation,
+  useUpdateAutomation,
+} from "@/hooks/use-operations";
 import { toast } from "sonner";
 import styles from "./notification.module.css";
+
+// Trigger/channel options must match the backend AutomationTrigger and
+// AutomationChannel enums (notification-automation.entity.ts).
+const TRIGGER_OPTIONS = [
+  { value: "BOOKING_CREATED", label: "Booking Created" },
+  { value: "BOOKING_CANCELLED", label: "Booking Cancelled" },
+  { value: "PAYMENT_RECEIVED", label: "Payment Received" },
+  { value: "PAYMENT_OVERDUE", label: "Payment Overdue" },
+  { value: "LEAD_CREATED", label: "Lead Created" },
+  { value: "INVOICE_GENERATED", label: "Invoice Generated" },
+  { value: "DEPOSIT_RECEIVED", label: "Deposit Received" },
+  { value: "REQUEST_CREATED", label: "Request Created" },
+  { value: "EVENT_CREATED", label: "Event Created" },
+];
+
+const CHANNEL_OPTIONS = [
+  { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "EMAIL", label: "Email" },
+  { value: "PUSH", label: "Push" },
+  { value: "SMS", label: "SMS" },
+];
+
+const labelForTrigger = (t: string) =>
+  TRIGGER_OPTIONS.find((o) => o.value === t)?.label ?? t;
+const labelForChannel = (c: string) =>
+  CHANNEL_OPTIONS.find((o) => o.value === c)?.label ?? c;
 
 const Icons = {
   reset: (
@@ -144,6 +176,96 @@ export default function NotificationSettingsPage() {
     }
   };
 
+  // ─── Automations (real backend) ────────────────────────────────────────
+  const { automations } = useAutomations(centerId ?? undefined);
+  const { create: createAutomation, loading: creatingAutomation } = useCreateAutomation();
+  const { update: updateAutomation, loading: updatingAutomation } = useUpdateAutomation();
+  const { remove: deleteAutomation } = useDeleteAutomation();
+
+  // Automation form state (the left-column builder). Bound to create/update.
+  const [autoForm, setAutoForm] = useState({
+    name: "",
+    triggerEvent: "BOOKING_CREATED",
+    channel: "WHATSAPP",
+    template: "",
+    delayMinutes: "0",
+  });
+  const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null);
+
+  const resetAutoForm = () => {
+    setAutoForm({
+      name: "",
+      triggerEvent: "BOOKING_CREATED",
+      channel: "WHATSAPP",
+      template: "",
+      delayMinutes: "0",
+    });
+    setEditingAutomationId(null);
+  };
+
+  const loadAutomationIntoForm = (a: any) => {
+    setAutoForm({
+      name: a.name ?? "",
+      triggerEvent: a.triggerEvent ?? "BOOKING_CREATED",
+      channel: a.channel ?? "WHATSAPP",
+      template: a.template ?? "",
+      delayMinutes: String(a.delayMinutes ?? 0),
+    });
+    setEditingAutomationId(a.id);
+  };
+
+  const handleSaveAutomation = async () => {
+    if (!centerId) {
+      toast.error("No active center found");
+      return;
+    }
+    if (!autoForm.name.trim() || !autoForm.template.trim()) {
+      toast.error("Automation name and template are required");
+      return;
+    }
+    const payload = {
+      centerId,
+      name: autoForm.name.trim(),
+      triggerEvent: autoForm.triggerEvent,
+      channel: autoForm.channel,
+      template: autoForm.template.trim(),
+      delayMinutes: Number(autoForm.delayMinutes) || 0,
+      enabled: true,
+    };
+    try {
+      if (editingAutomationId) {
+        await updateAutomation(editingAutomationId, payload);
+      } else {
+        await createAutomation(payload);
+      }
+      resetAutoForm();
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const handleDeleteAutomation = async (id: string) => {
+    try {
+      await deleteAutomation(id);
+      if (editingAutomationId === id) resetAutoForm();
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const handleToggleAutomation = async (a: any) => {
+    try {
+      await updateAutomation(a.id, { enabled: !a.enabled });
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const automationToken = useMemo(
+    () => JSON.stringify(automations),
+    [automations],
+  );
+
   // Static channel metadata (icons/labels) — persisted enable flags live in draft.
   const channels = [
     { id: 'whatsapp', name: 'WhatsApp', icon: Icons.whatsapp, connected: draft.whatsappEnabled },
@@ -166,8 +288,7 @@ export default function NotificationSettingsPage() {
 
   const [activeChannelConfig, setActiveChannelConfig] = useState<string | null>(null);
 
-  // Automations State
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // (Automations state lives with the automations hooks above.)
 
   const renderConfigRightPanel = () => {
     if (!activeChannelConfig) {
@@ -385,7 +506,7 @@ export default function NotificationSettingsPage() {
                     <div className={styles.autoStepIcon}>{Icons.lightning}</div>
                     <div className={styles.autoStepTexts}>
                       <span className={styles.autoStepTitle}>Trigger</span>
-                      <span className={styles.autoStepDesc}>Booking Created</span>
+                      <span className={styles.autoStepDesc}>{labelForTrigger(autoForm.triggerEvent)}</span>
                     </div>
                   </div>
                   {Icons.chevronRight}
@@ -398,7 +519,7 @@ export default function NotificationSettingsPage() {
                     <div className={styles.autoStepIcon}>{Icons.sms}</div>
                     <div className={styles.autoStepTexts}>
                       <span className={styles.autoStepTitle}>Channel</span>
-                      <span className={styles.autoStepDesc}>WhatsApp + Email</span>
+                      <span className={styles.autoStepDesc}>{labelForChannel(autoForm.channel)}</span>
                     </div>
                   </div>
                   {Icons.chevronRight}
@@ -411,92 +532,122 @@ export default function NotificationSettingsPage() {
                     <div className={styles.autoStepIcon}>{Icons.sms}</div>
                     <div className={styles.autoStepTexts}>
                       <span className={styles.autoStepTitle}>Message</span>
-                      <span className={styles.autoStepDesc}>Hi {"{"}{"{"}name{"}"}{"}"}, your booking is confirmed...</span>
+                      <span className={styles.autoStepDesc}>
+                        {autoForm.template
+                          ? autoForm.template.slice(0, 48) + (autoForm.template.length > 48 ? "…" : "")
+                          : "Write your message template…"}
+                      </span>
                     </div>
                   </div>
                   <div style={{ transform: 'rotate(90deg)' }}>{Icons.chevronRight}</div>
                 </div>
 
                 <div className={styles.autoStepContent}>
-                  <div className={styles.formGroup} style={{ marginBottom: 0, position: 'relative' }}>
-                    <label className={styles.formLabel}>Template</label>
-                    <div onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                      <select className={`${styles.formInput} ${styles.selectBox}`}>
-                        <option></option>
-                      </select>
-                    </div>
-                    {isDropdownOpen && (
-                      <div style={{
-                        position: 'absolute', top: '70px', left: 0, right: 0, background: 'white',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
-                        borderRadius: '8px', zIndex: 10, border: '1px solid #E5E7EB', padding: '8px 0'
-                      }}>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#4B5563', cursor: 'pointer' }}>View Details</div>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#4B5563', cursor: 'pointer' }}>Edit</div>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#EF4444', cursor: 'pointer' }}>Delete</div>
-                        <div style={{ height: '1px', background: '#E5E7EB', margin: '4px 0' }}></div>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#4B5563', cursor: 'pointer' }}>View Details</div>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#4B5563', cursor: 'pointer' }}>Edit</div>
-                        <div style={{ padding: '8px 16px', fontSize: '14px', color: '#EF4444', cursor: 'pointer' }}>Delete</div>
-                      </div>
-                    )}
+                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                    <label className={styles.formLabel}>Automation Name</label>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      placeholder="e.g. Booking Confirmation Flow"
+                      value={autoForm.name}
+                      onChange={(e) => setAutoForm((p) => ({ ...p, name: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                    <label className={styles.formLabel}>Trigger Event</label>
+                    <select
+                      className={`${styles.formInput} ${styles.selectBox}`}
+                      value={autoForm.triggerEvent}
+                      onChange={(e) => setAutoForm((p) => ({ ...p, triggerEvent: e.target.value }))}
+                    >
+                      {TRIGGER_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                    <label className={styles.formLabel}>Channel</label>
+                    <select
+                      className={`${styles.formInput} ${styles.selectBox}`}
+                      value={autoForm.channel}
+                      onChange={(e) => setAutoForm((p) => ({ ...p, channel: e.target.value }))}
+                    >
+                      {CHANNEL_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                    <label className={styles.formLabel}>Delay (minutes)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className={styles.formInput}
+                      value={autoForm.delayMinutes}
+                      onChange={(e) => setAutoForm((p) => ({ ...p, delayMinutes: e.target.value }))}
+                    />
                   </div>
 
                   <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                    <textarea className={styles.textareaBox} defaultValue="" />
+                    <label className={styles.formLabel}>Message Template</label>
+                    <textarea
+                      className={styles.textareaBox}
+                      placeholder="Hi {{name}}, your booking is confirmed for {{date}} at {{time}}."
+                      rows={4}
+                      value={autoForm.template}
+                      onChange={(e) => setAutoForm((p) => ({ ...p, template: e.target.value }))}
+                    />
                   </div>
 
                   <div className={styles.variablesWrap}>
                     <span className={styles.variablesLabel}>Insert variables:</span>
                     <div className={styles.variablePills}>
-                      <span className={styles.variablePill}>{"{"}{"{"}name{"}"}{"}"}</span>
-                      <span className={styles.variablePill}>{"{"}{"{"}date{"}"}{"}"}</span>
-                      <span className={styles.variablePill}>{"{"}{"{"}time{"}"}{"}"}</span>
-                      <span className={styles.variablePill}>{"{"}{"{"}center_name{"}"}{"}"}</span>
-                      <span className={styles.variablePill}>{"{"}{"{"}booking_id{"}"}{"}"}</span>
-                      <span className={styles.variablePill}>{"{"}{"{"}amount{"}"}{"}"}</span>
+                      {["name", "date", "time", "center_name", "booking_id", "amount"].map((v) => (
+                        <span
+                          key={v}
+                          className={styles.variablePill}
+                          style={{ cursor: "pointer" }}
+                          onClick={() =>
+                            setAutoForm((p) => ({ ...p, template: `${p.template}{{${v}}}` }))
+                          }
+                        >
+                          {"{{" + v + "}}"}
+                        </span>
+                      ))}
                     </div>
                   </div>
-
-                  <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                    <span className={styles.formLabel}>Attachments</span>
-                    <div className={styles.uploadBox}>
-                      {Icons.upload} Upload Attachment
-                    </div>
-                  </div>
-
-                  <div className={styles.channelGrid} style={{ gap: '16px' }}>
-                    <button className={styles.testBtn} style={{ marginTop: 0 }}>
-                      {Icons.preview} Show Preview
-                    </button>
-                    <button className={styles.testBtn} style={{ marginTop: 0 }} onClick={() => handleSendTest('email')}>
-                      {Icons.send} Send Test
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.autoStepCard}>
-                <div className={styles.autoStepHeader}>
-                  <div className={styles.autoStepInfo}>
-                    <div className={styles.autoStepIcon}>{Icons.warningTriangle}</div>
-                    <div className={styles.autoStepTexts}>
-                      <span className={styles.autoStepTitle}>Escalation</span>
-                      <span className={styles.autoStepDesc}>After 2 hrs &rarr; Send SMS</span>
-                    </div>
-                  </div>
-                  {Icons.chevronRight}
                 </div>
               </div>
 
               <div className={styles.actionRow}>
-                <button className={styles.saveBtn} style={{ padding: '12px 24px' }} onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Automation"}</button>
+                <button
+                  className={styles.saveBtn}
+                  style={{ padding: '12px 24px' }}
+                  onClick={handleSaveAutomation}
+                  disabled={creatingAutomation || updatingAutomation}
+                >
+                  {(creatingAutomation || updatingAutomation)
+                    ? "Saving…"
+                    : editingAutomationId
+                      ? "Update Automation"
+                      : "Save Automation"}
+                </button>
                 <div className={styles.rightActions}>
+                  {editingAutomationId && (
+                    <button
+                      type="button"
+                      className={styles.testBtn}
+                      style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}
+                      onClick={resetAutoForm}
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
                   <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }} onClick={() => handleSendTest('email')}>
                     {Icons.send} Send Test
-                  </button>
-                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}>
-                    {Icons.preview} Preview
                   </button>
                 </div>
               </div>
@@ -515,60 +666,57 @@ export default function NotificationSettingsPage() {
               <h3 className={styles.flowTitle}>Messaging Automation</h3>
               <p className={styles.flowSub}>Create and manage automated workflows</p>
 
-              <button className={styles.addAutoBtn}>
-                {Icons.plus} Add Automation
+              <button
+                className={styles.addAutoBtn}
+                onClick={resetAutoForm}
+                type="button"
+              >
+                {Icons.plus} {editingAutomationId ? "New Automation" : "Add Automation"}
               </button>
 
-              <div className={styles.searchBox}>
-                <div className={styles.searchIcon}>{Icons.search}</div>
-                <input type="text" className={styles.searchInput} placeholder="Search automations..." />
-              </div>
-
-              <div className={styles.autoList}>
-                <div className={styles.autoItem}>
-                  <div className={styles.autoItemIcon}>{Icons.lightning}</div>
-                  <div className={styles.autoItemInfo}>
-                    <span className={styles.autoItemTitle}>Booking Confirmation Flow</span>
-                    <span className={styles.autoItemSub}>On booking created</span>
-                    <span className={styles.badgeActive}>Active</span>
+              <div className={styles.autoList} data-automations={automationToken}>
+                {automations.length === 0 && (
+                  <p style={{ fontSize: "14px", color: "#6B7280", padding: "16px 0" }}>
+                    No automations yet. Use the builder on the left to create one.
+                  </p>
+                )}
+                {automations.map((a: any) => (
+                  <div
+                    key={a.id}
+                    className={`${styles.autoItem} ${editingAutomationId === a.id ? styles.autoItemActive : ""}`}
+                    style={{ cursor: "pointer", flexWrap: "wrap" }}
+                    onClick={() => loadAutomationIntoForm(a)}
+                  >
+                    <div className={styles.autoItemIcon}>{Icons.lightning}</div>
+                    <div className={styles.autoItemInfo}>
+                      <span className={styles.autoItemTitle}>{a.name}</span>
+                      <span className={styles.autoItemSub}>
+                        On {labelForTrigger(a.triggerEvent)} · {labelForChannel(a.channel)}
+                      </span>
+                      {a.enabled ? (
+                        <span className={styles.badgeActive}>Active</span>
+                      ) : (
+                        <span className={styles.badgeDraft}>Disabled</span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAutomation(a)}
+                        style={{ background: "transparent", border: "1px solid #E5E7EB", borderRadius: "6px", padding: "4px 8px", fontSize: "12px", color: "#4B5563", cursor: "pointer" }}
+                      >
+                        {a.enabled ? "Disable" : "Enable"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAutomation(a.id)}
+                        style={{ background: "transparent", border: "1px solid #FECACA", borderRadius: "6px", padding: "4px 8px", fontSize: "12px", color: "#EF4444", cursor: "pointer" }}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div className={styles.autoItem}>
-                  <div className={styles.autoItemIcon}>{Icons.lightning}</div>
-                  <div className={styles.autoItemInfo}>
-                    <span className={styles.autoItemTitle}>Payment Reminder</span>
-                    <span className={styles.autoItemSub}>On payment pending</span>
-                    <span className={styles.badgeActive}>Active</span>
-                  </div>
-                </div>
-
-                <div className={`${styles.autoItem} ${styles.autoItemActive}`}>
-                  <div className={styles.autoItemIcon}>{Icons.lightning}</div>
-                  <div className={styles.autoItemInfo}>
-                    <span className={styles.autoItemTitle}>Request Rejection Notice</span>
-                    <span className={styles.autoItemSub}>On request rejected</span>
-                    <span className={styles.badgeDraft}>Draft</span>
-                  </div>
-                </div>
-
-                <div className={styles.autoItem}>
-                  <div className={styles.autoItemIcon}>{Icons.lightning}</div>
-                  <div className={styles.autoItemInfo}>
-                    <span className={styles.autoItemTitle}>Membership Expiry Alert</span>
-                    <span className={styles.autoItemSub}>7 days before expiry</span>
-                    <span className={styles.badgeActive}>Active</span>
-                  </div>
-                </div>
-
-                <div className={styles.autoItem}>
-                  <div className={styles.autoItemIcon}>{Icons.lightning}</div>
-                  <div className={styles.autoItemInfo}>
-                    <span className={styles.autoItemTitle}>Welcome Message</span>
-                    <span className={styles.autoItemSub}>On member signup</span>
-                    <span className={styles.badgeDraft}>Draft</span>
-                  </div>
-                </div>
+                ))}
               </div>
 
             </div>

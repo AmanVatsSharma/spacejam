@@ -19,6 +19,7 @@ import { EventTicketTier } from '../typeorm/entities/event-ticket-tier.entity';
 import { RecurringBooking } from '../typeorm/entities/recurring-booking.entity';
 import { ScheduledReport } from '../typeorm/entities/scheduled-report.entity';
 import { CalendarConnection } from '../typeorm/entities/calendar-connection.entity';
+import { NotificationAutomation } from '../typeorm/entities/notification-automation.entity';
 import { User } from '../typeorm/entities/user.entity';
 import { Event } from '../typeorm/entities/event.entity';
 
@@ -29,6 +30,7 @@ import { EventTicketTierResolver } from '../graphql/resolvers/event-ticket-tier.
 import { RecurringBookingResolver } from '../graphql/resolvers/recurring-booking.resolver';
 import { ScheduledReportResolver } from '../graphql/resolvers/scheduled-report.resolver';
 import { CalendarSyncResolver } from '../graphql/resolvers/calendar-sync.resolver';
+import { NotificationAutomationResolver } from '../graphql/resolvers/notification-automation.resolver';
 
 import { ScheduledReportsService } from './scheduled-reports.service';
 import { CalendarSyncService } from './calendar-sync.service';
@@ -43,6 +45,7 @@ import { CalendarSyncService } from './calendar-sync.service';
       RecurringBooking,
       ScheduledReport,
       CalendarConnection,
+      NotificationAutomation,
       User,
       Event,
     ]),
@@ -56,6 +59,7 @@ import { CalendarSyncService } from './calendar-sync.service';
     RecurringBookingResolver,
     ScheduledReportResolver,
     CalendarSyncResolver,
+    NotificationAutomationResolver,
     ScheduledReportsService,
     CalendarSyncService,
   ],
@@ -67,6 +71,7 @@ import { CalendarSyncService } from './calendar-sync.service';
     RecurringBookingResolver,
     ScheduledReportResolver,
     CalendarSyncResolver,
+    NotificationAutomationResolver,
   ],
 })
 export class EnterpriseModule {}

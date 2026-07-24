@@ -41,6 +41,7 @@ import { EventTicketTier } from './entities/event-ticket-tier.entity';
 import { RecurringBooking } from './entities/recurring-booking.entity';
 import { ScheduledReport } from './entities/scheduled-report.entity';
 import { CalendarConnection } from './entities/calendar-connection.entity';
+import { NotificationAutomation } from './entities/notification-automation.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -72,6 +73,7 @@ const ALL_ENTITIES = [
   RecurringBooking,
   ScheduledReport,
   CalendarConnection,
+  NotificationAutomation,
 ];
 
 @Module({
