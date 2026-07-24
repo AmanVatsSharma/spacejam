@@ -249,7 +249,9 @@ export class EventResolver {
       const room = await this.roomRepo.findOne({
         where: { id: input.meetingRoomId },
       });
-      if (room) input.centerId = room.centerId;
+      // centerId is nullable on MeetingRoom — only adopt it if present,
+      // otherwise the fallback-center lookup below handles it.
+      if (room && room.centerId) input.centerId = room.centerId;
     }
 
     if (!input.centerId) {

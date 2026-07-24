@@ -30,13 +30,13 @@ export class MeetingRoom {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Field(() => ID)
-  @Column({ name: 'centerId' })
-  centerId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'centerId', nullable: true })
+  centerId?: string | null;
 
-  @Field(() => ID)
-  @Column({ name: 'floorId', type: 'varchar' })
-  floorId!: string;
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'floorId', type: 'varchar', nullable: true })
+  floorId?: string | null;
 
   @Field()
   @Column({ type: 'varchar' })
