@@ -81,8 +81,6 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
     }
   }, [open]);
 
-  if (!open) return null;
-
   const update = (field: keyof typeof emptyForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -91,6 +89,10 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
   const attendeesExceedCapacity =
     roomCapacity !== null && attendees > 0 && attendees > roomCapacity;
 
+  // Conflict-check query. ALL hooks (useQuery/useMemo) MUST run unconditionally
+  // — React error #310 ("rendered more hooks than during the previous render")
+  // was caused by these being placed after the early `if (!open) return null`.
+  // The `skip` option keeps the network call dormant while the modal is closed.
   const conflictQuery = useQuery(GET_EVENTS, {
     variables: {
       filters: {
@@ -99,7 +101,7 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
         type: "MEETING_ROOM",
       } as any,
     },
-    skip: !form.roomId || !form.eventDate,
+    skip: !open || !form.roomId || !form.eventDate,
     fetchPolicy: "cache-and-network",
   });
 
@@ -117,6 +119,9 @@ export function BookRoomModal({ open, onClose, roomId, centerId, prefillBooking,
       return evStart < selectedEnd && evEnd > selectedStart;
     });
   }, [conflictQuery.data, form.roomId, form.eventDate, form.startTime, form.endTime]);
+
+  // Early return AFTER all hooks have run.
+  if (!open) return null;
 
   const hasConflict = conflictingBookings.length > 0;
 
