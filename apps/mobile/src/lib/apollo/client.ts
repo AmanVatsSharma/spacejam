@@ -6,21 +6,27 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-06
  */
-import { ApolloClient, InMemoryCache, ApolloLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
+import { setContext } from '@apollo/client/link/context';
 
 const SPACEJAM_API_URL = __DEV__
-  ? 'http://localhost:4000/api/graphql'
-  : 'https://your-production-api.com/api/graphql';
+  ? 'http://localhost:4000/graphql'
+  : 'https://your-production-api.com/graphql';
+
+const authLink = setContext((_, { headers }) => {
+  return {
+    headers: {
+      ...headers,
+    },
+  };
+});
 
 export const apolloClient = new ApolloClient({
-  link: ApolloLink.empty(),
-  uri: SPACEJAM_API_URL,
+  link: from([authLink, new HttpLink({ uri: SPACEJAM_API_URL })]),
   cache: new InMemoryCache({
     typePolicies: {
       Query: {
-        fields: {
-          // Add per-field merge policies here
-        },
+        fields: {},
       },
     },
   }),

@@ -1,5 +1,7 @@
 {
   "expo": {
+    "root": ".",
+    "main": "index.js",
     "name": "Mobile",
     "slug": "mobile",
     "version": "1.0.0",

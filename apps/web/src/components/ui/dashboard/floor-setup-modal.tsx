@@ -212,41 +212,21 @@ export function FloorSetupModal({ isOpen, onClose, centerId }: FloorSetupModalPr
           for (const space of floorSpaces) {
             // Provide a display-friendly number by dropping the timestamp suffix
             const number = space.id.split('-')[0];
-            if (space.seatType === "MEETING_ROOM") {
-              const { errors: roomErrors } = await createMeetingRoom({
-                variables: {
-                  input: {
-                    name: `${floor.name} - ${space.type} ${number}`,
-                    centerId: centerId,
-                    floorId: createdFloorId,
-                    type: "MEETING_ROOM",
-                    capacity: space.capacity,
-                    pricePerHour: space.basePrice,
-                  }
+            const { errors: seatErrors } = await createSeat({
+              variables: {
+                input: {
+                  name: space.seatType === "MEETING_ROOM" ? `${floor.name} - ${space.type} ${number}` : number,
+                  floorId: createdFloorId,
+                  seatType: space.seatType,
+                  price: space.basePrice,
+                  status: space.status,
                 }
-              });
-              if (roomErrors && roomErrors.length) {
-                toast.error(`Failed to create meeting room ${number}: ${roomErrors[0].message}`);
-              } else {
-                createdSeats += 1;
               }
+            });
+            if (seatErrors && seatErrors.length) {
+              toast.error(`Failed to create space ${number}: ${seatErrors[0].message}`);
             } else {
-              const { errors: seatErrors } = await createSeat({
-                variables: {
-                  input: {
-                    name: number,
-                    floorId: createdFloorId,
-                    seatType: space.seatType,
-                    price: space.basePrice,
-                    status: space.status,
-                  }
-                }
-              });
-              if (seatErrors && seatErrors.length) {
-                toast.error(`Failed to create space ${number}: ${seatErrors[0].message}`);
-              } else {
-                createdSeats += 1;
-              }
+              createdSeats += 1;
             }
           }
         }
