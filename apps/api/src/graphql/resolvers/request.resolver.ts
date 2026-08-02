@@ -31,7 +31,9 @@ export class RequestResolver {
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      if (filters.type) where.type = filters.type;
+      // The entity column is `requestType`, not `type` — querying `where.type`
+      // would hit a non-existent column and throw a TypeORM error.
+      if (filters.type) where.requestType = filters.type;
       if (filters.centerId) where.centerId = filters.centerId;
       if (filters.assignedToId) where.assignedToId = filters.assignedToId;
       if (filters.requestedById) where.requestedById = filters.requestedById;
@@ -130,7 +132,7 @@ export class RequestResolver {
     @Args('type', { type: () => RequestType }) type: RequestType,
     @Args('centerId', { nullable: true }) centerId?: string,
   ): Promise<Request[]> {
-    const where: any = { type };
+    const where: any = { requestType: type };
     if (centerId) where.centerId = centerId;
 
     return this.requestRepo.find({

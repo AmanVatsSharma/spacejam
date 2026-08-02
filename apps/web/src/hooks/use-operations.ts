@@ -378,7 +378,6 @@ const ASSIGN_REQUEST = gql`
       title
       status
       assignedToId
-      assignedToName
       updatedAt
     }
   }
@@ -397,7 +396,6 @@ const UPDATE_REQUEST = gql`
       title
       description
       status
-      priority
       urgency
       updatedAt
     }
@@ -410,9 +408,8 @@ const CREATE_REQUEST = gql`
       id
       title
       description
-      type
+      requestType
       status
-      priority
       urgency
       createdAt
     }

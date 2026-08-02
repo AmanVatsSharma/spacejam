@@ -104,16 +104,19 @@ export class Request {
   @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt!: Date;
 
-  // Relations
-  @Field(() => Center)
+  // Relations — nullable in the GraphQL schema because the underlying FK
+  // columns (centerId, requestedById) are nullable and createRequest may save
+  // rows without them. Declaring these non-nullable makes GraphQL reject the
+  // whole `requests` query with "Cannot return null for non-nullable field".
+  @Field(() => Center, { nullable: true })
   @ManyToOne(() => Center)
   @JoinColumn({ name: 'centerId' })
-  center!: Center;
+  center!: Center | null;
 
-  @Field(() => User)
+  @Field(() => User, { nullable: true })
   @ManyToOne(() => User)
   @JoinColumn({ name: 'requestedById' })
-  requestedBy!: User;
+  requestedBy!: User | null;
 
   @Field(() => User, { nullable: true })
   @ManyToOne(() => User)
