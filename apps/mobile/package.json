@@ -26,6 +26,7 @@
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
-    "@apollo/client": "^3.14.1"
+    "@apollo/client": "^3.14.1",
+    "@nx/expo": "^22.7.8"
   }
 }

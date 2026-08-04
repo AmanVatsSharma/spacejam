@@ -10,8 +10,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated } from 'react-native';
 import Svg, { Path, Polyline, Rect, Circle, Line } from 'react-native-svg';
-import { palette, type as typeScale, elevation, pressScale, duration, easing } from '../../theme/tokens';
-import { usePressFeedback, usePulse } from '../../theme/animations';
+import { palette, type as typeScale, elevation, pressScale, duration, easing } from '../theme/tokens';
+import { usePressFeedback, usePulse } from '../theme/animations';
 
 export type NavTab = 'home' | 'events' | 'bookings' | 'profile';
 

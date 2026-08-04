@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { View, type StyleProp, type ViewStyle, Pressable } from 'react-native';
-import { elevation, palette, type as typeScale } from '../../theme/tokens';
+import { elevation, palette, type as typeScale } from '../theme/tokens';
 import { PressedTouchable } from './PressedTouchable';
 
 type CardElevation = 'subtle' | 'card' | 'raised' | 'none';
