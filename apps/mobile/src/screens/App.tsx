@@ -18,6 +18,7 @@ import {
   SafeAreaView,
   Dimensions,
   Animated,
+  Easing,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import HomeScreen from './HomeScreen';
