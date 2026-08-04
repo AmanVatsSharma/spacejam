@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { palette, type as typeScale } from '../../theme/tokens';
+import { palette, type as typeScale } from '../theme/tokens';
 
 export type StatusVariant =
   | 'ongoing'

@@ -15,8 +15,8 @@ import {
   type ViewStyle,
   type GestureResponderEvent,
 } from 'react-native';
-import { usePressFeedback, useFadeIn, staggerDelay } from '../../theme/animations';
-import { duration } from '../../theme/tokens';
+import { usePressFeedback, useFadeIn, staggerDelay } from '../theme/animations';
+import { duration } from '../theme/tokens';
 
 interface PressedTouchableProps {
   children: React.ReactNode;

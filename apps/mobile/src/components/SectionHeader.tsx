@@ -9,8 +9,8 @@
 
 import React from 'react';
 import { View, Text, TouchableWithoutFeedback, StyleSheet, Animated } from 'react-native';
-import { palette, type as typeScale, space } from '../../theme/tokens';
-import { useFadeIn, staggerDelay, usePressFeedback } from '../../theme/animations';
+import { palette, type as typeScale, space } from '../theme/tokens';
+import { useFadeIn, staggerDelay, usePressFeedback } from '../theme/animations';
 
 interface SectionHeaderProps {
   title: string;
