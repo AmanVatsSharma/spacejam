@@ -2,7 +2,7 @@
   "expo": {
     "root": ".",
     "main": "index.js",
-    "name": "Mobile",
+    "name": "SpaceJam",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.mobile"
     },
     "web": {
       "bundler": "metro",
