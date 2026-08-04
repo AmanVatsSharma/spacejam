@@ -18,8 +18,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.mobile"
+      "package": "com.spacejam.mobile"
     },
     "web": {
       "bundler": "metro",
