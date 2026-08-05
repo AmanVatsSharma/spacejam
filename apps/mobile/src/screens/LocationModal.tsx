@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -28,7 +29,9 @@ interface Props {
   onClose: () => void;
 }
 
-export default function LocationModal({ visible, onClose }: Props) {
+export default function LocationModal() {
+  const navigation = useNavigation<any>();
+
   const [activeId, setActiveId] = useState(1);
   const [search, setSearch] = useState('');
 

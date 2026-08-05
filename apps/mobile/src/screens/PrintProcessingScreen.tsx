@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -11,10 +12,12 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BG = '#fff';
 
-export default function PrintProcessingScreen({ onNavigate }: { onNavigate: (s: string) => void }) {
+export default function PrintProcessingScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onNavigate('PrintSuccess');
+      navigation.navigate('PrintSuccess');
     }, 2500); // simulate 2.5 seconds processing
     return () => clearTimeout(timer);
   }, [onNavigate]);

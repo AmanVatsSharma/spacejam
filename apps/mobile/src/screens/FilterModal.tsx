@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -30,7 +31,9 @@ interface Props {
   onClose: () => void;
 }
 
-export default function FilterModal({ visible, onClose }: Props) {
+export default function FilterModal() {
+  const navigation = useNavigation<any>();
+
   const [date, setDate] = useState('Today');
   const [time, setTime] = useState('10:00 AM');
   const [seats, setSeats] = useState('8 seat');

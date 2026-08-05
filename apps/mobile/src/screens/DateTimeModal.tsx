@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -38,7 +39,9 @@ interface Props {
   onClose: () => void;
 }
 
-export default function DateTimeModal({ visible, onClose }: Props) {
+export default function DateTimeModal() {
+  const navigation = useNavigation<any>();
+
   const [selectedDate, setSelectedDate] = useState('5');
   const [selectedTime, setSelectedTime] = useState('12:30 pm');
   const [selectedDuration, setSelectedDuration] = useState('30m');

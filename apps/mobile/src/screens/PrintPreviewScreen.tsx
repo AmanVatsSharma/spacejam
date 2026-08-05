@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useMutation } from '@apollo/client';
+import { CREATE_REQUEST_MUTATION } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -16,7 +20,11 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function PrintPreviewScreen({ onBack, onNavigate }: { onBack: () => void, onNavigate: (s: string) => void }) {
+export default function PrintPreviewScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const fileUrl = route.params?.fileUrl || 'Document';
+
   const [copies, setCopies] = useState(1);
   const [isColor, setIsColor] = useState(false); // false = Black & White
   const [isLandscape, setIsLandscape] = useState(false); // false = Portrait
@@ -30,6 +38,28 @@ export default function PrintPreviewScreen({ onBack, onNavigate }: { onBack: () 
     setCopies(copies + 1);
   };
 
+  const [createRequest, { loading }] = useMutation(CREATE_REQUEST_MUTATION, {
+    onCompleted: () => {
+      navigation.replace('PrintSuccess'); // Or wherever it should go
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Print Request Failed', text2: err.message });
+    }
+  });
+
+  const handleConfirm = () => {
+    createRequest({
+      variables: {
+        input: {
+          type: 'PRINTER',
+          title: `Print ${fileUrl}`,
+          description: `${copies} copies, ${isColor ? 'Color' : 'B&W'}, ${isLandscape ? 'Landscape' : 'Portrait'}`,
+          urgency: 'MEDIUM'
+        }
+      }
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -37,7 +67,7 @@ export default function PrintPreviewScreen({ onBack, onNavigate }: { onBack: () 
           <Text style={styles.headerTitle}>Preview Document</Text>
           <Text style={styles.headerSubtitle}>Review before submitting</Text>
         </View>
-        <TouchableOpacity style={styles.closeBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
           <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Line x1="18" y1="6" x2="6" y2="18" />
             <Line x1="6" y1="6" x2="18" y2="18" />
@@ -169,11 +199,11 @@ export default function PrintPreviewScreen({ onBack, onNavigate }: { onBack: () 
 
       {/* Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.cancelBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.cancelBtnTxt}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.confirmBtn} onPress={() => onNavigate('PrintProcessing')}>
-          <Text style={styles.confirmBtnTxt}>Confirm & Print</Text>
+        <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} disabled={loading}>
+          <Text style={styles.confirmBtnTxt}>{loading ? 'Processing...' : 'Confirm & Print'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

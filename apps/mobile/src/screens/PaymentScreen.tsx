@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -15,20 +16,22 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#F9FAFB';
 
-export default function PaymentScreen({ onBack, onNavigate }: { onBack: () => void, onNavigate: (s: string) => void }) {
+export default function PaymentScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   const [processing, setProcessing] = useState(false);
 
   const handlePay = () => {
     setProcessing(true);
     setTimeout(() => {
-      onNavigate('EventSuccess');
+      navigation.navigate('EventSuccess');
     }, 1500); // mock 1.5s delay
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style=()>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>

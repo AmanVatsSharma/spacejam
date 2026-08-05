@@ -7,6 +7,9 @@
  * Last-updated: 2026-07-30
  */
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
+import { GET_SEATS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -31,16 +34,14 @@ import DateTimeModal from './DateTimeModal';
 const ROOM_IMAGE_1 = 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800';
 const ROOM_IMAGE_2 = 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=800';
 
-export default function AvailableRoomsScreen({
-  onBack,
-  onNavigate,
-}: {
-  onBack: () => void;
-  onNavigate?: (s: string) => void;
-}) {
+export default function AvailableRoomsScreen() {
+  const navigation = useNavigation<any>();
+
   const [showFilter, setShowFilter] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
   const [showDateTime, setShowDateTime] = useState(false);
+
+  const { data, loading } = useQuery(GET_SEATS);
 
   const headerSlide = useSlideIn('down', 0, 20, duration.slow);
   const filterSlide = useSlideIn('down', 100, 16, duration.slow);
@@ -57,7 +58,7 @@ export default function AvailableRoomsScreen({
         >
           <View style={styles.headerCard}>
             <View style={styles.headerTop}>
-              <BackButton onPress={onBack} />
+              <BackButton onPress={() => navigation.goBack()} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.headerTitle}>Available Rooms</Text>
                 <Text style={styles.headerSub}>Book rooms for your team with just a few taps</Text>
@@ -98,26 +99,25 @@ export default function AvailableRoomsScreen({
 
       {/* Room Cards */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <RoomCard
-          image={ROOM_IMAGE_1}
-          name="Ocean View"
-          details="MR-201 • 8 people"
-          status="Available"
-          features={['WiFi', 'Display', 'Whiteboard']}
-          onNavigate={onNavigate}
-          onCalendarPress={() => setShowDateTime(true)}
-          index={0}
-        />
-        <RoomCard
-          image={ROOM_IMAGE_2}
-          name="Ocean View"
-          details="MR-20 • 8 people"
-          status="30 min"
-          features={['WiFi', 'Display']}
-          onNavigate={onNavigate}
-          onCalendarPress={() => setShowDateTime(true)}
-          index={1}
-        />
+        {loading ? (
+          <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>Loading rooms...</Text>
+        ) : !data?.seats || data.seats.length === 0 ? (
+          <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>No rooms available</Text>
+        ) : (
+          data.seats.map((seat: any, i: number) => (
+            <RoomCard
+              key={seat.id}
+              image={i % 2 === 0 ? ROOM_IMAGE_1 : ROOM_IMAGE_2}
+              name={seat.floor?.center?.name || 'Center'}
+              details={`${seat.name} • ${seat.type}`}
+              status="Available"
+              features={['WiFi', 'Display', 'Whiteboard']}
+              onPress={() => navigation.navigate('BookingDetails', { seatId: seat.id })}
+              onCalendarPress={() => setShowDateTime(true)}
+              index={i}
+            />
+          ))
+        )}
       </ScrollView>
 
       <FilterModal visible={showFilter} onClose={() => setShowFilter(false)} />
@@ -183,7 +183,7 @@ const FilterPill = ({ label }: { label: string }) => {
 
 // ─── Room Card ────────────────────────────────────────────────────────────────
 
-const RoomCard = ({ image, name, details, status, features, onNavigate, onCalendarPress, index }: any) => {
+const RoomCard = ((): any) => {
   const { opacity, translateY } = useFadeIn(staggerDelay(index, 200, 100), { fromY: 16 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageOpacity = React.useRef(new Animated.Value(0)).current;
@@ -227,9 +227,9 @@ const RoomCard = ({ image, name, details, status, features, onNavigate, onCalend
           </View>
 
           <View style={styles.actionsRow}>
-            <BookButton label="Book Now" onPress={() => onNavigate?.('BookingDetails')} />
+            <BookButton label="Book Now" onPress=() />
             <IconBtn color={palette.teal} onPress={onCalendarPress} icon="calendar" />
-            <IconBtn color={palette.teal} onPress={() => onNavigate?.('QuickBooking')} icon="bolt" />
+            <IconBtn color=() icon="bolt" />
           </View>
         </View>
       </PolishedCard>

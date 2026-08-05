@@ -15,5 +15,23 @@ if (__DEV__ === false) {
   });
 }
 
+import React from 'react';
 import App from './src/screens/App';
-registerRootComponent(App);
+import { ApolloProvider } from '@apollo/client';
+import { apolloClient } from './src/lib/apollo/client';
+import { AuthProvider } from './src/lib/auth/context';
+import Toast from 'react-native-toast-message';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+const Root = () => (
+  <SafeAreaProvider>
+    <ApolloProvider client={apolloClient}>
+      <AuthProvider>
+        <App />
+        <Toast />
+      </AuthProvider>
+    </ApolloProvider>
+  </SafeAreaProvider>
+);
+
+registerRootComponent(Root);

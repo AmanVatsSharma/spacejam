@@ -6,7 +6,10 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-30
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_MY_BOOKINGS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -25,32 +28,50 @@ import { FloatingNavBar, type NavTab } from '../components/FloatingNavBar';
 import { palette, space, radius, elevation } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
 
-export default function MyBookingsScreen({
-  onBack,
-  onNavigate,
-}: {
-  onBack: () => void;
-  onNavigate: (s: string) => void;
-}) {
+export default function MyBookingsScreen() {
+  const navigation = useNavigation<any>();
+
   const [activeNav, setActiveNav] = useState<NavTab>('bookings');
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
   const headerSlide = useSlideIn('down', 0, 16, duration.slow);
 
-  const handleNavChange = (tab: NavTab) => {
+  const handleNavChange = () => {
     setActiveNav(tab);
     const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
-    onNavigate(map[tab]);
+    navigation.navigate(map[tab]);
   };
 
-  const upcoming = [
-    { id: 1, icon: 'door', title: 'Ocean View - MR-201', details: 'Meeting Room • 2 hrs', date: '10 Dec 2025 • 10:00 AM', status: 'Booked' },
-    { id: 2, icon: 'desk', title: 'Garden Suite - MR-105', details: 'Meeting Room • 1.5 hrs', date: '14 Dec 2025 • 3:00 PM', status: 'Booked' },
-  ];
+  const { data, loading, refetch } = useQuery(GET_MY_BOOKINGS);
 
-  const history = [
-    { id: 3, icon: 'desk', title: 'Desk 12 - Open Area', details: 'Open Desk • 8 hrs', date: '2 Dec 2025 • 09:00 AM', status: 'Completed', amount: '₹650' },
-  ];
+  const upcoming = useMemo(() => {
+    if (!data?.myBookings) return [];
+    return data.myBookings
+      .filter((b: any) => b.status === 'CONFIRMED' || b.status === 'PENDING')
+      .map((b: any) => ({
+        id: b.id,
+        icon: 'door', // simplistic map
+        title: `${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`,
+        details: `${b.seat?.floor?.center?.name || 'Center'}`,
+        date: `${new Date(parseInt(b.date)).toLocaleDateString()} • ${b.startTime}`,
+        status: b.status,
+      }));
+  }, [data]);
+
+  const history = useMemo(() => {
+    if (!data?.myBookings) return [];
+    return data.myBookings
+      .filter((b: any) => b.status === 'COMPLETED' || b.status === 'CANCELLED')
+      .map((b: any) => ({
+        id: b.id,
+        icon: 'desk',
+        title: `${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`,
+        details: `${b.seat?.floor?.center?.name || 'Center'}`,
+        date: `${new Date(parseInt(b.date)).toLocaleDateString()} • ${b.startTime}`,
+        status: b.status,
+        amount: 'Paid',
+      }));
+  }, [data]);
 
   const items = activeTab === 'upcoming' ? upcoming : history;
 
@@ -96,13 +117,24 @@ export default function MyBookingsScreen({
 
         {/* List */}
         <View style={styles.list}>
-          {items.map((item, i) => (
-            <BookingItem key={item.id} item={item} index={i} onPress={() => onNavigate('MyRoomDetails')} />
-          ))}
+          {loading ? (
+            <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>Loading...</Text>
+          ) : items.length === 0 ? (
+            <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>No {activeTab} bookings</Text>
+          ) : (
+            items.map((item: any, i: number) => (
+              <BookingItem 
+                key={item.id} 
+                item={item} 
+                index={i} 
+                onPress={() => navigation.navigate('MyRoomDetails', { bookingId: item.id })} 
+              />
+            ))
+          )}
         </View>
       </ScrollView>
 
-      <FloatingNavBar activeTab={activeNav} onTabChange={handleNavChange} />
+      {/* FloatingNavBar is inside TabNavigator for home flow */}
     </View>
   );
 }

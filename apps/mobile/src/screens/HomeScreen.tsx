@@ -7,8 +7,10 @@
  * Last-updated: 2026-07-30
  */
 import React, { useState } from 'react';
+import { useQuery } from '@apollo/client';
+import { GET_HOME_DATA } from '../lib/apollo/operations';
+import { useNavigation } from '@react-navigation/native';
 import {
-  StyleSheet,
   View,
   Text,
   ScrollView,
@@ -48,12 +50,40 @@ const PROMO_IMAGE = 'https://images.unsplash.com/photo-1524758631624-e2822e304c3
 const SPACE_IMAGE_1 = 'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?auto=format&fit=crop&q=80&w=600';
 const SPACE_IMAGE_2 = 'https://images.unsplash.com/photo-1556817411-31ae72fa3ea0?auto=format&fit=crop&q=80&w=600';
 
-export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) => void }) {
+import * as Notifications from 'expo-notifications';
+import { useMutation } from '@apollo/client';
+import { REGISTER_DEVICE_TOKEN_MUTATION } from '../lib/apollo/operations';
+
+export default function HomeScreen() {
+  const navigation = useNavigation<any>();
   const [activeNav, setActiveNav] = useState<'home' | 'events' | 'bookings' | 'profile'>('home');
   const [showOffer, setShowOffer] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
-  const handleNavChange = (tab: 'home' | 'events' | 'bookings' | 'profile') => {
+  const { data, loading } = useQuery(GET_HOME_DATA);
+  const [registerToken] = useMutation(REGISTER_DEVICE_TOKEN_MUTATION);
+
+  React.useEffect(() => {
+    (async () => {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        return;
+      }
+      try {
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: 'placeholder-project-id' // Setup Expo project ID later
+        });
+        registerToken({ variables: { token: tokenData.data } });
+      } catch (err) {
+        console.log('Failed to get push token:', err);
+      }
+    })();
+  }, [registerToken]);
     setActiveNav(tab);
     const screenMap: Record<string, any> = {
       home: undefined,
@@ -61,7 +91,9 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
       bookings: 'MyBookings',
       profile: 'Profile',
     };
-    onNavigate?.(screenMap[tab]);
+    if (screenMap[tab]) {
+      navigation.navigate(screenMap[tab]);
+    }
   };
 
   return (
@@ -69,7 +101,10 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* ── Header Section ── */}
-        <AnimatedHeader />
+        <AnimatedHeader 
+          name={data?.me?.name || 'Guest'} 
+          onShowOffer={() => setShowOffer(true)} 
+        />
 
         {/* ── Stats Cards ── */}
         <StatsRow />
@@ -78,35 +113,54 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
         <View style={styles.section}>
           <SectionHeader title="QUICK ACCESS" index={2} />
           <View style={styles.quickAccessRow}>
-            <QuickAccessItem icon="office" label="Book Space" onPress={() => onNavigate?.('AvailableRooms')} index={0} />
-            <QuickAccessItem icon="invoice" label="Invoices" onPress={() => onNavigate?.('MyInvoices')} index={1} />
+            <QuickAccessItem icon="office" label="Book Space" onPress={() => navigation.navigate('AvailableRooms')} index={0} />
+            <QuickAccessItem icon="invoice" label="Invoices" onPress={() => navigation.navigate('MyInvoices')} index={1} />
             <QuickAccessItem icon="print" label="Print" onPress={() => setShowPrintModal(true)} index={2} />
-            <QuickAccessItem icon="wallet" label="Wallet" onPress={() => onNavigate?.('Wallet')} index={3} />
+            <QuickAccessItem icon="wallet" label="Wallet" onPress={() => navigation.navigate('Wallet')} index={3} />
           </View>
         </View>
 
         {/* ── Upcoming ── */}
         <View style={styles.section}>
-          <SectionHeader title="UPCOMING" actionLabel="View all" onAction={() => {}} index={3} />
+          <SectionHeader title="UPCOMING" actionLabel="View all" onAction={() => navigation.navigate('MyBookings')} index={3} />
           <PolishedCard elevation="card">
-            <UpcomingItem date="20" month="DEC" title="Ocean View - MR-201" time="10:00 - 12:00 AM" />
-            <View style={styles.itemDivider} />
-            <UpcomingItem date="22" month="DEC" title="Garden Suite - MR-105" time="02:00 - 04:00 PM" />
+            {data?.myBookings?.slice(0, 2).map((b: any, i: number) => {
+              const d = new Date(parseInt(b.date));
+              return (
+                <React.Fragment key={b.id}>
+                  {i > 0 && <View style={styles.itemDivider} />}
+                  <UpcomingItem 
+                    date={d.getDate().toString()} 
+                    month={d.toLocaleString('default', { month: 'short' }).toUpperCase()} 
+                    title={`${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`} 
+                    time={`${b.startTime} - ${b.endTime}`} 
+                  />
+                </React.Fragment>
+              );
+            }) || <Text style={{ padding: 16, color: '#666' }}>No upcoming bookings</Text>}
           </PolishedCard>
         </View>
 
         {/* ── Token Balance ── */}
-        <TokenCard onPress={() => onNavigate?.('Wallet')} />
+        <TokenCard onPress={() => navigation.navigate('Wallet')} />
 
         {/* ── Last Paid ── */}
         <View style={styles.section}>
-          <SectionHeader title="LAST PAID" actionLabel="View all" onAction={() => {}} index={5} />
+          <SectionHeader title="LAST PAID" actionLabel="View all" onAction={() => navigation.navigate('MyInvoices')} index={5} />
           <PolishedCard elevation="card">
-            <LastPaidItem icon="door" title="Ocean View - MR-201" sub="Meeting Room - 15 May" amount="₹4,800" status="Paid" variant="paid" />
-            <View style={styles.itemDivider} />
-            <LastPaidItem icon="desk" title="Garden Suite - MR-105" sub="Meeting Room - 2 Hrs" amount="₹1,200" status="Paid" variant="paid" />
-            <View style={styles.itemDivider} />
-            <LastPaidItem icon="door" title="Private Cabin - PC-03" sub="Dedicated Desk - Daily" amount="₹850" status="Pending" variant="pending" />
+            {data?.invoices?.slice(0, 2).map((inv: any, i: number) => (
+              <React.Fragment key={inv.id}>
+                {i > 0 && <View style={styles.itemDivider} />}
+                <LastPaidItem 
+                  icon="door" 
+                  title={`Invoice #${inv.id.slice(-4)}`} 
+                  sub={`Due: ${new Date(parseInt(inv.dueDate)).toLocaleDateString()}`} 
+                  amount={`₹${inv.amount}`} 
+                  status={inv.status} 
+                  variant={inv.status === 'PAID' ? 'paid' : 'pending'} 
+                />
+              </React.Fragment>
+            )) || <Text style={{ padding: 16, color: '#666' }}>No recent invoices</Text>}
           </PolishedCard>
         </View>
 
@@ -156,14 +210,14 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
               title="Earn Credits"
               desc="Get tokens for every referral that books a space"
               accent={palette.brand}
-              onPress={() => onNavigate?.('ReferAndEarn')}
+              onPress={() => navigation.navigate('ReferAndEarn')}
               index={0}
             />
             <RefCard
               title="Available Offers"
               desc="Unlock early booking deals and credit discounts"
               accent="#6BD0C4"
-              onPress={() => onNavigate?.('Offers')}
+              onPress={() => navigation.navigate('Offers')}
               index={1}
             />
           </View>
@@ -183,7 +237,7 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
           onClose={() => setShowPrintModal(false)}
           onUploadComplete={() => {
             setShowPrintModal(false);
-            onNavigate?.('PrintPreview');
+            navigation.navigate('PrintPreview');
           }}
         />
       )}
@@ -193,7 +247,7 @@ export default function HomeScreen({ onNavigate }: { onNavigate?: (screen: any) 
 
 // ─── Animated Header ──────────────────────────────────────────────────────────
 
-const AnimatedHeader = () => {
+const AnimatedHeader = ({ name, onShowOffer }: { name: string, onShowOffer: () => void }) => {
   const headerFade = useFadeIn(0, { fromY: 0, durationOverride: duration.hero });
   const { opacity: overlayOp } = useFadeIn(200, { fromY: 0 });
   const offerFade = useFadeIn(300, { fromY: 16, durationOverride: duration.slow });
@@ -209,7 +263,7 @@ const AnimatedHeader = () => {
         <View style={styles.headerTop}>
           <View>
             <Animated.Text style={[styles.greeting, labelOp]}>GOOD MORNING</Animated.Text>
-            <Animated.Text style={[styles.userName, labelOp]}>Govind Gupta</Animated.Text>
+            <Animated.Text style={[styles.userName, labelOp]}>{name.split(' ')[0]}</Animated.Text>
           </View>
           <TouchableWithoutFeedback>
             <Animated.View style={[styles.bellBtn, { transform: [{ scale: pulse.scale }] }]}>
@@ -231,7 +285,7 @@ const AnimatedHeader = () => {
           </View>
           <View style={styles.offerBottomRow}>
             <Animated.Text style={[styles.offerDesc, labelOp]}>On your next space booking</Animated.Text>
-            <TouchableWithoutFeedback onPress={() => setShowOffer(true)}>
+            <TouchableWithoutFeedback onPress={onShowOffer}>
               <Animated.View style={styles.claimBtn}>
                 <Animated.Text style={styles.claimText}>Claim Offer </Animated.Text>
                 <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

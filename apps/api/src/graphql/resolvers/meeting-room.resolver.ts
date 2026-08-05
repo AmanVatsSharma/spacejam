@@ -16,6 +16,8 @@ import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
 import { Booking } from '../../typeorm/entities/booking.entity';
 import { Event } from '../../typeorm/entities/event.entity';
 import { Notification } from '../../typeorm/entities/notification.entity';
+import { User } from '../../typeorm/entities/user.entity';
+import { PushService } from '../../common/push.service';
 import {
   NotificationType,
   NotificationPriority,
@@ -42,6 +44,9 @@ export class MeetingRoomResolver {
     private eventRepo: Repository<Event>,
     @InjectRepository(Notification)
     private notifRepo: Repository<Notification>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
+    private pushService: PushService,
   ) {}
 
   /**
@@ -284,6 +289,19 @@ export class MeetingRoomResolver {
       );
     }
 
+    const cost = ((room.hourlyRate ?? 0) * duration) / 60;
+
+    if (requestedBy) {
+      const user = await this.userRepo.findOne({ where: { id: requestedBy } });
+      if (user) {
+        if ((user.tokenBalance || 0) < cost) {
+          throw new Error('Insufficient tokens to book this room.');
+        }
+        user.tokenBalance = (user.tokenBalance || 0) - cost;
+        await this.userRepo.save(user);
+      }
+    }
+
     // Create an Event — this is the unified meeting room booking record.
     const event = this.eventRepo.create({
       centerId,
@@ -329,6 +347,19 @@ export class MeetingRoomResolver {
         },
       });
       await this.notifRepo.save(notif);
+
+      // Send push notification if user has a device token
+      if (requestedBy) {
+        const user = await this.userRepo.findOne({ where: { id: requestedBy } });
+        if (user && user.deviceToken) {
+          await this.pushService.sendPushNotification(
+            user.deviceToken,
+            notif.title,
+            notif.message,
+            notif.metadata
+          );
+        }
+      }
     }
 
     const roomWithCenter = await this.roomRepo.findOne({

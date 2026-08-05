@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import * as DocumentPicker from 'expo-document-picker';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -15,7 +17,9 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 
-export default function PrintUploadModal({ visible, onClose, onUploadComplete }: { visible: boolean; onClose: () => void; onUploadComplete: () => void; }) {
+export default function PrintUploadModal({ visible, onClose, onUploadComplete }: { visible: boolean; onClose: () => void; onUploadComplete: (fileUrl: string) => void; }) {
+  const navigation = useNavigation<any>();
+
   const [isUploading, setIsUploading] = useState(false);
 
   // Reset state when modal becomes visible
@@ -25,12 +29,48 @@ export default function PrintUploadModal({ visible, onClose, onUploadComplete }:
     }
   }, [visible]);
 
-  const handleUpload = () => {
-    setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
-      onUploadComplete();
-    }, 2000);
+  const handleUpload = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (res.canceled) {
+        return;
+      }
+
+      setIsUploading(true);
+
+      const fileToUpload = res.assets[0];
+      const formData = new FormData();
+      formData.append('file', {
+        uri: fileToUpload.uri,
+        name: fileToUpload.name,
+        type: fileToUpload.mimeType || 'application/octet-stream',
+      } as any);
+
+      // In production, use your actual API URL here
+      // const response = await fetch('https://spacejam.vedpragya.com/api/print/upload', {
+      //   method: 'POST',
+      //   body: formData,
+      //   headers: {
+      //     'Content-Type': 'multipart/form-data',
+      //   },
+      // });
+      
+      // const data = await response.json();
+      
+      // Simulate network request for now
+      setTimeout(() => {
+        setIsUploading(false);
+        onUploadComplete('/uploads/' + fileToUpload.name);
+      }, 2000);
+      
+    } catch (err) {
+      console.error(err);
+      setIsUploading(false);
+    }
   };
 
   return (

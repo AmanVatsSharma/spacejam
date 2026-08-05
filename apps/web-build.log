@@ -1,0 +1,73 @@
+Already up to date
+Done in 1s using pnpm v11.17.0
+▲ Next.js 16.2.10 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.9s
+  Skipping validation of types
+  Finished TypeScript config validation in 146ms ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/2) ...
+✓ Generating static pages using 11 workers (2/2) in 488ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /api/[...graphql]
+├ ƒ /api/changelog
+├ ƒ /api/hello
+├ ƒ /changelog
+├ ƒ /dashboard
+├ ƒ /dashboard/audit
+├ ƒ /dashboard/calendar-sync
+├ ƒ /dashboard/changelog
+├ ƒ /dashboard/crm
+├ ƒ /dashboard/crm/customers
+├ ƒ /dashboard/crm/customers/[id]
+├ ƒ /dashboard/crm/leads
+├ ƒ /dashboard/crm/leads/[id]
+├ ƒ /dashboard/crm/onboarding
+├ ƒ /dashboard/crm/onboarding-list
+├ ƒ /dashboard/equipment
+├ ƒ /dashboard/home
+├ ƒ /dashboard/inventory
+├ ƒ /dashboard/inventory/floor-map
+├ ƒ /dashboard/inventory/table-view
+├ ƒ /dashboard/notifications
+├ ƒ /dashboard/operations
+├ ƒ /dashboard/operations/events
+├ ƒ /dashboard/operations/meeting-room
+├ ƒ /dashboard/operations/recurring-bookings
+├ ƒ /dashboard/operations/request
+├ ƒ /dashboard/report
+├ ƒ /dashboard/report/occupancy
+├ ƒ /dashboard/report/overview
+├ ƒ /dashboard/report/revenue
+├ ƒ /dashboard/revenue
+├ ƒ /dashboard/revenue/contracts
+├ ƒ /dashboard/revenue/deposits
+├ ƒ /dashboard/revenue/invoices
+├ ƒ /dashboard/scheduled-reports
+├ ƒ /dashboard/settings
+├ ƒ /dashboard/settings/center
+├ ƒ /dashboard/settings/finance
+├ ƒ /dashboard/settings/notification
+├ ƒ /dashboard/settings/operations
+├ ƒ /dashboard/settings/security
+├ ƒ /forgot-password
+├ ƒ /magic-link
+├ ƒ /reset-password
+├ ƒ /set-up-new-center
+├ ƒ /signin
+├ ƒ /signin/magic-link
+├ ƒ /signup
+├ ƒ /test
+└ ƒ /verify-email
+
+
+ƒ Proxy (Middleware)
+
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -7,6 +7,8 @@
  * Last-updated: 2026-07-30
  */
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../lib/auth/context';
 import {
   StyleSheet,
   View,
@@ -24,13 +26,15 @@ import { StatusPill } from '../components/StatusPill';
 import { palette, space, radius, elevation, type as typeScale } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
 
-export default function ProfileScreen({ onNavigate }: { onNavigate: (s: string) => void }) {
+export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
+
   const [activeNav, setActiveNav] = useState<NavTab>('profile');
 
-  const handleNavChange = (tab: NavTab) => {
+  const handleNavChange = (tab: any) => {
     setActiveNav(tab);
     const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
-    onNavigate(map[tab]);
+    if (map[tab]) navigation.navigate(map[tab]);
   };
 
   const menuItems = [
@@ -88,7 +92,7 @@ export default function ProfileScreen({ onNavigate }: { onNavigate: (s: string) 
 
         {/* Profile Header */}
         <Animated.View style={headerFade}>
-          <ProfileHeader onEdit={() => onNavigate('EditProfile')} />
+          <ProfileHeader onEdit={() => navigation.navigate('EditProfile')} />
         </Animated.View>
 
         <View style={styles.divider} />
@@ -100,15 +104,13 @@ export default function ProfileScreen({ onNavigate }: { onNavigate: (s: string) 
               key={item.id}
               item={item}
               index={i}
-              onPress={() => onNavigate(item.id)}
+              onPress={() => navigation.navigate(item.id)}
             />
           ))}
         </View>
 
         <View style={{ height: 120 }} />
       </ScrollView>
-
-      <FloatingNavBar activeTab={activeNav} onTabChange={handleNavChange} />
     </View>
   );
 }
@@ -116,7 +118,9 @@ export default function ProfileScreen({ onNavigate }: { onNavigate: (s: string) 
 // ─── Profile Header ───────────────────────────────────────────────────────────
 
 const ProfileHeader = ({ onEdit }: { onEdit: () => void }) => {
+  const { user, logout } = useAuth();
   const { pressIn: editPressIn, pressOut: editPressOut } = usePressFeedback({ scale: 0.92, speed: 100 });
+  const { pressIn: logoutPressIn, pressOut: logoutPressOut } = usePressFeedback({ scale: 0.92, speed: 100 });
   const { opacity: avatarOp, translateY: avatarY } = useFadeIn(0, { fromY: 16 });
   const { opacity: textOp, translateY: textY } = useFadeIn(100, { fromY: 12 });
 
@@ -144,9 +148,16 @@ const ProfileHeader = ({ onEdit }: { onEdit: () => void }) => {
       </Animated.View>
 
       <Animated.View style={{ opacity: textOp, transform: [{ translateY: textY }], alignItems: 'center' }}>
-        <Text style={styles.name}>Rahul Sharma</Text>
-        <Text style={styles.role}>Center Manager</Text>
-        <Text style={styles.company}>Tech Innovations Pvt Ltd</Text>
+        <Text style={styles.name}>{user?.name || 'Guest User'}</Text>
+        <Text style={styles.handle}>{user?.email || ''}</Text>
+        <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
+          <StatusPill status="Pro Member" color="#fff" bg="rgba(255,255,255,0.15)" />
+          <TouchableWithoutFeedback onPressIn={logoutPressIn} onPressOut={logoutPressOut} onPress={() => logout()}>
+            <Animated.View style={{ transform: [{ scale: logoutPressIn ? 0.92 : 1 }] }}>
+              <StatusPill status="Logout" color="#fff" bg="rgba(255,50,50,0.6)" />
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </View>
       </Animated.View>
     </View>
   );

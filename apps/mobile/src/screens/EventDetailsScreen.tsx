@@ -1,4 +1,7 @@
 import React from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
+import { GET_EVENT } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -20,7 +23,18 @@ const BORDER = '#F3F4F6';
 
 const EVENT_IMG = 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=1200';
 
-export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () => void, onNavigate: (s: string) => void }) {
+export default function EventDetailsScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const eventId = route.params?.eventId;
+
+  const { data, loading } = useQuery(GET_EVENT, {
+    variables: { id: eventId },
+    skip: !eventId
+  });
+  
+  const event = data?.event || {};
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -31,7 +45,7 @@ export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () 
             <View style={styles.imageOverlay} />
             <SafeAreaView>
               <View style={styles.headerTop}>
-                <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <Path d="M19 12H5M12 19l-7-7 7-7"/>
                   </Svg>
@@ -47,7 +61,8 @@ export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () 
 
         {/* ── Body Content ── */}
         <View style={styles.bodyContent}>
-          <Text style={styles.mainTitle}>UI UX Workshop</Text>
+          {loading && <Text style={{ textAlign: 'center', padding: 20 }}>Loading...</Text>}
+          <Text style={styles.mainTitle}>{event.title || 'Loading...'}</Text>
 
           {/* Details Card */}
           <View style={styles.card}>
@@ -63,7 +78,9 @@ export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () 
               </View>
               <View style={styles.infoTexts}>
                 <Text style={styles.infoLbl}>Date & Time</Text>
-                <Text style={styles.infoVal}>17/06/2025 • 03:00 PM</Text>
+                <Text style={styles.infoVal}>
+                  {event.date ? new Date(parseInt(event.date)).toLocaleDateString() : 'N/A'} • {event.startTime || 'N/A'}
+                </Text>
               </View>
             </View>
 
@@ -109,7 +126,7 @@ export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () 
           <View style={styles.card}>
             <Text style={styles.aboutTitle}>About</Text>
             <Text style={styles.aboutDesc}>
-              Join us for a hands-on session exploring creative problem-solving through design thinking. Learn how to empathize with users, define challenges, and prototype innovative solutions in a collaborative environment.
+              {event.description || 'No description provided.'}
             </Text>
           </View>
         </View>
@@ -120,9 +137,9 @@ export default function EventDetailsScreen({ onBack, onNavigate }: { onBack: () 
       <View style={styles.footer}>
         <View>
           <Text style={styles.footerLbl}>Tokens</Text>
-          <Text style={styles.footerVal}>100</Text>
+          <Text style={styles.footerVal}>{event.status === 'Free' ? 'Free' : '100'}</Text>
         </View>
-        <TouchableOpacity style={styles.confirmBtn} onPress={() => onNavigate('Payment')}>
+        <TouchableOpacity style={styles.confirmBtn} onPress={() => alert('Book event!')}>
           <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Polyline points="20 6 9 17 4 12" />
           </Svg>

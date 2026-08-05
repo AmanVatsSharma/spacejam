@@ -139,4 +139,37 @@ export class UserResolver {
     const currentSessionId = current.sid;
     return this.sessionRepo.deactivateAllForUser(current.sub, currentSessionId);
   }
+
+  // ─── Wallet & Tokens ──────────────────────────────────────────────────────────
+
+  @Mutation(() => UserEntity, { description: 'Recharge token balance' })
+  async rechargeWallet(
+    @CurrentUser() current: JwtPayload,
+    @Args('amount', { type: () => Int }) amount: number,
+  ): Promise<UserEntity> {
+    const user = await this.userRepo.findById(current.sub);
+    if (!user) throw new NotFoundException('User not found');
+    if (amount <= 0) throw new BadRequestException('Amount must be positive');
+    
+    user.tokenBalance = (user.tokenBalance || 0) + amount;
+    const updated = await this.userRepo.update(user.id, { tokenBalance: user.tokenBalance });
+    if (!updated) throw new BadRequestException('Failed to update token balance');
+    
+    return updated;
+  }
+
+  // ─── Push Notifications ───────────────────────────────────────────────────────
+
+  @Mutation(() => Boolean, { description: 'Register a device token for push notifications' })
+  async registerDeviceToken(
+    @CurrentUser() current: JwtPayload,
+    @Args('token', { type: () => String }) token: string,
+  ): Promise<boolean> {
+    const user = await this.userRepo.findById(current.sub);
+    if (!user) throw new NotFoundException('User not found');
+    
+    user.deviceToken = token;
+    const updated = await this.userRepo.update(user.id, { deviceToken: token });
+    return !!updated;
+  }
 }

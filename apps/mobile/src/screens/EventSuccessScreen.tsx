@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -13,7 +14,9 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 
-export default function EventSuccessScreen({ onNavigate }: { onNavigate: (s: string) => void }) {
+export default function EventSuccessScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -29,7 +32,7 @@ export default function EventSuccessScreen({ onNavigate }: { onNavigate: (s: str
 
         <TouchableOpacity 
           style={styles.returnBtn}
-          onPress={() => onNavigate('Home')}
+          onPress=()
           activeOpacity={0.7}
         >
           <Text style={styles.returnBtnTxt}>Return Home</Text>

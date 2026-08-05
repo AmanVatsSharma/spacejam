@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_ME, RECHARGE_WALLET_MUTATION } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -16,8 +20,26 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function RechargeTokensScreen({ onBack, onNavigate }: { onBack: () => void, onNavigate: (s: string) => void }) {
+export default function RechargeTokensScreen() {
+  const navigation = useNavigation<any>();
+  const { data } = useQuery(GET_ME);
+  const currentTokens = data?.me?.tokenBalance || 0;
+
   const [amount, setAmount] = useState('500');
+
+  const [rechargeWallet, { loading }] = useMutation(RECHARGE_WALLET_MUTATION, {
+    onCompleted: () => {
+      Toast.show({ type: 'success', text1: 'Recharge Successful' });
+      navigation.goBack();
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Recharge Failed', text2: err.message });
+    }
+  });
+
+  const handleRecharge = () => {
+    rechargeWallet({ variables: { amount: parseInt(amount, 10) } });
+  };
 
   const handleKeyPress = (val: string) => {
     if (val === 'delete') {
@@ -32,7 +54,7 @@ export default function RechargeTokensScreen({ onBack, onNavigate }: { onBack: (
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
@@ -50,8 +72,8 @@ export default function RechargeTokensScreen({ onBack, onNavigate }: { onBack: (
               <Text style={styles.tokensPillTxt}>Tokens</Text>
             </View>
           </View>
-          <Text style={styles.balanceVal}>2500</Text>
-          <Text style={styles.balanceSubtext}>Need 250 token more to complete booking</Text>
+          <Text style={styles.balanceVal}>{currentTokens}</Text>
+          <Text style={styles.balanceSubtext}>Your available balance</Text>
         </View>
 
         {/* Input Area */}
@@ -80,9 +102,10 @@ export default function RechargeTokensScreen({ onBack, onNavigate }: { onBack: (
         <TouchableOpacity 
           style={styles.proceedBtn} 
           activeOpacity={0.8}
-          onPress={() => onNavigate('AddTokensPayment')}
+          onPress={handleRecharge}
+          disabled={loading}
         >
-          <Text style={styles.proceedBtnTxt}>Proceed to Pay ₹{amount}</Text>
+          <Text style={styles.proceedBtnTxt}>{loading ? 'Processing...' : `Proceed to Pay ₹${amount}`}</Text>
         </TouchableOpacity>
 
       </ScrollView>

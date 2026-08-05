@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
+import { GET_INVOICES } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -10,6 +13,7 @@ import {
 import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
 import InvoicePreviewModal from './InvoicePreviewModal';
 import BookingAgreementModal from './BookingAgreementModal';
+import { Skeleton } from '../components/Skeleton';
 
 const BRAND = '#FE7A47';
 const BRAND_BG = '#FFF0EB';
@@ -18,57 +22,10 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-const INVOICE_DATA: any = {
-  'Meeting Rooms': {
-    total: '1700',
-    typeLbl: 'Meeting Rooms',
-    count: '5',
-    items: [
-      { id: '1', title: 'Meeting Room A', date: 'Jan 18, 2026 @ 10:00 AM', amount: '₹300' },
-      { id: '2', title: 'Meeting Room B', date: 'Jan 17, 2026 @ 02:00 PM', amount: '₹250' },
-      { id: '3', title: 'Conference Hall', date: 'Jan 15, 2026 @ 11:00 AM', amount: '₹500' },
-      { id: '4', title: 'Meeting Room A', date: 'Jan 14, 2026 @ 09:00 AM', amount: '₹300' },
-      { id: '5', title: 'Meeting Room C', date: 'Jan 12, 2026 @ 03:00 PM', amount: '₹350' },
-    ]
-  },
-  'Events': {
-    total: '700',
-    typeLbl: 'Events',
-    count: '5',
-    items: [
-      { id: '1', title: 'AI Workshop', date: 'Jan 18, 2026 @ 10:00 AM', amount: '₹100' },
-      { id: '2', title: 'Networking Event', date: 'Jan 16, 2026 @ 06:00 PM', amount: '₹150' },
-      { id: '3', title: 'Product Launch', date: 'Jan 14, 2026 @ 03:00 PM', amount: '₹200' },
-      { id: '4', title: 'Tech Meetup', date: 'Jan 12, 2026 @ 05:00 PM', amount: '₹100' },
-      { id: '5', title: 'Design Sprint', date: 'Jan 10, 2026 @ 10:00 AM', amount: '₹150' },
-    ]
-  },
-  'Print Requests': {
-    total: '400',
-    typeLbl: 'Print Jobs',
-    count: '5',
-    items: [
-      { id: '1', title: '50 pages print', date: 'Jan 18, 2026 @ 10:00 AM', amount: '₹75' },
-      { id: '2', title: '100 pages print', date: 'Jan 17, 2026 @ 09:00 AM', amount: '₹50' },
-      { id: '3', title: '25 pages print', date: 'Jan 16, 2026 @ 04:00 PM', amount: '₹40' },
-      { id: '4', title: '200 pages print', date: 'Jan 15, 2026 @ 11:00 AM', amount: '₹150' },
-      { id: '5', title: '75 pages print', date: 'Jan 14, 2026 @ 02:00 PM', amount: '₹85' },
-    ]
-  },
-  'Recharges': {
-    total: '1550',
-    typeLbl: 'Recharges',
-    count: '5',
-    items: [
-      { id: '1', title: '500 Tokens Buy', date: 'Jan 18, 2026 @ 10:00 AM', amount: '₹300' },
-      { id: '2', title: '1000 Tokens Buy', date: 'Jan 17, 2026 @ 02:00 PM', amount: '₹500' },
-      { id: '3', title: '200 Tokens Buy', date: 'Jan 15, 2026 @ 11:00 AM', amount: '₹150' },
-      { id: '4', title: '750 Tokens Buy', date: 'Jan 14, 2026 @ 09:00 AM', amount: '₹400' },
-    ]
-  }
-};
+export default function MyInvoicesScreen() {
+  const navigation = useNavigation<any>();
+  const { data, loading } = useQuery(GET_INVOICES);
 
-export default function MyInvoicesScreen({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState('Meeting Rooms');
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
@@ -86,12 +43,29 @@ export default function MyInvoicesScreen({ onBack }: { onBack: () => void }) {
     setShowAgreementModal(true);
   };
 
-  const currentData = INVOICE_DATA[activeTab];
+  const currentData = useMemo(() => {
+    if (!data?.invoices) return { total: '0', typeLbl: activeTab, count: '0', items: [] };
+    const items = data.invoices.map((inv: any) => ({
+      id: inv.id,
+      title: inv.booking?.seat?.name ? `Booking: ${inv.booking.seat.name}` : `Invoice #${inv.id.substring(inv.id.length - 4)}`,
+      date: `Due: ${new Date(parseInt(inv.dueDate)).toLocaleDateString()}`,
+      amount: `₹${inv.amount}`,
+      rawAmount: inv.amount,
+      status: inv.status,
+    }));
+    const total = items.reduce((sum: number, item: any) => sum + item.rawAmount, 0);
+    return {
+      total: total.toString(),
+      typeLbl: 'Invoices',
+      count: items.length.toString(),
+      items
+    };
+  }, [data, activeTab]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Line x1="19" y1="12" x2="5" y2="12" />
             <Polyline points="12 19 5 12 12 5" />
@@ -135,16 +109,25 @@ export default function MyInvoicesScreen({ onBack }: { onBack: () => void }) {
 
         {/* List */}
         <View style={styles.listContainer}>
-          {currentData.items.map((item: any, index: number) => (
-            <View key={index} style={styles.invoiceCard}>
-              <View style={styles.cardTop}>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <Text style={styles.cardDate}>{item.date}</Text>
-                </View>
-                <View style={styles.cardRight}>
-                  <Text style={styles.cardAmount}>{item.amount}</Text>
-                  <TouchableOpacity style={styles.dlBtn} onPress={() => openInvoice(item)}>
+          {loading ? (
+             <View style={{ gap: 16 }}>
+               <Skeleton height={100} />
+               <Skeleton height={100} />
+               <Skeleton height={100} />
+             </View>
+          ) : currentData.items.length === 0 ? (
+             <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>No invoices</Text>
+          ) : (
+            currentData.items.map((item: any, index: number) => (
+              <View key={index} style={styles.invoiceCard}>
+                <View style={styles.cardTop}>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardDate}>{item.date}</Text>
+                  </View>
+                  <View style={styles.cardRight}>
+                    <Text style={styles.cardAmount}>{item.amount}</Text>
+                    <TouchableOpacity style={styles.dlBtn} onPress={() => openInvoice(item)}>
                     <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <Polyline points="7 10 12 15 17 10" />

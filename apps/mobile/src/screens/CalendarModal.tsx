@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -29,7 +30,9 @@ interface Props {
   onClose: () => void;
 }
 
-export default function CalendarModal({ visible, onClose }: Props) {
+export default function CalendarModal() {
+  const navigation = useNavigation<any>();
+
   const [selectedDate, setSelectedDate] = useState('7');
 
   return (

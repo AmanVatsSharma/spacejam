@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useMutation } from '@apollo/client';
+import { UPDATE_PROFILE_MUTATION } from '../lib/apollo/operations';
+import { useAuth } from '../lib/auth/context';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
@@ -16,11 +22,32 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function EditProfileScreen({ onBack }: { onBack: () => void }) {
+export default function EditProfileScreen() {
+  const navigation = useNavigation<any>();
+  const { user, refreshUser } = useAuth();
+  
+  const [name, setName] = useState(user?.name || '');
+  const [email] = useState(user?.email || ''); // Readonly for now
+
+  const [updateProfile, { loading }] = useMutation(UPDATE_PROFILE_MUTATION, {
+    onCompleted: async () => {
+      await refreshUser();
+      Toast.show({ type: 'success', text1: 'Profile Updated' });
+      navigation.goBack();
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Update Failed', text2: err.message });
+    }
+  });
+
+  const handleSave = () => {
+    updateProfile({ variables: { name } });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
@@ -47,7 +74,12 @@ export default function EditProfileScreen({ onBack }: { onBack: () => void }) {
             </View>
             <View style={styles.inputContent}>
               <Text style={styles.inputLabel}>Full Name</Text>
-              <Text style={styles.inputValue}>Rahul Sharma</Text>
+              <TextInput 
+                style={styles.inputValue}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your name"
+              />
             </View>
           </View>
           
@@ -62,49 +94,15 @@ export default function EditProfileScreen({ onBack }: { onBack: () => void }) {
               </Svg>
             </View>
             <View style={styles.inputContent}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <Text style={styles.inputValue}>rahul.sharma@spacejam.com</Text>
+              <Text style={styles.inputLabel}>Email (Read-only)</Text>
+              <Text style={styles.inputValue}>{email}</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
-
-          {/* Phone */}
-          <View style={styles.inputRow}>
-            <View style={styles.iconBox}>
-              <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </Svg>
-            </View>
-            <View style={styles.inputContent}>
-              <Text style={styles.inputLabel}>Phone</Text>
-              <Text style={styles.inputValue}>+91 9876543210</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Company */}
-          <View style={styles.inputRow}>
-            <View style={styles.iconBox}>
-              <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <Rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
-                <Path d="M9 22v-4h6v4"/>
-                <Path d="M9 6h6"/>
-                <Path d="M9 10h6"/>
-                <Path d="M9 14h6"/>
-              </Svg>
-            </View>
-            <View style={styles.inputContent}>
-              <Text style={styles.inputLabel}>Company</Text>
-              <Text style={styles.inputValue}>Tech Innovations Pvt Ltd</Text>
-            </View>
-          </View>
-          
         </View>
 
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8}>
-          <Text style={styles.saveBtnTxt}>Save Changes</Text>
+        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.8} onPress={handleSave}>
+          <Text style={styles.saveBtnTxt}>{loading ? 'Saving...' : 'Save Changes'}</Text>
         </TouchableOpacity>
 
       </ScrollView>

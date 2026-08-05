@@ -15,13 +15,18 @@ import { Booking } from '../typeorm/entities/booking.entity';
 import { Event } from '../typeorm/entities/event.entity';
 import { Notification } from '../typeorm/entities/notification.entity';
 
+import { User } from '../typeorm/entities/user.entity';
+
+import { PushService } from '../common/push.service';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MeetingRoom, Booking, Event, Notification]),
+    TypeOrmModule.forFeature([MeetingRoom, Booking, Event, Notification, User]),
     CacheModule,
   ],
   providers: [
     MeetingRoomResolver,
+    PushService,
   ],
   exports: [MeetingRoomResolver],
 })

@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useMutation, useQuery } from '@apollo/client';
+import { BOOK_ROOM_MUTATION, GET_SEATS } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -41,17 +45,50 @@ const TIME_SLOTS = [
   { time: '6:00 PM', status: 'available' },
 ];
 
-export default function BookingDetailsScreen({ onBack }: { onBack: () => void }) {
+export default function BookingDetailsScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  
+  const seatId = route.params?.seatId;
+  const { data } = useQuery(GET_SEATS);
+  
+  const seat = data?.seats?.find((s: any) => s.id === seatId) || {};
+
   const [selectedDate, setSelectedDate] = useState('5');
   const [participants, setParticipants] = useState(8);
   const [showCalendar, setShowCalendar] = useState(false);
   const [hasSufficientBalance, setHasSufficientBalance] = useState(true); // Toggle this for testing
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  const [bookRoom, { loading }] = useMutation(BOOK_ROOM_MUTATION, {
+    onCompleted: () => {
+      Toast.show({ type: 'success', text1: 'Booking Confirmed' });
+      setShowConfirmModal(false);
+      navigation.navigate('BookingSuccess'); // Or somewhere
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Booking Failed', text2: err.message });
+      setShowConfirmModal(false);
+    }
+  });
+
+  const handleBook = () => {
+    bookRoom({
+      variables: {
+        roomId: seatId,
+        centerId: seat.floor?.center?.id || 'c-1',
+        eventDate: new Date().toISOString(), // Mock for now
+        startTime: '10:00 AM', // Mock
+        endTime: '12:00 PM', // Mock
+        title: 'Meeting',
+      }
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
@@ -66,8 +103,8 @@ export default function BookingDetailsScreen({ onBack }: { onBack: () => void })
           <View style={styles.roomRow}>
             <View style={styles.roomThumb} />
             <View style={styles.roomInfo}>
-              <Text style={styles.roomName}>MR-Ocean View - MR-201</Text>
-              <Text style={styles.roomSub}>Capacity: 8 people • 2nd Floor</Text>
+              <Text style={styles.roomName}>{seat.name || 'Ocean View - MR-201'}</Text>
+              <Text style={styles.roomSub}>Capacity: 8 people • {seat.floor?.name || '2nd Floor'}</Text>
             </View>
           </View>
           <View style={styles.amenities}>
@@ -262,11 +299,7 @@ export default function BookingDetailsScreen({ onBack }: { onBack: () => void })
       <ConfirmBookingModal 
         visible={showConfirmModal} 
         onClose={() => setShowConfirmModal(false)}
-        onConfirm={() => {
-          setShowConfirmModal(false);
-          // Navigate to success or home
-          onBack();
-        }}
+        onConfirm={handleBook}
       />
     </SafeAreaView>
   );

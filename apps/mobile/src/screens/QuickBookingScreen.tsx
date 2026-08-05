@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -21,7 +22,9 @@ const BG = '#fff';
 
 const BG_IMAGE = 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200';
 
-export default function QuickBookingScreen({ onBack }: { onBack: () => void }) {
+export default function QuickBookingScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   return (
     <View style={styles.container}>
       
@@ -30,7 +33,7 @@ export default function QuickBookingScreen({ onBack }: { onBack: () => void }) {
         <ImageBackground source={{ uri: BG_IMAGE }} style={styles.headerImage}>
           <SafeAreaView>
             <View style={styles.headerTop}>
-              <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+              <TouchableOpacity style=()>
                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M19 12H5M12 19l-7-7 7-7"/>
                 </Svg>

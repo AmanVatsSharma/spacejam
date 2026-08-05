@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -14,11 +15,13 @@ const BG = '#F7F9FC';
 const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 
-export default function OffersScreen({ onBack }: { onBack: () => void }) {
+export default function OffersScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+        <TouchableOpacity style=()>
           <Svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
@@ -104,7 +107,7 @@ export default function OffersScreen({ onBack }: { onBack: () => void }) {
 
 // ─── Subcomponents ─────────────────────────────────────────────────────────────
 
-const OfferCard = ({ color, tag1, tag2, tag3, title, subtitle, code }: any) => {
+const OfferCard = () => {
   return (
     <View style={styles.offerCard}>
       {/* Top Half (Colored Background) */}

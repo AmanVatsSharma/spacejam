@@ -1,0 +1,34 @@
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+'pnpm' is not recognized as an internal or external command,
+operable program or batch file.
+
+[2m> [22m[2mnx run[22m api:build
+
+[2m> [22mwebpack-cli build --node-env=production
+
+webpack compiled [1m[32msuccessfully[39m[22m (4f9074d441d0cec3)
+
+[2m[32m[39m[22m
+
+[7m[1m[32m NX [39m[22m[27m  [32mSuccessfully ran target [1mbuild[22m for project api[39m
+
+
+
+[7m[1m[31m NX [39m[22m[27m  [31mNx Cloud wasn't able to store artifacts to the remote cache.[39m
+
+
+[7m[1m[33m NX [39m[22m[27m  [33mNx Cloud encountered some problems[39m
+
+This workspace is more than three days old and is not connected. Workspaces must be connected within 3 days of creation. Claim your workspace at https://cloud.nx.app. (code: 401)
+

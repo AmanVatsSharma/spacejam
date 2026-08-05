@@ -7,6 +7,9 @@
  * Last-updated: 2026-07-30
  */
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
+import { GET_ME } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -24,13 +27,12 @@ import { palette, space, radius, elevation } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback, useSpringEntrance } from '../theme/animations';
 import StatementModal from './StatementModal';
 
-export default function WalletScreen({
-  onBack,
-  onNavigate,
-}: {
-  onBack: () => void;
-  onNavigate: (s: string) => void;
-}) {
+export default function WalletScreen() {
+  const navigation = useNavigation<any>();
+
+  const { data } = useQuery(GET_ME);
+  const currentTokens = data?.me?.tokenBalance || 0;
+
   const [showStatementModal, setShowStatementModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -72,9 +74,9 @@ export default function WalletScreen({
   return (
     <View style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <BackBar onPress={onBack} title="My Wallet" />
+        <BackBar onPress={() => navigation.goBack()} title="My Wallet" />
 
-        <BalanceCard onBuy={() => onNavigate('RechargeTokens')} onStatement={() => setShowStatementModal(true)} />
+        <BalanceCard balance={currentTokens} onBuy={() => navigation.navigate('RechargeTokens')} onStatement={() => setShowStatementModal(true)} />
 
         <Animated.View style={useFadeIn(400, { fromY: 8 })}>
           <Text style={styles.historyTitle}>Transaction History</Text>
@@ -128,7 +130,7 @@ const BackBar = ({ onPress, title }: { onPress: () => void; title: string }) => 
 
 // ─── Balance Card with counter animation ──────────────────────────────────────
 
-const BalanceCard = ({ onBuy, onStatement }: { onBuy: () => void; onStatement: () => void }) => {
+const BalanceCard = ({ balance, onBuy, onStatement }: { balance: number; onBuy: () => void; onStatement: () => void }) => {
   const { scale, opacity } = useSpringEntrance(200);
   const counter = useRef(new Animated.Value(0)).current;
   const [display, setDisplay] = useState('0');
@@ -138,12 +140,12 @@ const BalanceCard = ({ onBuy, onStatement }: { onBuy: () => void; onStatement: (
       setDisplay(Math.round(value).toLocaleString());
     });
     Animated.timing(counter, {
-      toValue: 2500,
+      toValue: balance,
       duration: 1200,
       useNativeDriver: false,
     }).start();
     return () => counter.removeListener(listener);
-  }, []);
+  }, [balance]);
 
   return (
     <Animated.View style={[styles.walletCardWrap, { opacity, transform: [{ scale }] }]}>

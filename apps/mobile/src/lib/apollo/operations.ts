@@ -14,9 +14,9 @@ import { gql } from '@apollo/client';
 // ──────────────────────────────────────────────
 // Auth
 // ──────────────────────────────────────────────
-export const LOGIN_MUTATION = gql`
-  mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
+export const SIGNIN_MUTATION = gql`
+  mutation Signin($email: String!, $password: String!) {
+    signin(input: { email: $email, password: $password }) {
       accessToken
       refreshToken
       user {
@@ -24,6 +24,7 @@ export const LOGIN_MUTATION = gql`
         email
         name
         role
+        tokenBalance
       }
     }
   }
@@ -91,7 +92,215 @@ export const GET_ME = gql`
       name
       phone
       role
+      tokenBalance
       center { id name }
     }
+  }
+`;
+
+export const UPDATE_PROFILE_MUTATION = gql`
+  mutation UpdateProfile($name: String) {
+    updateProfile(name: $name) {
+      id
+      name
+      email
+    }
+  }
+`;
+
+export const GET_HOME_DATA = gql`
+  query GetHomeData {
+    me {
+      id
+      name
+      tokenBalance
+    }
+    myBookings {
+      id
+      date
+      startTime
+      endTime
+      status
+      seat {
+        id
+        name
+        floor {
+          name
+          center { name }
+        }
+      }
+    }
+    invoices {
+      id
+      amount
+      status
+      dueDate
+    }
+  }
+`;
+
+export const GET_MY_BOOKINGS = gql`
+  query GetMyBookings {
+    myBookings {
+      id
+      date
+      startTime
+      endTime
+      status
+      seat {
+        id
+        name
+        floor {
+          name
+          center { name }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_INVOICES = gql`
+  query GetInvoices {
+    invoices {
+      id
+      amount
+      status
+      dueDate
+      booking {
+        id
+        seat {
+          name
+        }
+      }
+    }
+  }
+`;
+
+export const GET_SEATS = gql`
+  query GetSeats {
+    seats {
+      id
+      name
+      type
+      pricing {
+        hourly
+        daily
+        monthly
+      }
+      floor {
+        id
+        name
+        center {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
+export const GET_EVENTS = gql`
+  query GetEvents {
+    upcomingEvents {
+      id
+      title
+      description
+      date
+      startTime
+      endTime
+      status
+    }
+    todayEvents {
+      id
+      title
+      description
+      date
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+export const BOOK_ROOM_MUTATION = gql`
+  mutation BookRoom(
+    $roomId: String!
+    $centerId: String!
+    $eventDate: String!
+    $startTime: String!
+    $endTime: String!
+    $title: String!
+  ) {
+    bookRoom(
+      roomId: $roomId
+      centerId: $centerId
+      eventDate: $eventDate
+      startTime: $startTime
+      endTime: $endTime
+      title: $title
+    ) {
+      id
+    }
+  }
+`;
+
+export const GET_EVENT = gql`
+  query GetEvent($id: ID!) {
+    event(id: $id) {
+      id
+      title
+      description
+      date
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+export const GET_NOTIFICATIONS = gql`
+  query GetNotifications {
+    myNotifications {
+      id
+      title
+      body
+      type
+      read
+      createdAt
+    }
+  }
+`;
+
+export const MARK_NOTIFICATION_READ = gql`
+  mutation MarkNotificationRead($id: ID!) {
+    markNotificationRead(id: $id, read: true) {
+      id
+      read
+    }
+  }
+`;
+
+export const RECHARGE_WALLET_MUTATION = gql`
+  mutation RechargeWallet($amount: Int!) {
+    rechargeWallet(amount: $amount) {
+      id
+      tokenBalance
+    }
+  }
+`;
+export const CREATE_REQUEST_MUTATION = gql`
+  mutation CreateRequest($input: CreateRequestInput!) {
+    createRequest(input: $input) {
+      id
+      title
+      type
+      status
+    }
+  }
+`;
+
+export const REGISTER_DEVICE_TOKEN_MUTATION = gql`
+  mutation RegisterDeviceToken($token: String!) {
+    registerDeviceToken(token: $token)
   }
 `;

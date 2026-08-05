@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -19,7 +20,9 @@ interface Props {
   onConfirm: () => void;
 }
 
-export default function ConfirmBookingModal({ visible, onClose, onConfirm }: Props) {
+export default function ConfirmBookingModal() {
+  const navigation = useNavigation<any>();
+
   return (
     <Modal visible={visible} transparent={true} animationType="fade">
       <View style={styles.overlay}>

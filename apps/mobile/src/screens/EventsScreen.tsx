@@ -6,7 +6,10 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-30
  */
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
+import { GET_EVENTS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -29,10 +32,13 @@ import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback, usePulse } from 
 const EVENT_IMG_1 = 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800';
 const EVENT_IMG_2 = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800';
 
-export default function EventsScreen({ onNavigate }: { onNavigate?: (s: string) => void }) {
+export default function EventsScreen() {
+  const navigation = useNavigation<any>();
+  const { data, loading } = useQuery(GET_EVENTS);
+
   const [activeNav, setActiveNav] = useState<NavTab>('events');
 
-  const handleNavChange = (tab: NavTab) => {
+  const handleNavChange = () => {
     setActiveNav(tab);
     const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
     onNavigate?.(map[tab]);
@@ -86,38 +92,34 @@ export default function EventsScreen({ onNavigate }: { onNavigate?: (s: string) 
           </Animated.View>
 
           {/* Events */}
-          <EventCard
-            img={EVENT_IMG_1}
-            title="UI UX Workshop"
-            date="17/06/2025"
-            time="03:00 PM"
-            location="Bellandur, Karnataka"
-            presenter="Santhanam"
-            role="UI UX Expert"
-            price="₹ 100"
-            tag="Workshop"
-            onPress={() => onNavigate?.('EventDetails')}
-            index={0}
-          />
-          <EventCard
-            img={EVENT_IMG_2}
-            title="Design Leadership"
-            date="20/06/2025"
-            time="10:00 AM"
-            location="Indiranagar, Karnataka"
-            presenter="Priya Sharma"
-            role="Design Director"
-            price="₹ 500"
-            tag="Masterclass"
-            onPress={() => onNavigate?.('EventDetails')}
-            index={1}
-          />
+          {loading ? (
+             <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>Loading events...</Text>
+          ) : !data?.upcomingEvents || data.upcomingEvents.length === 0 ? (
+             <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>No upcoming events</Text>
+          ) : (
+             data.upcomingEvents.map((evt: any, index: number) => (
+                <EventCard
+                  key={evt.id}
+                  img={index % 2 === 0 ? EVENT_IMG_1 : EVENT_IMG_2}
+                  title={evt.title}
+                  date={new Date(parseInt(evt.date)).toLocaleDateString()}
+                  time={evt.startTime}
+                  location="X11 Space, Mohali"
+                  presenter={evt.description || 'Host'}
+                  role=""
+                  price={evt.status}
+                  tag="Event"
+                  onPress={() => navigation.navigate('EventDetails', { eventId: evt.id })}
+                  index={index}
+                />
+             ))
+          )}
 
           <View style={{ height: 120 }} />
         </ScrollView>
       </SafeAreaView>
 
-      <FloatingNavBar activeTab={activeNav} onTabChange={handleNavChange} />
+      {/* FloatingNavBar is inside TabNavigator for home flow */}
     </View>
   );
 }

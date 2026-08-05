@@ -59,6 +59,14 @@ export class User {
   @Column({ name: 'lastLogin', type: 'timestamp', nullable: true })
   lastLoginAt!: Date | null;
 
+  @Field()
+  @Column({ type: 'int', default: 0 })
+  tokenBalance!: number;
+
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'varchar', nullable: true })
+  deviceToken?: string;
+
   @Column({ type: 'varchar', nullable: true })
   passwordHash!: string;
 

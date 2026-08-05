@@ -11,12 +11,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { RequestResolver } from '../graphql/resolvers/request.resolver';
 import { Request } from '../typeorm/entities/request.entity';
+import { PrintController } from './print.controller';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Request]),
     CacheModule,
   ],
+  controllers: [PrintController],
   providers: [
     RequestResolver,
   ],

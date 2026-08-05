@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -13,7 +14,9 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function PrintSuccessScreen({ onNavigate }: { onNavigate: (s: string) => void }) {
+export default function PrintSuccessScreen(): ()) {
+  const navigation = useNavigation<any>();
+
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
@@ -26,7 +29,7 @@ export default function PrintSuccessScreen({ onNavigate }: { onNavigate: (s: str
       <Text style={styles.title}>Print Ready</Text>
       <Text style={styles.subtitle}>Print request processed successfully!</Text>
 
-      <TouchableOpacity style={styles.returnBtn} onPress={() => onNavigate('Home')}>
+      <TouchableOpacity style=()>
         <Text style={styles.returnBtnTxt}>Return Home</Text>
       </TouchableOpacity>
     </View>

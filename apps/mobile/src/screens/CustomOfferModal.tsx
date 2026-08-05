@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
   StyleSheet,
   View,
@@ -29,7 +30,9 @@ const PREF_TIMES = [
 
 const DURATIONS = ['1 day', '1 week', '2 weeks', '1 month', '3 months', '6 months'];
 
-export default function CustomOfferModal({ visible, onClose }: Props) {
+export default function CustomOfferModal() {
+  const navigation = useNavigation<any>();
+
   const [teamSize, setTeamSize] = useState(2);
   const [prefTime, setPrefTime] = useState('Full Day');
   const [duration, setDuration] = useState('1 month');
