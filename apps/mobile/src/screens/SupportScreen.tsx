@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useMutation } from '@apollo/client';
 import {
   StyleSheet,
   View,
@@ -10,18 +11,56 @@ import {
   TextInput,
 } from 'react-native';
 import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
+import Toast from 'react-native-toast-message';
+
+import { CREATE_SUPPORT_TICKET } from '../lib/apollo/operations';
 
 const BRAND = '#FE7A47';
-const BRAND_BG = '#FFF0EB'; // Light orange background for active/expanded states
+const BRAND_BG = '#FFF0EB';
 const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
+const CATEGORIES = ['General', 'Bug Report', 'Feature Request', 'Billing', 'Other'];
+
 export default function SupportScreen() {
   const navigation = useNavigation<any>();
+  const [expandedFaq, setExpandedFaq] = useState<number>(0);
+  const [category, setCategory] = useState('');
+  const [showCatDropdown, setShowCatDropdown] = useState(false);
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [expandedFaq, setExpandedFaq] = useState<number>(0); // first item expanded by default
+  const [createSupportTicket] = useMutation(CREATE_SUPPORT_TICKET, {
+    onCompleted: () => {
+      Toast.show({ type: 'success', text1: 'Feedback submitted!' });
+      setCategory('');
+      setDescription('');
+      setSubmitting(false);
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Submission failed', text2: err.message });
+      setSubmitting(false);
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!category || !description.trim()) {
+      Toast.show({ type: 'error', text1: 'Please fill all fields' });
+      return;
+    }
+    setSubmitting(true);
+    createSupportTicket({
+      variables: {
+        input: {
+          category,
+          description,
+          subject: category,
+        },
+      },
+    });
+  };
 
   const faqs = [
     {
@@ -58,7 +97,7 @@ export default function SupportScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Send Feedback Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -69,12 +108,33 @@ export default function SupportScreen() {
           </View>
 
           <Text style={styles.inputLabel}>Category</Text>
-          <TouchableOpacity style={styles.dropdown} activeOpacity={0.7}>
-            <Text style={styles.dropdownValue}>Select Category</Text>
+          <TouchableOpacity
+            style={styles.dropdown}
+            activeOpacity={0.7}
+            onPress={() => setShowCatDropdown(!showCatDropdown)}
+          >
+            <Text style={[styles.dropdownValue, !category && { color: MUTED }]}>
+              {category || 'Select Category'}
+            </Text>
             <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <Polyline points="6 9 12 15 18 9" />
             </Svg>
           </TouchableOpacity>
+          {showCatDropdown && (
+            <View style={styles.dropdownList}>
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={styles.dropdownItem}
+                  onPress={() => { setCategory(cat); setShowCatDropdown(false); }}
+                >
+                  <Text style={[styles.dropdownItemTxt, category === cat && { color: BRAND, fontWeight: '600' }]}>
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <Text style={styles.inputLabel}>Description</Text>
           <View style={styles.textAreaContainer}>
@@ -84,17 +144,24 @@ export default function SupportScreen() {
               placeholderTextColor={MUTED}
               multiline
               textAlignVertical="top"
+              value={description}
+              onChangeText={setDescription}
             />
           </View>
 
-          <TouchableOpacity style={styles.submitBtn} activeOpacity={0.8}>
-            <Text style={styles.submitBtnTxt}>Submit Feedback</Text>
+          <TouchableOpacity
+            style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+            activeOpacity={0.8}
+            onPress={handleSubmit}
+            disabled={submitting}
+          >
+            <Text style={styles.submitBtnTxt}>{submitting ? 'Submitting...' : 'Submit Feedback'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* FAQs Section */}
         <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-        
+
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
@@ -107,9 +174,9 @@ export default function SupportScreen() {
           {faqs.map((faq, index) => {
             const isExpanded = expandedFaq === index;
             return (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.faqItem} 
+              <TouchableOpacity
+                key={index}
+                style={styles.faqItem}
                 activeOpacity={0.7}
                 onPress={() => setExpandedFaq(isExpanded ? -1 : index)}
               >
@@ -163,7 +230,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  
+
   // Feedback Card
   card: {
     backgroundColor: '#fff',
@@ -199,17 +266,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB', // very light grey for input
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#F3F4F6',
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 50,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   dropdownValue: {
     fontSize: 15,
-    color: DARK, // Or placeholder color if unselected, but let's assume selected/placeholder
+    color: DARK,
+  },
+  dropdownList: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 12,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  dropdownItemTxt: {
+    fontSize: 15,
+    color: DARK,
   },
   textAreaContainer: {
     backgroundColor: '#F9FAFB',

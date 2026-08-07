@@ -23,7 +23,6 @@ import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
 
 import { PolishedCard } from '../components/PolishedCard';
 import { StatusPill } from '../components/StatusPill';
-import { FloatingNavBar, type NavTab } from '../components/FloatingNavBar';
 
 import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
@@ -31,16 +30,9 @@ import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/
 export default function MyBookingsScreen() {
   const navigation = useNavigation<any>();
 
-  const [activeNav, setActiveNav] = useState<NavTab>('bookings');
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
   const headerSlide = useSlideIn('down', 0, 16, duration.slow);
-
-  const handleNavChange = () => {
-    setActiveNav(tab);
-    const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
-    navigation.navigate(map[tab]);
-  };
 
   const { data, loading, refetch } = useQuery(GET_MY_BOOKINGS);
 

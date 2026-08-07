@@ -24,7 +24,6 @@ import Svg, { Path, Polyline, Circle, Line, Rect } from 'react-native-svg';
 
 import { PolishedCard } from '../components/PolishedCard';
 import { StatusPill } from '../components/StatusPill';
-import { FloatingNavBar, type NavTab } from '../components/FloatingNavBar';
 
 import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback, usePulse } from '../theme/animations';
@@ -35,14 +34,6 @@ const EVENT_IMG_2 = 'https://images.unsplash.com/photo-1522071820081-009f0129c71
 export default function EventsScreen() {
   const navigation = useNavigation<any>();
   const { data, loading } = useQuery(GET_EVENTS);
-
-  const [activeNav, setActiveNav] = useState<NavTab>('events');
-
-  const handleNavChange = () => {
-    setActiveNav(tab);
-    const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
-    onNavigate?.(map[tab]);
-  };
 
   const headerSlide = useSlideIn('down', 0, 16, duration.slow);
   const pulse = usePulse({ minScale: 0.8, maxScale: 1.1, duration: 2000 });
@@ -102,12 +93,12 @@ export default function EventsScreen() {
                   key={evt.id}
                   img={index % 2 === 0 ? EVENT_IMG_1 : EVENT_IMG_2}
                   title={evt.title}
-                  date={new Date(parseInt(evt.date)).toLocaleDateString()}
-                  time={evt.startTime}
-                  location="X11 Space, Mohali"
-                  presenter={evt.description || 'Host'}
-                  role=""
-                  price={evt.status}
+                  date={new Date(parseInt(evt.eventDate)).toLocaleDateString()}
+                  time={`${evt.startTime} - ${evt.endTime}`}
+                  location={evt.meetingRoom?.name || 'X11 Space, Mohali'}
+                  presenter={evt.company || 'Host'}
+                  role={evt.eventType || ''}
+                  price={evt.cost ? `₹${evt.cost}` : 'Free'}
                   tag="Event"
                   onPress={() => navigation.navigate('EventDetails', { eventId: evt.id })}
                   index={index}
@@ -149,7 +140,7 @@ const FilterIconBtn = () => {
 
 // ─── Filter Pill ──────────────────────────────────────────────────────────────
 
-const Fp = ({ label }: { label: string }) => {
+const FilterPill = ({ label }: { label: string }) => {
   const { pressIn, pressOut } = usePressFeedback({ scale: 0.96, speed: 80 });
   return (
     <TouchableWithoutFeedback onPressIn={pressIn} onPressOut={pressOut}>

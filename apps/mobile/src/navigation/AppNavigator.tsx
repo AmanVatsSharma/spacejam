@@ -16,6 +16,7 @@ import EventsScreen from '../screens/EventsScreen';
 import EventDetailsScreen from '../screens/EventDetailsScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import EventSuccessScreen from '../screens/EventSuccessScreen';
+import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 import MyBookingsScreen from '../screens/MyBookingsScreen';
 import MyRoomDetailsScreen from '../screens/MyRoomDetailsScreen';
 import MyEventDetailsScreen from '../screens/MyEventDetailsScreen';
@@ -87,6 +88,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
             <Stack.Screen name="Payment" component={PaymentScreen} />
             <Stack.Screen name="EventSuccess" component={EventSuccessScreen} />
+            <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
             <Stack.Screen name="MyRoomDetails" component={MyRoomDetailsScreen} />
             <Stack.Screen name="MyEventDetails" component={MyEventDetailsScreen} />
             <Stack.Screen name="MyPrintDetails" component={MyPrintDetailsScreen} />

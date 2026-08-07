@@ -1,0 +1,10 @@
+const fs = require('fs');
+const content = fs.readFileSync('apps/api/src/typeorm/typeorm.module.ts', 'utf8');
+const imports = content.match(/import \{.*?\} from '\.\/entities\/.*?';/g).join('\n');
+const entities = content.match(/const ALL_ENTITIES = \[([\s\S]*?)\];/)[1];
+let ds = fs.readFileSync('apps/api/src/typeorm/data-source.ts', 'utf8');
+ds = ds.replace(/import \{.*?\} from '\.\/entities\/.*?';\n?/g, '');
+ds = ds.replace(/import 'reflect-metadata';\nimport \{ DataSource \} from 'typeorm';\n/, "import 'reflect-metadata';\nimport { DataSource } from 'typeorm';\n\n" + imports + '\n');
+ds = ds.replace(/entities: \[([\s\S]*?)\],/, 'entities: [' + entities + '],');
+fs.writeFileSync('apps/api/src/typeorm/data-source.ts', ds);
+console.log("Updated data-source.ts");

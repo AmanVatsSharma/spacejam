@@ -10,7 +10,7 @@ SpaceJam is a coworking space management system built as an Nx 22 monorepo.
 |-----|---------|------|
 | Web | `web` | Next.js 16 (React 19), Apollo GraphQL, Tailwind v4, CSS Modules |
 | API | `api` | NestJS 11, GraphQL (code-first), TypeORM, PostgreSQL, Redis |
-| Mobile | `mobile` | Expo ~54 (Expo SDK 57), React Native |
+| Mobile | `mobile` | Expo SDK 57 (~54), React Native |
 | E2E | `web-e2e` | Playwright against the web app |
 
 Shared libraries live under `libs/`:
@@ -27,7 +27,7 @@ See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integrati
 
 ```sh
 npx nx dev web          # Next.js dev server (port 3000)
-npx nx serve api        # NestJS dev server (port 4000)
+npx nx serve api        # NestJS dev server (port 4000 — NOT 3001)
 npx nx start mobile     # Expo dev server
 ```
 
@@ -93,19 +93,29 @@ npx nx affected:test --base=main # run tests affected by changes
 
 - **GraphQL schema**: SDL at `apps/api/src/graphql/schema.graphql` is the source of truth. Resolvers are code-first and mirror it.
 - **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. Run via TypeORM CLI (configured in `apps/api/package.json`).
+  - **Prod PostgreSQL is < v11** (no `CREATE TYPE IF NOT EXISTS`) — migrations must use `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` blocks
+  - Prod runs with `synchronize: false`, so any new entity requires an explicit `CREATE TABLE` migration
 - **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). 2FA via TOTP. Guards: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
 - **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 
 ### Mobile (`apps/mobile`)
 
-Expo ~54 (SDK 57). Structure under `apps/mobile/src/`:
-- `screens/` — one file per screen (Login, Home, MyBookings, Events, Wallet, Profile, etc.)
-- `navigation/` — `AppNavigator.tsx` (single entry point)
-- `components/`, `lib/`, `theme/`
+Expo SDK 57 (~54). Structure under `apps/mobile/src/`:
+- `screens/` — one file per screen (~29 screens: Login, Home, MyBookings, Events, Wallet, Profile, etc.)
+- `navigation/AppNavigator.tsx` — single entry; `Stack` wraps a `Tab` (Home/Events/MyBookings/Profile) plus ~22 stack screens
+- `components/`, `lib/` (auth context, apollo client), `theme/` (tokens, animations)
 - Codegen via `codegen.ts` against the backend GraphQL schema
 
 Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
+
+**Mobile ↔ Web event mapping** (when adding new event features on both surfaces):
+| Mobile screen | Web counterpart |
+|---|---|
+| `EventsScreen` | `/dashboard/events` |
+| `EventDetailsScreen` | `/dashboard/events/[id]` |
+| `MyEventDetailsScreen` | `/dashboard/events/my/[id]` |
+| `EventSuccessScreen` | post-booking confirmation |
 
 ## Key Conventions
 
@@ -113,19 +123,26 @@ Always check versioned Expo docs before writing mobile code: https://docs.expo.d
 - **Styling**: Tailwind for layout/spacing; CSS Modules for component-specific styles, animations, and complex selectors. Responsive breakpoint: `compact:` (max-width 1023.98px).
 - **Tables**: wrap in `overflow-x-auto` for horizontal scroll at compact widths.
 - **Design tokens** (use consistently, don't hardcode alternatives):
-  - Primary orange `#FF6A2F`, background `#FBF6F4`, card `#FFFFFF`, border `#E5E7EB`
-  - Text: `#1F1F1F` (dark), `#4A5565` (gray), `#6A7282` (muted)
-  - Cards: `border-radius: 14px`, `padding: 16px 24px`. Buttons: `border-radius: 10px`, `padding: 10px 20px`.
+  - Primary orange `#FF6A2F` / `#FE7A47` (mobile variant), background `#FBF6F4`, card `#FFFFFF`, border `#E5E7EB`
+  - Text: `#1F1F1F` / `#1A1D1F` (dark), `#4A5565` (gray), `#6A7282` / `#6F767E` (muted)
+  - Cards: `border-radius: 14px` / `16px`, `padding: 16px 24px`. Buttons: `border-radius: 10px` / `16px`, `padding: 10px 20px`.
 - **File headers**: Every TS/TSX file should include the module/purpose/author/date header block.
 - **Toasts**: use `toast` from `sonner` (mounted in dashboard layout).
+- **Figma mappings**: meeting-room/events screen maps to Figma node `0:10554`; use `get_design_context` before making UI changes there.
+- **Mobile floating nav**: `FloatingNavBar` is rendered inside `TabNavigator` (in `AppNavigator.tsx`), not inside individual tab screens. Tab screens must use `activeTab` via `useNavigation()` state, not render their own nav bar.
+- **Mobile animations**: use `useFadeIn`, `useSlideIn`, `usePressFeedback`, `usePulse` from `apps/mobile/src/theme/animations.ts`; tokens from `theme/tokens.ts` (`palette`, `space`, `radius`, `elevation`, `duration`).
+- **Apollo operations**: centralized in `apps/web/src/lib/apollo/operations.ts` (web) and `apps/mobile/src/lib/apollo/operations.ts` (mobile). Re-run codegen after schema changes.
 
 ### Mock-Fallback Convention
 
 Many pages render mock data when the GraphQL response is empty: `const rows = data?.items?.length ? data.items : MOCK_ITEMS`. Preserve mock fallbacks unless the backend for that page is fully verified.
 
-**Known limitation**: `npx nx build web` fails on `_global-error` page prerendering (`Cannot read properties of null (reading 'useContext')`). This is a persistent Next.js 16 build issue unrelated to feature work — tried multiple fixes without success. **Ignore this build error**; the dev server and production deploy still work via `next start`. All other build steps (API build, type checking) pass normally.
-
-**Known limitation**: `/dashboard/page.tsx` is an unwired demo duplicate of `/dashboard/home/page.tsx` (hardcoded placeholder data, unwired Add modals). Settings pages (finance/notification/security + permissions tab) have no backend entity — toggles and Save buttons are purely cosmetic.
+**Known limitations**:
+- `npx nx build web` fails on `_global-error` page prerendering (`Cannot read properties of null (reading 'useContext')`). Persistent Next.js 16 build issue — **ignore this error**; dev server and `next start` deploy still work.
+- `/dashboard/page.tsx` is an unwired demo duplicate of `/dashboard/home/page.tsx`.
+- Settings pages (finance/notification/security + permissions tab) have no backend entity — toggles/Save are cosmetic.
+- Frontend mock-unwrap audit (2026-07-11): many admin/dashboard pages still display MOCK_* when GraphQL returns empty — `apps/web/src/app/dashboard/page.tsx`, `inventory/`, `crm/`, `bookings/`, `operations/`, `analytics/`, `settings/finance|notification|security`, `meeting-room/events`, `set-up-new-center/centers` are in this state.
+- Mobile screens `MyEventDetailsScreen.tsx` and `EventDetailsScreen.tsx` have hardcoded event data / mismatched GraphQL query keys (`data?.event` may not match actual query result). Don't rely on them as the source of truth for event data shapes.
 
 ## Environment Variables
 
@@ -164,6 +181,7 @@ Security group: inbound **22, 80, 443**. Outbound: default.
 | Node version | v20.20.2 (NVM managed, path: `~/.nvm/versions/node/v20.20.2/`) |
 | Repo path | `/home/ubuntu/spacejam` |
 | Next.js binary | **Hoisted** to `/home/ubuntu/spacejam/node_modules/next/dist/bin/next` (NOT `apps/web/node_modules/next/...`) |
+| Disk usage | **92% full** — clean before big uploads |
 
 ### PM2 Quirks (non-interactive SSH)
 
@@ -190,7 +208,7 @@ scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" updat
 # 3. SSH in and deploy
 ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
 # Then run:
-bash /home/ubuntu/deploy.sh   # (uses /home/ubuntu/deploy.sh, not scripts/deploy.sh)
+bash /home/ubuntu/deploy.sh   # uses /home/ubuntu/deploy.sh, NOT scripts/deploy.sh (that path is broken in npm scripts)
 ```
 
 The `deploy.sh` script:
@@ -199,6 +217,14 @@ The `deploy.sh` script:
 - Runs `npx nx build web` (frontend) and `tsc` (backend)
 - Starts/restarts PM2 processes: `spacejam-web` (frontend) and `spacejam-api` (backend)
 - Uses `pm2 resurrect` to restore the process list
+
+**`scripts/build_api.sh` and `scripts/rebuild_web.sh` have CRLF line-ending corruption** (Windows checkouts) — run their commands manually instead of invoking the scripts.
+
+### Production Runtime Facts (2026-07-12)
+
+- API listens on **port 4000** (not 3001 — `deploy.sh` writes `PORT=3001` to `.env` but the app ignores `PORT` or defaults to 4000).
+- GraphQL endpoint: `http://localhost:4000/graphql` (NOT `/api/graphql`; that path 404s — `/api/*` is the REST global prefix).
+- Web listens on port 3000. nginx on :80/:443 proxies to both.
 
 ### Environment Variables (Production)
 
@@ -211,7 +237,7 @@ Backend (`apps/api/.env`):
 - `JWT_SECRET` — JWT signing secret
 - `REFRESH_TOKEN_SECRET` — Refresh token secret
 - `REDIS_HOST` / `REDIS_PORT` — Redis connection
-- `PORT=4000` — Backend port
+- `PORT=4000` — Backend port (intended; runtime ignores)
 - `CORS_ORIGIN` — Frontend origin for CORS
 - `FRONTEND_URL` — Frontend URL
 - `NODE_ENV=production`

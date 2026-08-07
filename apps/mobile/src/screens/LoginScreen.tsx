@@ -1,10 +1,10 @@
 /**
- * File:        apps/mobile/src/screens/App.tsx
+ * File:        apps/mobile/src/screens/LoginScreen.tsx
  * Module:      Mobile · Screens · Login
- * Purpose:     Login & OTP screen with geometric branding, micro-animations, and press feedback
+ * Purpose:     Two-step login (email/password → OTP) with GraphQL auth
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-30
+ * Last-updated: 2026-08-07
  */
 import React, { useState, useRef } from 'react';
 import {
@@ -19,8 +19,13 @@ import {
   Dimensions,
   Animated,
   Easing,
+  ToastAndroid,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
+import { apolloClient } from '../lib/apollo/client';
+import { SIGNIN_MUTATION, VERIFY_TWO_FACTOR_MUTATION } from '../lib/apollo/operations';
+import { useAuth } from '../lib/auth/context';
 
 // ─── Tokens ────────────────────────────────────────────────────────────────────
 import {
@@ -175,11 +180,164 @@ const AnimatedInput = ({
 
 // ─── Main Login Screen Component ──────────────────────────────────────────────
 export default function LoginScreen() {
+  const navigation = useNavigation();
+  const authContext = useAuth();
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [showOtp, setShowOtp] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // ── Animated values ─────────────────────────────────────────────────────────
+  const loginViewAnim = useRef(new Animated.Value(1)).current;
+  const otpViewAnim = useRef(new Animated.Value(0)).current;
+
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const otpInputs = useRef<Array<TextInput | null>>([]);
+
+  // ── Challenge token storage for 2FA ────────────────────────────────────────
+  const challengeTokenRef = useRef<string | null>(null);
+
+  // ── Animation helpers ──────────────────────────────────────────────────────
+  const transitionToOtp = () => {
+    setShowOtp(true);
+    Animated.parallel([
+      Animated.timing(loginViewAnim, {
+        toValue: 0,
+        duration: duration.normal,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(otpViewAnim, {
+        toValue: 1,
+        duration: duration.normal,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const transitionToLogin = () => {
+    Animated.parallel([
+      Animated.timing(loginViewAnim, {
+        toValue: 1,
+        duration: duration.normal,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(otpViewAnim, {
+        toValue: 0,
+        duration: duration.normal,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowOtp(false);
+      setOtp(['', '', '', '', '', '']);
+    });
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleSignIn = async () => {
+    if (!email.trim() || !password.trim()) {
+      ToastAndroid.show('Please enter email and password', ToastAndroid.SHORT);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await apolloClient.mutate({
+        mutation: SIGNIN_MUTATION,
+        variables: { email: email.trim(), password },
+      });
+
+      const result = data?.signin;
+      if (!result) {
+        ToastAndroid.show('Invalid credentials', ToastAndroid.SHORT);
+        setLoading(false);
+        return;
+      }
+
+      if (result.twoFactorRequired) {
+        challengeTokenRef.current = result.challengeToken;
+        transitionToOtp();
+        setLoading(false);
+        return;
+      }
+
+      // No 2FA required — log in directly
+      const user = result.user;
+      await authContext.login(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        result.accessToken,
+        result.refreshToken,
+      );
+      navigation.navigate('HomeTab' as never);
+    } catch (error: any) {
+      ToastAndroid.show(error?.message || 'Sign in failed', ToastAndroid.SHORT);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join('');
+
+    if (code.length !== 6) {
+      ToastAndroid.show('Please enter the full 6-digit code', ToastAndroid.SHORT);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await apolloClient.mutate({
+        mutation: VERIFY_TWO_FACTOR_MUTATION,
+        variables: {
+          challengeToken: challengeTokenRef.current,
+          code,
+        },
+      });
+
+      const result = data?.verifyTwoFactor;
+      if (!result) {
+        ToastAndroid.show('Invalid OTP code', ToastAndroid.SHORT);
+        setLoading(false);
+        return;
+      }
+
+      const user = result.user;
+      await authContext.login(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        result.accessToken,
+        result.refreshToken,
+      );
+      navigation.navigate('HomeTab' as never);
+    } catch (error: any) {
+      ToastAndroid.show(error?.message || 'OTP verification failed', ToastAndroid.SHORT);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDevBypass = () => {
+    navigation.navigate('HomeTab' as never);
+  };
+
+  // ── OTP helpers ─────────────────────────────────────────────────────────────
   const handleOtpChange = (text: string, index: number) => {
     const newOtp = [...otp];
     newOtp[index] = text;
@@ -242,41 +400,52 @@ export default function LoginScreen() {
           <View style={styles.cardContainer}>
             <View style={styles.card}>
               {/* LOGIN VIEW */}
-              <Animated.View style={{ flex: 1, opacity: loginViewAnim }}>
-                {/* Stagger entrance */}
-                <AnimatedLoginContent
-                  email={email}
-                  password={password}
-                  rememberMe={rememberMe}
-                  showPassword={showPassword}
-                  onEmailChange={setEmail}
-                  onPasswordChange={setPassword}
-                  onToggleRemember={() => setRememberMe(!rememberMe)}
-                  onTogglePassword={() => setShowPassword(!showPassword)}
-                  onSignIn={handleSignIn}
-                  onMagicLink={transitionToOtp}
-                />
+              <Animated.View
+                style={{
+                  flex: 1,
+                  opacity: loginViewAnim,
+                  position: showOtp ? 'absolute' : 'relative',
+                  inset: showOtp ? 0 : undefined,
+                  padding: showOtp ? 20 : undefined,
+                }}
+              >
+                {showOtp ? null : (
+                  <AnimatedLoginContent
+                    email={email}
+                    password={password}
+                    rememberMe={rememberMe}
+                    showPassword={showPassword}
+                    onEmailChange={setEmail}
+                    onPasswordChange={setPassword}
+                    onToggleRemember={() => setRememberMe(!rememberMe)}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                    onSignIn={handleSignIn}
+                    onMagicLink={transitionToOtp}
+                    loading={loading}
+                  />
+                )}
               </Animated.View>
 
               {/* OTP VIEW */}
               <Animated.View style={{ flex: 1, opacity: otpViewAnim, position: 'absolute', inset: 0, padding: 20 }}>
-                <OtpContent
-                  otp={otp}
-                  otpInputs={otpInputs}
-                  onOtpChange={handleOtpChange}
-                  onOtpKeyPress={handleOtpKeyPress}
-                  onVerify={handleVerifyOtp}
-                  onBackToLogin={transitionToLogin}
-                />
+                {showOtp && (
+                  <OtpContent
+                    otp={otp}
+                    otpInputs={otpInputs}
+                    onOtpChange={handleOtpChange}
+                    onOtpKeyPress={handleOtpKeyPress}
+                    onVerify={handleVerifyOtp}
+                    onBackToLogin={transitionToLogin}
+                    loading={loading}
+                  />
+                )}
               </Animated.View>
 
               {/* DEV ONLY bypass */}
               {__DEV__ && (
-                <TouchableWithoutFeedback
-                  onPress={() => setCurrentScreen('Home')}
-                >
+                <TouchableWithoutFeedback onPress={handleDevBypass}>
                   <Animated.View style={styles.devBypass}>
-                    <Text style={styles.devBypassText}>🛠  Dev Bypass — skip login</Text>
+                    <Text style={styles.devBypassText}>{'🔫'}  Dev Bypass — skip login</Text>
                   </Animated.View>
                 </TouchableWithoutFeedback>
               )}
@@ -286,7 +455,7 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
 
 // ─── Login Content (staggered animation) ───────────────────────────────────────
 
@@ -301,6 +470,7 @@ const AnimatedLoginContent = ({
   onTogglePassword,
   onSignIn,
   onMagicLink,
+  loading,
 }: any) => {
   const { opacity: titleOp, translateY: titleY } = useFadeIn(0, { fromY: 8 });
   const { opacity: emailOp } = useFadeIn(staggerDelay(1, 0, 60), { fromY: 8 });
@@ -367,7 +537,7 @@ const AnimatedLoginContent = ({
       </Animated.View>
 
       <Animated.View style={{ flex: 1, minHeight: 8, opacity: btnOp }}>
-        <AnimatedButton label="Sign in" onPress={onSignIn} style={styles.signInBtn} labelStyle={styles.signInLabel} />
+        <AnimatedButton label={loading ? 'Signing in...' : 'Sign in'} onPress={onSignIn} style={styles.signInBtn} labelStyle={styles.signInLabel} disabled={loading} />
       </Animated.View>
 
       {/* Magic Link */}
@@ -416,6 +586,7 @@ const OtpContent = ({
   onOtpKeyPress,
   onVerify,
   onBackToLogin,
+  loading,
 }: any) => {
   const { opacity, translateY } = useFadeIn(0, { fromY: 12 });
   const { pressIn: backPressIn, pressOut: backPressOut } = usePressFeedback({ scale: 0.96 });
@@ -438,7 +609,7 @@ const OtpContent = ({
         ))}
       </View>
 
-      <AnimatedButton label="Verify Code" onPress={onVerify} style={styles.signInBtn} labelStyle={styles.signInLabel} />
+      <AnimatedButton label={loading ? 'Verifying...' : 'Verify Code'} onPress={onVerify} style={styles.signInBtn} labelStyle={styles.signInLabel} disabled={loading} />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Didn't receive a code? </Text>
@@ -533,19 +704,25 @@ const AnimatedButton = ({
   onPress,
   style,
   labelStyle,
+  disabled = false,
 }: {
   label: string;
   onPress: () => void;
   style: any;
   labelStyle: any;
+  disabled?: boolean;
 }) => {
   const { pressIn, pressOut } = usePressFeedback({ scale: pressScale.base, speed: duration.micro });
   const { opacity, translateY } = useFadeIn(0, { fromY: 8 });
 
   return (
-    <TouchableWithoutFeedback onPressIn={pressIn} onPressOut={pressOut} onPress={onPress}>
-      <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
-        <Text style={labelStyle}>{label}</Text>
+    <TouchableWithoutFeedback onPressIn={pressIn} onPressOut={pressOut} onPress={onPress} disabled={disabled}>
+      <Animated.View style={[
+        style,
+        { opacity, transform: [{ translateY }] },
+        disabled && { opacity: 0.6 },
+      ]}>
+        <Text style={[labelStyle, disabled && { color: 'rgba(255,255,255,0.8)' }]}>{label}</Text>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
@@ -895,5 +1072,3 @@ const styles = StyleSheet.create({
     marginBottom: space.md,
   },
 });
-
-export default App;

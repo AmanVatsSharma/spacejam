@@ -20,7 +20,7 @@ export default function PrintProcessingScreen() {
       navigation.navigate('PrintSuccess');
     }, 2500); // simulate 2.5 seconds processing
     return () => clearTimeout(timer);
-  }, [onNavigate]);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

@@ -1,5 +1,14 @@
+/**
+ * File:        apps/mobile/src/screens/OffersScreen.tsx
+ * Module:      Mobile · Offers
+ * Purpose:     Display active promo offers fetched from the backend
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-08-07
+ */
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
 import {
   StyleSheet,
   View,
@@ -7,16 +16,47 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Circle, Polyline, Rect } from 'react-native-svg';
+import { GET_ACTIVE_OFFERS } from '../lib/apollo/operations';
 
 const BRAND = '#FE7A47';
 const BG = '#F7F9FC';
 const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const OFFER_COLORS: Record<string, string> = {
+  PERCENTAGE: '#FF7F50',
+  FIXED: '#5D9CEC',
+  TOKENS: '#48C9B0',
+};
+
+const DAYS_MS = 86_400_000;
+
+function daysRemaining(validUntil: string): number {
+  return Math.max(0, Math.ceil((new Date(validUntil).getTime() - Date.now()) / DAYS_MS));
+}
+
+function formatValue(type: string, value: number): string {
+  if (type === 'PERCENTAGE') return `${value}% OFF`;
+  if (type === 'FIXED') return `₹${Math.round(value)} OFF`;
+  if (type === 'TOKENS') return `${Math.round(value)} Tokens`;
+  return `${value} OFF`;
+}
+
+function pickColor(type: string, index: number): string {
+  return OFFER_COLORS[type] || ['#FF7F50', '#48C9B0', '#F4D03F', '#5D9CEC'][index % 4];
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function OffersScreen() {
   const navigation = useNavigation<any>();
+  const { data, loading, error } = useQuery(GET_ACTIVE_OFFERS);
+  const offers = data?.activeOffers ?? [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -30,21 +70,24 @@ export default function OffersScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* ── Hero Card ── */}
         <View style={styles.heroCard}>
-          {/* Decorative shapes */}
           <View style={[styles.decoCircle, { top: -20, right: -20, width: 120, height: 120, opacity: 0.1 }]} />
           <View style={[styles.decoCircle, { bottom: -30, left: -20, width: 100, height: 100, opacity: 0.1 }]} />
-          
+
           <View style={styles.heroIconWrapper}>
             <Svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <Path d="M12 2l3 6 6 3-6 3-3 6-3-6-6-3 6-3 3-6z" />
             </Svg>
           </View>
-          
-          <Text style={styles.heroTitle}>4 Available Offers</Text>
-          
+
+          {loading ? (
+            <ActivityIndicator color="#fff" style={{ marginBottom: 8 }} />
+          ) : (
+            <Text style={styles.heroTitle}>{offers.length} Available Offers</Text>
+          )}
+
           <View style={styles.heroPill}>
             <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
               <Polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
@@ -54,51 +97,35 @@ export default function OffersScreen() {
           </View>
         </View>
 
-        {/* ── Offer Cards ── */}
-        
-        {/* Card 1: Orange */}
-        <OfferCard 
-          color="#FF7F50" 
-          tag1="New User" 
-          tag2="3 days" 
-          tag3="50% OFF" 
-          title="First Booking Bonus" 
-          subtitle="Get 50% off on your first booking" 
-          code="FIRST50" 
-        />
+        {/* ── Content ── */}
+        {loading ? null : error ? (
+          <Text style={styles.errorText}>Failed to load offers. Please try again.</Text>
+        ) : offers.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyIcon}>🎟️</Text>
+            <Text style={styles.emptyTitle}>No offers right now</Text>
+            <Text style={styles.emptySub}>Check back later for new deals and discounts.</Text>
+          </View>
+        ) : (
+          offers.map((offer, idx) => {
+            const color = pickColor(offer.type, idx);
+            const days = daysRemaining(offer.validUntil);
+            const subtitle = offer.description || `${formatValue(offer.type, offer.value)} on eligible orders`;
 
-        {/* Card 2: Teal */}
-        <OfferCard 
-          color="#48C9B0" 
-          tag1="Printing" 
-          tag2="7 days" 
-          tag3="100 Credits" 
-          title="Print Credits Pack" 
-          subtitle="Get 100 free Print Credits on Signup" 
-          code="PRINT100" 
-        />
-
-        {/* Card 3: Yellow */}
-        <OfferCard 
-          color="#F4D03F" 
-          tag1="Rooms" 
-          tag2="5 days" 
-          tag3="20% OFF" 
-          title="Meeting Room Deal" 
-          subtitle="20% off on all meeting room bookings" 
-          code="MEET20" 
-        />
-
-        {/* Card 4: Blue */}
-        <OfferCard 
-          color="#5D9CEC" 
-          tag1="Membership" 
-          tag2="10 days" 
-          tag3="₹500 OFF" 
-          title="Monthly Pass Pro" 
-          subtitle="Save ₹500 on monthly workspace pass" 
-          code="MONTHLY500" 
-        />
+            return (
+              <OfferCard
+                key={offer.id}
+                color={color}
+                tag1={offer.type}
+                tag2={`${days}d`}
+                tag3={formatValue(offer.type, offer.value)}
+                title={offer.title}
+                subtitle={subtitle}
+                code={offer.code}
+              />
+            );
+          })
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -107,15 +134,22 @@ export default function OffersScreen() {
 
 // ─── Subcomponents ─────────────────────────────────────────────────────────────
 
-const OfferCard = () => {
+const OfferCard = ({ color, tag1, tag2, tag3, title, subtitle, code }: {
+  color: string;
+  tag1: string;
+  tag2: string;
+  tag3: string;
+  title: string;
+  subtitle: string;
+  code: string;
+}) => {
   return (
     <View style={styles.offerCard}>
       {/* Top Half (Colored Background) */}
       <View style={[styles.offerTop, { backgroundColor: color }]}>
-        {/* Decorative subtle circles in background */}
         <View style={[styles.decoCircle, { top: -20, right: 20, width: 80, height: 80, opacity: 0.1 }]} />
         <View style={[styles.decoCircle, { bottom: -20, left: -10, width: 60, height: 60, opacity: 0.1 }]} />
-        
+
         <View style={styles.tagsRow}>
           <View style={styles.tagGroup}>
             <View style={styles.tagPill}>
@@ -129,7 +163,7 @@ const OfferCard = () => {
               <Text style={styles.tagTxt}>{tag2}</Text>
             </View>
           </View>
-          
+
           <View style={styles.tagPillDark}>
             <Text style={styles.tagTxtDark}>{tag3}</Text>
           </View>
@@ -228,6 +262,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+
+  // Error / Empty
+  errorText: {
+    textAlign: 'center',
+    color: '#E53E3E',
+    fontSize: 14,
+    marginTop: 40,
+  },
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: DARK,
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: MUTED,
+    textAlign: 'center',
   },
 
   // Offer Cards

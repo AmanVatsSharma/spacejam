@@ -1,7 +1,15 @@
+/**
+ * File:        apps/mobile/src/screens/BookingDetailsScreen.tsx
+ * Module:      Mobile · Booking · Details
+ * Purpose:     Select date, time slot, and details for booking a seat
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-08-07
+ */
 import React, { useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation, useQuery } from '@apollo/client';
-import { BOOK_ROOM_MUTATION, GET_SEATS } from '../lib/apollo/operations';
+import { CREATE_BOOKING, GET_SEATS, GET_ME } from '../lib/apollo/operations';
 import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
@@ -33,7 +41,7 @@ const DATES = [
 ];
 
 const TIME_SLOTS = [
-  { time: '9:00 AM', status: 'selected' },
+  { time: '9:00 AM', status: 'available' },
   { time: '10:00 AM', status: 'available' },
   { time: '11:00 AM', status: 'booked' },
   { time: '12:00 PM', status: 'booked' },
@@ -45,43 +53,102 @@ const TIME_SLOTS = [
   { time: '6:00 PM', status: 'available' },
 ];
 
+/** Convert "9:00 AM" / "1:00 PM" → "HH:MM:SS" 24-hour */
+function to24h(time12: string): string {
+  const [time, modifier] = time12.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (modifier === 'PM' && hours !== 12) hours += 12;
+  if (modifier === 'AM' && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+}
+
+/** Build an ISO datetime string from selected day + 24h time */
+function buildIsoDate(dayNum: string, time12: string): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+  const date = new Date(year, month, parseInt(dayNum, 10), 0, 0, 0);
+  const time24 = to24h(time12);
+  return `${date.toISOString().split('T')[0]}T${time24}`;
+}
+
 export default function BookingDetailsScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  
+
   const seatId = route.params?.seatId;
-  const { data } = useQuery(GET_SEATS);
-  
-  const seat = data?.seats?.find((s: any) => s.id === seatId) || {};
+  const { data: seatsData } = useQuery(GET_SEATS);
+  const { data: meData } = useQuery(GET_ME);
+
+  const seat = (seatsData?.seats)?.find((s: any) => s.id === seatId) || {};
+  const userTokenBalance = meData?.me?.tokenBalance ?? 0;
 
   const [selectedDate, setSelectedDate] = useState('5');
+  const [selectedStart, setSelectedStart] = useState<string | null>(null);
+  const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
   const [participants, setParticipants] = useState(8);
   const [showCalendar, setShowCalendar] = useState(false);
-  const [hasSufficientBalance, setHasSufficientBalance] = useState(true); // Toggle this for testing
+  const [hasSufficientBalance, setHasSufficientBalance] = useState(true);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const [bookRoom, { loading }] = useMutation(BOOK_ROOM_MUTATION, {
+  // Compute booking cost from seat price × selected hours
+  const seatPrice = seat.price ?? 0;
+  const selectedHours = (() => {
+    if (!selectedStart || !selectedEnd) return 0;
+    const [sh, sm] = selectedStart.split(':').map(Number);
+    const [eh, em] = selectedEnd.split(':').map(Number);
+    const diffMinutes = (eh * 60 + em) - (sh * 60 + sm);
+    return diffMinutes > 0 ? diffMinutes / 60 : 0;
+  })();
+  const bookingCost = selectedHours > 0 ? Math.ceil(selectedHours) * seatPrice : 0;
+
+  const [createBooking, { loading }] = useMutation(CREATE_BOOKING, {
     onCompleted: () => {
       Toast.show({ type: 'success', text1: 'Booking Confirmed' });
       setShowConfirmModal(false);
-      navigation.navigate('BookingSuccess'); // Or somewhere
+      navigation.navigate('BookingSuccess');
     },
     onError: (err) => {
       Toast.show({ type: 'error', text1: 'Booking Failed', text2: err.message });
       setShowConfirmModal(false);
-    }
+    },
   });
 
-  const handleBook = () => {
-    bookRoom({
-      variables: {
-        roomId: seatId,
-        centerId: seat.floor?.center?.id || 'c-1',
-        eventDate: new Date().toISOString(), // Mock for now
-        startTime: '10:00 AM', // Mock
-        endTime: '12:00 PM', // Mock
-        title: 'Meeting',
+  const handleSlotPress = (time: string, status: string) => {
+    if (status === 'booked') return;
+    if (selectedStart == null) {
+      setSelectedStart(time);
+      setSelectedEnd(null);
+    } else if (selectedEnd == null) {
+      if (time < selectedStart) {
+        setSelectedStart(time);
+        setSelectedEnd(null);
+      } else {
+        setSelectedEnd(time);
       }
+    } else {
+      setSelectedStart(time);
+      setSelectedEnd(null);
+    }
+  };
+
+  const handleBook = () => {
+    if (!selectedStart || !selectedEnd) {
+      Toast.show({ type: 'error', text1: 'Please select a start and end time.' });
+      return;
+    }
+
+    const startIso = buildIsoDate(selectedDate, selectedStart);
+    const endIso = buildIsoDate(selectedDate, selectedEnd);
+
+    createBooking({
+      variables: {
+        input: {
+          seatId,
+          startTime: startIso,
+          endTime: endIso,
+        },
+      },
     });
   };
 
@@ -97,28 +164,34 @@ export default function BookingDetailsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* ── Room Summary ── */}
+
+        {/* ── Seat Summary ── */}
         <View style={styles.card}>
           <View style={styles.roomRow}>
             <View style={styles.roomThumb} />
             <View style={styles.roomInfo}>
-              <Text style={styles.roomName}>{seat.name || 'Ocean View - MR-201'}</Text>
-              <Text style={styles.roomSub}>Capacity: 8 people • {seat.floor?.name || '2nd Floor'}</Text>
+              <Text style={styles.roomName}>{seat.name || 'Seat'}</Text>
+              <Text style={styles.roomSub}>
+                {seat.seatType || 'Seat'} • {seat.floor?.name || ''}
+              </Text>
             </View>
           </View>
-          <View style={styles.amenities}>
-            <View style={styles.amenityPill}><Text style={styles.amenityTxt}>WiFi</Text></View>
-            <View style={styles.amenityPill}><Text style={styles.amenityTxt}>Display</Text></View>
-            <View style={styles.amenityPill}><Text style={styles.amenityTxt}>Board</Text></View>
-          </View>
+          {seat.amenities && seat.amenities.length > 0 && (
+            <View style={styles.amenities}>
+              {seat.amenities.slice(0, 3).map((a: string, i: number) => (
+                <View key={i} style={styles.amenityPill}>
+                  <Text style={styles.amenityTxt}>{a}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* ── Select Date ── */}
         <View style={styles.card}>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.sectionTitle}>Select Date</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.otherDatesBtn}
               onPress={() => setShowCalendar(true)}
             >
@@ -135,10 +208,10 @@ export default function BookingDetailsScreen() {
             {DATES.map((d, i) => {
               const isActive = selectedDate === d.num;
               return (
-                <TouchableOpacity 
-                  key={i} 
+                <TouchableOpacity
+                  key={i}
                   style={[styles.dateBox, isActive && styles.dateBoxActive]}
-                  onPress={() => setSelectedDate(d.num)}
+                  onPress={() => { setSelectedDate(d.num); setSelectedStart(null); setSelectedEnd(null); }}
                 >
                   <Text style={[styles.dateDay, isActive && styles.dateTxtActive]}>{d.day}</Text>
                   <Text style={[styles.dateNum, isActive && styles.dateTxtActive]}>{d.num}</Text>
@@ -153,24 +226,43 @@ export default function BookingDetailsScreen() {
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Select Time Slot</Text>
           <View style={styles.timeGrid}>
             {TIME_SLOTS.map((slot, i) => {
+              const isStart = selectedStart === slot.time;
+              const isEnd = selectedEnd === slot.time;
+              const isBooked = slot.status === 'booked';
+
               let boxStyle = styles.timeBoxAvail;
               let txtStyle = styles.timeTxtAvail;
-              if (slot.status === 'selected') {
-                boxStyle = styles.timeBoxSelected;
-                txtStyle = styles.timeTxtSelected;
-              } else if (slot.status === 'booked') {
+              if (isBooked) {
                 boxStyle = styles.timeBoxBooked;
                 txtStyle = styles.timeTxtBooked;
+              } else if (isEnd) {
+                boxStyle = styles.timeBoxEnd;
+                txtStyle = styles.timeTxtEnd;
+              } else if (isStart) {
+                boxStyle = styles.timeBoxStart;
+                txtStyle = styles.timeTxtStart;
               }
 
               return (
-                <TouchableOpacity key={i} style={[styles.timeBox, boxStyle]} activeOpacity={0.7}>
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.timeBox, boxStyle]}
+                  activeOpacity={isBooked ? 1 : 0.7}
+                  onPress={() => handleSlotPress(slot.time, slot.status)}
+                  disabled={isBooked}
+                >
                   <Text style={[styles.timeTxt, txtStyle]}>{slot.time}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          
+
+          {selectedStart && (
+            <Text style={styles.selectionInfo}>
+              {selectedStart} {selectedEnd ? `— ${selectedEnd}` : '(tap end time)'}
+            </Text>
+          )}
+
           <View style={styles.legendRow}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: TEAL }]} />
@@ -198,7 +290,7 @@ export default function BookingDetailsScreen() {
         <View style={styles.card}>
           <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Number of Participants</Text>
           <View style={styles.counterRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.counterBtn}
               onPress={() => setParticipants(Math.max(1, participants - 1))}
             >
@@ -208,7 +300,7 @@ export default function BookingDetailsScreen() {
               <Text style={styles.counterVal}>{participants}</Text>
               <Text style={styles.counterLbl}>people</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.counterBtn}
               onPress={() => setParticipants(participants + 1)}
             >
@@ -220,7 +312,7 @@ export default function BookingDetailsScreen() {
         {/* ── Additional Requirements ── */}
         <View style={styles.card}>
           <Text style={[styles.sectionTitle, { marginBottom: 12 }]}>Additional Requirements</Text>
-          <TextInput 
+          <TextInput
             style={styles.textArea}
             placeholder="Type your special requirements here..."
             placeholderTextColor={MUTED}
@@ -268,11 +360,13 @@ export default function BookingDetailsScreen() {
         <View>
           <Text style={styles.footerLbl}>Token Balance</Text>
           <View style={styles.footerBalRow}>
-            <Text style={styles.footerBalBold}>{hasSufficientBalance ? '500' : '250'}</Text>
-            <Text style={styles.footerBalSub}>{hasSufficientBalance ? ' / 750' : ' / ₹500'}</Text>
+            <Text style={styles.footerBalBold}>{userTokenBalance}</Text>
+            <Text style={styles.footerBalSub}>
+              {selectedHours > 0 ? ` / ₹${bookingCost}` : ''}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.rechargeBtn}
           onPress={() => {
             if (hasSufficientBalance) {
@@ -296,8 +390,8 @@ export default function BookingDetailsScreen() {
       </View>
 
       <CalendarModal visible={showCalendar} onClose={() => setShowCalendar(false)} />
-      <ConfirmBookingModal 
-        visible={showConfirmModal} 
+      <ConfirmBookingModal
+        visible={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleBook}
       />
@@ -346,7 +440,7 @@ const styles = StyleSheet.create({
     color: DARK,
   },
 
-  // Room Summary
+  // Seat Summary
   roomRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -379,7 +473,7 @@ const styles = StyleSheet.create({
   amenityPill: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#FFE0D3', // light orange border
+    borderColor: '#FFE0D3',
     borderRadius: 8,
     paddingVertical: 8,
     justifyContent: 'center',
@@ -450,12 +544,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
-  timeBoxSelected: {
+  timeBoxStart: {
     backgroundColor: TEAL,
     borderColor: TEAL,
   },
-  timeTxtSelected: {
+  timeTxtStart: {
     color: '#fff',
+    fontWeight: '700',
+  },
+  timeBoxEnd: {
+    backgroundColor: BRAND,
+    borderColor: BRAND,
+  },
+  timeTxtEnd: {
+    color: '#fff',
+    fontWeight: '700',
   },
   timeBoxAvail: {
     backgroundColor: '#fff',
@@ -466,7 +569,7 @@ const styles = StyleSheet.create({
   },
   timeBoxBooked: {
     backgroundColor: '#fff',
-    borderColor: '#FFC8B4', // lighter orange border
+    borderColor: '#FFC8B4',
   },
   timeTxtBooked: {
     color: BRAND,
@@ -475,7 +578,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-  
+
+  selectionInfo: {
+    fontSize: 13,
+    color: MUTED,
+    marginTop: 12,
+    fontStyle: 'italic',
+  },
+
   legendRow: {
     flexDirection: 'row',
     gap: 16,
@@ -557,7 +667,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: DARK,
   },
-  
+
   inputBox: {
     height: 48,
     backgroundColor: BG_GRAY,

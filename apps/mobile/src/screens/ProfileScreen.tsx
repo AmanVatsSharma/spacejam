@@ -33,7 +33,7 @@ export default function ProfileScreen() {
 
   const handleNavChange = (tab: any) => {
     setActiveNav(tab);
-    const map: Record<string, string> = { home: 'Home', events: 'Events', bookings: 'MyBookings', profile: 'Profile' };
+    const map: Record<string, string> = { home: 'HomeTab', events: 'EventsTab', bookings: 'MyBookingsTab', profile: 'ProfileTab' };
     if (map[tab]) navigation.navigate(map[tab]);
   };
 

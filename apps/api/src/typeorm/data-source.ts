@@ -10,28 +10,44 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 
 import { User } from './entities/user.entity';
-import { Center } from './entities/center.entity';
+import { UserSession } from './entities/user-session.entity';
+import { RecoveryCode } from './entities/recovery-code.entity';
+import { MagicLinkToken } from './entities/magic-link-token.entity';
+import { Invitation } from './entities/invitation.entity';
+import { AuditLog } from './entities/audit-log.entity';
 import { Location } from './entities/location.entity';
+import { Center } from './entities/center.entity';
 import { Floor } from './entities/floor.entity';
 import { Seat } from './entities/seat.entity';
 import { Booking } from './entities/booking.entity';
 import { Payment } from './entities/payment.entity';
 import { RevenueAnalytics } from './entities/revenue-analytics.entity';
-import { UserSession } from './entities/user-session.entity';
-import { AuditLog } from './entities/audit-log.entity';
-import { Invitation } from './entities/invitation.entity';
 import { Lead } from './entities/lead.entity';
-import { Customer } from './entities/customer.entity';
-import { Onboarding } from './entities/onboarding.entity';
-import { Invoice } from './entities/invoice.entity';
-import { Deposit } from './entities/deposit.entity';
-import { Contract } from './entities/contract.entity';
-import { RecoveryCode } from './entities/recovery-code.entity';
-import { MagicLinkToken } from './entities/magic-link-token.entity';
 import { MeetingRoom } from './entities/meeting-room.entity';
 import { Event } from './entities/event.entity';
 import { Request } from './entities/request.entity';
+import { Deposit } from './entities/deposit.entity';
+import { Invoice } from './entities/invoice.entity';
+import { Contract } from './entities/contract.entity';
+import { Customer } from './entities/customer.entity';
+import { CustomerDocument } from './entities/customer-document.entity';
+import { CustomerEmployee } from './entities/customer-employee.entity';
+import { Notification } from './entities/notification.entity';
 import { Discount } from './entities/discount.entity';
+import { Equipment } from './entities/equipment.entity';
+import { EventAttendee } from './entities/event-attendee.entity';
+import { EventTicketTier } from './entities/event-ticket-tier.entity';
+import { RecurringBooking } from './entities/recurring-booking.entity';
+import { ScheduledReport } from './entities/scheduled-report.entity';
+import { CalendarConnection } from './entities/calendar-connection.entity';
+import { NotificationAutomation } from './entities/notification-automation.entity';
+import { WalletTransaction } from './entities/wallet-transaction.entity';
+import { PrintJob } from './entities/print-job.entity';
+import { Offer, OfferRedemption } from './entities/offer.entity';
+import { SupportTicket, SupportMessage } from './entities/support-ticket.entity';
+import { Referral } from './entities/referral.entity';
+import { NotificationPreference } from './entities/notification-preference.entity';
+
 
 export const dataSource = new DataSource({
   type: 'postgres',
@@ -41,34 +57,51 @@ export const dataSource = new DataSource({
   password: process.env.DATABASE_PASSWORD || 'spacejam',
   database: process.env.DATABASE_NAME || 'spacejam',
   entities: [
-    User,
-    Center,
-    Location,
-    Floor,
-    Seat,
-    Booking,
-    Payment,
-    RevenueAnalytics,
-    UserSession,
-    AuditLog,
-    Invitation,
-    Lead,
-    Customer,
-    Onboarding,
-    Invoice,
-    Deposit,
-    Contract,
-    RecoveryCode,
-    MagicLinkToken,
-    MeetingRoom,
-    Event,
-    Request,
-    Discount,
-  ],
+  User,
+  UserSession,
+  RecoveryCode,
+  MagicLinkToken,
+  Invitation,
+  AuditLog,
+  Location,
+  Center,
+  Floor,
+  Seat,
+  Booking,
+  Payment,
+  RevenueAnalytics,
+  Lead,
+  MeetingRoom,
+  Event,
+  Request,
+  Customer,
+  CustomerDocument,
+  CustomerEmployee,
+  Deposit,
+  Invoice,
+  Contract,
+  Notification,
+  Discount,
+  Equipment,
+  EventAttendee,
+  EventTicketTier,
+  RecurringBooking,
+  ScheduledReport,
+  CalendarConnection,
+  NotificationAutomation,
+  // Mobile feature parity entities (added 2026-08-05)
+  WalletTransaction,
+  PrintJob,
+  Offer,
+  OfferRedemption,
+  SupportTicket,
+  SupportMessage,
+  Referral,
+  NotificationPreference,
+],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV === 'development',
   ssl: process.env.DATABASE_SSL === 'true',
 });
 
-export default dataSource;
