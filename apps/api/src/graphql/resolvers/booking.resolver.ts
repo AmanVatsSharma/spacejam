@@ -8,7 +8,7 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
-import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException, UseGuards } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,6 +18,9 @@ import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
 import { CreateBookingInput, BookingFiltersInput, UpdateBookingInput } from '../inputs/booking.input';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 export const TRIGGERS = {
   bookingUpdated: 'booking.updated',
@@ -55,7 +58,7 @@ export class BookingResolver {
 
     const bookings = await this.bookingRepo.find({
       where,
-      relations: ['user', 'seat', 'seat.floor', 'center', 'payment', 'customer'],
+      relations: ['user', 'seat', 'seat.floor', 'center', 'payment', 'customer', 'meetingRoom'],
       order: { createdAt: 'desc' },
     });
 
@@ -64,12 +67,12 @@ export class BookingResolver {
 
   @Query(() => [BookingEntity])
   async myBookings(@Context() context: any): Promise<BookingEntity[]> {
-    const userId = context.req.user?.id;
+    const userId = context.req.user?.sub ?? context.req.user?.id;
     if (!userId) return [];
 
     const bookings = await this.bookingRepo.find({
       where: { userId } as any,
-      relations: ['seat', 'seat.floor', 'center', 'payment'],
+      relations: ['seat', 'seat.floor', 'center', 'payment', 'meetingRoom', 'user'],
       order: { createdAt: 'desc' },
     });
 
@@ -80,7 +83,7 @@ export class BookingResolver {
   async booking(@Args('id', { type: () => ID }) id: string): Promise<BookingEntity | null> {
     const booking = await this.bookingRepo.findOne({
       where: { id },
-      relations: ['user', 'seat', 'seat.floor', 'center', 'payment'],
+      relations: ['user', 'seat', 'seat.floor', 'center', 'payment', 'meetingRoom'],
     });
 
     return booking as unknown as BookingEntity | null;
@@ -170,7 +173,11 @@ export class BookingResolver {
     // Invalidate cache
     await this.cache.invalidatePattern(`center:${(booking as any).centerId}`);
 
-    return booking as unknown as BookingEntity;
+    const reloaded = await this.bookingRepo.findOne({
+      where: { id: (booking as any).id },
+      relations: ['seat', 'seat.floor', 'center', 'payment', 'meetingRoom', 'user'],
+    });
+    return (reloaded ?? booking) as unknown as BookingEntity;
   }
 
   @Mutation(() => BookingEntity)
@@ -348,6 +355,22 @@ export class BookingResolver {
     await this.cache.invalidatePattern(`center:*`);
 
     return updatedBooking!;
+  }
+
+  @Mutation(() => BookingEntity)
+  @UseGuards(GqlAuthGuard)
+  async extendBooking(
+    @Args('id') id: string,
+    @Args('endTime') endTime: Date,
+    @CurrentUser() current: JwtPayload,
+  ): Promise<BookingEntity> {
+    const booking = await this.bookingRepo.findOne({
+      where: { id, userId: current.sub } as any,
+      relations: ['seat', 'seat.floor', 'center', 'payment', 'meetingRoom', 'user'],
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    booking.endDate = endTime;
+    return (await this.bookingRepo.save(booking)) as unknown as BookingEntity;
   }
 
   @Mutation(() => PaymentEntity)
