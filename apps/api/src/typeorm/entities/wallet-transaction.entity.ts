@@ -40,7 +40,7 @@ export class WalletTransaction {
   @Column({ name: 'balanceAfter', type: 'int' })
   balanceAfter!: number;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ name: 'reference', type: 'varchar', nullable: true })
   reference?: string | null;
 

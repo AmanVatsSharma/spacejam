@@ -73,7 +73,7 @@ export class PrintJob {
   })
   status!: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ name: 'notes', type: 'text', nullable: true })
   notes?: string | null;
 

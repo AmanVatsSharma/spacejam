@@ -31,7 +31,7 @@ export class Offer {
   @Column({ type: 'varchar' })
   title!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   description?: string | null;
 

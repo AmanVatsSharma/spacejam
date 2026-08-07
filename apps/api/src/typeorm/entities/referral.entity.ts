@@ -52,7 +52,7 @@ export class Referral {
   @Column({ name: 'rewardAmount', type: 'float', default: 100 })
   rewardAmount!: number;
 
-  @Field({ nullable: true })
+  @Field(() => Date, { nullable: true })
   @Column({ name: 'rewardedAt', type: 'timestamp', nullable: true })
   rewardedAt?: Date | null;
 
