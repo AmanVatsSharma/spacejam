@@ -1,5 +1,16 @@
+/**
+ * File:        screens/PaymentScreen.tsx
+ * Module:      Mobile · Payment · Gateway
+ * Purpose:     Process a booking payment via the backend
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-08-07
+ */
 import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useMutation } from '@apollo/client';
+import { PROCESS_PAYMENT_MUTATION } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -18,14 +29,36 @@ const BG = '#F9FAFB';
 
 export default function PaymentScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const paymentId = route.params?.paymentId;
+  const amount = route.params?.amount;
+  const itemName = route.params?.itemName;
 
+  const [selectedMethod, setSelectedMethod] = useState('CARD');
   const [processing, setProcessing] = useState(false);
 
-  const handlePay = () => {
-    setProcessing(true);
-    setTimeout(() => {
+  const [processPayment] = useMutation(PROCESS_PAYMENT_MUTATION, {
+    onCompleted: () => {
       navigation.navigate('EventSuccess');
-    }, 1500); // mock 1.5s delay
+    },
+    onError: (err) => {
+      setProcessing(false);
+      Toast.show({ type: 'error', text1: 'Payment Failed', text2: err.message });
+    }
+  });
+
+  const handlePay = () => {
+    if (!paymentId) {
+      Toast.show({ type: 'error', text1: 'Missing payment information' });
+      return;
+    }
+    setProcessing(true);
+    processPayment({
+      variables: {
+        paymentId,
+        method: selectedMethod,
+      }
+    });
   };
 
   return (
@@ -45,18 +78,22 @@ export default function PaymentScreen() {
         {/* Order Summary */}
         <View style={styles.card}>
           <Text style={styles.cardLbl}>Order Total</Text>
-          <Text style={styles.amount}>₹ 100</Text>
+          <Text style={styles.amount}>{amount != null ? `₹ ${amount}` : '₹ —'}</Text>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLbl}>Item</Text>
-            <Text style={styles.rowVal}>UI UX Workshop</Text>
+            <Text style={styles.rowVal}>{itemName ?? 'Item'}</Text>
           </View>
         </View>
 
-        {/* Mock Payment Method */}
+        {/* Payment Methods */}
         <Text style={styles.sectionTitle}>Select Payment Method</Text>
-        
-        <View style={[styles.methodCard, styles.methodActive]}>
+
+        <TouchableOpacity
+          style={[styles.methodCard, selectedMethod === 'CARD' ? styles.methodActive : null]}
+          activeOpacity={0.8}
+          onPress={() => setSelectedMethod('CARD')}
+        >
           <View style={styles.methodIconWrapper}>
             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <Rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
@@ -65,14 +102,22 @@ export default function PaymentScreen() {
           </View>
           <View style={styles.methodTexts}>
             <Text style={styles.methodTitle}>Credit / Debit Card</Text>
-            <Text style={styles.methodSub}>Ending in •••• 4242</Text>
+            <Text style={styles.methodSub}>Pay with Visa, Mastercard, RuPay</Text>
           </View>
-          <View style={styles.radioActive}>
-            <View style={styles.radioInner} />
-          </View>
-        </View>
+          {selectedMethod === 'CARD' ? (
+            <View style={styles.radioActive}>
+              <View style={styles.radioInner} />
+            </View>
+          ) : (
+            <View style={styles.radioInactive} />
+          )}
+        </TouchableOpacity>
 
-        <View style={styles.methodCard}>
+        <TouchableOpacity
+          style={[styles.methodCard, selectedMethod === 'UPI' ? styles.methodActive : null]}
+          activeOpacity={0.8}
+          onPress={() => setSelectedMethod('UPI')}
+        >
           <View style={[styles.methodIconWrapper, { backgroundColor: '#F3F4F6' }]}>
             <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <Rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
@@ -83,8 +128,39 @@ export default function PaymentScreen() {
             <Text style={styles.methodTitle}>UPI</Text>
             <Text style={styles.methodSub}>Pay via Google Pay, PhonePe</Text>
           </View>
-          <View style={styles.radioInactive} />
-        </View>
+          {selectedMethod === 'UPI' ? (
+            <View style={styles.radioActive}>
+              <View style={styles.radioInner} />
+            </View>
+          ) : (
+            <View style={styles.radioInactive} />
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.methodCard, selectedMethod === 'WALLET' ? styles.methodActive : null]}
+          activeOpacity={0.8}
+          onPress={() => setSelectedMethod('WALLET')}
+        >
+          <View style={[styles.methodIconWrapper, { backgroundColor: '#F3F4F6' }]}>
+            <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+              <Path d="M3 12v5a2 2 0 0 0 2 2h16v-5"/>
+              <Path d="M18 12a2 2 0 1 1 4 0v2h-4v-2z"/>
+            </Svg>
+          </View>
+          <View style={styles.methodTexts}>
+            <Text style={styles.methodTitle}>Wallet</Text>
+            <Text style={styles.methodSub}>Pay using your SpaceJam wallet</Text>
+          </View>
+          {selectedMethod === 'WALLET' ? (
+            <View style={styles.radioActive}>
+              <View style={styles.radioInner} />
+            </View>
+          ) : (
+            <View style={styles.radioInactive} />
+          )}
+        </TouchableOpacity>
         
       </View>
 
@@ -99,14 +175,14 @@ export default function PaymentScreen() {
           {processing ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.payBtnTxt}>Pay ₹ 100</Text>
+            <Text style={styles.payBtnTxt}>Pay {amount != null ? `₹ ${amount}` : '₹ —'}</Text>
           )}
         </TouchableOpacity>
         <View style={styles.secureRow}>
           <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </Svg>
-          <Text style={styles.secureTxt}>Secure Payment by MockPay</Text>
+          <Text style={styles.secureTxt}>Secure Payment</Text>
         </View>
       </View>
 

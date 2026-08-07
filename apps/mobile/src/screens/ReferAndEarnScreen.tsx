@@ -1,15 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
 import {
   StyleSheet,
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   Dimensions,
+  Share,
+  Alert,
 } from 'react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
+import Toast from 'react-native-toast-message';
+
+import {
+  GET_MY_REFERRAL_STATS,
+  GET_MY_REFERRALS,
+} from '../lib/apollo/operations';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -20,6 +29,35 @@ const MUTED = '#6F767E';
 
 export default function ReferAndEarnScreen() {
   const navigation = useNavigation<any>();
+  const [copied, setCopied] = useState(false);
+
+  const { data: statsData, loading: statsLoading } = useQuery(GET_MY_REFERRAL_STATS);
+  const { data: referralsData, loading: referralsLoading } = useQuery(GET_MY_REFERRALS);
+
+  const stats = statsData?.myReferralStats;
+  const referrals = referralsData?.myReferrals || [];
+
+  const successfulCount = stats?.successful ?? 0;
+  const totalEarned = stats?.totalEarned ?? 0;
+  const referralCode = stats?.referralCode || '';
+
+  const handleShare = async () => {
+    if (!referralCode) return;
+    const message = `Join me on SpaceJam! Use my referral code ${referralCode} to get bonus credits when you sign up.`;
+    try {
+      const result = await Share.share({ message });
+      if (result.action === Share.sharedAction) {
+        setCopied(true);
+        Toast.show({ type: 'success', text1: 'Shared!', text2: 'Thanks for spreading the word.' });
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch (err: any) {
+      // User dismissed the share sheet or share failed — don't surface a scary error.
+      if (err?.message !== 'User did not share') {
+        Alert.alert('Unable to share', err?.message || 'Please try again.');
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -33,13 +71,12 @@ export default function ReferAndEarnScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* ── Hero Card ── */}
+
+        {/* Hero Card */}
         <View style={styles.heroCard}>
-          {/* Decorative shapes */}
           <View style={[styles.decoCircle, { top: -20, right: -20, width: 120, height: 120, opacity: 0.1 }]} />
           <View style={[styles.decoCircle, { bottom: -30, left: -20, width: 100, height: 100, opacity: 0.1 }]} />
-          
+
           <View style={styles.heroIconWrapper}>
             <Svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></Path>
@@ -48,14 +85,14 @@ export default function ReferAndEarnScreen() {
               <Path d="M16 3.13a4 4 0 0 1 0 7.75"></Path>
             </Svg>
           </View>
-          
+
           <Text style={styles.heroTitle}>Earn ₹100 Per Friend</Text>
           <Text style={styles.heroSub}>
             Share your code and earn bonus credits{'\n'}for every successful referral
           </Text>
         </View>
 
-        {/* ── Stats Row ── */}
+        {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
             <View style={[styles.statIconBox, { backgroundColor: '#FFF0EB' }]}>
@@ -64,7 +101,9 @@ export default function ReferAndEarnScreen() {
                 <Path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.11" />
               </Svg>
             </View>
-            <Text style={[styles.statVal, { color: '#FE7A47' }]}>5</Text>
+            <Text style={[styles.statVal, { color: '#FE7A47' }]}>
+              {statsLoading ? '...' : successfulCount}
+            </Text>
             <Text style={styles.statLabel}>Successful</Text>
           </View>
 
@@ -75,7 +114,9 @@ export default function ReferAndEarnScreen() {
                 <Polyline points="16 7 22 7 22 13" />
               </Svg>
             </View>
-            <Text style={[styles.statVal, { color: '#20C997' }]}>₹500</Text>
+            <Text style={[styles.statVal, { color: '#20C997' }]}>
+              {statsLoading ? '...' : `₹${totalEarned}`}
+            </Text>
             <Text style={styles.statLabel}>Earned</Text>
           </View>
 
@@ -86,12 +127,14 @@ export default function ReferAndEarnScreen() {
                 <Path d="M12 6v6l4 2" />
               </Svg>
             </View>
-            <Text style={[styles.statVal, { color: '#F59E0B' }]}>2</Text>
+            <Text style={[styles.statVal, { color: '#F59E0B' }]}>
+              {statsLoading ? '...' : (stats?.pending ?? 0)}
+            </Text>
             <Text style={styles.statLabel}>Pending</Text>
           </View>
         </View>
 
-        {/* ── Referral Code ── */}
+        {/* Referral Code */}
         <View style={styles.codeCard}>
           <View style={styles.codeHeader}>
             <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2">
@@ -100,8 +143,8 @@ export default function ReferAndEarnScreen() {
             <Text style={styles.codeTitle}>Your Referral Code</Text>
           </View>
           <View style={styles.codeRow}>
-            <Text style={styles.codeText}>SPACE2025</Text>
-            <TouchableOpacity style={styles.shareBtn}>
+            <Text style={styles.codeText}>{statsLoading ? '...' : (referralCode || '------')}</Text>
+            <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.7}>
               <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2">
                 <Circle cx="18" cy="5" r="3"/>
                 <Circle cx="6" cy="12" r="3"/>
@@ -109,12 +152,12 @@ export default function ReferAndEarnScreen() {
                 <Line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
                 <Line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
               </Svg>
-              <Text style={styles.shareBtnTxt}>Share Code</Text>
+              <Text style={styles.shareBtnTxt}>{copied ? 'Copied!' : 'Share Code'}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── How It Works ── */}
+        {/* How It Works */}
         <View style={styles.hiwCard}>
           <View style={styles.hiwHeader}>
             <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2">
@@ -183,7 +226,42 @@ export default function ReferAndEarnScreen() {
           </View>
         </View>
 
-        {/* ── Footer Terms ── */}
+        {/* My Referrals List */}
+        <Text style={styles.listTitle}>Your Referrals</Text>
+        {referralsLoading ? (
+          <Text style={styles.loadingText}>Loading referrals...</Text>
+        ) : referrals.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No referrals yet. Share your code to get started!</Text>
+          </View>
+        ) : (
+          <View style={styles.referralList}>
+            {referrals.map((r: any) => (
+              <View key={r.id} style={styles.referralItem}>
+                <View style={styles.referralLeft}>
+                  <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <Circle cx="12" cy="7" r="4" />
+                  </Svg>
+                  <View>
+                    <Text style={styles.referralEmail}>{r.referredEmail}</Text>
+                    <Text style={styles.referralDate}>
+                      {new Date(r.createdAt).toLocaleDateString()} · {r.status}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[
+                  styles.referralReward,
+                  { color: r.status === 'rewarded' ? '#20C997' : MUTED }
+                ]}>
+                  {r.status === 'rewarded' ? `+₹${r.rewardAmount || 100}` : 'Pending'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Footer Terms */}
         <View style={styles.footerNote}>
           <Text style={styles.footerNoteTxt}>
             * Credits will be added within 24 hours of successful referral. Terms and conditions apply.
@@ -407,6 +485,68 @@ const styles = StyleSheet.create({
     color: DARK,
     fontWeight: '500',
     lineHeight: 20,
+  },
+
+  // Referrals List
+  listTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: DARK,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: MUTED,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  emptyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 24,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: MUTED,
+    textAlign: 'center',
+  },
+  referralList: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  referralItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 14,
+  },
+  referralLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  referralEmail: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: DARK,
+  },
+  referralDate: {
+    fontSize: 12,
+    color: MUTED,
+    marginTop: 2,
+  },
+  referralReward: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // Footer Note

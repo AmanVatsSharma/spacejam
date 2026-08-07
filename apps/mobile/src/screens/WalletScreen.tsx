@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@apollo/client';
-import { GET_ME } from '../lib/apollo/operations';
+import { GET_ME, GET_MY_WALLET_TRANSACTIONS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -35,41 +35,40 @@ export default function WalletScreen() {
 
   const [showStatementModal, setShowStatementModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const { data: walletData, loading } = useQuery(GET_MY_WALLET_TRANSACTIONS, {
+    variables: { limit: 20 },
+  });
 
-  const history = [
-    {
-      id: 1,
-      type: 'debit' as const,
-      title: 'Room Booking - Ocean View MR-201',
-      date: 'May 18, 2026 • 10:30 AM',
-      tag: 'Booking',
-      amount: '-450 tokens',
-    },
-    {
-      id: 2,
-      type: 'credit' as const,
-      title: 'Token Purchase',
-      date: 'May 17, 2026 • 2:15 PM',
-      tag: 'Purchase',
-      amount: '+1000 tokens',
-    },
-    {
-      id: 3,
-      type: 'debit' as const,
-      title: 'Print Service - 50 pages',
-      date: 'May 17, 2026 • 11:45 AM',
-      tag: 'Printing',
-      amount: '-150 tokens',
-    },
-    {
-      id: 4,
-      type: 'credit' as const,
-      title: 'Refund - Cancelled Booking',
-      date: 'May 16, 2026 • 4:20 PM',
-      tag: 'Refund',
-      amount: '+500 tokens',
-    },
-  ];
+  // TODO: Backend query supports filtering by type — wire filter pills to pass `type` variable when backend filter is needed
+
+  const rawTransactions = walletData?.myWalletTransactions ?? [];
+
+  const history = rawTransactions.map((tx) => {
+    const isCredit = tx.type === 'credit';
+    const date = new Date(tx.createdAt);
+    const formattedDate = date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }) + ' • ' + date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return {
+      id: tx.id,
+      type: tx.type as 'credit' | 'debit',
+      title: tx.description || tx.reference || 'Wallet Transaction',
+      date: formattedDate,
+      tag: 'Wallet',
+      amount: `${isCredit ? '+' : '-'}${tx.amount} tok`,
+    };
+  });
+
+  // Apply UI-only filter (backend filter not yet wired — see TODO above)
+  const filteredHistory =
+    activeFilter === 'All'
+      ? history
+      : history.filter((item) => item.type === activeFilter.toLowerCase());
 
   return (
     <View style={styles.safeArea}>
@@ -96,10 +95,16 @@ export default function WalletScreen() {
           </View>
         </Animated.View>
 
-        <View style={styles.historyList}>
-          {history.map((item, i) => (
-            <HistoryRow key={item.id} item={item} index={i} />
-          ))}
+        <Animated.View style={styles.historyList}>
+          {loading ? (
+            <Text style={styles.loadingText}>Loading transactions...</Text>
+          ) : filteredHistory.length === 0 ? (
+            <Text style={styles.emptyText}>No transactions yet.</Text>
+          ) : (
+            filteredHistory.map((item, i) => (
+              <HistoryRow key={item.id} item={item} index={i} />
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -451,5 +456,17 @@ const styles = StyleSheet.create({
   historyAmount: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  loadingText: {
+    fontSize: 15,
+    color: palette.muted,
+    textAlign: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: palette.muted,
+    textAlign: 'center',
+    paddingVertical: 32,
   },
 });

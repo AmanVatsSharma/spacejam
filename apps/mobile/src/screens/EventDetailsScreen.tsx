@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useQuery } from '@apollo/client';
-import { GET_EVENT } from '../lib/apollo/operations';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_EVENT, BOOK_ROOM_MUTATION } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -32,8 +33,44 @@ export default function EventDetailsScreen() {
     variables: { id: eventId },
     skip: !eventId
   });
-  
+
   const event = data?.event || {};
+  const [booking, setBooking] = useState(false);
+
+  const [bookRoom] = useMutation(BOOK_ROOM_MUTATION, {
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Booking failed', text2: err.message });
+    },
+  });
+
+  const handleConfirmBooking = async () => {
+    if (!event?.id) return;
+    const roomId = event.meetingRoom?.id;
+    const centerId = event.centerId || event.meetingRoom?.center?.id;
+    if (!roomId || !centerId) {
+      Toast.show({ type: 'error', text1: 'Cannot book', text2: 'This event has no bookable room.' });
+      return;
+    }
+    setBooking(true);
+    try {
+      await bookRoom({
+        variables: {
+          roomId,
+          centerId,
+          eventDate: event.eventDate,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          title: event.title || 'Event Booking',
+        },
+      });
+      Toast.show({ type: 'success', text1: 'Event booked successfully' });
+      navigation.navigate('EventSuccess');
+    } catch {
+      // onError already toasted.
+    } finally {
+      setBooking(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -79,7 +116,7 @@ export default function EventDetailsScreen() {
               <View style={styles.infoTexts}>
                 <Text style={styles.infoLbl}>Date & Time</Text>
                 <Text style={styles.infoVal}>
-                  {event.date ? new Date(parseInt(event.date)).toLocaleDateString() : 'N/A'} • {event.startTime || 'N/A'}
+                  {event.eventDate ? new Date(parseInt(event.eventDate)).toLocaleDateString() : 'N/A'} • {event.startTime || 'N/A'}
                 </Text>
               </View>
             </View>
@@ -99,8 +136,7 @@ export default function EventDetailsScreen() {
               </View>
               <View style={styles.infoTexts}>
                 <Text style={styles.infoLbl}>Venue</Text>
-                <Text style={styles.infoVal}>IT Park, Auditorium</Text>
-                <Text style={styles.infoSub}>Bellandur, Karnataka</Text>
+                <Text style={styles.infoVal}>{event.meetingRoom?.name || 'Venue TBD'}</Text>
               </View>
             </View>
 
@@ -116,8 +152,7 @@ export default function EventDetailsScreen() {
               </View>
               <View style={styles.infoTexts}>
                 <Text style={styles.infoLbl}>Hosted by</Text>
-                <Text style={styles.infoVal}>Santhanam</Text>
-                <Text style={styles.infoSub}>UI UX Expert</Text>
+                <Text style={styles.infoVal}>{event.requestedBy?.name || 'Host'}</Text>
               </View>
             </View>
           </View>
@@ -137,13 +172,13 @@ export default function EventDetailsScreen() {
       <View style={styles.footer}>
         <View>
           <Text style={styles.footerLbl}>Tokens</Text>
-          <Text style={styles.footerVal}>{event.status === 'Free' ? 'Free' : '100'}</Text>
+          <Text style={styles.footerVal}>{event.cost != null ? event.cost : event.status === 'Free' ? 'Free' : 'N/A'}</Text>
         </View>
-        <TouchableOpacity style={styles.confirmBtn} onPress={() => alert('Book event!')}>
+        <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirmBooking} disabled={booking}>
           <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Polyline points="20 6 9 17 4 12" />
           </Svg>
-          <Text style={styles.confirmBtnTxt}>Confirm Booking</Text>
+          <Text style={styles.confirmBtnTxt}>{booking ? 'Booking...' : 'Confirm Booking'}</Text>
         </TouchableOpacity>
       </View>
     </View>

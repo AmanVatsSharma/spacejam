@@ -26,12 +26,12 @@ export default function MyInvoicesScreen() {
   const navigation = useNavigation<any>();
   const { data, loading } = useQuery(GET_INVOICES);
 
-  const [activeTab, setActiveTab] = useState('Meeting Rooms');
+  const [activeTab, setActiveTab] = useState('All');
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showAgreementModal, setShowAgreementModal] = useState(false);
 
-  const TABS = ['Meeting Rooms', 'Events', 'Print Requests', 'Recharges'];
+  const TABS = ['All', 'Meeting Rooms', 'Events', 'Print Requests', 'Recharges'];
 
   const openInvoice = (item: any) => {
     setSelectedInvoice(item);
@@ -43,12 +43,26 @@ export default function MyInvoicesScreen() {
     setShowAgreementModal(true);
   };
 
+  // Derive a category label per invoice from the available fields. The Invoice
+  // entity has no dedicated category column, so infer from planName/notes.
+  const inferCategory = (inv: any): string => {
+    const hay = `${inv.planName || ''} ${inv.notes || ''}`.toLowerCase();
+    if (hay.includes('recharge') || hay.includes('wallet') || hay.includes('token')) return 'Recharges';
+    if (hay.includes('print')) return 'Print Requests';
+    if (hay.includes('event') || hay.includes('meeting room') || hay.includes('room')) return 'Meeting Rooms';
+    // Default: events sit alongside meeting rooms as "space" invoices.
+    return 'Events';
+  };
+
   const currentData = useMemo(() => {
     if (!data?.invoices) return { total: '0', typeLbl: activeTab, count: '0', items: [] };
-    const items = data.invoices.map((inv: any) => ({
+    const filtered = activeTab === 'All'
+      ? data.invoices
+      : data.invoices.filter((inv: any) => inferCategory(inv) === activeTab);
+    const items = filtered.map((inv: any) => ({
       id: inv.id,
-      title: inv.booking?.seat?.name ? `Booking: ${inv.booking.seat.name}` : `Invoice #${inv.id.substring(inv.id.length - 4)}`,
-      date: `Due: ${new Date(parseInt(inv.dueDate)).toLocaleDateString()}`,
+      title: inv.planName || inv.customerName || `Invoice #${String(inv.id).slice(-4)}`,
+      date: `Due: ${inv.dueDate ? new Date(parseInt(inv.dueDate)).toLocaleDateString() : '—'}`,
       amount: `₹${inv.amount}`,
       rawAmount: inv.amount,
       status: inv.status,
@@ -56,9 +70,9 @@ export default function MyInvoicesScreen() {
     const total = items.reduce((sum: number, item: any) => sum + item.rawAmount, 0);
     return {
       total: total.toString(),
-      typeLbl: 'Invoices',
+      typeLbl: activeTab,
       count: items.length.toString(),
-      items
+      items,
     };
   }, [data, activeTab]);
 

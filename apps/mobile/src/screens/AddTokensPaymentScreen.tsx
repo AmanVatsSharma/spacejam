@@ -1,5 +1,16 @@
-import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+/**
+ * File:        apps/mobile/src/screens/AddTokensPaymentScreen.tsx
+ * Module:      Mobile · Wallet · Token Payment
+ * Purpose:     UPI payment flow for topping up tokens
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-08-07
+ */
+import React, { useState } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useMutation } from '@apollo/client';
+import { RECHARGE_WALLET_MUTATION, GET_ME } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
   View,
@@ -16,8 +27,44 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
+const TOKEN_PACKAGES = [
+  { tokens: 100, price: 100 },
+  { tokens: 500, price: 500 },
+  { tokens: 1000, price: 1000 },
+  { tokens: 2000, price: 2000 },
+];
+
 export default function AddTokensPaymentScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const [paying, setPaying] = useState(false);
+
+  // Read amount from route params; fall back to 500-token package
+  const routeAmount = route.params?.amount;
+  const selectedPackage = routeAmount != null
+    ? { tokens: routeAmount, price: routeAmount }
+    : TOKEN_PACKAGES[1]; // 500 tokens / ₹500 default
+
+  const amount = selectedPackage.price;
+
+  // Real recharge: amount is the token count to add (1 token = ₹1).
+  const [rechargeWallet] = useMutation(RECHARGE_WALLET_MUTATION, {
+    refetchQueries: [{ query: GET_ME }],
+    awaitRefetchQueries: true,
+  });
+
+  const handlePay = async () => {
+    setPaying(true);
+    try {
+      await rechargeWallet({ variables: { amount: selectedPackage.tokens } });
+      Toast.show({ type: 'success', text1: 'Recharge Successful', text2: `${selectedPackage.tokens} tokens added` });
+      navigation.navigate('Wallet');
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Payment Failed', text2: err?.message || 'Please try again' });
+    } finally {
+      setPaying(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -31,7 +78,7 @@ export default function AddTokensPaymentScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Amount Card */}
         <View style={styles.amountCard}>
           <View>
@@ -39,7 +86,7 @@ export default function AddTokensPaymentScreen() {
             <Text style={styles.amountSub}>Add tokens to your account</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.amountVal}>₹500</Text>
+            <Text style={styles.amountVal}>₹{amount}</Text>
             <Text style={styles.gstTxt}>+ GST</Text>
           </View>
         </View>
@@ -69,7 +116,7 @@ export default function AddTokensPaymentScreen() {
             </Svg>
           </View>
           <View style={styles.divider} />
-          
+
           {/* Google Pay */}
           <View style={styles.upiItem}>
             <View style={styles.upiIconBox}>
@@ -116,10 +163,10 @@ export default function AddTokensPaymentScreen() {
       <View style={styles.bottomBar}>
         <View>
           <Text style={styles.totalLbl}>Total Amount</Text>
-          <Text style={styles.totalVal}>₹590.00</Text>
+          <Text style={styles.totalVal}>₹{amount}.00</Text>
         </View>
-        <TouchableOpacity style={styles.payBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.payBtnTxt}>Proceed to Pay</Text>
+        <TouchableOpacity style={styles.payBtn} onPress={handlePay} disabled={paying}>
+          <Text style={styles.payBtnTxt}>{paying ? 'Processing...' : 'Proceed to Pay'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -151,7 +198,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  
+
   amountCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',

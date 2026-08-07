@@ -1,7 +1,15 @@
+/**
+ * File:        screens/PrintPreviewScreen.tsx
+ * Module:      Mobile · Print · Preview
+ * Purpose:     Preview a document and submit a print job to the backend
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-08-07
+ */
 import React, { useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation } from '@apollo/client';
-import { CREATE_REQUEST_MUTATION } from '../lib/apollo/operations';
+import { CREATE_PRINT_JOB } from '../lib/apollo/operations';
 import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
@@ -23,13 +31,19 @@ const BG = '#fff';
 export default function PrintPreviewScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const fileUrl = route.params?.fileUrl || 'Document';
+  const fileName = route.params?.fileName || route.params?.fileUrl || 'Document';
+  const fileUrl = route.params?.fileUrl || '';
+  // Pages comes from the upload (route params), with a sane default of 1.
+  const pages = Math.max(1, Number(route.params?.pages) || 1);
 
   const [copies, setCopies] = useState(1);
   const [isColor, setIsColor] = useState(false); // false = Black & White
   const [isLandscape, setIsLandscape] = useState(false); // false = Portrait
 
-  const estimatedCost = copies * (isColor ? 10 : 5) * 5; // Fake cost logic (assuming 5 pages)
+  // Estimate shown before submission. The authoritative cost is computed by the
+  // backend on createPrintJob (BW=2/page, Color=10/page) — this just previews.
+  const pricePerPage = isColor ? 10 : 2;
+  const estimatedCost = pages * copies * pricePerPage;
 
   const decreaseCopies = () => {
     if (copies > 1) setCopies(copies - 1);
@@ -38,9 +52,9 @@ export default function PrintPreviewScreen() {
     setCopies(copies + 1);
   };
 
-  const [createRequest, { loading }] = useMutation(CREATE_REQUEST_MUTATION, {
+  const [createPrintJob, { loading }] = useMutation(CREATE_PRINT_JOB, {
     onCompleted: () => {
-      navigation.replace('PrintSuccess'); // Or wherever it should go
+      navigation.navigate('PrintProcessing');
     },
     onError: (err) => {
       Toast.show({ type: 'error', text1: 'Print Request Failed', text2: err.message });
@@ -48,13 +62,16 @@ export default function PrintPreviewScreen() {
   });
 
   const handleConfirm = () => {
-    createRequest({
+    createPrintJob({
       variables: {
         input: {
-          type: 'PRINTER',
-          title: `Print ${fileUrl}`,
-          description: `${copies} copies, ${isColor ? 'Color' : 'B&W'}, ${isLandscape ? 'Landscape' : 'Portrait'}`,
-          urgency: 'MEDIUM'
+          fileUrl,
+          fileName,
+          pages,
+          copies,
+          color: isColor,
+          paperSize: 'A4',
+          sides: 'single',
         }
       }
     });
@@ -100,7 +117,7 @@ export default function PrintPreviewScreen() {
             <Line x1="16" y1="17" x2="8" y2="17" />
             <Polyline points="10 9 9 9 8 9" />
           </Svg>
-          <Text style={styles.pageCountTxt}>Page 1 of 5</Text>
+          <Text style={styles.pageCountTxt}>{pages} page{pages > 1 ? 's' : ''}</Text>
         </View>
 
         {/* Config Card */}

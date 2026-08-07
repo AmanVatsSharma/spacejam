@@ -19,15 +19,36 @@ const MUTED = '#6F767E';
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'BOOKING' | 'OFFER' | 'SYSTEM'>('all');
 
-  const { data, loading } = useQuery(GET_NOTIFICATIONS);
+  const { data, loading } = useQuery(GET_NOTIFICATIONS, {
+    variables: { unreadOnly: activeFilter === 'unread' },
+  });
   const [markRead] = useMutation(MARK_NOTIFICATION_READ);
 
-  const notifications = data?.myNotifications || [];
+  const allNotifications = data?.myNotifications || [];
+  const unreadCount = allNotifications.filter((n: any) => !n.read).length;
+
+  // Apply client-side type filter (server only handles 'unread').
+  const notifications = React.useMemo(() => {
+    if (activeFilter === 'all' || activeFilter === 'unread') return allNotifications;
+    return allNotifications.filter((n: any) => (n.type || '').toUpperCase().includes(activeFilter));
+  }, [allNotifications, activeFilter]);
 
   const handleRead = (id: string) => {
-    markRead({ variables: { id } });
+    markRead({
+      variables: { id },
+      optimisticResponse: { markNotificationRead: { id, read: true } },
+    });
   };
+
+  const FILTERS: Array<{ key: typeof activeFilter; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'unread', label: 'Unread' },
+    { key: 'BOOKING', label: 'Bookings' },
+    { key: 'OFFER', label: 'Offers' },
+    { key: 'SYSTEM', label: 'System' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -42,28 +63,23 @@ export default function NotificationsScreen() {
 
       <View style={styles.filtersWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll}>
-          <TouchableOpacity style={[styles.filterPill, styles.filterPillActive]}>
-            <Text style={[styles.filterTxt, styles.filterTxtActive]}>All</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.filterPill}>
-            <Text style={styles.filterTxt}>Unread</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeTxt}>3</Text>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.filterPill}>
-            <Text style={styles.filterTxt}>Bookings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.filterPill}>
-            <Text style={styles.filterTxt}>Offers</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.filterPill}>
-            <Text style={styles.filterTxt}>System</Text>
-          </TouchableOpacity>
+          {FILTERS.map((f) => {
+            const active = activeFilter === f.key;
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+                onPress={() => setActiveFilter(f.key)}
+              >
+                <Text style={[styles.filterTxt, active && styles.filterTxtActive]}>{f.label}</Text>
+                {f.key === 'unread' && unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeTxt}>{unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -90,7 +106,7 @@ export default function NotificationsScreen() {
                  tagColor="#FE7A47"
                  tagBg="#FFF0EB"
                  unread={!notif.read}
-                 body={notif.body}
+                 body={notif.message}
                  time={new Date(parseInt(notif.createdAt)).toLocaleDateString()}
                />
              </TouchableOpacity>
