@@ -20,6 +20,7 @@ import { Customer } from '../typeorm/entities/customer.entity';
 import { Onboarding } from '../typeorm/entities/onboarding.entity';
 import { CustomerEmployee } from '../typeorm/entities/customer-employee.entity';
 import { CustomerDocument } from '../typeorm/entities/customer-document.entity';
+import { User } from '../typeorm/entities/user.entity';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CustomerDocument } from '../typeorm/entities/customer-document.entity';
       Onboarding,
       CustomerEmployee,
       CustomerDocument,
+      User,
     ]),
     CacheModule,
   ],

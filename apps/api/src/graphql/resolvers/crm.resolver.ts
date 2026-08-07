@@ -7,13 +7,17 @@
  * Last-updated: 2026-07-21
  */
 import { Resolver, Query, Args, Mutation, Context, ID, ObjectType, Field, Int } from '@nestjs/graphql';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { LeadStatus } from '../types/user.type';
+import { Repository, DataSource } from 'typeorm';
+// @ts-ignore
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
+import { LeadStatus, OnboardingStatus, UserRole } from '../types/user.type';
 import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';
 import { Customer as CustomerEntity } from '../../typeorm/entities/customer.entity';
 import { Onboarding as OnboardingEntity } from '../../typeorm/entities/onboarding.entity';
+import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { CustomerStatus } from '../types/user.type';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
@@ -37,14 +41,19 @@ export class ConvertLeadResult {
 
 @Resolver(() => LeadEntity)
 export class CrmResolver {
+  private readonly logger = new Logger(CrmResolver.name);
+
   constructor(
     private cache: CacheService,
+    private dataSource: DataSource,
     @InjectRepository(LeadEntity)
     private leadRepo: Repository<LeadEntity>,
     @InjectRepository(CustomerEntity)
     private customerRepo: Repository<CustomerEntity>,
     @InjectRepository(OnboardingEntity)
     private onboardingRepo: Repository<OnboardingEntity>,
+    @InjectRepository(UserEntity)
+    private userRepo: Repository<UserEntity>,
   ) {}
 
   @Query(() => [LeadEntity])
@@ -181,14 +190,62 @@ export class CrmResolver {
   }
 
   /**
-   * Convert a lead → customer AND create an onboarding record in one
-   * atomic operation. Returns the converted lead, new customer, and
-   * onboarding record so the frontend can navigate straight to the
-   * onboarding form view.
+   * Provision (or reuse) a login User for the customer being created.
    *
-   * All onboarding fields are optional — they default from the lead's
-   * existing data. Only companyName/planType/seatCount are typically
-   * changed at conversion time.
+   * - If a User already exists for the email, it is linked (not duplicated).
+   * - Otherwise a new MEMBER user is created with a random one-time password.
+   *   The plaintext password is returned only via logs (admin-triggered flow);
+   *   the customer is expected to reset it via the standard password-reset
+   *   flow before first sign-in.
+   *
+   * Returns the linked user's id (or null if no email was available).
+   */
+  private async provisionUserForCustomer(
+    manager: import('typeorm').EntityManager,
+    email: string | undefined,
+    name: string | undefined,
+    phone?: string | null,
+    centerId?: string | null,
+  ): Promise<string | null> {
+    if (!email) return null;
+    const normalized = email.toLowerCase().trim();
+    const existing = await manager.findOne(UserEntity, { where: { email: normalized } });
+    if (existing) return existing.id;
+
+    const tempPassword = crypto.randomBytes(12).toString('base64url');
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    const user = manager.create(UserEntity, {
+      email: normalized,
+      name: name ?? normalized.split('@')[0],
+      passwordHash,
+      role: UserRole.MEMBER,
+      active: true,
+      emailVerified: false,
+      ...(phone ? { phone } : {}),
+      ...(centerId ? { centerId } : {}),
+    } as any);
+    const saved = await manager.save(user);
+    this.logger.log(
+      `provisioned login user ${saved.id} (${saved.email}) during onboarding`,
+    );
+    return saved.id;
+  }
+
+  /**
+   * Convert a lead → customer AND create an onboarding record in one
+   * atomic transaction. Returns the converted lead, new customer, and
+   * onboarding record so the frontend can navigate straight to the
+   * customer detail view.
+   *
+   * All onboarding fields are optional and default from the lead's existing
+   * data. Every collected field is written to BOTH the Customer (denormalised
+   * CRM columns) and the Onboarding (paperwork) record so the two stay
+   * consistent. A login User is provisioned for the customer email when one
+   * does not already exist.
+   *
+   * Idempotent: re-invoking on an already-converted lead returns the
+   * existing Customer + Onboarding pair (repaired if either is missing)
+   * and never creates a duplicate Customer.
    */
   @Mutation(() => ConvertLeadResult)
   async convertLeadWithOnboarding(
@@ -196,16 +253,25 @@ export class CrmResolver {
     @Args('companyName', { nullable: true }) companyName?: string,
     @Args('companyAddress', { nullable: true }) companyAddress?: string,
     @Args('gstNumber', { nullable: true }) gstNumber?: string,
+    @Args('companyType', { nullable: true }) companyType?: string,
+    @Args('industry', { nullable: true }) industry?: string,
+    @Args('website', { nullable: true }) website?: string,
+    @Args('employeeCount', { type: () => Int, nullable: true }) employeeCount?: number,
     @Args('planType', { nullable: true }) planType?: string,
     @Args('seatCount', { type: () => Int, nullable: true }) seatCount?: number,
     @Args('contactName', { nullable: true }) contactName?: string,
     @Args('contactEmail', { nullable: true }) contactEmail?: string,
     @Args('contactPhone', { nullable: true }) contactPhone?: string,
+    @Args('alternateEmail', { nullable: true }) alternateEmail?: string,
+    @Args('alternatePhone', { nullable: true }) alternatePhone?: string,
+    @Args('dob', { nullable: true }) dob?: string,
     @Args('emergencyContact', { nullable: true }) emergencyContact?: string,
     @Args('emergencyPhone', { nullable: true }) emergencyPhone?: string,
+    @Args('communicationChannel', { nullable: true }) communicationChannel?: string,
     @Args('idProofUrl', { nullable: true }) idProofUrl?: string,
     @Args('agreementUrl', { nullable: true }) agreementUrl?: string,
     @Args('notes', { nullable: true }) notes?: string,
+    @Args('provisionLogin', { nullable: true, defaultValue: true }) provisionLogin?: boolean,
   ): Promise<ConvertLeadResult> {
     const lead = await this.leadRepo.findOne({
       where: { id },
@@ -213,91 +279,180 @@ export class CrmResolver {
     });
     if (!lead) throw new NotFoundException('Lead not found');
 
-    // Already-converted path: return existing customer + onboarding if any
-    if (lead.status === LeadStatus.CONVERTED) {
-      const existingCustomer = await this.customerRepo.findOne({
-        where: { id: (lead as any).customerId ?? undefined },
-      });
-      const existingOnboarding = await this.onboardingRepo.findOne({
-        where: { leadId: id },
-        relations: ['lead', 'customer', 'assignedTo', 'center'],
-        order: { createdAt: 'DESC' },
-      });
-      if (existingCustomer && existingOnboarding) {
-        return {
-          lead,
-          customer: existingCustomer,
-          onboarding: existingOnboarding,
-        };
-      }
-      // Partial state — fall through and rebuild below
+    // Resolve all overrides once (form value ?? lead value).
+    const resolvedName = contactName ?? companyName ?? lead.company ?? lead.name;
+    const resolvedEmail = contactEmail ?? lead.email;
+    const resolvedPhone = contactPhone ?? lead.phone ?? undefined;
+    const resolvedCompany = companyName ?? lead.company ?? undefined;
+    const resolvedCompanyAddress = companyAddress ?? lead.location ?? undefined;
+    const resolvedPlanType = planType ?? undefined;
+    const resolvedNotes = notes ?? lead.notes ?? undefined;
+
+    // Parse DOB (frontend sends an ISO date string) into a Date for the
+    // date-typed column; leave undefined on parse failure.
+    let dobDate: Date | undefined;
+    if (dob) {
+      const parsed = new Date(dob);
+      if (!Number.isNaN(parsed.getTime())) dobDate = parsed;
     }
 
-    // 1. Build the customer (lead fields + any onboarding overrides)
-    const resolvedCustomerName = companyName ?? lead.company ?? lead.name;
-    const newCustomer = this.customerRepo.create({
-      name: resolvedCustomerName,
-      email: contactEmail ?? lead.email,
-      phone: contactPhone ?? lead.phone,
-      company: companyName ?? lead.company,
-      location: companyAddress ?? lead.location,
-      notes: notes ?? lead.notes,
-      centerId: lead.centerId,
-      status: CustomerStatus.ACTIVE,
-      joinDate: new Date(),
-      totalBookings: 0,
-      totalSpent: 0,
-    });
-    const customer = await this.customerRepo.save(newCustomer);
+    // ── Run Customer/Lead/Onboarding/User writes inside one transaction.
+    const { customer, onboarding, customerId, userId } = await this.dataSource.transaction(
+      async (manager) => {
+        // Idempotency: if the lead is already converted, reuse its customer.
+        if (lead.status === LeadStatus.CONVERTED && lead.customerId) {
+          const existingCustomer = await manager.findOne(CustomerEntity, {
+            where: { id: lead.customerId },
+          });
+          if (existingCustomer) {
+            // Repair a missing onboarding record without creating a new customer.
+            let existingOnboarding = await manager.findOne(OnboardingEntity, {
+              where: { leadId: id },
+              order: { createdAt: 'DESC' },
+            });
+            if (!existingOnboarding) {
+              const repaired = manager.create(OnboardingEntity, {
+                leadId: id,
+                customerId: existingCustomer.id,
+                status: OnboardingStatus.IN_PROGRESS,
+                companyName: resolvedCompany,
+                companyAddress: resolvedCompanyAddress,
+                gstNumber,
+                companyType,
+                industry,
+                website,
+                planType: resolvedPlanType,
+                seatCount,
+                contactName: resolvedName,
+                contactEmail: resolvedEmail,
+                contactPhone: resolvedPhone,
+                emergencyContact,
+                emergencyPhone,
+                idProofUrl,
+                agreementUrl,
+                notes: resolvedNotes,
+                assignedToId: lead.assignedToId,
+                centerId: lead.centerId,
+              });
+              existingOnboarding = await manager.save(repaired);
+            }
+            return {
+              customer: existingCustomer,
+              onboarding: existingOnboarding,
+              customerId: existingCustomer.id,
+              userId: existingCustomer.userId ?? null,
+            };
+          }
+          // customer missing despite the FK — fall through and rebuild.
+        }
 
-    // 2. Mark the lead converted + link the customer
-    await this.leadRepo.update(id, {
-      status: LeadStatus.CONVERTED,
-      customerId: customer.id,
-    });
+        // 1. Provision (or reuse) a login user for the customer.
+        let linkedUserId: string | null = null;
+        if (provisionLogin) {
+          linkedUserId = await this.provisionUserForCustomer(
+            manager,
+            resolvedEmail,
+            resolvedName,
+            resolvedPhone ?? null,
+            lead.centerId ?? null,
+          );
+        }
 
-    // 3. Create the onboarding record
-    const onboarding = this.onboardingRepo.create({
-      leadId: id,
-      customerId: customer.id,
-      status: 'IN_PROGRESS' as any,
-      companyName: companyName ?? lead.company,
-      companyAddress: companyAddress ?? lead.location,
-      gstNumber,
-      planType,
-      seatCount,
-      contactName: contactName ?? lead.name,
-      contactEmail: contactEmail ?? lead.email,
-      contactPhone: contactPhone ?? lead.phone,
-      emergencyContact,
-      emergencyPhone,
-      idProofUrl,
-      agreementUrl,
-      notes: notes ?? lead.notes,
-      assignedToId: lead.assignedToId,
-      centerId: lead.centerId,
-    });
-    const savedOnboarding = await this.onboardingRepo.save(onboarding);
+        // 2. Build the customer with lead fields + every onboarding override
+        //    so the denormalised CRM columns stay populated.
+        const newCustomer = manager.create(CustomerEntity, {
+          name: resolvedName,
+          email: resolvedEmail,
+          phone: resolvedPhone,
+          company: resolvedCompany,
+          location: resolvedCompanyAddress,
+          notes: resolvedNotes,
+          centerId: lead.centerId,
+          status: CustomerStatus.ACTIVE,
+          joinDate: new Date(),
+          totalBookings: 0,
+          totalSpent: 0,
+          // Onboarding-extension columns (mirror of the Onboarding row).
+          gstNumber,
+          companyAddress: resolvedCompanyAddress,
+          companyType,
+          employeeCount,
+          industry,
+          website,
+          planType: resolvedPlanType,
+          alternateEmail,
+          alternatePhone,
+          dob: dobDate,
+          emergencyContactName: emergencyContact,
+          emergencyContactPhone: emergencyPhone,
+          communicationChannel,
+          userId: linkedUserId,
+        } as any);
+        const savedCustomer = await manager.save(newCustomer);
 
-    // 4. Cache invalidation across all affected domains
+        // 3. Mark the lead converted + link the customer.
+        await manager.update(
+          LeadEntity,
+          { id },
+          { status: LeadStatus.CONVERTED, customerId: savedCustomer.id },
+        );
+
+        // 4. Create the onboarding record with the same set of fields.
+        const newOnboarding = manager.create(OnboardingEntity, {
+          leadId: id,
+          customerId: savedCustomer.id,
+          status: OnboardingStatus.IN_PROGRESS,
+          companyName: resolvedCompany,
+          companyAddress: resolvedCompanyAddress,
+          gstNumber,
+          planType: resolvedPlanType,
+          seatCount,
+          contactName: resolvedName,
+          contactEmail: resolvedEmail,
+          contactPhone: resolvedPhone,
+          emergencyContact,
+          emergencyPhone,
+          idProofUrl,
+          agreementUrl,
+          notes: resolvedNotes,
+          assignedToId: lead.assignedToId,
+          centerId: lead.centerId,
+        });
+        const savedOnboarding = await manager.save(newOnboarding);
+
+        return {
+          customer: savedCustomer,
+          onboarding: savedOnboarding,
+          customerId: savedCustomer.id,
+          userId: linkedUserId,
+        };
+      },
+    );
+
+    // 5. Cache invalidation across all affected domains (outside the txn).
     await this.cache.invalidatePattern('leads:*');
     await this.cache.invalidatePattern('customers:*');
     await this.cache.invalidatePattern('onboardings:*');
+    if (userId) await this.cache.invalidatePattern('users:*');
 
-    // 5. Re-fetch with relations for the response
+    // 6. Re-fetch with relations for the response payload.
     const refreshedLead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
     const fullOnboarding = await this.onboardingRepo.findOne({
-      where: { id: (savedOnboarding as any).id },
+      where: { id: (onboarding as any).id },
       relations: ['lead', 'customer', 'assignedTo', 'center'],
+    });
+    const fullCustomer = await this.customerRepo.findOne({
+      where: { id: customerId },
+      relations: ['center'],
     });
 
     return {
       lead: refreshedLead!,
-      customer,
-      onboarding: fullOnboarding!,
+      customer: fullCustomer ?? customer,
+      onboarding: fullOnboarding ?? onboarding,
     };
   }
 }

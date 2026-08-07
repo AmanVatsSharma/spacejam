@@ -69,6 +69,75 @@ export class CreateCustomerInput {
     @IsString()
     @IsOptional()
     notes?: string;
+
+    // ─── Onboarding-extension fields (mirror of UpdateCustomerInput).
+    // Exposed on CreateCustomerInput so the onboarding wizard's direct-create
+    // path (no lead) can persist the same rich data the lead-conversion path
+    // writes, in a single mutation.
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    gstNumber?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    companyAddress?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    companyType?: string;
+
+    @Field(() => Int, { nullable: true })
+    @IsInt()
+    @IsOptional()
+    employeeCount?: number;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    industry?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    website?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    planType?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    alternateEmail?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    alternatePhone?: string;
+
+    @Field({ nullable: true })
+    @IsDate()
+    @IsOptional()
+    dob?: Date;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    emergencyContactName?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    emergencyContactPhone?: string;
+
+    @Field({ nullable: true })
+    @IsString()
+    @IsOptional()
+    communicationChannel?: string;
 }
 
 @InputType()

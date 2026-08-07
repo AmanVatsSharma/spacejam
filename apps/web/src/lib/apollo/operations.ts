@@ -230,6 +230,7 @@ export const GET_LEAD = gql`
       status
       lastContact
       notes
+      customerId
       assignedTo {
         id
         name
@@ -319,32 +320,50 @@ export const CONVERT_LEAD_WITH_ONBOARDING = gql`
     $companyName: String
     $companyAddress: String
     $gstNumber: String
+    $companyType: String
+    $industry: String
+    $website: String
+    $employeeCount: Int
     $planType: String
     $seatCount: Int
     $contactName: String
     $contactEmail: String
     $contactPhone: String
+    $alternateEmail: String
+    $alternatePhone: String
+    $dob: String
     $emergencyContact: String
     $emergencyPhone: String
+    $communicationChannel: String
     $idProofUrl: String
     $agreementUrl: String
     $notes: String
+    $provisionLogin: Boolean
   ) {
     convertLeadWithOnboarding(
       id: $id
       companyName: $companyName
       companyAddress: $companyAddress
       gstNumber: $gstNumber
+      companyType: $companyType
+      industry: $industry
+      website: $website
+      employeeCount: $employeeCount
       planType: $planType
       seatCount: $seatCount
       contactName: $contactName
       contactEmail: $contactEmail
       contactPhone: $contactPhone
+      alternateEmail: $alternateEmail
+      alternatePhone: $alternatePhone
+      dob: $dob
       emergencyContact: $emergencyContact
       emergencyPhone: $emergencyPhone
+      communicationChannel: $communicationChannel
       idProofUrl: $idProofUrl
       agreementUrl: $agreementUrl
       notes: $notes
+      provisionLogin: $provisionLogin
     ) {
       lead {
         id
@@ -355,6 +374,7 @@ export const CONVERT_LEAD_WITH_ONBOARDING = gql`
         id
         name
         email
+        userId
       }
       onboarding {
         id
@@ -1092,6 +1112,11 @@ export const CREATE_CUSTOMER = gql`
       totalBookings
       totalSpent
       lastBooking
+      userId
+      gstNumber
+      companyAddress
+      planType
+      communicationChannel
       createdAt
     }
   }

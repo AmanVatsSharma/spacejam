@@ -405,7 +405,7 @@ export default function SettingsAccessPage() {
         </div>
         <button
           className={styles.addUserBtn}
-          onClick={() => router.push('/signup')}
+          onClick={() => router.push('/dashboard/settings/add-user')}
         >
           {Icons.plus} Add User
         </button>

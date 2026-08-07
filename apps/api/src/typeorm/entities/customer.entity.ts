@@ -26,6 +26,7 @@ import { Lead } from './lead.entity';
 import { Booking } from './booking.entity';
 import { CustomerDocument } from './customer-document.entity';
 import { CustomerEmployee } from './customer-employee.entity';
+import { User } from './user.entity';
 
 @Entity('customers')
 @ObjectType()
@@ -33,6 +34,13 @@ export class Customer {
     @Field(() => ID)
     @PrimaryGeneratedColumn('uuid')
     id!: string;
+
+    // ─── Linked login account (nullable). A customer is created by admin
+    // onboarding; the associated User is provisioned lazily so the customer
+    // can self-serve once credentials are set. Added by 20260807000000 migration.
+    @Field(() => ID, { nullable: true })
+    @Column({ name: 'userId', type: 'uuid', nullable: true })
+    userId?: string | null;
 
     @Field()
     @Column()
@@ -149,6 +157,11 @@ export class Customer {
     @ManyToOne(() => Center, { eager: false })
     @JoinColumn({ name: 'centerId' })
     center?: Center;
+
+    @Field(() => User, { nullable: true })
+    @ManyToOne(() => User, { eager: false })
+    @JoinColumn({ name: 'userId' })
+    user?: User;
 
     @Field(() => [Deposit], { nullable: true })
     @OneToMany(() => Deposit, (deposit) => deposit.customer)

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SpaceJam is a coworking space management system built as an Nx 22 monorepo with four apps:
+SpaceJam is a coworking space management system built as an Nx 22 monorepo.
 
 | App | Project | Tech |
 |-----|---------|------|
@@ -13,7 +13,13 @@ SpaceJam is a coworking space management system built as an Nx 22 monorepo with 
 | Mobile | `mobile` | Expo ~54 (Expo SDK 57), React Native |
 | E2E | `web-e2e` | Playwright against the web app |
 
+Shared libraries live under `libs/`:
+- `libs/shared` — cross-app TS types
+- `libs/ui` — cross-app UI primitives
+
 Package manager: npm workspaces. Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
+
+See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integration) — load it for any task that touches Nx config, generators, or `nx-workspace` / `nx-generate` skills.
 
 ## Development Commands
 
@@ -61,18 +67,29 @@ npx nx format:write      # Prettier fix across workspace
 npx nx show projects             # list all projects
 npx nx graph                     # visual project dependency graph
 npx nx sync                      # sync TypeScript project references
+npx nx sync:check                # verify references (for CI)
 npx nx affected:test --base=main # run tests affected by changes
 ```
 
 ## Architecture
 
-### Data Flow (Frontend)
+### Frontend (`apps/web`)
 
-1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
-2. **Auth**: JWT access + refresh tokens stored in cookies. `auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
+**App router structure** (`apps/web/src/app/`):
+- `(auth)` — login/register flows
+- `dashboard/` — main authenticated app (home, settings, meeting-room, events, etc.)
+- `set-up-new-center/` — onboarding wizard
+- `api/` — Next.js route handlers (REST global prefix)
+- `_global-error`, `error.tsx`, `not-found.tsx`, `layout.tsx`, `page.tsx` — root/error pages
+
+**Data flow**:
+1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`, `use-crm.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
+2. **Auth**: JWT access + refresh tokens stored in cookies. `contexts/auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
 3. **Route guard**: `proxy.ts` (Next.js 16) checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes. Not a middleware — it runs as a proxy.
 
-### Backend
+### Backend (`apps/api`)
+
+**Module layout** (`apps/api/src/`): one folder per domain — `auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `observability`, `health`, `cache`, `config`, `graphql`, `typeorm`, `common`, `types`, `assets`, `app`.
 
 - **GraphQL schema**: SDL at `apps/api/src/graphql/schema.graphql` is the source of truth. Resolvers are code-first and mirror it.
 - **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. Run via TypeORM CLI (configured in `apps/api/package.json`).
@@ -80,7 +97,17 @@ npx nx affected:test --base=main # run tests affected by changes
 - **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 
-### Key Conventions
+### Mobile (`apps/mobile`)
+
+Expo ~54 (SDK 57). Structure under `apps/mobile/src/`:
+- `screens/` — one file per screen (Login, Home, MyBookings, Events, Wallet, Profile, etc.)
+- `navigation/` — `AppNavigator.tsx` (single entry point)
+- `components/`, `lib/`, `theme/`
+- Codegen via `codegen.ts` against the backend GraphQL schema
+
+Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
+
+## Key Conventions
 
 - **Path alias**: `@/*` maps to `apps/web/src/*`.
 - **Styling**: Tailwind for layout/spacing; CSS Modules for component-specific styles, animations, and complex selectors. Responsive breakpoint: `compact:` (max-width 1023.98px).
@@ -107,6 +134,8 @@ Many pages render mock data when the GraphQL response is empty: `const rows = da
 | Backend | `apps/api/.env` | `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_HOST`, `REDIS_PORT`, `PORT` (default 4000), `CORS_ORIGIN`, `NODE_ENV` |
 | Frontend | `apps/web/.env.local` | `NEXT_PUBLIC_GRAPHQL_HTTP_URL`, `NEXT_PUBLIC_GRAPHQL_WS_URL` |
 | Mobile | `apps/mobile/.env` | Expo/EAS vars |
+
+A reference `docker-compose.yml` is committed for local Postgres/Redis/NGINX/Prometheus/Grafana — not the deploy stack, just for spinning up dependencies.
 
 ## Production Server
 
@@ -214,12 +243,6 @@ All TypeScript/TSX files should include this header:
 
 ---
 
-## Mobile Notes
-
-The mobile app uses Expo ~54 (SDK 57). Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
-
----
-
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` for the full workflow reference.
@@ -233,4 +256,4 @@ bd close <id>         # Complete work
 
 - Use `bd` for ALL task tracking -- do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Use `bd remember` for persistent knowledge -- do NOT use MEMORY.md files
-- Issues live in a local Dolt DB; sync uses `refs/dolt/data` on the git remote; `.beads/issues.jsonl` is a passive export
+- Issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export

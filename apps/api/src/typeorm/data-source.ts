@@ -21,6 +21,8 @@ import { UserSession } from './entities/user-session.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { Invitation } from './entities/invitation.entity';
 import { Lead } from './entities/lead.entity';
+import { Customer } from './entities/customer.entity';
+import { Onboarding } from './entities/onboarding.entity';
 import { Invoice } from './entities/invoice.entity';
 import { Deposit } from './entities/deposit.entity';
 import { Contract } from './entities/contract.entity';
@@ -51,6 +53,8 @@ export const dataSource = new DataSource({
     AuditLog,
     Invitation,
     Lead,
+    Customer,
+    Onboarding,
     Invoice,
     Deposit,
     Contract,
