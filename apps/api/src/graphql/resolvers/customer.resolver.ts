@@ -26,6 +26,9 @@ import {
     CustomerFiltersInput,
 } from '../inputs/customer.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => CustomerEntity)
 export class CustomerResolver {
@@ -43,12 +46,15 @@ export class CustomerResolver {
     @Query(() => [CustomerEntity])
     async customers(
         @Args('filters', { nullable: true }) filters?: CustomerFiltersInput,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<CustomerEntity[]> {
         const where: any = {};
+        const scope = caller ? centerScope(caller) : undefined;
+        const effectiveCenterId = scope ?? filters?.centerId;
+        if (effectiveCenterId) where.centerId = effectiveCenterId;
 
         if (filters) {
             if (filters.status) where.status = filters.status;
-            if (filters.centerId) where.centerId = filters.centerId;
             if (filters.search) {
                 where.name = Like(`%${filters.search}%`);
             }

@@ -154,7 +154,7 @@ export default function AddUserPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const [roleMode, setRoleMode] = useState('Full Access');
+  const [roleMode, setRoleMode] = useState('Super Admin');
   const [perms, setPerms] = useState({
     manageLeads: true,
     approveBookings: true,
@@ -186,9 +186,9 @@ export default function AddUserPage() {
 
   const handleSubmit = async () => {
     setErrorMsg('');
-    let role = 'STAFF';
-    if (roleMode === 'Full Access') role = 'ADMIN';
-    if (roleMode === 'Standard') role = 'CENTER_MANAGER';
+    let role = 'ADMIN'; // Default to admin (center manager)
+    if (roleMode === 'Super Admin') role = 'SUPER_ADMIN';
+    if (roleMode === 'Admin') role = 'CENTER_MANAGER';
 
     try {
       await createAdminUser({
@@ -327,9 +327,8 @@ export default function AddUserPage() {
           {activeStep === 2 && (
             <div className={styles.accordionContent}>
               <div className={styles.roleSelector}>
-                <div className={`${styles.roleOption} ${roleMode === 'Full Access' ? styles.roleOptionActive : ''}`} onClick={() => setRoleMode('Full Access')}>Full Access</div>
-                <div className={`${styles.roleOption} ${roleMode === 'Standard' ? styles.roleOptionActive : ''}`} onClick={() => setRoleMode('Standard')}>Standard</div>
-                <div className={`${styles.roleOption} ${roleMode === 'Limited' ? styles.roleOptionActive : ''}`} onClick={() => setRoleMode('Limited')}>Limited</div>
+                <div className={`${styles.roleOption} ${roleMode === 'Super Admin' ? styles.roleOptionActive : ''}`} onClick={() => setRoleMode('Super Admin')}>Super Admin</div>
+                <div className={`${styles.roleOption} ${roleMode === 'Admin' ? styles.roleOptionActive : ''}`} onClick={() => setRoleMode('Admin')}>Admin</div>
               </div>
               
               <div className={styles.permSection}>

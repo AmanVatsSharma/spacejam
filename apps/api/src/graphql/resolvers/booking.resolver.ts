@@ -21,6 +21,7 @@ import { CreateBookingInput, BookingFiltersInput, UpdateBookingInput } from '../
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 export const TRIGGERS = {
   bookingUpdated: 'booking.updated',
@@ -44,11 +45,15 @@ export class BookingResolver {
 
   @Query(() => [BookingEntity])
   async bookings(
-    @Args('filters', { nullable: true }) filters?: BookingFiltersInput
+    @Args('filters', { nullable: true }) filters?: BookingFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<BookingEntity[]> {
     const where: any = {};
+    // Enforce center isolation for CENTER_MANAGER
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
     if (filters) {
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.userId) where.userId = filters.userId;
       if (filters.customerId) where.customerId = filters.customerId;
       if (filters.status) where.status = filters.status;

@@ -59,6 +59,7 @@ export const CREATE_ADMIN_USER = gql`
       role
       active
       emailVerified
+      centerId
     }
   }
 `;

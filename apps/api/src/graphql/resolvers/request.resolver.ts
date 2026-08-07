@@ -14,6 +14,9 @@ import { Request } from '../../typeorm/entities/request.entity';
 import { RequestStatus, RequestType } from '../types/user.type';
 import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput, RequestStatistics } from '../inputs/request.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => Request)
 export class RequestResolver {
@@ -26,15 +29,16 @@ export class RequestResolver {
   @Query(() => [Request])
   async requests(
     @Args('filters', { nullable: true }) filters?: RequestFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<Request[]> {
     const where: any = {};
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      // The entity column is `requestType`, not `type` — querying `where.type`
-      // would hit a non-existent column and throw a TypeORM error.
       if (filters.type) where.requestType = filters.type;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.assignedToId) where.assignedToId = filters.assignedToId;
       if (filters.requestedById) where.requestedById = filters.requestedById;
       if (filters.urgency) where.urgency = filters.urgency;
@@ -66,8 +70,11 @@ export class RequestResolver {
   @Query(() => RequestStatistics)
   async requestStats(
     @Args('centerId', { nullable: true }) centerId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<any> {
-    const where = centerId ? { centerId } : {};
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    const where = effectiveCenterId ? { centerId: effectiveCenterId } : {};
 
     const total = await this.requestRepo.count({ where });
     const pending = await this.requestRepo.count({

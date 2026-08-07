@@ -31,6 +31,9 @@ import {
   UpdateSeatInput,
 } from '../inputs/center.input';
 import { deepMergeSettings } from '../../common/utils/settings.util';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 export const CENTER_TRIGGERS = {
   centerUpdated: 'center.updated',
@@ -57,8 +60,11 @@ export class CenterResolver {
   ) {}
 
   @Query(() => [CenterEntity])
-  async centers(): Promise<CenterEntity[]> {
+  async centers(@CurrentUser() caller?: JwtPayload): Promise<CenterEntity[]> {
+    const scope = caller ? centerScope(caller) : undefined;
+    const where: any = scope ? { id: scope } : {};
     const centers = await this.centerRepo.find({
+      where: Object.keys(where).length ? where : undefined,
       relations: ['location', 'floors'],
     });
     return centers;

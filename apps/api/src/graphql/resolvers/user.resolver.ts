@@ -25,8 +25,9 @@ import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
 import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
-import { CreateAdminInput } from '../../auth/dto/create-admin.input';
+import { CreateAdminInput, DashboardAdminRole } from '../../auth/dto/create-admin.input';
 import * as bcrypt from 'bcrypt';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 /**
  * The entity role taxonomy (5 tiers) is richer than the GraphQL type
  * (3 tiers), so we map to the closest existing GraphQL enum value.
@@ -57,12 +58,14 @@ export class UserResolver {
   }
 
   @Query(() => [UserEntity], { description: 'List all users (admin only)' })
-  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
+  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER, EntityUserRole.CENTER_MANAGER)
   async users(
+    @CurrentUser() current: JwtPayload,
     @Args('limit', { type: () => Int, nullable: true, defaultValue: 50 }) limit: number,
     @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 }) offset: number,
   ): Promise<UserEntity[]> {
-    const { users } = await this.userRepo.findAll({ limit, offset });
+    const scope = centerScope(current);
+    const { users } = await this.userRepo.findAll({ limit, offset, centerId: scope });
     return users;
   }
 
@@ -114,27 +117,32 @@ export class UserResolver {
     return !!updated;
   }
 
-  @Mutation(() => UserEntity, { description: 'Create a new admin or staff user (admin only)' })
-  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
+  @Mutation(() => UserEntity, { description: 'Provision a new dashboard admin (SUPER_ADMIN only)' })
+  @Roles(EntityUserRole.SUPER_ADMIN)
   async createAdminUser(
     @Args('input') input: CreateAdminInput,
   ): Promise<UserEntity> {
+    // Center managers must be assigned to a center
+    if (input.role === DashboardAdminRole.CENTER_MANAGER && !input.centerId) {
+      throw new BadRequestException('An Admin (Center Manager) must be assigned to a center');
+    }
+
     const existing = await this.userRepo.findByEmail(input.email);
     if (existing) {
       throw new BadRequestException('Email already in use');
     }
 
     const passwordHash = await bcrypt.hash(input.password, 12);
-    
+
     return this.userRepo.create({
       email: input.email,
       name: input.name,
       phone: input.phone,
       passwordHash,
-      role: input.role,
+      role: input.role as unknown as EntityUserRole, // DashboardAdminRole values match EntityUserRole
       centerId: input.centerId,
       active: true,
-      emailVerified: true, // Auto verify since created by admin
+      emailVerified: true, // Auto-verified — account was created by a super admin
     });
   }
 

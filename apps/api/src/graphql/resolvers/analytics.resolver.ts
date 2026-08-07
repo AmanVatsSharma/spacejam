@@ -8,6 +8,11 @@
  */
 
 import { Resolver, Query, Args, ID } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
@@ -36,12 +41,15 @@ export class AnalyticsResolver {
 
   @Query(() => DashboardMetrics)
   async dashboardMetrics(
-    @Args('centerId', { type: () => ID, nullable: true }) centerId?: string
+    @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<DashboardMetrics> {
-    const cacheKey = centerId ? `metrics:dashboard:${centerId}` : 'metrics:dashboard:global';
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    const cacheKey = effectiveCenterId ? `metrics:dashboard:${effectiveCenterId}` : 'metrics:dashboard:global';
 
     return this.cache.getOrSet<DashboardMetrics>(cacheKey, async () => {
-      const where: any = centerId ? { centerId } : {};
+      const where: any = effectiveCenterId ? { centerId: effectiveCenterId } : {};
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);

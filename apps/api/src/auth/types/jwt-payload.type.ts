@@ -15,6 +15,8 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  /** The center this user is assigned to. Present for CENTER_MANAGER; null for SUPER_ADMIN. */
+  centerId?: string | null;
   /** Server-issued session id (rotated on refresh, present in access + refresh). */
   sid: string;
   /** Distinguishes access vs refresh tokens. */

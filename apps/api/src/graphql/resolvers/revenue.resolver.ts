@@ -26,6 +26,9 @@ import {
   ContractFiltersInput,
 } from '../inputs/revenue.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => InvoiceEntity)
 export class InvoiceResolver {
@@ -37,13 +40,16 @@ export class InvoiceResolver {
 
   @Query(() => [InvoiceEntity])
   async invoices(
-    @Args('filters', { nullable: true }) filters?: InvoiceFiltersInput
+    @Args('filters', { nullable: true }) filters?: InvoiceFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<InvoiceEntity[]> {
     const where: any = {};
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.customerId) where.customerId = filters.customerId;
       if (filters.dateFrom) where.issueDate = { gte: filters.dateFrom };
       if (filters.dateTo) where.issueDate = { ...(where.issueDate ?? {}), lte: filters.dateTo };

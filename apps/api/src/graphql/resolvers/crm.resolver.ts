@@ -21,6 +21,11 @@ import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { CustomerStatus } from '../types/user.type';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { UseGuards } from '@nestjs/common';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 /**
  * Payload for convertLeadWithOnboarding — returns both the new customer
@@ -56,14 +61,17 @@ export class CrmResolver {
 
   @Query(() => [LeadEntity])
   async leads(
-    @Args('filters', { nullable: true }) filters?: LeadFiltersInput
+    @Args('filters', { nullable: true }) filters?: LeadFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<LeadEntity[]> {
     const where: any = {};
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
       if (filters.source) where.source = filters.source;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.assignedToId) where.assignedToId = filters.assignedToId;
       if (filters.search) {
         where.name = (await import('typeorm')).Like(`%${filters.search}%`);
