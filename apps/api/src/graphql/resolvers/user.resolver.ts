@@ -25,7 +25,8 @@ import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
 import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
-
+import { CreateAdminInput } from '../../auth/dto/create-admin.input';
+import * as bcrypt from 'bcrypt';
 /**
  * The entity role taxonomy (5 tiers) is richer than the GraphQL type
  * (3 tiers), so we map to the closest existing GraphQL enum value.
@@ -111,6 +112,30 @@ export class UserResolver {
   ): Promise<boolean> {
     const updated = await this.userRepo.update(id, { active });
     return !!updated;
+  }
+
+  @Mutation(() => UserEntity, { description: 'Create a new admin or staff user (admin only)' })
+  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
+  async createAdminUser(
+    @Args('input') input: CreateAdminInput,
+  ): Promise<UserEntity> {
+    const existing = await this.userRepo.findByEmail(input.email);
+    if (existing) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    
+    return this.userRepo.create({
+      email: input.email,
+      name: input.name,
+      phone: input.phone,
+      passwordHash,
+      role: input.role,
+      centerId: input.centerId,
+      active: true,
+      emailVerified: true, // Auto verify since created by admin
+    });
   }
 
   // ─── Session / Device Management ──────────────────────────────────────────

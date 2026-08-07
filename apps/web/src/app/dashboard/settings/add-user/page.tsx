@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@apollo/client';
+import { CREATE_ADMIN_USER } from '@/lib/apollo/operations';
 import styles from './add-user.module.css';
 
 const Icons = {
@@ -131,8 +133,27 @@ const Icons = {
 export default function AddUserPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(1);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  // States for forms
+  // Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    employeeId: '',
+    centerId: '',
+    workingHours: '',
+    shiftType: '',
+    weeklyOff: '',
+    emergencyContact: '',
+    password: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const [roleMode, setRoleMode] = useState('Full Access');
   const [perms, setPerms] = useState({
     manageLeads: true,
@@ -149,8 +170,42 @@ export default function AddUserPage() {
     whatsapp: false,
   });
 
+  const [createAdminUser, { loading }] = useMutation(CREATE_ADMIN_USER, {
+    onCompleted: () => {
+      // Typically we'd show a success toast here
+      router.push('/dashboard/settings');
+    },
+    onError: (err) => {
+      setErrorMsg(err.message || 'Failed to create user');
+    }
+  });
+
   const handleNext = () => {
     if (activeStep < 6) setActiveStep(activeStep + 1);
+  };
+
+  const handleSubmit = async () => {
+    setErrorMsg('');
+    let role = 'STAFF';
+    if (roleMode === 'Full Access') role = 'ADMIN';
+    if (roleMode === 'Standard') role = 'CENTER_MANAGER';
+
+    try {
+      await createAdminUser({
+        variables: {
+          input: {
+            email: formData.email,
+            name: formData.name,
+            phone: formData.phone || undefined,
+            password: formData.password,
+            role,
+            centerId: formData.centerId || undefined,
+          }
+        }
+      });
+    } catch (err) {
+      // handled by onError
+    }
   };
 
   const STEPS = [
@@ -173,6 +228,12 @@ export default function AddUserPage() {
           {Icons.plus} Add User
         </button>
       </div>
+
+      {errorMsg && (
+        <div style={{ padding: '12px', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', marginBottom: '16px' }}>
+          {errorMsg}
+        </div>
+      )}
 
       <div className={styles.stepperCard}>
         {STEPS.map((s, idx) => (
@@ -215,23 +276,23 @@ export default function AddUserPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Full Name <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="John Doe" />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={styles.formInput} placeholder="John Doe" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Phone Number <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="+91 9876543210" />
+                  <input type="text" name="phone" value={formData.phone} onChange={handleChange} className={styles.formInput} placeholder="+91 9876543210" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Email <span className={styles.required}>*</span></label>
-                  <input type="email" className={styles.formInput} placeholder="john.doe@spacejam.com" />
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} className={styles.formInput} placeholder="john.doe@spacejam.com" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Employee ID <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="EMP-2026-001" />
+                  <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className={styles.formInput} placeholder="EMP-2026-001" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Assign Center <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="" />
+                  <input type="text" name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput} placeholder="e.g. uuid" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Profile Photo</label>
@@ -373,7 +434,7 @@ export default function AddUserPage() {
             <div className={styles.accordionContent}>
               <div className={styles.formGroupFull}>
                 <label className={styles.formLabel}>Select Center(s) <span className={styles.required}>*</span></label>
-                <input type="text" className={styles.formInput} placeholder="" />
+                <input type="text" name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput} placeholder="" />
               </div>
               <div className={styles.formGroupFull} style={{ marginTop: '16px' }}>
                 <label className={styles.formLabel}>Floor Access</label>
@@ -412,19 +473,19 @@ export default function AddUserPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Working Hours <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="" />
+                  <input type="text" name="workingHours" value={formData.workingHours} onChange={handleChange} className={styles.formInput} placeholder="" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Shift Type <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="" />
+                  <input type="text" name="shiftType" value={formData.shiftType} onChange={handleChange} className={styles.formInput} placeholder="" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Weekly Off <span className={styles.required}>*</span></label>
-                  <input type="text" className={styles.formInput} placeholder="" />
+                  <input type="text" name="weeklyOff" value={formData.weeklyOff} onChange={handleChange} className={styles.formInput} placeholder="" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Emergency Contact</label>
-                  <input type="text" className={styles.formInput} placeholder="+91 9876543210" />
+                  <input type="text" name="emergencyContact" value={formData.emergencyContact} onChange={handleChange} className={styles.formInput} placeholder="+91 9876543210" />
                 </div>
               </div>
               <div className={styles.continueBtnWrap}>
@@ -455,11 +516,11 @@ export default function AddUserPage() {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Email / Username <span className={styles.required}>*</span></label>
-                  <input type="email" className={styles.formInput} placeholder="john.doe@spacejam.com" />
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} className={styles.formInput} placeholder="john.doe@spacejam.com" />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Password <span className={styles.required}>*</span></label>
-                  <input type="password" className={styles.formInput} placeholder="••••••••" />
+                  <input type="password" name="password" value={formData.password} onChange={handleChange} className={styles.formInput} placeholder="••••••••" />
                 </div>
               </div>
 
@@ -516,8 +577,87 @@ export default function AddUserPage() {
           </div>
           {activeStep === 6 && (
             <div className={styles.accordionContent}>
-              <p style={{ fontSize: '14px', color: '#6b7280' }}>Please review the user details before creating the account.</p>
-              {/* Review summary elements can go here */}
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>Please review the user details before creating the account.</p>
+              
+              <div className={styles.reviewSection}>
+                {/* Basic Details */}
+                <div className={styles.reviewBlock}>
+                  <div className={styles.reviewBlockHeader}>
+                    <div className={styles.reviewBlockTitle}>Basic Details</div>
+                    <button className={styles.editBtn} onClick={() => setActiveStep(1)}>Edit</button>
+                  </div>
+                  <div className={styles.reviewGrid}>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Full Name</span>
+                      <span className={styles.reviewValue}>{formData.name || '-'}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Phone Number</span>
+                      <span className={styles.reviewValue}>{formData.phone || '-'}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Email</span>
+                      <span className={styles.reviewValue}>{formData.email || '-'}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Employee ID</span>
+                      <span className={styles.reviewValue}>{formData.employeeId || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role & Permissions */}
+                <div className={styles.reviewBlock}>
+                  <div className={styles.reviewBlockHeader}>
+                    <div className={styles.reviewBlockTitle}>Role & Permissions</div>
+                    <button className={styles.editBtn} onClick={() => setActiveStep(2)}>Edit</button>
+                  </div>
+                  <div className={styles.reviewGrid}>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Role Type</span>
+                      <span className={styles.reviewValue}>{roleMode}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Active Permissions</span>
+                      <span className={styles.reviewValue}>
+                        {Object.entries(perms).filter(([_, val]) => val).length} Permissions granted
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center Assignment */}
+                <div className={styles.reviewBlock}>
+                  <div className={styles.reviewBlockHeader}>
+                    <div className={styles.reviewBlockTitle}>Center Assignment</div>
+                    <button className={styles.editBtn} onClick={() => setActiveStep(3)}>Edit</button>
+                  </div>
+                  <div className={styles.reviewGrid}>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Assigned Center</span>
+                      <span className={styles.reviewValue}>{formData.centerId || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Work Configuration */}
+                <div className={styles.reviewBlock}>
+                  <div className={styles.reviewBlockHeader}>
+                    <div className={styles.reviewBlockTitle}>Work Configuration</div>
+                    <button className={styles.editBtn} onClick={() => setActiveStep(4)}>Edit</button>
+                  </div>
+                  <div className={styles.reviewGrid}>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Working Hours</span>
+                      <span className={styles.reviewValue}>{formData.workingHours || '-'}</span>
+                    </div>
+                    <div className={styles.reviewItem}>
+                      <span className={styles.reviewLabel}>Weekly Off</span>
+                      <span className={styles.reviewValue}>{formData.weeklyOff || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -532,7 +672,13 @@ export default function AddUserPage() {
             </button>
             <button className={styles.draftBtn}>Save as Draft</button>
           </div>
-          <button className={styles.createBtn}>Create Manager Account</button>
+          <button 
+            className={styles.createBtn} 
+            onClick={handleSubmit}
+            disabled={loading || !formData.email || !formData.password || !formData.name}
+          >
+            {loading ? 'Creating...' : 'Create Manager Account'}
+          </button>
         </div>
       </div>
     </div>

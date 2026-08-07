@@ -126,7 +126,11 @@ describe('CrmResolver', () => {
       makeLead({ id: 'lead-3', name: 'Charlie', email: 'charlie@test.com', status: LeadStatus.NEW, source: LeadSource.WEBSITE }),
     ]);
     cache = buildMockCache();
-    resolver = new CrmResolver(cache as any, repo as any, repo as any, repo as any);
+    // New CrmResolver signature: (cache, dataSource, leadRepo, customerRepo, onboardingRepo).
+    // The query tests below don't touch the transaction path, so a minimal
+    // dataSource mock is sufficient.
+    const dataSourceMock = { transaction: async (cb: any) => cb(repo) } as any;
+    resolver = new CrmResolver(cache as any, dataSourceMock, repo as any, repo as any, repo as any);
   });
 
   // ── Query: leads ──────────────────────────────────────────────────

@@ -43,6 +43,14 @@ type Query {
   customers(filters: CustomerFiltersInput): [Customer!]!
   customer(id: ID!): Customer
   customerCount(status: CustomerStatus): Int!
+  customerDeposits(customerId: ID!): [Deposit!]!
+  customerContracts(customerId: ID!): [Contract!]!
+  customerInvoices(customerId: ID!): [Invoice!]!
+
+  # CRM — Onboarding (lead → customer pipeline tracking)
+  onboardings(filters: OnboardingFiltersInput): [Onboarding!]!
+  onboarding(id: ID!): Onboarding
+  onboardingCount(status: OnboardingStatus): Int!
 
   # Revenue — Invoices
   invoices(filters: InvoiceFiltersInput): [Invoice!]!
@@ -153,13 +161,45 @@ type Mutation {
   # CRM — Leads
   createLead(input: CreateLeadInput!): Lead!
   updateLead(id: ID!, input: UpdateLeadInput!): Lead!
-  convertLead(id: ID!): Lead!   # Side-effect: auto-creates a Customer entity
+  convertLead(id: ID!): Lead!   # Legacy: flips status + creates a bare Customer (no onboarding)
+  convertLeadWithOnboarding(
+    id: ID!
+    companyName: String
+    companyAddress: String
+    gstNumber: String
+    companyType: String
+    industry: String
+    website: String
+    employeeCount: Int
+    planType: String
+    seatCount: Int
+    contactName: String
+    contactEmail: String
+    contactPhone: String
+    alternateEmail: String
+    alternatePhone: String
+    dob: String
+    emergencyContact: String
+    emergencyPhone: String
+    communicationChannel: String
+    idProofUrl: String
+    agreementUrl: String
+    notes: String
+    provisionLogin: Boolean
+  ): ConvertLeadResult!   # Atomic: Customer + Onboarding + (optional) login User
   deleteLead(id: ID!): Boolean!
 
   # CRM — Customers
-  createCustomer(input: CreateCustomerInput!): Customer!
+  createCustomer(input: CreateCustomerInput!): Customer!   # Also seeds an Onboarding + login User
   updateCustomer(id: ID!, input: UpdateCustomerInput!): Customer!
   deleteCustomer(id: ID!): Boolean!
+
+  # CRM — Onboarding lifecycle
+  createOnboarding(input: CreateOnboardingInput!): Onboarding!
+  updateOnboarding(id: ID!, input: UpdateOnboardingInput!): Onboarding!
+  advanceOnboardingStatus(id: ID!): Onboarding!
+  completeOnboarding(id: ID!): Onboarding!
+  deleteOnboarding(id: ID!): Boolean!
 
   # Revenue — Invoices
   createInvoice(input: CreateInvoiceInput!): Invoice!
@@ -265,3 +305,105 @@ type DashboardMetrics {
   occupancyTrend: MetricTrend!
   bookingsTrend: MetricTrend!
 }
+
+# ═══════════════════════════════════════════════════════════
+# CRM — ONBOARDING PIPELINE
+# (Full field definitions live in the entity files; this section
+#  documents the shapes added by the onboarding work so the schema
+#  reference is no longer stale.)
+# ═══════════════════════════════════════════════════════════
+
+enum OnboardingStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+type Onboarding {
+  id: ID!
+  leadId: ID
+  customerId: ID
+  status: OnboardingStatus!
+  companyName: String
+  companyAddress: String
+  gstNumber: String
+  planType: String
+  seatCount: Int
+  contactName: String
+  contactEmail: String
+  contactPhone: String
+  emergencyContact: String
+  emergencyPhone: String
+  idProofUrl: String
+  agreementUrl: String
+  completedAt: DateTime
+  notes: String
+  assignedToId: ID
+  centerId: ID
+  lead: Lead
+  customer: Customer
+  assignedTo: User
+  center: Center
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ConvertLeadResult {
+  lead: Lead!
+  customer: Customer!
+  onboarding: Onboarding!
+}
+
+input OnboardingFiltersInput {
+  status: OnboardingStatus
+  centerId: ID
+  assignedToId: ID
+  search: String
+  limit: Int
+  offset: Int
+}
+
+input CreateOnboardingInput {
+  leadId: ID
+  customerId: ID
+  status: OnboardingStatus
+  companyName: String
+  companyAddress: String
+  gstNumber: String
+  planType: String
+  seatCount: Int
+  contactName: String
+  contactEmail: String
+  contactPhone: String
+  emergencyContact: String
+  emergencyPhone: String
+  idProofUrl: String
+  agreementUrl: String
+  notes: String
+  assignedToId: ID
+  centerId: ID
+}
+
+input UpdateOnboardingInput {
+  status: OnboardingStatus
+  companyName: String
+  companyAddress: String
+  gstNumber: String
+  planType: String
+  seatCount: Int
+  contactName: String
+  contactEmail: String
+  contactPhone: String
+  emergencyContact: String
+  emergencyPhone: String
+  idProofUrl: String
+  agreementUrl: String
+  notes: String
+  assignedToId: ID
+  centerId: ID
+}
+
+# Note: Customer now also exposes userId (linked login account) plus the
+# onboarding-extension columns (gstNumber, companyAddress, planType,
+# communicationChannel, etc.) and Lead exposes customerId (the back-reference
+# to the Customer created on conversion). See entity files for full lists.

@@ -129,13 +129,6 @@ export default function LeadDetailsPage() {
   const [updateLead] = useMutation(UPDATE_LEAD, {
     refetchQueries: [{ query: GET_LEAD, variables: { id: leadId } }],
   });
-  const [convertLead] = useMutation(CONVERT_LEAD, {
-    refetchQueries: [
-      { query: GET_LEAD, variables: { id: leadId } },
-      { query: GET_LEADS },
-      { query: GET_CUSTOMERS },
-    ],
-  });
   const [deleteLead] = useMutation(DELETE_LEAD, {
     refetchQueries: [{ query: GET_LEADS }],
   });

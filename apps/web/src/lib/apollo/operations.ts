@@ -50,6 +50,19 @@ export const SIGNUP_MUTATION = gql`
   }
 `;
 
+export const CREATE_ADMIN_USER = gql`
+  mutation CreateAdminUser($input: CreateAdminInput!) {
+    createAdminUser(input: $input) {
+      id
+      email
+      name
+      role
+      active
+      emailVerified
+    }
+  }
+`;
+
 export const VERIFY_TWO_FACTOR = gql`
   mutation VerifyTwoFactor($input: VerifyTwoFactorInput!) {
     verifyTwoFactor(input: $input) {

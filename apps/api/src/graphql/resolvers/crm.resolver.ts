@@ -52,8 +52,6 @@ export class CrmResolver {
     private customerRepo: Repository<CustomerEntity>,
     @InjectRepository(OnboardingEntity)
     private onboardingRepo: Repository<OnboardingEntity>,
-    @InjectRepository(UserEntity)
-    private userRepo: Repository<UserEntity>,
   ) {}
 
   @Query(() => [LeadEntity])
