@@ -22,13 +22,17 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
 import { UserRole } from '../roles.enum';
-import { JwtPayload, RefreshTokenPayload } from '../types/jwt-payload.type';
+import {
+  ChallengeTokenPayload,
+  JwtPayload,
+  RefreshTokenPayload,
+} from '../types/jwt-payload.type';
 import { AuthPayload } from '../types/auth-payload.type';
 import { User } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
 
 import { EmailService } from './email.service';
-// import { TwoFactorService } from './two-factor.service';
+import { TwoFactorService } from './two-factor.service';
 import { SigninInput } from '../dto/signin.input';
 import { SignupInput } from '../dto/signup.input';
 import { ResetPasswordInput } from '../dto/reset-password.input';
@@ -60,7 +64,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
-    // private readonly twoFactorService: TwoFactorService,
+    private readonly twoFactorService: TwoFactorService,
   ) {}
 
   async signup(input: SignupInput, ctx: AuthContext = {}): Promise<AuthPayload> {
@@ -107,25 +111,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (user.twoFactorEnabled) {
-      // TODO: Re-enable when TwoFactorService is properly configured
-      throw new BadRequestException('Two-factor authentication is temporarily disabled');
-      /*
-      const ok = input.twoFactorCode
-        ? this.twoFactorService.verifyCode(user.twoFactorSecret!, input.twoFactorCode)
-        : false;
-      if (!ok) {
-        return {
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          accessTokenExpiresAt: new Date(),
-          refreshTokenExpiresAt: new Date(),
-          twoFactorRequired: true,
-          challengeToken: await this.signChallengeToken(user),
-        };
-      }
-      */
+    const otpDevBypass = this.configService.get<string>('OTP_DEV_BYPASS') === 'true';
+    if (user.twoFactorEnabled || otpDevBypass) {
+      const challengeToken = await this.signChallengeToken(user);
+      return {
+        user: null,
+        accessToken: null,
+        refreshToken: null,
+        accessTokenExpiresAt: new Date(),
+        refreshTokenExpiresAt: new Date(),
+        twoFactorRequired: true,
+        challengeToken,
+      };
     }
 
     user.lastLoginAt = new Date();
@@ -286,11 +283,49 @@ export class AuthService {
   }
 
   async verifyTwoFactor(input: VerifyTwoFactorInput): Promise<AuthPayload> {
-    throw new UnauthorizedException('Two-factor authentication is temporarily disabled');
+    const { sub: userId } = await this.verifyChallengeToken(input.challengeToken);
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user || !user.active) {
+      throw new UnauthorizedException('Invalid challenge');
+    }
+
+    const otpDevBypass = this.configService.get<string>('OTP_DEV_BYPASS') === 'true';
+    if (otpDevBypass) {
+      if (input.code !== '000000') {
+        throw new UnauthorizedException('Invalid verification code');
+      }
+    } else {
+      // Real TOTP path — requires user.secret; not active until a sender provisions secrets.
+      if (!user.twoFactorEnabled || !(user as any).twoFactorSecret) {
+        throw new UnauthorizedException('Two-factor authentication is not enabled');
+      }
+      this.twoFactorService.verifyCode((user as any).twoFactorSecret, input.code);
+    }
+
+    user.lastLoginAt = new Date();
+    await this.userRepo.save(user);
+    return this.issueTokensFor(user, { twoFactorVerified: true });
   }
 
   async disableTwoFactor(userId: string, code: string): Promise<boolean> {
     throw new BadRequestException('Two-factor authentication is temporarily disabled');
+  }
+
+  private async signChallengeToken(user: User): Promise<string> {
+    const secret = this.configService.get<string>('JWT_SECRET') ?? 'dev-jwt-secret';
+    return this.jwtService.signAsync(
+      { sub: user.id, kind: 'two-factor-challenge' } as ChallengeTokenPayload,
+      { expiresIn: '5m', secret },
+    );
+  }
+
+  private async verifyChallengeToken(token: string): Promise<{ sub: string }> {
+    const secret = this.configService.get<string>('JWT_SECRET') ?? 'dev-jwt-secret';
+    const payload = await this.jwtService.verifyAsync(token, { secret });
+    if (payload?.kind !== 'two-factor-challenge' || !payload?.sub) {
+      throw new UnauthorizedException('Invalid or expired challenge token');
+    }
+    return { sub: payload.sub };
   }
 
   private async issueTokensFor(

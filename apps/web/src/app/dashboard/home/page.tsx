@@ -16,12 +16,15 @@
 
 
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth-context";
 import { normalizeStatus } from "@/lib/revenue-status";
 import {
   GET_DASHBOARD_METRICS,
   GET_LEADS,
+  GET_CUSTOMERS,
   LEAD_COUNT,
   GET_DEPOSITS,
   GET_INVOICES,
@@ -77,29 +80,47 @@ function formatCurrency(amount: number): string {
 export default function DashboardPage() {
   const { user } = useAuth() || { user: null };
   const greetingName = user?.name || "User";
+  const router = useRouter();
 
   const [createLead] = useMutation(CREATE_LEAD, {
     refetchQueries: [{ query: LEAD_COUNT }, { query: GET_LEADS }],
   });
 
-  const [createCustomer] = useMutation(CREATE_CUSTOMER);
+  const [createCustomer] = useMutation(CREATE_CUSTOMER, {
+    refetchQueries: [{ query: GET_CUSTOMERS }],
+  });
 
   const handleAddLead = async (input: Record<string, string>) => {
     try {
       await createLead({ variables: { input } });
+      toast.success("Lead created");
       setShowAddLead(false);
     } catch (err) {
       console.error(err);
+      const msg = err instanceof Error ? err.message : "Failed to create lead";
+      toast.error(msg);
     }
   };
 
+  // "Add Client" routes to the full CRM onboarding wizard (matches the
+  // create-client/create-crm → onboarding → customer flow). The quick-create
+  // modal is still wired for the secondary "quick add" path inside the modal.
   const handleAddClient = async (input: Record<string, string>) => {
     try {
       await createCustomer({ variables: { input } });
+      toast.success("Client created successfully");
       setShowAddClient(false);
     } catch (err) {
       console.error(err);
+      const msg = err instanceof Error ? err.message : "Failed to create client";
+      toast.error(msg);
+      throw err;
     }
+  };
+
+  // Primary entry: open the onboarding wizard for a full client create.
+  const goToOnboarding = () => {
+    router.push("/dashboard/crm/onboarding");
   };
 
   const [showAddLead, setShowAddLead] = useState(false);
@@ -304,7 +325,7 @@ export default function DashboardPage() {
             Add Lead
           </button>
           <button
-            onClick={() => setShowAddClient(true)}
+            onClick={goToOnboarding}
             className="h-10 px-4 bg-[#FF6A2F] text-white rounded-[10px] text-sm font-medium hover:bg-[#FF5A1F] transition-colors shadow-sm flex items-center gap-2"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

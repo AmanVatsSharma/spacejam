@@ -21,7 +21,6 @@ import {
   GET_CUSTOMER,
   CREATE_LEAD,
   UPDATE_LEAD,
-  CONVERT_LEAD,
   CONVERT_LEAD_WITH_ONBOARDING,
   DELETE_LEAD,
   CREATE_CUSTOMER,
@@ -31,6 +30,7 @@ import {
   GET_CUSTOMER_DEPOSITS,
   GET_CUSTOMER_CONTRACTS,
   GET_CUSTOMER_INVOICES,
+  GET_ONBOARDINGS,
 } from '@/lib/apollo/operations';
 
 // ═══════════════════════════════════════════════════════
@@ -66,6 +66,25 @@ export interface Customer {
   totalBookings?: number;
   lifetimeValue?: number;
   createdAt?: string;
+}
+
+export interface Onboarding {
+  id: string;
+  companyName?: string;
+  companyAddress?: string;
+  gstNumber?: string;
+  planType?: string;
+  seatCount?: number;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  status: string;
+  notes?: string;
+  leadId?: string;
+  customerId?: string;
+  completedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -122,10 +141,10 @@ export function useLeadMutations() {
     refetchQueries: [{ query: GET_LEADS }, { query: LEAD_PIPELINE_STATS }],
   });
 
-  const [convertLead] = useMutation(CONVERT_LEAD, {
+  const [convertLead] = useMutation(CONVERT_LEAD_WITH_ONBOARDING, {
     refetchQueries: refetchAll,
-    onCompleted: async (data) => {
-      if (data?.convertLead?.success) {
+    onCompleted: (data) => {
+      if (data?.convertLeadWithOnboarding?.customer?.id) {
         toast.success('Lead converted to client');
       }
     },
@@ -310,13 +329,21 @@ export function useCustomerMutations() {
 // Onboarding
 // ═══════════════════════════════════════════════════════
 
-export function useOnboardingList(customerId?: string) {
-  const { data, loading, error, refetch } = useQuery<{ customers: Customer[] }>(GET_CUSTOMERS, {
-    variables: customerId ? { id: customerId } : undefined,
-    fetchPolicy: 'cache-and-network',
-  });
+export function useOnboardingList(filters?: {
+  status?: string;
+  centerId?: string;
+  assignedToId?: string;
+  search?: string;
+}) {
+  const { data, loading, error, refetch } = useQuery<{ onboardings: Onboarding[] }>(
+    GET_ONBOARDINGS,
+    {
+      variables: filters ? { filters } : undefined,
+      fetchPolicy: 'cache-and-network',
+    },
+  );
   return {
-    onboardings: data?.customers ?? [],
+    onboardings: data?.onboardings ?? [],
     loading,
     error,
     refetch,
@@ -330,11 +357,15 @@ export function useOnboardingList(customerId?: string) {
 export function useLeadConversion() {
   const client = useApolloClient();
 
-  const convert = async (leadId: string, leadData: Lead) => {
+  // Uses convertLeadWithOnboarding (the working mutation that creates a
+  // Customer + Onboarding record). The legacy convertLead mutation returns a
+  // Lead with no `success` field, so the old hook never surfaced a toast —
+  // this implementation reads the customer id from the result instead.
+  const convert = async (leadId: string, payload?: Record<string, unknown>) => {
     try {
       const { data } = await client.mutate({
-        mutation: CONVERT_LEAD,
-        variables: { id: leadId },
+        mutation: CONVERT_LEAD_WITH_ONBOARDING,
+        variables: { id: leadId, ...(payload ?? {}) },
         refetchQueries: [
           { query: GET_LEADS },
           { query: GET_CUSTOMERS },
@@ -342,9 +373,10 @@ export function useLeadConversion() {
         ],
       });
 
-      if (data?.convertLead?.success) {
+      const result = data?.convertLeadWithOnboarding;
+      if (result?.customer?.id) {
         toast.success('Lead converted to customer');
-        return data.convertLead;
+        return result;
       }
       return null;
     } catch {

@@ -18,6 +18,7 @@ import { UserRepositoryModule } from '../typeorm/repositories/user.repository.mo
 
 import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
+import { TwoFactorService } from './services/two-factor.service';
 import { AuthResolver } from '../graphql/resolvers/auth.resolver';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -42,7 +43,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     AuthResolver,
     AuthService,
     EmailService,
-    // TwoFactorService,
+    TwoFactorService,
     JwtStrategy,
     JwtRefreshStrategy,
   ],

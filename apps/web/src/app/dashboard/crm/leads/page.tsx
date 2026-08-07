@@ -434,6 +434,28 @@ export default function LeadsPage() {
     [createLead],
   );
 
+  // Combined admin action: create the lead, then jump straight into the
+  // onboarding wizard for it — the full "create CRM → onboarding → customer"
+  // flow in one click.
+  const handleCreateLeadAndOnboard = useCallback(
+    async (input: Record<string, string>) => {
+      try {
+        const res = await createLead({ variables: { input } });
+        const newLeadId = res?.data?.createLead?.id;
+        setShowAddLead(false);
+        if (newLeadId) {
+          toast.success('Lead created — starting onboarding');
+          router.push(`/dashboard/crm/onboarding?leadId=${newLeadId}`);
+        } else {
+          toast.success('Lead created');
+        }
+      } catch {
+        toast.error('Failed to create lead');
+      }
+    },
+    [createLead, router],
+  );
+
   /* ── Lead counts for pipeline stats ── */
   const stats = useMemo(() => {
     const converted = leads.filter((l) => l.status === 'Converted').length;
@@ -903,6 +925,7 @@ export default function LeadsPage() {
         open={showAddLead}
         onClose={() => setShowAddLead(false)}
         onAdd={handleAddLead}
+        onAddAndOnboard={handleCreateLeadAndOnboard}
       />
       <ScheduleVisitModal
         open={showScheduleVisit}

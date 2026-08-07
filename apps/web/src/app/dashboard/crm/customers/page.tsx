@@ -224,7 +224,7 @@ export default function CustomersPage() {
             {Icons.download} Export Excel
           </button>
           <button
-            onClick={() => setShowAddClient(true)}
+            onClick={() => router.push("/dashboard/crm/onboarding")}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-sm font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
           >
             {Icons.userPlus} Add Client

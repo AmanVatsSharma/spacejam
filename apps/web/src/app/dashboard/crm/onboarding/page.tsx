@@ -12,6 +12,7 @@ import {
   CREATE_DEPOSIT,
   CREATE_CONTRACT,
   CREATE_INVOICE,
+  COMPLETE_ONBOARDING,
 } from "@/lib/apollo/operations";
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
@@ -24,6 +25,18 @@ const STEPS = [
   { id: 6, title: "Legal & Compliance", desc: "Upload agreements and complete KYC verification." },
   { id: 7, title: "Personalisation", desc: "Customize preferences and finalize onboarding." },
 ];
+
+/**
+ * Parse a localized currency string like "₹ 50,000" or "50000.00" into a
+ * number. Returns 0 when the input is empty or unparseable so revenue
+ * mutations always receive a valid amount.
+ */
+function parseAmount(raw: string | undefined | null): number {
+  if (!raw) return 0;
+  const digits = String(raw).replace(/[^0-9.]/g, "");
+  const n = parseFloat(digits);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export default function OnboardingWizardPage() {
   const router = useRouter();
@@ -54,6 +67,7 @@ export default function OnboardingWizardPage() {
   const [createDeposit] = useMutation(CREATE_DEPOSIT);
   const [createContract] = useMutation(CREATE_CONTRACT);
   const [createInvoice] = useMutation(CREATE_INVOICE);
+  const [completeOnboarding] = useMutation(COMPLETE_ONBOARDING);
 
   // Form State - Step 1 (Basic Information) — kept controlled so data
   // isn't lost when navigating between steps and so it can drive the
@@ -67,6 +81,31 @@ export default function OnboardingWizardPage() {
     company: "",
     gst: "",
   });
+
+  // Restore a previously saved draft (handleSaveDraft writes the same shape).
+  // Only runs when there is no lead in the URL — lead-prefill takes priority
+  // for the conversion flow so the draft never overwrites fresh lead data.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (leadId) return; // conversion flow: lead prefill wins
+    try {
+      const raw = localStorage.getItem("onboarding_draft");
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft?.basicInfo && typeof draft.basicInfo === "object") {
+        setBasicInfo((prev) => ({ ...prev, ...draft.basicInfo }));
+      }
+      if (typeof draft?.currentStep === "number" && draft.currentStep >= 1 && draft.currentStep <= 10) {
+        setCurrentStep(draft.currentStep);
+      }
+      if (draft?.paymentMode) setPaymentMode(draft.paymentMode);
+      if (draft?.billingCycle) setBillingCycle(draft.billingCycle);
+    } catch {
+      // corrupt draft — ignore
+    }
+    // Run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId]);
 
   // Prefill from lead (only once per leadId)
   useEffect(() => {
@@ -189,19 +228,61 @@ export default function OnboardingWizardPage() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
+      // ── Collect the full onboarding payload from every step's state so
+      //    nothing the admin entered is dropped on submit.
+      const contactName = basicInfo.name?.trim() || undefined;
+      const contactEmail = basicInfo.email?.trim() || undefined;
+      const contactPhone = basicInfo.phone?.trim() || undefined;
+      const companyName = basicInfo.company?.trim() || undefined;
+      const companyAddress = undefined; // collected visually but no dedicated field yet
+      const gstNumber = basicInfo.gst?.trim() || undefined;
+      const alternateEmail = basicInfo.altContact?.trim() || undefined;
+      const dob = basicInfo.dob || undefined;
+      const emergencyContact = undefined;
+      const emergencyPhone = undefined;
+
+      // Step 3 — membership & space
+      const resolvedPlanType =
+        planType === "Customize Deal" ? "Custom" : planType || undefined;
+      const employeeCount =
+        individuals.length > 0 ? individuals.length : undefined;
+
+      // Step 4 — finance & deposits. Parse the security deposit amount
+      // ("₹ 50,000" → 50000) so revenue rows get a real figure, not 0.
+      const depositAmount = parseAmount(securityDepositAmount);
+      const paymentFrequency = billingCycle || "Monthly";
+
+      // Step 7 — personalisation
+      const communicationChannelVal = communicationChannel || undefined;
+
       let customerId: string;
+      let onboardingId: string | undefined;
+
       if (leadId && leadData?.lead) {
         const result = await convertLeadWithOnboarding({
           variables: {
             id: leadId,
-            contactName: basicInfo.name,
-            contactEmail: basicInfo.email,
-            contactPhone: basicInfo.phone,
-            companyName: basicInfo.company,
-            gstNumber: basicInfo.gst,
+            contactName,
+            contactEmail,
+            contactPhone,
+            companyName,
+            companyAddress,
+            gstNumber,
+            alternateEmail,
+            alternatePhone: undefined,
+            dob,
+            planType: resolvedPlanType,
+            seatCount: employeeCount,
+            employeeCount,
+            emergencyContact,
+            emergencyPhone: undefined,
+            communicationChannel: communicationChannelVal,
+            notes: undefined,
+            provisionLogin: true,
           },
         });
         customerId = result.data.convertLeadWithOnboarding.customer.id;
+        onboardingId = result.data.convertLeadWithOnboarding.onboarding?.id;
         toast.success("Lead converted to customer!");
       } else {
         const result = await createCustomer({
@@ -212,6 +293,16 @@ export default function OnboardingWizardPage() {
               phone: basicInfo.phone || "",
               company: basicInfo.company || "",
               status: "Active",
+              gstNumber,
+              companyAddress,
+              planType: resolvedPlanType,
+              employeeCount,
+              alternateEmail,
+              alternatePhone: undefined,
+              dob: dob ? new Date(dob) : undefined,
+              emergencyContactName: emergencyContact,
+              emergencyContactPhone: undefined,
+              communicationChannel: communicationChannelVal,
             },
           },
         });
@@ -219,26 +310,95 @@ export default function OnboardingWizardPage() {
         toast.success("Customer onboarded successfully!");
       }
 
-      // Create revenue records in parallel — failures are non-fatal
+      // ── Revenue records: only create what we actually collected, with the
+      //    real values. The deposit row uses the parsed security deposit; the
+      //    contract mirrors the chosen plan + billing cycle; the invoice is
+      //    seeded at the deposit amount so finance has a real starting point.
+      //    All three are awaited so a failure surfaces (non-fatal to the
+      //    customer, but the admin is told).
       const today = new Date().toISOString().slice(0, 10);
       const customerName = basicInfo.name || "New Client";
-      Promise.all([
-        createDeposit({
-          variables: {
-            input: { customerId, customerName, amount: 0, type: "Security", receivedDate: today, notes: "Auto-created during onboarding" },
-          },
-        }).catch(() => {}),
+      const revenueErrors: string[] = [];
+
+      // Contract term: ~1 billing cycle from today (rough but real dates).
+      const endDate = new Date();
+      if (billingCycle === "Annually") endDate.setFullYear(endDate.getFullYear() + 1);
+      else if (billingCycle === "Quarterly") endDate.setMonth(endDate.getMonth() + 3);
+      else endDate.setMonth(endDate.getMonth() + 1);
+      const endDateStr = endDate.toISOString().slice(0, 10);
+
+      await Promise.allSettled([
+        depositAmount > 0
+          ? createDeposit({
+              variables: {
+                input: {
+                  customerId,
+                  customerName,
+                  amount: depositAmount,
+                  type: "Security",
+                  receivedDate: today,
+                  notes: `Auto-created during onboarding (${modeOfDeposit || paymentMode})`,
+                },
+              },
+            })
+          : Promise.resolve(),
         createContract({
           variables: {
-            input: { customerId, customerName, startDate: today, endDate: today, amount: 0, planName: "Standard", paymentFrequency: "Monthly", autoRenew: false },
+            input: {
+              customerId,
+              customerName,
+              startDate: today,
+              endDate: endDateStr,
+              amount: depositAmount,
+              planName: resolvedPlanType || "Standard",
+              paymentFrequency,
+              autoRenew: false,
+            },
           },
-        }).catch(() => {}),
-        createInvoice({
-          variables: {
-            input: { customerId, customerName, amount: 0, status: "Pending", planName: "Standard" },
-          },
-        }).catch(() => {}),
-      ]);
+        }),
+        depositAmount > 0
+          ? createInvoice({
+              variables: {
+                input: {
+                  customerId,
+                  customerName,
+                  amount: depositAmount,
+                  status: "Pending",
+                  planName: resolvedPlanType || "Standard",
+                },
+              },
+            })
+          : Promise.resolve(),
+      ]).then((results) => {
+        results.forEach((r, i) => {
+          if (r.status === "rejected") {
+            revenueErrors.push(["deposit", "contract", "invoice"][i]);
+          }
+        });
+      });
+
+      // ── B4: flip the onboarding record to COMPLETED once the customer +
+      //    paperwork exist. Non-fatal if it fails — the customer is created.
+      if (onboardingId) {
+        try {
+          await completeOnboarding({ variables: { id: onboardingId } });
+        } catch {
+          // Swallow — completion is bookkeeping; the conversion itself succeeded.
+        }
+      }
+
+      // Clear any saved draft now that onboarding succeeded.
+      try {
+        localStorage.removeItem("onboarding_draft");
+      } catch {
+        /* ignore */
+      }
+
+      if (revenueErrors.length > 0) {
+        toast.warning(
+          `Customer created, but some revenue records failed: ${revenueErrors.join(", ")}. You can add them manually from the customer page.`,
+        );
+      }
 
       router.push(`/dashboard/crm/customers/${customerId}`);
     } catch (err) {

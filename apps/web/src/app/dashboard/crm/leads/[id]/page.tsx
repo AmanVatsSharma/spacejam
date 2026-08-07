@@ -9,7 +9,6 @@ import {
   GET_LEADS,
   GET_CUSTOMERS,
   UPDATE_LEAD,
-  CONVERT_LEAD,
   DELETE_LEAD,
 } from "@/lib/apollo/operations";
 
@@ -165,12 +164,19 @@ export default function LeadDetailsPage() {
   };
 
   const handleViewCustomer = async () => {
-    if (!lead?.email) {
-      toast.error("No email associated with this lead");
-      return;
-    }
     setIsFindingCustomer(true);
     try {
+      // Prefer the direct lead→customer FK (populated on conversion). Only
+      // fall back to email matching when the FK is missing (legacy leads).
+      const directId = (lead as any)?.customerId as string | undefined;
+      if (directId) {
+        router.push(`/dashboard/crm/customers/${directId}`);
+        return;
+      }
+      if (!lead?.email) {
+        toast.error("No linked customer found for this lead");
+        return;
+      }
       const customersData = await refetchCustomers();
       const found = customersData.data?.customers?.find(
         (c: any) => c.email === lead?.email,

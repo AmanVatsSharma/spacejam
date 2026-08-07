@@ -6,9 +6,11 @@ interface AddLeadModalProps {
   open: boolean;
   onClose: () => void;
   onAdd?: (data: Record<string, string>) => void;
+  /** Create the lead then immediately open the onboarding wizard for it. */
+  onAddAndOnboard?: (data: Record<string, string>) => void;
 }
 
-export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
+export function AddLeadModal({ open, onClose, onAdd, onAddAndOnboard }: AddLeadModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -22,6 +24,15 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
     }
     onClose();
     // Reset form on close
+    setName(''); setPhone(''); setEmail(''); setCompany('');
+  };
+
+  const handleAddAndOnboard = () => {
+    if (onAddAndOnboard) {
+      onAddAndOnboard({ name, phone, email, company });
+    }
+    // Reset form (the wizard navigates away, so close isn't strictly needed,
+    // but we clear local state in case the user comes back).
     setName(''); setPhone(''); setEmail(''); setCompany('');
   };
 
@@ -176,6 +187,14 @@ export function AddLeadModal({ open, onClose, onAdd }: AddLeadModalProps) {
           >
             Create Lead
           </button>
+          {onAddAndOnboard && (
+            <button
+              onClick={handleAddAndOnboard}
+              className="px-5 py-2.5 bg-[#0EA5E9] text-white text-[14px] font-semibold rounded-lg hover:bg-[#0284C7] transition-all duration-200 active:scale-[0.97]"
+            >
+              Add &amp; Onboard
+            </button>
+          )}
         </div>
       </div>
     </div>
