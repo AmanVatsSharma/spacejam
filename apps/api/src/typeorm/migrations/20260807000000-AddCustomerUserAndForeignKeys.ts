@@ -27,6 +27,21 @@ export class AddCustomerUserAndForeignKeys20260807000000 implements MigrationInt
         ON "customers" ("userId");
     `);
 
+    // ── Detach orphaned rows BEFORE adding FK constraints. On a live DB,
+    //    rows may reference deleted parents (these FKs were never enforced),
+    //    and Postgres will refuse to create the constraint until they're
+    //    cleaned. We null the FK column for SET-NULL relations and delete the
+    //    row for CASCADE relations, so the constraint always creates cleanly.
+    await this.cleanOrphans(queryRunner, 'customers', 'userId', 'users', 'null');
+    await this.cleanOrphans(queryRunner, 'leads', 'customerId', 'customers', 'null');
+    await this.cleanOrphans(queryRunner, 'leads', 'assignedToId', 'users', 'null');
+    await this.cleanOrphans(queryRunner, 'leads', 'centerId', 'centers', 'null');
+    await this.cleanOrphans(queryRunner, 'onboardings', 'leadId', 'leads', 'delete');
+    await this.cleanOrphans(queryRunner, 'onboardings', 'customerId', 'customers', 'delete');
+    await this.cleanOrphans(queryRunner, 'onboardings', 'assignedToId', 'users', 'null');
+    await this.cleanOrphans(queryRunner, 'onboardings', 'centerId', 'centers', 'null');
+    await this.cleanOrphans(queryRunner, 'customers', 'centerId', 'centers', 'null');
+
     // ── 2. customers.userId → users.id (SET NULL when user deleted) ───────
     await this.addFk(queryRunner, 'FK_CUSTOMERS_USER', 'customers', 'userId', 'users', 'id', 'SET NULL');
 
@@ -55,6 +70,39 @@ export class AddCustomerUserAndForeignKeys20260807000000 implements MigrationInt
 
     // ── 10. customers.centerId → centers.id (SET NULL) ────────────────────
     await this.addFk(queryRunner, 'FK_CUSTOMERS_CENTER', 'customers', 'centerId', 'centers', 'id', 'SET NULL');
+  }
+
+  /**
+   * Remove rows whose FK column points at a parent that no longer exists.
+   * `action` is "null" (set the FK column to NULL, preserving the row) or
+   * "delete" (drop the orphaned row entirely — used for CASCADE relations
+   * where the child has no meaning without the parent).
+   */
+  private async cleanOrphans(
+    queryRunner: QueryRunner,
+    table: string,
+    column: string,
+    refTable: string,
+    action: 'null' | 'delete',
+  ): Promise<void> {
+    if (action === 'delete') {
+      await queryRunner.query(`
+        DELETE FROM "${table}" t
+        WHERE "${column}" IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM "${refTable}" r WHERE r."id" = t."${column}"
+          );
+      `);
+    } else {
+      await queryRunner.query(`
+        UPDATE "${table}" t
+        SET "${column}" = NULL
+        WHERE "${column}" IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM "${refTable}" r WHERE r."id" = t."${column}"
+          );
+      `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

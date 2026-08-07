@@ -11,7 +11,7 @@ import { NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 // @ts-ignore
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { LeadStatus, OnboardingStatus, UserRole } from '../types/user.type';
 import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';

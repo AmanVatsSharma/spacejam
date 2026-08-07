@@ -17,7 +17,7 @@
  */
 import 'reflect-metadata';
 // @ts-ignore
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { dataSource } from '../../typeorm/data-source';
 import { User } from '../../typeorm/entities/user.entity';

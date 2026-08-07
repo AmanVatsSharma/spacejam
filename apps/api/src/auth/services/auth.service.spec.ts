@@ -20,7 +20,7 @@ import {
 } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 // @ts-ignore
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { AuthService } from './auth.service';
 import { EmailService } from './email.service';

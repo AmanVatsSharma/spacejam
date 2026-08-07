@@ -26,7 +26,7 @@ import { UserSessionRepository } from '../../typeorm/repositories/user-session.r
 
 import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
 import { CreateAdminInput, DashboardAdminRole } from '../../auth/dto/create-admin.input';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
 /**
  * The entity role taxonomy (5 tiers) is richer than the GraphQL type

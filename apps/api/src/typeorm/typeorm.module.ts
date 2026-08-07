@@ -35,6 +35,7 @@ import { Contract } from './entities/contract.entity';
 import { Customer } from './entities/customer.entity';
 import { CustomerDocument } from './entities/customer-document.entity';
 import { CustomerEmployee } from './entities/customer-employee.entity';
+import { Onboarding } from './entities/onboarding.entity';
 import { Notification } from './entities/notification.entity';
 import { Discount } from './entities/discount.entity';
 import { Equipment } from './entities/equipment.entity';
@@ -73,6 +74,7 @@ const ALL_ENTITIES = [
   Customer,
   CustomerDocument,
   CustomerEmployee,
+  Onboarding,
   Deposit,
   Invoice,
   Contract,

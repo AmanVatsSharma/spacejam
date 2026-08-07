@@ -10,7 +10,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 // @ts-ignore
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { CacheService } from '../cache/cache.service';
 import { UserRole } from '../graphql/types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
