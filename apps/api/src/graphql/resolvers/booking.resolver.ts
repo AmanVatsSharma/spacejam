@@ -369,6 +369,9 @@ export class BookingResolver {
       relations: ['seat', 'seat.floor', 'center', 'payment', 'meetingRoom', 'user'],
     });
     if (!booking) throw new NotFoundException('Booking not found');
+    if (!endTime || endTime <= booking.endDate) {
+      throw new BadRequestException('endTime must be later than the current booking end');
+    }
     booking.endDate = endTime;
     return (await this.bookingRepo.save(booking)) as unknown as BookingEntity;
   }
