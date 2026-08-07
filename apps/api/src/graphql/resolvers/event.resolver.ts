@@ -9,7 +9,7 @@
 
 import { Resolver, Query, Args, Mutation, ID, Context } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, In } from 'typeorm';
+import { Repository, MoreThanOrEqual, LessThanOrEqual, Between, In } from 'typeorm';
 import { Event } from '../../typeorm/entities/event.entity';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
 import { EventStatus } from '../../graphql/types/user.type';
@@ -45,10 +45,12 @@ export class EventResolver {
       if (filters.type) where.eventType = filters.type;
       if (filters.centerId) where.centerId = filters.centerId;
       if (filters.meetingRoomId) where.meetingRoomId = filters.meetingRoomId;
-      if (filters.startDate || filters.endDate) {
-        where.eventDate = {};
-        if (filters.startDate) where.eventDate.gte = filters.startDate;
-        if (filters.endDate) where.eventDate.lte = filters.endDate;
+      if (filters.startDate && filters.endDate) {
+        where.eventDate = Between(filters.startDate, filters.endDate);
+      } else if (filters.startDate) {
+        where.eventDate = MoreThanOrEqual(filters.startDate);
+      } else if (filters.endDate) {
+        where.eventDate = LessThanOrEqual(filters.endDate);
       }
       if (filters.search) {
         where.title = (await import('typeorm')).Like(`%${filters.search}%`);
