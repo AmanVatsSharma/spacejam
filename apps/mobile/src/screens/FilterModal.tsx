@@ -31,7 +31,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function FilterModal() {
+export default function FilterModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   const [date, setDate] = useState('Today');

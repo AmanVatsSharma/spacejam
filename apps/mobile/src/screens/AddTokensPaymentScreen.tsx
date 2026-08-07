@@ -16,13 +16,13 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function AddTokensPaymentScreen(): ()) {
+export default function AddTokensPaymentScreen() {
   const navigation = useNavigation<any>();
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style=()>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
@@ -118,7 +118,7 @@ export default function AddTokensPaymentScreen(): ()) {
           <Text style={styles.totalLbl}>Total Amount</Text>
           <Text style={styles.totalVal}>₹590.00</Text>
         </View>
-        <TouchableOpacity style=()>
+        <TouchableOpacity style={styles.payBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.payBtnTxt}>Proceed to Pay</Text>
         </TouchableOpacity>
       </View>

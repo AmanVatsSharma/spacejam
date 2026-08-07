@@ -29,7 +29,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function LocationModal() {
+export default function LocationModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   const [activeId, setActiveId] = useState(1);

@@ -30,6 +30,13 @@ import { UserModule } from '../user/user.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { NotificationModule } from '../notification/notification.module';
 import { EnterpriseModule } from '../enterprise/enterprise.module';
+// Mobile feature parity modules (added 2026-08-05)
+import { WalletModule } from '../wallet/wallet.module';
+import { PrintModule } from '../print/print.module';
+import { OfferModule } from '../offer/offer.module';
+import { SupportModule } from '../support/support.module';
+import { ReferralModule } from '../referral/referral.module';
+import { StatementModule } from '../statement/statement.module';
 
 @Module({
   imports: [
@@ -70,6 +77,13 @@ import { EnterpriseModule } from '../enterprise/enterprise.module';
     AnalyticsModule,
     NotificationModule,
     EnterpriseModule,
+    // Mobile feature parity modules (added 2026-08-05)
+    WalletModule,
+    PrintModule,
+    OfferModule,
+    SupportModule,
+    ReferralModule,
+    StatementModule,
   ],
   controllers: [AppController],
   providers: [AppService],

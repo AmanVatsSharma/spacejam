@@ -39,7 +39,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function DateTimeModal() {
+export default function DateTimeModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   const [selectedDate, setSelectedDate] = useState('5');

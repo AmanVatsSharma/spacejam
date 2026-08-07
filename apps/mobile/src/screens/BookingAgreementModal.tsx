@@ -16,7 +16,7 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 
-export default function BookingAgreementModal() {
+export default function BookingAgreementModal({ visible, onClose, invoice }: { visible: boolean; onClose: () => void; invoice?: any }) {
   const navigation = useNavigation<any>();
 
   if (!visible) return null;

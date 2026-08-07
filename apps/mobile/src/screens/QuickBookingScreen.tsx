@@ -22,7 +22,7 @@ const BG = '#fff';
 
 const BG_IMAGE = 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200';
 
-export default function QuickBookingScreen(): ()) {
+export default function QuickBookingScreen() {
   const navigation = useNavigation<any>();
 
   return (
@@ -33,7 +33,7 @@ export default function QuickBookingScreen(): ()) {
         <ImageBackground source={{ uri: BG_IMAGE }} style={styles.headerImage}>
           <SafeAreaView>
             <View style={styles.headerTop}>
-              <TouchableOpacity style=()>
+              <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
                 <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M19 12H5M12 19l-7-7 7-7"/>
                 </Svg>

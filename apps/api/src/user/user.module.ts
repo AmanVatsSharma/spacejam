@@ -13,10 +13,11 @@ import { UserRepositoryModule } from '../typeorm/repositories/user.repository.mo
 import { UserSessionRepositoryModule } from '../typeorm/repositories/user-session.repository.module';
 import { UserResolver } from '../graphql/resolvers/user.resolver';
 import { User } from '../typeorm/entities/user.entity';
+import { WalletTransaction } from '../typeorm/entities/wallet-transaction.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, WalletTransaction]),
     CacheModule,
     UserRepositoryModule,
     UserSessionRepositoryModule,

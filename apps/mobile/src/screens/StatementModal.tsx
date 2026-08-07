@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+
 import {
   StyleSheet,
   View,
@@ -16,8 +16,7 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 
-export default function StatementModal() => void }) {
-  const navigation = useNavigation<any>();
+export default function StatementModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
 
   return (
     <Modal

@@ -30,7 +30,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function CalendarModal() {
+export default function CalendarModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   const [selectedDate, setSelectedDate] = useState('7');

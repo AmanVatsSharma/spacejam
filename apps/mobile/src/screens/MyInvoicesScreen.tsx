@@ -155,7 +155,8 @@ export default function MyInvoicesScreen() {
                 </TouchableOpacity>
               )}
             </View>
-          ))}
+            ))
+          )}
         </View>
       </ScrollView>
 

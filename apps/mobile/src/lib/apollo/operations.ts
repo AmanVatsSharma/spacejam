@@ -34,22 +34,27 @@ export const SIGNIN_MUTATION = gql`
 // Bookings
 // ──────────────────────────────────────────────
 export const GET_BOOKINGS = gql`
-  query GetBookings($centerId: String, $status: BookingStatus) {
-    bookings(centerId: $centerId, status: $status) {
+  query GetBookings($filters: BookingFiltersInput) {
+    bookings(filters: $filters) {
       id
-      date
-      startTime
-      endTime
+      startDate
+      endDate
       status
+      totalPrice
+      notes
+      createdAt
+      user { id name email phone }
       seat {
         id
         name
-        floor {
-          name
-          center { name }
-        }
+        seatType
+        status
+        price
+        floor { id name }
       }
-      user { id name email }
+      center { id name }
+      meetingRoom { id name }
+      payment { id status method transactionId }
     }
   }
 `;
@@ -58,8 +63,15 @@ export const CREATE_BOOKING = gql`
   mutation CreateBooking($input: CreateBookingInput!) {
     createBooking(input: $input) {
       id
+      startDate
+      endDate
       status
-      date
+      totalPrice
+      createdAt
+      updatedAt
+      seat { id name seatType status price }
+      center { id name }
+      payment { id status }
     }
   }
 `;
@@ -68,15 +80,21 @@ export const CREATE_BOOKING = gql`
 // Meeting Rooms
 // ──────────────────────────────────────────────
 export const GET_MEETING_ROOMS = gql`
-  query GetMeetingRooms($centerId: String) {
-    meetingRooms(centerId: $centerId) {
+  query GetMeetingRooms($filters: RoomFiltersInput) {
+    meetingRooms(filters: $filters) {
       id
       name
       capacity
-      floor {
-        name
-        center { name }
-      }
+      roomType
+      status
+      hourlyRate
+      minBookingDuration
+      maxBookingDuration
+      amenities
+      locationName
+      locationFullAddress
+      center { id name }
+      active
     }
   }
 `;
@@ -117,23 +135,29 @@ export const GET_HOME_DATA = gql`
     }
     myBookings {
       id
-      date
-      startTime
-      endTime
+      startDate
+      endDate
       status
+      totalPrice
+      createdAt
       seat {
         id
         name
-        floor {
-          name
-          center { name }
-        }
+        seatType
+        floor { id name }
       }
+      center { id name }
+      meetingRoom { id name }
     }
     invoices {
       id
+      invoiceNumber
+      customerName
       amount
+      tax
+      totalAmount
       status
+      issueDate
       dueDate
     }
   }
@@ -143,58 +167,60 @@ export const GET_MY_BOOKINGS = gql`
   query GetMyBookings {
     myBookings {
       id
-      date
-      startTime
-      endTime
+      startDate
+      endDate
       status
+      totalPrice
+      createdAt
       seat {
         id
         name
-        floor {
-          name
-          center { name }
-        }
+        seatType
+        floor { id name }
       }
+      center { id name }
+      meetingRoom { id name }
+      payment { id status method }
     }
   }
 `;
 
 export const GET_INVOICES = gql`
-  query GetInvoices {
-    invoices {
+  query GetInvoices($filters: InvoiceFiltersInput) {
+    invoices(filters: $filters) {
       id
+      invoiceNumber
+      customerId
+      customerName
+      customerEmail
+      centerId
+      planName
       amount
+      tax
+      totalAmount
       status
+      issueDate
       dueDate
-      booking {
-        id
-        seat {
-          name
-        }
-      }
+      paidDate
+      paymentMethod
+      notes
+      createdAt
+      updatedAt
     }
   }
 `;
 
 export const GET_SEATS = gql`
-  query GetSeats {
-    seats {
+  query GetSeats($floorId: ID) {
+    seats(floorId: $floorId) {
       id
       name
-      type
-      pricing {
-        hourly
-        daily
-        monthly
-      }
-      floor {
-        id
-        name
-        center {
-          id
-          name
-        }
-      }
+      seatType
+      status
+      price
+      amenities
+      location
+      floor { id name }
     }
   }
 `;
@@ -205,19 +231,31 @@ export const GET_EVENTS = gql`
       id
       title
       description
-      date
+      company
+      eventDate
       startTime
       endTime
+      durationMinutes
+      attendeesCount
+      eventType
       status
+      cost
+      meetingRoom { id name }
     }
     todayEvents {
       id
       title
       description
-      date
+      company
+      eventDate
       startTime
       endTime
+      durationMinutes
+      attendeesCount
+      eventType
       status
+      cost
+      meetingRoom { id name }
     }
   }
 `;
@@ -250,24 +288,61 @@ export const GET_EVENT = gql`
       id
       title
       description
-      date
+      company
+      eventDate
       startTime
       endTime
+      durationMinutes
+      attendeesCount
+      eventType
       status
+      cost
+      notes
+      addons
+      meetingRoom { id name }
+      requestedBy { id name email }
     }
   }
 `;
 
 export const GET_NOTIFICATIONS = gql`
-  query GetNotifications {
-    myNotifications {
+  query GetNotifications($unreadOnly: Boolean, $limit: Int) {
+    myNotifications(unreadOnly: $unreadOnly, limit: $limit) {
       id
+      userId
+      centerId
       title
-      body
+      message
       type
+      priority
       read
+      actionUrl
+      metadata
       createdAt
+      updatedAt
     }
+  }
+`;
+
+export const NOTIFICATION_STATS = gql`
+  query NotificationStats {
+    notificationStats {
+      total
+      unread
+      booking
+      payment
+      deposit
+      lead
+      request
+      event
+      system
+    }
+  }
+`;
+
+export const MARK_ALL_NOTIFICATIONS_READ = gql`
+  mutation MarkAllNotificationsRead {
+    markAllNotificationsRead
   }
 `;
 
@@ -293,8 +368,11 @@ export const CREATE_REQUEST_MUTATION = gql`
     createRequest(input: $input) {
       id
       title
-      type
+      requestType
       status
+      urgency
+      description
+      createdAt
     }
   }
 `;
@@ -302,5 +380,319 @@ export const CREATE_REQUEST_MUTATION = gql`
 export const REGISTER_DEVICE_TOKEN_MUTATION = gql`
   mutation RegisterDeviceToken($token: String!) {
     registerDeviceToken(token: $token)
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Centers (real data for LocationModal + HomeScreen)
+// ──────────────────────────────────────────────
+export const GET_MY_CENTERS = gql`
+  query GetMyCenters {
+    myCenters {
+      id
+      name
+      status
+      settings
+      location { id name city }
+      floors { id name }
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Booking lifecycle (existing backend ops)
+// ──────────────────────────────────────────────
+export const CANCEL_BOOKING_MUTATION = gql`
+  mutation CancelBooking($id: ID!) {
+    cancelBooking(id: $id) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
+export const PROCESS_PAYMENT_MUTATION = gql`
+  mutation ProcessPayment($paymentId: ID!, $method: String!) {
+    processPayment(paymentId: $paymentId, method: $method) {
+      id
+      status
+      method
+      transactionId
+    }
+  }
+`;
+
+// Real room availability — drives BookingDetailsScreen time-slot grid
+export const GET_AVAILABLE_ROOMS = gql`
+  query GetAvailableRooms($centerId: String, $minCapacity: Int) {
+    availableRooms(centerId: $centerId, capacity: $minCapacity) {
+      id
+      name
+      capacity
+      roomType
+      status
+      hourlyRate
+      amenities
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Wallet transaction history (WalletScreen)
+// ──────────────────────────────────────────────
+export const GET_MY_WALLET_TRANSACTIONS = gql`
+  query GetMyWalletTransactions($limit: Int, $offset: Int, $type: String) {
+    myWalletTransactions(limit: $limit, offset: $offset, type: $type) {
+      id
+      type
+      amount
+      balanceAfter
+      reference
+      description
+      createdAt
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Print jobs (PrintPreview / MyPrintDetails / PrintUpload)
+// ──────────────────────────────────────────────
+export const GET_MY_PRINT_JOBS = gql`
+  query GetMyPrintJobs($limit: Int) {
+    myPrintJobs(limit: $limit) {
+      id
+      fileUrl
+      fileName
+      pages
+      copies
+      color
+      paperSize
+      sides
+      cost
+      status
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_PRINT_JOB = gql`
+  query GetPrintJob($id: ID!) {
+    printJob(id: $id) {
+      id
+      fileUrl
+      fileName
+      pages
+      copies
+      color
+      paperSize
+      sides
+      cost
+      status
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_PRINT_JOB = gql`
+  mutation CreatePrintJob($input: CreatePrintJobInput!) {
+    createPrintJob(input: $input) {
+      id
+      fileUrl
+      fileName
+      pages
+      copies
+      color
+      cost
+      status
+      createdAt
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Offers / promo codes (OffersScreen)
+// ──────────────────────────────────────────────
+export const GET_ACTIVE_OFFERS = gql`
+  query GetActiveOffers {
+    activeOffers {
+      id
+      code
+      title
+      description
+      type
+      value
+      minOrderAmount
+      maxDiscount
+      validFrom
+      validUntil
+      isActive
+      usageCount
+      usageLimit
+    }
+  }
+`;
+
+export const VALIDATE_OFFER = gql`
+  query ValidateOffer($code: String!, $orderAmount: Float!) {
+    validateOffer(code: $code, orderAmount: $orderAmount)
+  }
+`;
+
+export const REDEEM_OFFER = gql`
+  mutation RedeemOffer($code: String!, $bookingId: ID, $orderAmount: Float) {
+    redeemOffer(code: $code, bookingId: $bookingId, orderAmount: $orderAmount) {
+      id
+      offerId
+      userId
+      bookingId
+      discountAmount
+      redeemedAt
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Support tickets (SupportScreen)
+// ──────────────────────────────────────────────
+export const GET_MY_SUPPORT_TICKETS = gql`
+  query GetMySupportTickets {
+    mySupportTickets {
+      id
+      subject
+      description
+      category
+      priority
+      status
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_SUPPORT_TICKET = gql`
+  mutation CreateSupportTicket($input: CreateSupportTicketInput!) {
+    createSupportTicket(input: $input) {
+      id
+      subject
+      description
+      category
+      priority
+      status
+      createdAt
+    }
+  }
+`;
+
+export const ADD_SUPPORT_MESSAGE = gql`
+  mutation AddSupportMessage($ticketId: ID!, $message: String!) {
+    addSupportMessage(ticketId: $ticketId, message: $message) {
+      id
+      ticketId
+      userId
+      isAdmin
+      message
+      createdAt
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Statements (StatementModal)
+// ──────────────────────────────────────────────
+export const GET_MY_STATEMENT = gql`
+  query GetMyStatement($fromDate: String!, $toDate: String!) {
+    myStatement(fromDate: $fromDate, toDate: $toDate) {
+      fromDate
+      toDate
+      openingBalance
+      closingBalance
+      totalCredits
+      totalDebits
+      transactions {
+        id
+        date
+        description
+        credit
+        debit
+        balanceAfter
+      }
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Referrals (ReferAndEarnScreen)
+// ──────────────────────────────────────────────
+export const GET_MY_REFERRALS = gql`
+  query GetMyReferrals {
+    myReferrals {
+      id
+      referrerId
+      referredEmail
+      referredUserId
+      code
+      status
+      rewardAmount
+      rewardedAt
+      createdAt
+    }
+  }
+`;
+
+export const GET_MY_REFERRAL_STATS = gql`
+  query GetMyReferralStats {
+    myReferralStats {
+      successful
+      pending
+      totalEarned
+      referralCode
+    }
+  }
+`;
+
+export const CREATE_REFERRAL = gql`
+  mutation CreateReferral($referredEmail: String!) {
+    createReferral(referredEmail: $referredEmail) {
+      id
+      referredEmail
+      code
+      status
+      createdAt
+    }
+  }
+`;
+
+// ──────────────────────────────────────────────
+// Notification preferences (NotificationSettingsScreen)
+// ──────────────────────────────────────────────
+export const GET_MY_NOTIFICATION_PREFERENCES = gql`
+  query GetMyNotificationPreferences {
+    myNotificationPreferences {
+      id
+      userId
+      meetingReminders
+      billingAlerts
+      specialOffers
+      eventUpdates
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_NOTIFICATION_PREFERENCES = gql`
+  mutation UpdateNotificationPreferences($input: UpdateNotificationPreferencesInput!) {
+    updateNotificationPreferences(input: $input) {
+      id
+      meetingReminders
+      billingAlerts
+      specialOffers
+      eventUpdates
+      updatedAt
+    }
   }
 `;

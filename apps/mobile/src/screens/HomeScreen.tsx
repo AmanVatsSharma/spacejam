@@ -11,6 +11,7 @@ import { useQuery } from '@apollo/client';
 import { GET_HOME_DATA } from '../lib/apollo/operations';
 import { useNavigation } from '@react-navigation/native';
 import {
+  StyleSheet,
   View,
   Text,
   ScrollView,
@@ -84,6 +85,8 @@ export default function HomeScreen() {
       }
     })();
   }, [registerToken]);
+
+  const handleNavChange = (tab: 'home' | 'events' | 'bookings' | 'profile') => {
     setActiveNav(tab);
     const screenMap: Record<string, any> = {
       home: undefined,

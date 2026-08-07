@@ -8,6 +8,8 @@
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -18,6 +20,7 @@ import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
+import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
@@ -41,6 +44,8 @@ export class UserResolver {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly sessionRepo: UserSessionRepository,
+    @InjectRepository(WalletTransaction)
+    private readonly walletTxRepo: Repository<WalletTransaction>,
   ) {}
 
   @Query(() => UserEntity, { description: 'The currently signed-in user' })
@@ -154,7 +159,17 @@ export class UserResolver {
     user.tokenBalance = (user.tokenBalance || 0) + amount;
     const updated = await this.userRepo.update(user.id, { tokenBalance: user.tokenBalance });
     if (!updated) throw new BadRequestException('Failed to update token balance');
-    
+
+    // Record the transaction so it appears in wallet history (mobile WalletScreen).
+    await this.walletTxRepo.save({
+      userId: user.id,
+      type: 'CREDIT',
+      amount,
+      balanceAfter: user.tokenBalance,
+      reference: `recharge-${Date.now()}`,
+      description: `Token recharge of ${amount}`,
+    });
+
     return updated;
   }
 

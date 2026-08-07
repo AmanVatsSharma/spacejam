@@ -20,7 +20,7 @@ interface Props {
   onConfirm: () => void;
 }
 
-export default function ConfirmBookingModal() {
+export default function ConfirmBookingModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   return (

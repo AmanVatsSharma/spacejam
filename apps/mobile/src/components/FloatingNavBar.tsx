@@ -177,8 +177,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     alignItems: 'center',
-    backgroundColor: palette.whiteTranslucent,
-    backdropFilter: 'blur(20px)', // iOS
     backgroundColor: 'rgba(215,212,210,0.88)',
     borderRadius: 40,
     width: '92%',

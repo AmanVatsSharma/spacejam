@@ -30,7 +30,7 @@ const PREF_TIMES = [
 
 const DURATIONS = ['1 day', '1 week', '2 weeks', '1 month', '3 months', '6 months'];
 
-export default function CustomOfferModal() {
+export default function CustomOfferModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
 
   const [teamSize, setTeamSize] = useState(2);

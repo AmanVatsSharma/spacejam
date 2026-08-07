@@ -25,7 +25,7 @@ import Svg, { Path, Polyline, Circle, Rect, Line, Polygon } from 'react-native-s
 import { PolishedCard } from '../components/PolishedCard';
 import { StatusPill } from '../components/StatusPill';
 
-import { palette, space, radius, elevation } from '../theme/tokens';
+import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
 import FilterModal from './FilterModal';
 import LocationModal from './LocationModal';
@@ -109,7 +109,7 @@ export default function AvailableRoomsScreen() {
               key={seat.id}
               image={i % 2 === 0 ? ROOM_IMAGE_1 : ROOM_IMAGE_2}
               name={seat.floor?.center?.name || 'Center'}
-              details={`${seat.name} • ${seat.type}`}
+              details={`${seat.name} • ${seat.seatType}`}
               status="Available"
               features={['WiFi', 'Display', 'Whiteboard']}
               onPress={() => navigation.navigate('BookingDetails', { seatId: seat.id })}
@@ -183,7 +183,7 @@ const FilterPill = ({ label }: { label: string }) => {
 
 // ─── Room Card ────────────────────────────────────────────────────────────────
 
-const RoomCard = ((): any) => {
+const RoomCard = ({ image, name, details, status, features, onPress, onCalendarPress, index }: any) => {
   const { opacity, translateY } = useFadeIn(staggerDelay(index, 200, 100), { fromY: 16 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageOpacity = React.useRef(new Animated.Value(0)).current;
@@ -227,9 +227,9 @@ const RoomCard = ((): any) => {
           </View>
 
           <View style={styles.actionsRow}>
-            <BookButton label="Book Now" onPress=() />
+            <BookButton label="Book Now" onPress={onPress} />
             <IconBtn color={palette.teal} onPress={onCalendarPress} icon="calendar" />
-            <IconBtn color=() icon="bolt" />
+            <IconBtn color={palette.teal} onPress={onPress} icon="bolt" />
           </View>
         </View>
       </PolishedCard>

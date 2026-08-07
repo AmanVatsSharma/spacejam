@@ -18,7 +18,7 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function SupportScreen(): ()) {
+export default function SupportScreen() {
   const navigation = useNavigation<any>();
 
   const [expandedFaq, setExpandedFaq] = useState<number>(0); // first item expanded by default
@@ -49,7 +49,7 @@ export default function SupportScreen(): ()) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style=()>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>

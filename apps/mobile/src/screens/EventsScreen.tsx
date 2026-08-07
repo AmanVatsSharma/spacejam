@@ -26,7 +26,7 @@ import { PolishedCard } from '../components/PolishedCard';
 import { StatusPill } from '../components/StatusPill';
 import { FloatingNavBar, type NavTab } from '../components/FloatingNavBar';
 
-import { palette, space, radius, elevation } from '../theme/tokens';
+import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback, usePulse } from '../theme/animations';
 
 const EVENT_IMG_1 = 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=800';

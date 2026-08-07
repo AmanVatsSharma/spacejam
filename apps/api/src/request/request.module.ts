@@ -11,14 +11,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { RequestResolver } from '../graphql/resolvers/request.resolver';
 import { Request } from '../typeorm/entities/request.entity';
-import { PrintController } from './print.controller';
+// PrintController moved to PrintModule (apps/api/src/print) on 2026-08-05.
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Request]),
     CacheModule,
   ],
-  controllers: [PrintController],
   providers: [
     RequestResolver,
   ],

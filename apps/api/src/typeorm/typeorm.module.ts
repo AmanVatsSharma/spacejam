@@ -44,6 +44,13 @@ import { RecurringBooking } from './entities/recurring-booking.entity';
 import { ScheduledReport } from './entities/scheduled-report.entity';
 import { CalendarConnection } from './entities/calendar-connection.entity';
 import { NotificationAutomation } from './entities/notification-automation.entity';
+// Mobile feature parity entities (added 2026-08-05)
+import { WalletTransaction } from './entities/wallet-transaction.entity';
+import { PrintJob } from './entities/print-job.entity';
+import { Offer, OfferRedemption } from './entities/offer.entity';
+import { SupportTicket, SupportMessage } from './entities/support-ticket.entity';
+import { Referral } from './entities/referral.entity';
+import { NotificationPreference } from './entities/notification-preference.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -78,6 +85,15 @@ const ALL_ENTITIES = [
   ScheduledReport,
   CalendarConnection,
   NotificationAutomation,
+  // Mobile feature parity entities (added 2026-08-05)
+  WalletTransaction,
+  PrintJob,
+  Offer,
+  OfferRedemption,
+  SupportTicket,
+  SupportMessage,
+  Referral,
+  NotificationPreference,
 ];
 
 @Module({

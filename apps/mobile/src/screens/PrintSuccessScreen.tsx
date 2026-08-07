@@ -14,7 +14,7 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#fff';
 
-export default function PrintSuccessScreen(): ()) {
+export default function PrintSuccessScreen() {
   const navigation = useNavigation<any>();
 
   return (
@@ -25,11 +25,11 @@ export default function PrintSuccessScreen(): ()) {
           <Polyline points="8 12 11 15 16 9" strokeWidth="1.5" />
         </Svg>
       </View>
-      
+
       <Text style={styles.title}>Print Ready</Text>
       <Text style={styles.subtitle}>Print request processed successfully!</Text>
 
-      <TouchableOpacity style=()>
+      <TouchableOpacity style={styles.returnBtn} onPress={() => navigation.navigate('HomeTab')}>
         <Text style={styles.returnBtnTxt}>Return Home</Text>
       </TouchableOpacity>
     </View>

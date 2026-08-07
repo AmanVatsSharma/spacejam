@@ -12,7 +12,7 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BG = '#fff';
 
-export default function PrintProcessingScreen(): ()) {
+export default function PrintProcessingScreen() {
   const navigation = useNavigation<any>();
 
   useEffect(() => {

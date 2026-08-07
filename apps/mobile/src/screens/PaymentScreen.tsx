@@ -16,7 +16,7 @@ const MUTED = '#6F767E';
 const BORDER = '#E5E7EB';
 const BG = '#F9FAFB';
 
-export default function PaymentScreen(): ()) {
+export default function PaymentScreen() {
   const navigation = useNavigation<any>();
 
   const [processing, setProcessing] = useState(false);
@@ -31,7 +31,7 @@ export default function PaymentScreen(): ()) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity style=()>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={DARK} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <Path d="M19 12H5M12 19l-7-7 7-7"/>
           </Svg>
