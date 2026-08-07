@@ -5,6 +5,7 @@ import { persistCache, AsyncStorageWrapper } from 'apollo3-cache-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from '../auth/storage';
+import { REFRESH_TOKENS_MUTATION } from './operations';
 
 // NOTE: The NestJS backend sets a global REST prefix (`api`) but does NOT set
 // `useGlobalPrefix: true` on the GraphQL module, so GraphQL is served at
@@ -34,20 +35,93 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+// ─── Silent token refresh ─────────────────────────────────────────────────────
+// On UNAUTHENTICATED, attempt a single-flight refresh using the stored refresh
+// token. If refresh succeeds, save the new token pair and retry the original
+// operation. Concurrent failed requests share one in-flight refresh. If refresh
+// fails, clear tokens so the auth context bounces the user to login.
+let isRefreshing = false;
+let pendingRequests: Array<(token: string | null) => void> = [];
+
+const resolvePending = (token: string | null) => {
+  pendingRequests.forEach(cb => cb(token));
+  pendingRequests = [];
+};
+
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
-    for (let err of graphQLErrors) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.message,
-      });
-      if (err.extensions?.code === 'UNAUTHENTICATED') {
-        clearTokens();
-        return new Observable(observer => observer.error(err));
+    const unauthenticated = graphQLErrors.some(
+      e => e.extensions?.code === 'UNAUTHENTICATED',
+    );
+
+    if (unauthenticated) {
+      // Single-flight: if a refresh is already in flight, queue this operation.
+      if (isRefreshing) {
+        return new Observable(observer => {
+          pendingRequests.push(token => {
+            if (!token) {
+              observer.error(new Error('Session expired'));
+              return;
+            }
+            operation.setContext(({ headers = {} }) => ({
+              headers: { ...headers, authorization: `Bearer ${token}` },
+            }));
+            forward(operation).subscribe(observer);
+          });
+        });
       }
+
+      return new Observable(observer => {
+        (async () => {
+          isRefreshing = true;
+          try {
+            const refreshToken = await getRefreshToken();
+            if (!refreshToken) {
+              await clearTokens();
+              resolvePending(null);
+              observer.error(new Error('No refresh token'));
+              return;
+            }
+            const res = await fetch(SPACEJAM_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query: REFRESH_TOKENS_MUTATION.loc!.source.body,
+                variables: { refreshToken },
+              }),
+            });
+            const json = await res.json();
+            const accessToken = json?.data?.refreshTokens?.accessToken;
+            const newRefresh = json?.data?.refreshTokens?.refreshToken;
+            if (!accessToken || !newRefresh) {
+              await clearTokens();
+              resolvePending(null);
+              observer.error(new Error('Refresh failed'));
+              return;
+            }
+            await saveTokens(accessToken, newRefresh);
+            isRefreshing = false;
+            resolvePending(accessToken);
+            operation.setContext(({ headers = {} }) => ({
+              headers: { ...headers, authorization: `Bearer ${accessToken}` },
+            }));
+            forward(operation).subscribe(observer);
+          } catch (err) {
+            isRefreshing = false;
+            await clearTokens();
+            resolvePending(null);
+            observer.error(err);
+          }
+        })();
+      });
+    }
+
+    // Non-auth GraphQL errors: surface via toast.
+    for (const err of graphQLErrors) {
+      Toast.show({ type: 'error', text1: 'Error', text2: err.message });
     }
   }
+
   if (networkError) {
     Toast.show({
       type: 'error',

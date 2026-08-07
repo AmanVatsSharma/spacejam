@@ -19,12 +19,65 @@ export const SIGNIN_MUTATION = gql`
     signin(input: { email: $email, password: $password }) {
       accessToken
       refreshToken
+      twoFactorRequired
+      challengeToken
       user {
         id
         email
         name
         role
         tokenBalance
+      }
+    }
+  }
+`;
+
+export const VERIFY_TWO_FACTOR_MUTATION = gql`
+  mutation VerifyTwoFactor($challengeToken: String!, $code: String!) {
+    verifyTwoFactor(input: { challengeToken: $challengeToken, code: $code }) {
+      accessToken
+      refreshToken
+      user {
+        id
+        email
+        name
+        role
+        tokenBalance
+      }
+    }
+  }
+`;
+
+export const REFRESH_TOKENS_MUTATION = gql`
+  mutation RefreshTokens($refreshToken: String!) {
+    refreshTokens(refreshToken: $refreshToken) {
+      accessToken
+      refreshToken
+    }
+  }
+`;
+
+export const EXTEND_BOOKING_MUTATION = gql`
+  mutation ExtendBooking($id: ID!, $endTime: DateTime!) {
+    extendBooking(id: $id, endTime: $endTime) {
+      id
+      startDate
+      endDate
+      status
+      seat {
+        id
+        name
+        floor {
+          name
+        }
+      }
+      meetingRoom {
+        id
+        name
+      }
+      center {
+        id
+        name
       }
     }
   }
