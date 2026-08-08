@@ -126,7 +126,7 @@ export default function HomeScreen() {
         />
 
         {/* ── Stats Cards ── */}
-        <StatsRow />
+        <StatsRow data={data} />
 
         {/* ── Quick Access ── */}
         <View style={styles.section}>
@@ -192,7 +192,10 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Token Balance ── */}
-        <TokenCard onPress={() => navigation.navigate('Wallet')} />
+        <TokenCard
+          balance={data?.me?.tokenBalance ?? 0}
+          onPress={() => navigation.navigate('Wallet')}
+        />
 
         {/* ── Last Paid ── */}
         <View style={styles.section}>
@@ -234,8 +237,13 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.pillsScroll}
           >
-            {['All', 'Mohali', 'Chandigarh', 'Manali'].map((loc, i) => (
-              <CenterPill key={loc} label={loc} active={i === 0} index={i} />
+            {(centersData?.myCenters || []).map((center: any, i: number) => (
+              <CenterPill
+                key={center.id}
+                label={center.location?.city || center.name}
+                active={i === 0}
+                index={i}
+              />
             ))}
           </ScrollView>
         </View>
@@ -427,7 +435,7 @@ const AnimatedHeader = ({
 
 // ─── Stats Row ────────────────────────────────────────────────────────────────
 
-const StatsRow = () => {
+const StatsRow = ({ data }: { data?: any }) => {
   const rowFade = useSlideIn('left', 200, 30, duration.slow);
   const { opacity: card1Op } = useFadeIn(staggerDelay(0, 250, 80), {
     fromY: 12,
@@ -439,6 +447,23 @@ const StatsRow = () => {
     fromY: 12,
   });
 
+  // Real values from GET_HOME_DATA
+  const upcomingBooking = (data?.myBookings || []).find(
+    (b: any) => b.status === 'CONFIRMED' || b.status === 'PENDING'
+  );
+  const upcomingAmount = upcomingBooking ? `₹${upcomingBooking.totalPrice}` : '—';
+  const upcomingSub = upcomingBooking
+    ? `Due ${new Date(upcomingBooking.startDate).toLocaleDateString()}`
+    : 'Nothing due';
+
+  const lastPaid = (data?.invoices || []).find((inv: any) => inv.status === 'PAID');
+  const lastPaidAmount = lastPaid ? `₹${lastPaid.amount}` : '—';
+  const lastPaidSub = lastPaid
+    ? `Paid ${new Date(parseInt(lastPaid.issueDate)).toLocaleDateString()}`
+    : 'No history';
+
+  const tokenBalance = data?.me?.tokenBalance ?? 0;
+
   return (
     <Animated.View style={[styles.statsContainer, rowFade]}>
       <ScrollView
@@ -449,22 +474,22 @@ const StatsRow = () => {
         <Animated.View style={{ opacity: card1Op }}>
           <PolishedCard elevation="subtle" borderRadius={radius.md}>
             <Text style={styles.statLabel}>UPCOMING</Text>
-            <Text style={styles.statValue}>₹8,463</Text>
-            <Text style={styles.statSub}>Due 10 May</Text>
+            <Text style={styles.statValue}>{upcomingAmount}</Text>
+            <Text style={styles.statSub}>{upcomingSub}</Text>
           </PolishedCard>
         </Animated.View>
         <Animated.View style={{ opacity: card2Op }}>
           <PolishedCard elevation="subtle" borderRadius={radius.md}>
             <Text style={styles.statLabel}>LAST PAID</Text>
-            <Text style={styles.statValue}>₹2,463</Text>
-            <Text style={styles.statSub}>Paid Jan 2026</Text>
+            <Text style={styles.statValue}>{lastPaidAmount}</Text>
+            <Text style={styles.statSub}>{lastPaidSub}</Text>
           </PolishedCard>
         </Animated.View>
         <Animated.View style={{ opacity: card3Op }}>
           <PolishedCard elevation="subtle" borderRadius={radius.md}>
             <Text style={styles.statLabel}>TOKENS</Text>
-            <Text style={styles.statValue}>2500</Text>
-            <Text style={styles.statSub}>+10 6/26</Text>
+            <Text style={styles.statValue}>{tokenBalance.toLocaleString()}</Text>
+            <Text style={styles.statSub}>Balance</Text>
           </PolishedCard>
         </Animated.View>
       </ScrollView>
@@ -653,7 +678,7 @@ const LastPaidItem = ({ icon, title, sub, amount, status, variant }: any) => {
 
 // ─── Token Balance Card ───────────────────────────────────────────────────────
 
-const TokenCard = ({ onPress }: { onPress: () => void }) => {
+const TokenCard = ({ balance, onPress }: { balance: number; onPress: () => void }) => {
   const { opacity, translateY } = useFadeIn(staggerDelay(4, 300, 80), {
     fromY: 12,
   });
@@ -683,7 +708,7 @@ const TokenCard = ({ onPress }: { onPress: () => void }) => {
               <View>
                 <Text style={styles.tokenLabel}>TOKEN BALANCE</Text>
                 <View style={styles.tokenValRow}>
-                  <Text style={styles.tokenVal}>2,500</Text>
+                  <Text style={styles.tokenVal}>{balance.toLocaleString()}</Text>
                   <Text style={styles.tokenUnit}>tokens</Text>
                 </View>
               </View>

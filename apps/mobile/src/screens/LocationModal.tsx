@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
+import { useQuery } from '@apollo/client';
 import {
   StyleSheet,
   View,
@@ -11,18 +12,12 @@ import {
   SafeAreaView,
 } from 'react-native';
 import Svg, { Path, Circle, Polyline } from 'react-native-svg';
+import { GET_MY_CENTERS } from '../lib/apollo/operations';
 
 const BRAND = '#FE7A47';
 const DARK = '#1A1D1F';
 const MUTED = '#9CA3AF';
 const BORDER = '#F3F4F6';
-
-const LOCATIONS = [
-  { id: 1, name: 'X11 Space', sub: 'Mohali · 12 rooms' },
-  { id: 2, name: 'Sector 17 Hub', sub: 'Chandigarh · 8 rooms' },
-  { id: 3, name: 'Cyber City Tower', sub: 'Gurugram · 20 rooms' },
-  { id: 4, name: 'Koramangala Block', sub: 'Bengaluru · 15 rooms' },
-];
 
 interface Props {
   visible: boolean;
@@ -31,9 +26,23 @@ interface Props {
 
 export default function LocationModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const navigation = useNavigation<any>();
+  const { data } = useQuery(GET_MY_CENTERS);
 
-  const [activeId, setActiveId] = useState(1);
+  const [activeId, setActiveId] = useState<string | number | null>(null);
   const [search, setSearch] = useState('');
+
+  // Map real centers to the { id, name, sub } shape the list expects.
+  const locations = (data?.myCenters || []).map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    sub: `${c.location?.city || '—'} · ${c.floors?.length || 0} floor${(c.floors?.length || 0) === 1 ? '' : 's'}`,
+  }));
+
+  const filtered = locations.filter((l: any) =>
+    !search.trim() ||
+    l.name.toLowerCase().includes(search.toLowerCase()) ||
+    l.sub.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide">
@@ -69,7 +78,12 @@ export default function LocationModal({ visible, onClose }: { visible: boolean; 
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
-            {LOCATIONS.map((loc) => {
+            {filtered.length === 0 && (
+              <Text style={{ textAlign: 'center', padding: 24, color: MUTED }}>
+                {data ? 'No centers found' : 'Loading centers...'}
+              </Text>
+            )}
+            {filtered.map((loc: any) => {
               const isActive = loc.id === activeId;
               
               return (
