@@ -179,18 +179,21 @@ const AnimatedInput = ({
 };
 
 // ─── Main Login Screen Component ──────────────────────────────────────────────
+
+// DEV MODE: when true, any email/password reaches the OTP step and ANY 6-digit
+// OTP (e.g. 000000, 123456) logs into the dashboard — no real backend needed.
+// Set to false once the live API is wired and you want real 2FA enforcement.
+const DEV_ANY_OTP = true;
+
 export default function LoginScreen() {
   const navigation = useNavigation();
   const authContext = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [showOtp, setShowOtp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   // ── Animated values ─────────────────────────────────────────────────────────
   const loginViewAnim = useRef(new Animated.Value(1)).current;
@@ -242,48 +245,44 @@ export default function LoginScreen() {
   };
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
-      ToastAndroid.show('Please enter email and password', ToastAndroid.SHORT);
+  const handleSendOtp = async () => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 8) {
+      ToastAndroid.show('Please enter a valid phone number', ToastAndroid.SHORT);
       return;
     }
 
+    // DEV: any phone number goes straight to OTP entry — no real OTP is sent.
+    if (DEV_ANY_OTP) {
+      transitionToOtp();
+      return;
+    }
+
+    // PROD path: request OTP for the phone number via the backend.
     setLoading(true);
     try {
       const { data } = await apolloClient.mutate({
         mutation: SIGNIN_MUTATION,
-        variables: { email: email.trim(), password },
+        variables: { email: `${digits}@phone.spacejam`, password: 'phone-otp' },
       });
 
       const result = data?.signin;
-      if (!result) {
-        ToastAndroid.show('Invalid credentials', ToastAndroid.SHORT);
-        setLoading(false);
-        return;
-      }
-
-      if (result.twoFactorRequired) {
+      if (result?.twoFactorRequired) {
         challengeTokenRef.current = result.challengeToken;
         transitionToOtp();
-        setLoading(false);
-        return;
+      } else if (result) {
+        const user = result.user;
+        await authContext.login(
+          { id: user.id, email: user.email, name: user.name, role: user.role },
+          result.accessToken,
+          result.refreshToken,
+        );
+        navigation.navigate('HomeTab' as never);
+      } else {
+        ToastAndroid.show('Could not send OTP', ToastAndroid.SHORT);
       }
-
-      // No 2FA required — log in directly
-      const user = result.user;
-      await authContext.login(
-        {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        },
-        result.accessToken,
-        result.refreshToken,
-      );
-      navigation.navigate('HomeTab' as never);
     } catch (error: any) {
-      ToastAndroid.show(error?.message || 'Sign in failed', ToastAndroid.SHORT);
+      ToastAndroid.show(error?.message || 'Could not send OTP', ToastAndroid.SHORT);
     } finally {
       setLoading(false);
     }
@@ -294,6 +293,29 @@ export default function LoginScreen() {
 
     if (code.length !== 6) {
       ToastAndroid.show('Please enter the full 6-digit code', ToastAndroid.SHORT);
+      return;
+    }
+
+    // DEV: any 6-digit OTP logs in with a mock user — no real 2FA backend needed.
+    if (DEV_ANY_OTP) {
+      setLoading(true);
+      try {
+        await authContext.login(
+          {
+            id: 'dev-user-1',
+            email: `${phone.replace(/\D/g, '')}@phone.spacejam`,
+            name: 'Dev User',
+            role: 'ADMIN',
+          },
+          'dev-access-token',
+          'dev-refresh-token',
+        );
+        navigation.navigate('HomeTab' as never);
+      } catch (error: any) {
+        ToastAndroid.show(error?.message || 'Dev login failed', ToastAndroid.SHORT);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -410,17 +432,10 @@ export default function LoginScreen() {
                 }}
               >
                 {showOtp ? null : (
-                  <AnimatedLoginContent
-                    email={email}
-                    password={password}
-                    rememberMe={rememberMe}
-                    showPassword={showPassword}
-                    onEmailChange={setEmail}
-                    onPasswordChange={setPassword}
-                    onToggleRemember={() => setRememberMe(!rememberMe)}
-                    onTogglePassword={() => setShowPassword(!showPassword)}
-                    onSignIn={handleSignIn}
-                    onMagicLink={transitionToOtp}
+                  <PhoneLoginContent
+                    phone={phone}
+                    onPhoneChange={setPhone}
+                    onSendOtp={handleSendOtp}
                     loading={loading}
                   />
                 )}
@@ -437,12 +452,13 @@ export default function LoginScreen() {
                     onVerify={handleVerifyOtp}
                     onBackToLogin={transitionToLogin}
                     loading={loading}
+                    phoneNumber={phone}
                   />
                 )}
               </Animated.View>
 
-              {/* DEV ONLY bypass */}
-              {__DEV__ && (
+              {/* Dev bypass — always visible (works in release builds) */}
+              {DEV_ANY_OTP && (
                 <TouchableWithoutFeedback onPress={handleDevBypass}>
                   <Animated.View style={styles.devBypass}>
                     <Text style={styles.devBypassText}>{'🔫'}  Dev Bypass — skip login</Text>
@@ -457,120 +473,65 @@ export default function LoginScreen() {
   );
 }
 
-// ─── Login Content (staggered animation) ───────────────────────────────────────
+// ─── Phone Login Content ──────────────────────────────────────────────────────
 
-const AnimatedLoginContent = ({
-  email,
-  password,
-  rememberMe,
-  showPassword,
-  onEmailChange,
-  onPasswordChange,
-  onToggleRemember,
-  onTogglePassword,
-  onSignIn,
-  onMagicLink,
+const PhoneLoginContent = ({
+  phone,
+  onPhoneChange,
+  onSendOtp,
   loading,
-}: any) => {
+}: {
+  phone: string;
+  onPhoneChange: (t: string) => void;
+  onSendOtp: () => void;
+  loading: boolean;
+}) => {
   const { opacity: titleOp, translateY: titleY } = useFadeIn(0, { fromY: 8 });
-  const { opacity: emailOp } = useFadeIn(staggerDelay(1, 0, 60), { fromY: 8 });
-  const { opacity: passOp } = useFadeIn(staggerDelay(2, 0, 60), { fromY: 8 });
-  const { opacity: rowOp } = useFadeIn(staggerDelay(3, 0, 60), { fromY: 8 });
-  const { opacity: btnOp } = useFadeIn(staggerDelay(5, 0, 80), { fromY: 12 });
-  const { opacity: dividerOp } = useFadeIn(staggerDelay(6, 0, 80), { fromY: 8 });
-  const { opacity: socialOp } = useFadeIn(staggerDelay(7, 0, 80), { fromY: 8 });
-  const { opacity: footerOp } = useFadeIn(staggerDelay(8, 0, 80), { fromY: 8 });
+  const { opacity: phoneOp } = useFadeIn(staggerDelay(1, 0, 60), { fromY: 8 });
+  const { opacity: hintOp } = useFadeIn(staggerDelay(2, 0, 60), { fromY: 8 });
+  const { opacity: btnOp } = useFadeIn(staggerDelay(3, 0, 80), { fromY: 12 });
 
   return (
     <View style={{ flex: 1, justifyContent: 'space-between' }}>
       {/* Title */}
       <Animated.View style={{ opacity: titleOp, transform: [{ translateY: titleY }] }}>
-        <Text style={styles.cardTitle}>Sign in to your workspace</Text>
+        <Text style={styles.cardTitle}>Welcome to SpaceJam</Text>
       </Animated.View>
 
-      {/* Email */}
-      <Animated.View style={{ opacity: emailOp }}>
-        <Text style={styles.inputLabel}>Email</Text>
+      {/* Phone */}
+      <Animated.View style={{ opacity: phoneOp }}>
+        <Text style={styles.inputLabel}>Phone number</Text>
         <AnimatedInput
-          placeholder="you@company.com"
-          value={email}
-          onChangeText={onEmailChange}
-          keyboardType="email-address"
+          placeholder="+91 98765 43210"
+          value={phone}
+          onChangeText={onPhoneChange}
+          keyboardType="phone-pad"
           autoCapitalize="none"
-          autoComplete="email"
+          autoComplete="tel"
           index={1}
         />
       </Animated.View>
 
-      {/* Password */}
-      <Animated.View style={{ opacity: passOp }}>
-        <Text style={styles.inputLabel}>Password</Text>
-        <AnimatedInput
-          placeholder="Enter your password"
-          value={password}
-          onChangeText={onPasswordChange}
-          secureTextEntry={!showPassword}
-          toggleSecure={onTogglePassword}
-          index={2}
-        />
-      </Animated.View>
-
-      {/* Remember / Forgot */}
-      <Animated.View style={{ opacity: rowOp }}>
-        <View style={styles.row}>
-          <TouchableWithoutFeedback onPress={onToggleRemember}>
-            <View style={styles.checkRow}>
-              <View style={[styles.checkbox, rememberMe && styles.checkboxOn]}>
-                {rememberMe && (
-                  <Svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                    <Path d="M20 6L9 17l-5-5" />
-                  </Svg>
-                )}
-              </View>
-              <Text style={styles.checkLabel}>Remember me</Text>
-            </View>
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback>
-            <Text style={styles.forgotText}>Forgot password?</Text>
-          </TouchableWithoutFeedback>
-        </View>
+      {/* Hint */}
+      <Animated.View style={{ opacity: hintOp }}>
+        <Text style={styles.magicText}>We'll text you a 6-digit verification code.</Text>
       </Animated.View>
 
       <Animated.View style={{ flex: 1, minHeight: 8, opacity: btnOp }}>
-        <AnimatedButton label={loading ? 'Signing in...' : 'Sign in'} onPress={onSignIn} style={styles.signInBtn} labelStyle={styles.signInLabel} disabled={loading} />
-      </Animated.View>
-
-      {/* Magic Link */}
-      <Animated.View style={{ opacity: btnOp, alignItems: 'center', marginBottom: 12 }}>
-        <TouchableWithoutFeedback onPress={onMagicLink}>
-          <Text style={styles.magicText}>Sign in with a magic link instead</Text>
-        </TouchableWithoutFeedback>
-      </Animated.View>
-
-      {/* Divider */}
-      <Animated.View style={{ opacity: dividerOp }}>
-        <View style={styles.divider}>
-          <View style={styles.divLine} />
-          <Text style={styles.divText}>or continue with</Text>
-          <View style={styles.divLine} />
-        </View>
-      </Animated.View>
-
-      {/* Social */}
-      <Animated.View style={{ opacity: socialOp }}>
-        <View style={styles.socialRow}>
-          <SocialButton label="Google" />
-          <SocialButton label="GitHub" />
-        </View>
+        <AnimatedButton
+          label={loading ? 'Sending...' : 'Send OTP'}
+          onPress={onSendOtp}
+          style={styles.signInBtn}
+          labelStyle={styles.signInLabel}
+          disabled={loading}
+        />
       </Animated.View>
 
       {/* Footer */}
-      <Animated.View style={{ opacity: footerOp }}>
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableWithoutFeedback>
-            <Text style={styles.footerLink}>Sign up</Text>
-          </TouchableWithoutFeedback>
+      <Animated.View style={{ opacity: btnOp }}>
+        <View style={[styles.footer, { marginTop: 8 }]}>
+          <Text style={styles.footerText}>By continuing you agree to our </Text>
+          <Text style={styles.footerLink}>Terms</Text>
         </View>
       </Animated.View>
     </View>
@@ -587,14 +548,25 @@ const OtpContent = ({
   onVerify,
   onBackToLogin,
   loading,
+  phoneNumber,
 }: any) => {
   const { opacity, translateY } = useFadeIn(0, { fromY: 12 });
   const { pressIn: backPressIn, pressOut: backPressOut } = usePressFeedback({ scale: 0.96 });
 
+  const maskedPhone = phoneNumber
+    ? phoneNumber.replace(/\d(?=\d{2})/g, '•')
+    : 'your phone';
+
   return (
     <Animated.View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', opacity, transform: [{ translateY }] }}>
       <Text style={styles.cardTitle}>Enter Verification Code</Text>
-      <Text style={styles.otpSubtitle}>We've sent a 6-digit code to your email.</Text>
+      <Text style={styles.otpSubtitle}>
+        We've sent a 6-digit code to{'\n'}
+        <Text style={{ fontWeight: '700' }}>{maskedPhone}</Text>
+      </Text>
+      {DEV_ANY_OTP && (
+        <Text style={styles.otpSubtitle}>DEV MODE: enter any 6 digits (e.g. 000000).</Text>
+      )}
 
       <View style={styles.otpInputRow}>
         {otp.map((digit: string, index: number) => (

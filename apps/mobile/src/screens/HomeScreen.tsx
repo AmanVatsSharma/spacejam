@@ -50,6 +50,7 @@ import {
   staggerDelay,
   usePressFeedback,
   usePulse,
+  useSpringEntrance,
 } from '../theme/animations';
 
 const { width: SW } = Dimensions.get('window');
