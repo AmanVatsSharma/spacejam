@@ -12,6 +12,7 @@ import {
   Animated,
   Easing,
   Platform,
+  StyleSheet,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -72,7 +73,11 @@ export function useFadeIn(
         toValue: 1,
         duration: dur,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        // JS driver: mount-time entrance transforms can race with the native
+        // animation pipeline in release/Hermes builds, surfacing the animated-node
+        // proxy as a raw Map on the `transform` prop and throwing a
+        // ClassCastException. JS driver avoids that race for one-shot fades.
+        useNativeDriver: false,
       }),
     ]).start();
   }, [delay, dur]);
@@ -114,14 +119,15 @@ export function useSlideIn(
         toValue: 1,
         duration: dur,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        // JS driver — see useFadeIn for rationale (mount-time transform race in release).
+        useNativeDriver: false,
       }),
     ]).start();
   }, [delay, dur]);
 
   const transform = direction === 'left' || direction === 'right'
-    ? { translateX: anim.interpolate({ inputRange: [0, 1], outputRange }) }
-    : { translateY: anim.interpolate({ inputRange: [0, 1], outputRange }) };
+    ? [{ translateX: anim.interpolate({ inputRange: [0, 1], outputRange }) }]
+    : [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange }) }];
 
   return { opacity: anim, transform };
 }

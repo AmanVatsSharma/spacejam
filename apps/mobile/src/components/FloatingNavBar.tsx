@@ -140,7 +140,7 @@ const NavTabItem: React.FC<NavTabItemProps> = ({ tab, isActive, onPress }) => {
     <TouchableWithoutFeedback onPressIn={pressIn} onPressOut={pressOut} onPress={onPress}>
       <Animated.View style={[styles.tabItem, { transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.iconBox}>
-          <Animated.View style={isActive && { transform: [{ scale: pulse.scale }] }}>
+          <Animated.View style={isActive ? { transform: [{ scale: pulse.scale }] } : undefined}>
             {isActive ? tab.activeIcon({ color: palette.ink, filled: true }) : tab.icon({ color: palette.mutedSoft })}
           </Animated.View>
         </View>

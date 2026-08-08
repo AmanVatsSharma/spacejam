@@ -105,7 +105,7 @@ export default function WalletScreen() {
               <HistoryRow key={item.id} item={item} index={i} />
             ))
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
 
       <StatementModal visible={showStatementModal} onClose={() => setShowStatementModal(false)} />

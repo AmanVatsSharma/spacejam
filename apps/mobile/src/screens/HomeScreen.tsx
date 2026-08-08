@@ -18,6 +18,7 @@ import {
   TouchableWithoutFeedback,
   Animated,
   Image,
+  ImageBackground,
   Dimensions,
 } from 'react-native';
 import Svg, {
