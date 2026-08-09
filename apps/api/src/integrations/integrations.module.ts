@@ -13,6 +13,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppSetting } from '../typeorm/entities/app-setting.entity';
 import { IntegrationSettingsService } from './integration-settings.service';
 import { IntegrationSettingsResolver } from './integration-settings.resolver';
+import { PaymentResolver } from './payment.resolver';
 import { ConfigurableSmsProvider } from './configurable-sms-provider';
 import { RazorpayService } from './razorpay.service';
 import { SMS_PROVIDER } from '../auth/services/sms-provider.interface';
@@ -22,6 +23,7 @@ import { SMS_PROVIDER } from '../auth/services/sms-provider.interface';
   providers: [
     IntegrationSettingsService,
     IntegrationSettingsResolver,
+    PaymentResolver,
     RazorpayService,
     // The configurable router reads the chosen provider from settings and
     // falls back to console logging when nothing is configured.

@@ -21,15 +21,20 @@ import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { EmailService } from '../../auth/services/email.service';
+import { Logger } from '@nestjs/common';
 
 @Resolver(() => CustomerEmployee)
 export class CustomerEmployeeResolver {
+  private readonly logger = new Logger(CustomerEmployeeResolver.name);
+
   constructor(
     private cache: CacheService,
     @InjectRepository(CustomerEmployee)
     private employeeRepo: Repository<CustomerEmployee>,
     @InjectRepository(Customer)
     private customerRepo: Repository<Customer>,
+    private readonly emailService: EmailService,
   ) {}
 
   @Query(() => [CustomerEmployee])
@@ -71,9 +76,15 @@ export class CustomerEmployeeResolver {
     });
     const saved = await this.employeeRepo.save(created);
     await this.cache.invalidatePattern('customer:*');
-    // NOTE: a real email invite requires SMTP (EmailService logs to console
-    // until SMTP_HOST is configured). The invitation is recorded here;
-    // delivery is handled by the email layer if configured.
+
+    // Send the invite email (logs to console until SMTP is configured).
+    const customer = await this.customerRepo.findOne({ where: { id: input.customerId } });
+    const companyName = customer?.name ?? 'SpaceJam';
+    if (input.email) {
+      void this.emailService
+        .sendEmployeeInvite({ to: input.email, employeeName: input.name, companyName })
+        .catch((err) => this.logger.warn(`employee invite email to ${input.email} failed: ${err}`));
+    }
     return saved as unknown as CustomerEmployee;
   }
 

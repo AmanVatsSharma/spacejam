@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID, ObjectType, Field } from '@nestjs/graphql';
 import { UnauthorizedException, BadRequestException, NotFoundException, UseGuards } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -31,6 +31,17 @@ export const TRIGGERS = {
   paymentStatusChanged: 'payment.statusChanged',
   seatStatusChanged: 'seat.statusChanged',
 } as const;
+
+/**
+ * A booked time range for a seat on a given date. The mobile client uses this
+ * to mark slots as unavailable in the booking grid.
+ */
+@ObjectType()
+export class BookedSlot {
+  @Field() start!: Date;
+  @Field() end!: Date;
+  @Field(() => String, { nullable: true }) status?: string | null;
+}
 
 @Resolver(() => BookingEntity)
 export class BookingResolver {
@@ -98,6 +109,38 @@ export class BookingResolver {
     });
 
     return booking as unknown as BookingEntity | null;
+  }
+
+  /**
+   * Return the booked time slots for a seat on a given date. The mobile
+   * booking grid marks these as unavailable. A slot is free if no
+   * non-cancelled, non-completed booking overlaps it.
+   */
+  @Query(() => [BookedSlot], {
+    description: 'Booked time slots for a seat on a date (UTC ISO). Empty = fully free.',
+  })
+  async seatAvailability(
+    @Args('seatId', { type: () => ID }) seatId: string,
+    @Args('date', { type: () => String }) date: string,
+  ): Promise<BookedSlot[]> {
+    // Day window in UTC for the supplied date (YYYY-MM-DD).
+    const dayStart = new Date(date + 'T00:00:00.000Z');
+    const dayEnd = new Date(date + 'T23:59:59.999Z');
+    const rows = await this.bookingRepo
+      .createQueryBuilder('b')
+      .select(['b."startDate" AS start', 'b."endDate" AS end', 'b.status AS status'])
+      .where('b."seatId" = :seatId', { seatId })
+      .andWhere('b.status NOT IN (:...statuses)', {
+        statuses: [BookingStatus.CANCELLED, BookingStatus.COMPLETED],
+      })
+      .andWhere('(b."startDate" <= :dayEnd AND b."endDate" >= :dayStart)', { dayStart, dayEnd })
+      .orderBy('b."startDate"', 'ASC')
+      .getRawMany<{ start: Date; end: Date; status: string }>();
+    return rows.map((r) => ({
+      start: r.start,
+      end: r.end,
+      status: r.status,
+    })) as BookedSlot[];
   }
 
   @Mutation(() => BookingEntity)

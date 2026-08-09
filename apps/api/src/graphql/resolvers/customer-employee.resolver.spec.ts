@@ -13,6 +13,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { describe, it, expect, vi as jest, beforeEach } from 'vitest';
 import { ForbiddenException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EmailService } from '../../auth/services/email.service';
 
 import { CustomerEmployeeResolver } from './customer-employee.resolver';
 import { CustomerEmployee } from '../../typeorm/entities/customer-employee.entity';
@@ -45,6 +46,7 @@ describe('CustomerEmployeeResolver — center scoping (hardening)', () => {
         { provide: getRepositoryToken(CustomerEmployee), useValue: employeeRepo },
         { provide: getRepositoryToken(Customer), useValue: customerRepo },
         { provide: CacheService, useValue: cache },
+        { provide: EmailService, useValue: { sendEmployeeInvite: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

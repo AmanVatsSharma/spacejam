@@ -115,6 +115,26 @@ export class EmailService {
     return this.send(args.to, subject, text, html);
   }
 
+  /** Employee invitation — sent when an admin adds a team member to a
+   *  customer's roster. Tells the employee to log in via phone OTP. */
+  async sendEmployeeInvite(args: { to: string; employeeName: string; companyName: string }): Promise<void> {
+    const subject = `You've been added to ${args.companyName} on SpaceJam`;
+    const text =
+      `Hi ${args.employeeName},\n\n` +
+      `${args.companyName} has added you to their SpaceJam coworking account. ` +
+      `You can now book seats and meeting rooms from the SpaceJam mobile app.\n\n` +
+      `Download the app and sign in with your phone number (${args.to}) to get started.\n\n` +
+      `Welcome aboard!`;
+    const html = `
+      <p>Hi ${args.employeeName},</p>
+      <p><strong>${args.companyName}</strong> has added you to their SpaceJam coworking account.
+      You can now book seats and meeting rooms from the SpaceJam mobile app.</p>
+      <p>Download the app and sign in with your phone number (<strong>${args.to}</strong>) to get started.</p>
+      <p>Welcome aboard!</p>
+    `;
+    return this.send(args.to, subject, text, html);
+  }
+
   private async send(to: string, subject: string, text: string, html: string) {
     if (!this.transporter) {
       this.logger.log(`[email:dev] to=${to} subject="${subject}" body=${text}`);

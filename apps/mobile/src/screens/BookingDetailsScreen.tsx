@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation, useQuery } from '@apollo/client';
-import { CREATE_BOOKING, GET_SEATS, GET_ME } from '../lib/apollo/operations';
+import { CREATE_BOOKING, GET_SEATS, GET_ME, GET_SEAT_AVAILABILITY } from '../lib/apollo/operations';
 import Toast from 'react-native-toast-message';
 import {
   StyleSheet,
@@ -79,6 +79,26 @@ export default function BookingDetailsScreen() {
   const seatId = route.params?.seatId;
   const { data: seatsData } = useQuery(GET_SEATS);
   const { data: meData } = useQuery(GET_ME);
+
+  // Real availability: fetch booked slots for this seat today, then mark any
+  // TIME_SLOT overlapping a booked range as 'booked' instead of the static
+  // placeholder flags.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const { data: availData } = useQuery(GET_SEAT_AVAILABILITY, {
+    variables: { seatId, date: todayISO },
+    skip: !seatId,
+  });
+  const bookedRanges: { start: string; end: string }[] = availData?.seatAvailability ?? [];
+  const slots = TIME_SLOTS.map((s) => {
+    const slot24 = to24h(s.time);
+    const slotStartHr = parseInt(slot24.slice(0, 2), 10);
+    const overlaps = bookedRanges.some((r) => {
+      const bStart = new Date(r.start).getUTCHours();
+      const bEnd = new Date(r.end).getUTCHours() + (new Date(r.end).getUTCMinutes() > 0 ? 1 : 0);
+      return slotStartHr >= bStart && slotStartHr < bEnd;
+    });
+    return { ...s, status: overlaps ? 'booked' : 'available' };
+  });
 
   const seat = (seatsData?.seats)?.find((s: any) => s.id === seatId) || {};
   const userTokenBalance = meData?.me?.tokenBalance ?? 0;
@@ -225,7 +245,7 @@ export default function BookingDetailsScreen() {
         <View style={styles.card}>
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>Select Time Slot</Text>
           <View style={styles.timeGrid}>
-            {TIME_SLOTS.map((slot, i) => {
+            {slots.map((slot, i) => {
               const isStart = selectedStart === slot.time;
               const isEnd = selectedEnd === slot.time;
               const isBooked = slot.status === 'booked';

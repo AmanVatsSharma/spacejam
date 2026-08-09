@@ -11,9 +11,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReferralResolver } from '../graphql/resolvers/referral.resolver';
 import { Referral } from '../typeorm/entities/referral.entity';
 import { User } from '../typeorm/entities/user.entity';
+import { WalletTransaction } from '../typeorm/entities/wallet-transaction.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Referral, User])],
+  imports: [TypeOrmModule.forFeature([Referral, User, WalletTransaction])],
   providers: [ReferralResolver],
   exports: [ReferralResolver],
 })

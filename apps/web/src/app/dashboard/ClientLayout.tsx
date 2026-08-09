@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/ui/sidebar';
 import { Header, type HeaderTab } from '@/components/ui/header';
@@ -131,6 +131,33 @@ export default function DashboardLayout({
   // here keeps the user object available for child components that render the
   // role badge or surface account actions (logout, profile menu).
   const { user, logout } = useAuth();
+
+  // ── Client-side RBAC ───────────────────────────────────────────────────
+  // Backend resolvers enforce roles (@Roles), but this keeps the UI honest:
+  // a MEMBER/EMPLOYEE browsing to an admin-only route is bounced to Home
+  // instead of seeing a form they can't actually submit. Admin routes:
+  // settings/*, crm/*, revenue/*, inventory/*, report/*, audit, equipment,
+  // scheduled-reports, calendar-sync, notifications.
+  const ADMIN_ROUTE_PREFIXES = [
+    '/dashboard/settings',
+    '/dashboard/crm',
+    '/dashboard/revenue',
+    '/dashboard/inventory',
+    '/dashboard/report',
+    '/dashboard/audit',
+    '/dashboard/equipment',
+    '/dashboard/scheduled-reports',
+    '/dashboard/calendar-sync',
+    '/dashboard/notifications',
+  ];
+  const STAFF_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'CENTER_OWNER', 'CENTER_MANAGER', 'FINANCE', 'SUPPORT', 'STAFF']);
+  useEffect(() => {
+    if (!user) return; // still loading — don't redirect yet.
+    const isAdmin = STAFF_ROLES.has(user.role);
+    if (!isAdmin && ADMIN_ROUTE_PREFIXES.some((p) => pathname?.startsWith(p))) {
+      router.replace('/dashboard/home');
+    }
+  }, [user, pathname, router]);
 
   return (
     <div className="min-h-screen bg-[#FBF6F4]">

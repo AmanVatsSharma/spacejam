@@ -21,6 +21,7 @@ import { Onboarding } from '../typeorm/entities/onboarding.entity';
 import { CustomerEmployee } from '../typeorm/entities/customer-employee.entity';
 import { CustomerDocument } from '../typeorm/entities/customer-document.entity';
 import { User } from '../typeorm/entities/user.entity';
+import { EmailService } from '../auth/services/email.service';
 
 @Module({
   imports: [
@@ -40,6 +41,10 @@ import { User } from '../typeorm/entities/user.entity';
     OnboardingResolver,
     CustomerEmployeeResolver,
     CustomerDocumentResolver,
+    // EmailService is used by the customer-employee resolver to send invite
+    // emails when an admin adds a team member. Logs to console until SMTP is
+    // configured (EMAIL_HOST/EMAIL_FROM env).
+    EmailService,
   ],
   exports: [
     CrmResolver,

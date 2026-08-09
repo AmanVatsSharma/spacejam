@@ -308,6 +308,18 @@ export const GET_SEATS = gql`
   }
 `;
 
+// Real seat availability: booked time slots for a seat on a date.
+// The booking grid marks these as unavailable instead of showing all slots free.
+export const GET_SEAT_AVAILABILITY = gql`
+  query GetSeatAvailability($seatId: ID!, $date: String!) {
+    seatAvailability(seatId: $seatId, date: $date) {
+      start
+      end
+      status
+    }
+  }
+`;
+
 export const GET_EVENTS = gql`
   query GetEvents {
     upcomingEvents {
@@ -853,6 +865,37 @@ export const UPDATE_NOTIFICATION_PREFERENCES = gql`
       specialOffers
       eventUpdates
       updatedAt
+    }
+  }
+`;
+
+// ─── Razorpay checkout (mobile) ───────────────────────────────────────────
+// createPaymentOrder → returns order id for the Razorpay checkout SDK;
+// verifyPayment → server validates the signature returned after checkout.
+export const CREATE_PAYMENT_ORDER = gql`
+  mutation CreatePaymentOrder($amount: Float!, $receipt: String!) {
+    createPaymentOrder(amount: $amount, receipt: $receipt) {
+      id
+      amount
+      currency
+      status
+      receipt
+    }
+  }
+`;
+
+export const VERIFY_PAYMENT = gql`
+  mutation VerifyPayment($orderId: String!, $paymentId: String!, $signature: String!) {
+    verifyPayment(orderId: $orderId, paymentId: $paymentId, signature: $signature)
+  }
+`;
+
+export const GET_PAYMENT_CONFIG = gql`
+  query PaymentConfig {
+    paymentConfig {
+      configured
+      keyId
+      mode
     }
   }
 `;
