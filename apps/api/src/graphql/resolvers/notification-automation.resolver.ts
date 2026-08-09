@@ -16,6 +16,9 @@ import {
   UpdateNotificationAutomationInput,
 } from '../inputs/notification-automation.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => NotificationAutomation)
 export class NotificationAutomationResolver {
@@ -28,8 +31,12 @@ export class NotificationAutomationResolver {
   @Query(() => [NotificationAutomation])
   async automations(
     @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<NotificationAutomation[]> {
-    const where = centerId ? { centerId } : {};
+    // Center managers see only their center's automations.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    const where = effectiveCenterId ? { centerId: effectiveCenterId } : {};
     return this.repo.find({
       where,
       relations: ['center'],

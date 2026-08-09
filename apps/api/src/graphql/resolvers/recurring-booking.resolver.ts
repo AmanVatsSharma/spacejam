@@ -19,6 +19,8 @@ import { EventStatus, EventType } from '../types/user.type';
 import { CreateRecurringBookingInput } from '../inputs/recurring-booking.input';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => RecurringBooking)
 @UseGuards(GqlAuthGuard)
@@ -34,8 +36,12 @@ export class RecurringBookingResolver {
   @Query(() => [RecurringBooking])
   async recurringBookings(
     @Args('roomId', { type: () => ID, nullable: true }) roomId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<RecurringBooking[]> {
-    const where = roomId ? { roomId, active: true } : { active: true };
+    const where: any = roomId ? { roomId, active: true } : { active: true };
+    // Center managers see only their center's recurring bookings.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     return this.repo.find({
       where,
       relations: ['room', 'center', 'user'],

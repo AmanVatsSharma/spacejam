@@ -12,6 +12,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like, FindOptionsWhere } from 'typeorm';
 import { AuditLog } from '../../typeorm/entities/audit-log.entity';
 import { ObjectType, Field, InputType } from '@nestjs/graphql';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @InputType()
 export class AuditLogFiltersInput {
@@ -42,8 +45,12 @@ export class AuditLogResolver {
   @Query(() => [AuditLog])
   async auditLogs(
     @Args('filters', { nullable: true }) filters?: AuditLogFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<AuditLog[]> {
     const where: FindOptionsWhere<AuditLog> = {};
+    // Center managers see only their center's audit trail.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     if (filters?.userId) where.userId = filters.userId;
     if (filters?.action) where.action = filters.action;
     if (filters?.entityType) where.entityType = filters.entityType;
@@ -67,8 +74,11 @@ export class AuditLogResolver {
   @Query(() => Int)
   async auditLogCount(
     @Args('filters', { nullable: true }) filters?: AuditLogFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<number> {
     const where: FindOptionsWhere<AuditLog> = {};
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     if (filters?.userId) where.userId = filters.userId;
     if (filters?.action) where.action = filters.action;
     if (filters?.entityType) where.entityType = filters.entityType;
@@ -79,17 +89,20 @@ export class AuditLogResolver {
   }
 
   @Query(() => AuditLogStatistics)
-  async auditLogStatistics(): Promise<AuditLogStatistics> {
-    const total = await this.repo.count();
+  async auditLogStatistics(@CurrentUser() caller?: JwtPayload): Promise<AuditLogStatistics> {
+    const scope = caller ? centerScope(caller) : undefined;
+    const where: FindOptionsWhere<AuditLog> = scope ? { centerId: scope } : {};
+    const total = await this.repo.count({ where });
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const todayCount = await this.repo.count({ where: { createdAt: Between(todayStart, new Date()) } });
-    const actors = await this.repo
+    const todayCount = await this.repo.count({ where: { ...where, createdAt: Between(todayStart, new Date()) } });
+    const actorsQb = this.repo
       .createQueryBuilder('a')
       .select('COUNT(DISTINCT a.userId)', 'count')
       .where('a.userId IS NOT NULL')
-      .andWhere('a.createdAt >= :start', { start: todayStart })
-      .getRawOne();
+      .andWhere('a.createdAt >= :start', { start: todayStart });
+    if (scope) actorsQb.andWhere('a."centerId" = :scope', { scope });
+    const actors = await actorsQb.getRawOne();
     return {
       total,
       todayCount,

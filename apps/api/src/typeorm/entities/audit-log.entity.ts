@@ -49,6 +49,14 @@ export class AuditLog {
   @Column({ name: 'entityId', type: 'uuid', nullable: true })
   entityId!: string | null;
 
+  /**
+   * Optional center this audit event relates to — lets center managers see
+   * only their center's audit trail. Added 2026-08-09 (hardening phase).
+   */
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'centerId', type: 'uuid', nullable: true })
+  centerId?: string | null;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'jsonb', nullable: true })
   changes!: Record<string, any> | null;

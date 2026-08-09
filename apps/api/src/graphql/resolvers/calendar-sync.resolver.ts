@@ -9,10 +9,13 @@
  */
 import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ForbiddenException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { CalendarConnection, CalendarProvider } from '../../typeorm/entities/calendar-connection.entity';
 import { User } from '../../typeorm/entities/user.entity';
 import { CalendarSyncService } from '../../enterprise/calendar-sync.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 @Resolver(() => CalendarConnection)
 export class CalendarSyncResolver {
@@ -24,10 +27,25 @@ export class CalendarSyncResolver {
     private userRepo: Repository<User>,
   ) {}
 
+  /**
+   * Enforce that the caller may only act on their own calendar connection.
+   * Calendar connections hold OAuth tokens, so cross-user access is a credential
+   * leak. Admins (ADMIN/SUPER_ADMIN) may pass any userId.
+   */
+  private assertSelfOrAdmin(targetUserId: string, caller?: JwtPayload): void {
+    if (!caller) throw new ForbiddenException('Authentication required');
+    const isAdmin = caller.role === 'ADMIN' || caller.role === 'SUPER_ADMIN';
+    if (!isAdmin && caller.sub !== targetUserId) {
+      throw new ForbiddenException('You can only access your own calendar connection.');
+    }
+  }
+
   @Query(() => [CalendarConnection])
   async calendarConnections(
     @Args('userId', { type: () => ID }) userId: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<CalendarConnection[]> {
+    this.assertSelfOrAdmin(userId, caller);
     return this.repo.find({ where: { userId }, order: { createdAt: 'DESC' } });
   }
 
@@ -35,7 +53,9 @@ export class CalendarSyncResolver {
   async calendarConnection(
     @Args('userId', { type: () => ID }) userId: string,
     @Args('provider', { type: () => CalendarProvider }) provider: CalendarProvider,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<CalendarConnection | null> {
+    this.assertSelfOrAdmin(userId, caller);
     return this.repo.findOne({ where: { userId, provider } });
   }
 
@@ -48,7 +68,9 @@ export class CalendarSyncResolver {
     @Args('expiresAt', { type: () => Date }) expiresAt: Date,
     @Args('externalCalendarId', { nullable: true }) externalCalendarId?: string,
     @Args('email', { nullable: true }) email?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<CalendarConnection> {
+    this.assertSelfOrAdmin(userId, caller);
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new Error('User not found');
 

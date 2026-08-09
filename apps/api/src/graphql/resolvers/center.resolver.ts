@@ -71,7 +71,13 @@ export class CenterResolver {
   }
 
   @Query(() => CenterEntity, { nullable: true })
-  async center(@Args('id', { type: () => ID }) id: string): Promise<CenterEntity | null> {
+  async center(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<CenterEntity | null> {
+    // Center managers may only fetch their own center.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope && scope !== id) return null;
     return this.cache.getOrSet<CenterEntity | null>(
       `center:${id}`,
       async () => {
@@ -86,21 +92,32 @@ export class CenterResolver {
   }
 
   @Query(() => [CenterEntity])
-  async myCenters(@Context() context: any): Promise<CenterEntity[]> {
+  async myCenters(
+    @Context() context: any,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<CenterEntity[]> {
     const userId = context.req.user?.id;
-    if (!userId) {
-      // No auth guard applied — return all centers instead of empty list
-      const centers = await this.centerRepo.find({
+    // Center managers see only their assigned center; super admins (no scope)
+    // see all centers they own (legacy `owner` column) or all centers.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) {
+      return this.centerRepo.find({
+        where: { id: scope } as any,
         relations: ['location', 'floors', 'floors.seats'],
       });
-      return centers;
+    }
+    if (!userId) {
+      return [];
     }
 
     const centers = await this.centerRepo.find({
       where: { owner: userId } as any,
       relations: ['location', 'floors', 'floors.seats'],
     });
-    return centers;
+    // Super admins with no owned centers still see everything.
+    return centers.length
+      ? centers
+      : this.centerRepo.find({ relations: ['location', 'floors', 'floors.seats'] });
   }
 
   @Mutation(() => CenterEntity)
@@ -323,8 +340,14 @@ export class SeatResolver {
   ) {}
 
   @Query(() => [SeatEntity])
-  async seats(@Args('floorId', { type: () => ID, nullable: true }) floorId?: string): Promise<SeatEntity[]> {
-    const where = floorId ? { floorId } : {};
+  async seats(
+    @Args('floorId', { type: () => ID, nullable: true }) floorId?: string,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<SeatEntity[]> {
+    const where: any = floorId ? { floorId } : {};
+    // Center managers see only their center's seats.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     const seats = await this.seatRepo.find({
       where,
       relations: ['floor'],

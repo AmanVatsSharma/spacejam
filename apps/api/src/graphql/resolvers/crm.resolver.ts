@@ -189,9 +189,13 @@ export class CrmResolver {
 
   @Query(() => Number, { description: 'Get count of leads, optionally filtered by status' })
   async leadCount(
-    @Args('status', { nullable: true, type: () => LeadStatus }) status?: LeadStatus
+    @Args('status', { nullable: true, type: () => LeadStatus }) status?: LeadStatus,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<number> {
-    const where = status ? { status } : {};
+    const where: any = status ? { status } : {};
+    // Center managers count only their center's leads.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     return this.leadRepo.count({ where });
   }
 

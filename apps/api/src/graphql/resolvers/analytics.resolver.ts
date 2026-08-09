@@ -83,7 +83,7 @@ export class AnalyticsResolver {
       ).length;
 
       // Calculate occupancy
-      const seatWhere: any = centerId ? { floor: { centerId } } : {};
+      const seatWhere: any = effectiveCenterId ? { floor: { centerId: effectiveCenterId } } : {};
       const totalSeats = await this.seatRepo.count({
         where: seatWhere as any,
       });
@@ -91,7 +91,7 @@ export class AnalyticsResolver {
       const occupiedSeats = await this.seatRepo.count({
         where: {
           status: SeatStatus.OCCUPIED,
-          ...(centerId ? { floor: { centerId } } : {})
+          ...(effectiveCenterId ? { floor: { centerId: effectiveCenterId } } : {})
         } as any,
       });
 
@@ -103,7 +103,7 @@ export class AnalyticsResolver {
         where: {
           status: SeatStatus.OCCUPIED,
           updatedAt: LessThan(thirtyDaysAgo),
-          ...(centerId ? { floor: { centerId } } : {})
+          ...(effectiveCenterId ? { floor: { centerId: effectiveCenterId } } : {})
         } as any,
       });
       const prevOccupancyRate = totalSeats > 0 ? prevOccupiedSeats / totalSeats : 0;
@@ -125,7 +125,7 @@ export class AnalyticsResolver {
       const upcomingMaintenance = await this.seatRepo.find({
         where: {
           status: SeatStatus.MAINTENANCE,
-          ...(centerId ? { floor: { centerId } } : {})
+          ...(effectiveCenterId ? { floor: { centerId: effectiveCenterId } } : {})
         } as any,
       });
 
@@ -263,7 +263,7 @@ export class AnalyticsResolver {
         relations: ['booking'],
       });
 
-      const totalRevenue = payments.reduce((sum, p) => sum => p.amount, 0);
+      const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
       return {
         total: totalRevenue,
@@ -284,7 +284,7 @@ export class AnalyticsResolver {
     const scope = caller ? centerScope(caller) : undefined;
     const effectiveCenterId = scope ?? centerId;
     if (!effectiveCenterId) {
-      return { averageOccupancy: 0, peakOccupancy: 0, byDay: [], bySeatType: [] } as OccupancyReport;
+      return { centerId: '', byDay: [], bySeatType: [], averageRate: 0 } as unknown as OccupancyReport;
     }
     const now = new Date();
     let dateRange = { since: new Date(), until: now };
@@ -301,7 +301,7 @@ export class AnalyticsResolver {
     // Get all bookings in the period
     const bookings = await this.bookingRepo.find({
       where: {
-        centerId,
+        centerId: effectiveCenterId,
         createdAt: Between(dateRange.since, dateRange.until)
       } as any,
       relations: ['seat'],
@@ -323,13 +323,13 @@ export class AnalyticsResolver {
       );
 
       const totalSeats = await this.seatRepo.count({
-        where: { floor: { centerId } } as any,
+        where: { floor: { centerId: effectiveCenterId } } as any,
       });
 
       const occupiedSeats = await this.seatRepo.count({
         where: {
           status: SeatStatus.OCCUPIED,
-          floor: { centerId }
+          floor: { centerId: effectiveCenterId }
         } as any,
       });
 
@@ -344,24 +344,24 @@ export class AnalyticsResolver {
     }
 
     // By seat type
-    for (const type of seatTypes) {
+    for (const seatType of seatTypes) {
       const seats = await this.seatRepo.count({
         where: {
-          type,
-          floor: { centerId }
+          seatType,
+          floor: { centerId: effectiveCenterId }
         } as any,
       });
 
       const occupied = await this.seatRepo.count({
         where: {
-          type,
+          seatType,
           status: SeatStatus.OCCUPIED,
-          floor: { centerId }
+          floor: { centerId: effectiveCenterId }
         } as any,
       });
 
       seatTypeOccupancies.push({
-        type,
+        type: seatType,
         count: seats,
         occupancyRate: seats > 0 ? occupied / seats : 0,
       });
@@ -372,7 +372,7 @@ export class AnalyticsResolver {
       byDay.reduce((sum, day) => sum + day.occupancyRate, 0) / byDay.length;
 
     return {
-      centerId,
+      centerId: effectiveCenterId,
       byDay,
       bySeatType: seatTypeOccupancies,
       averageRate: totalAverage,

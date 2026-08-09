@@ -29,6 +29,7 @@ import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { ForbiddenException } from '@nestjs/common';
 
 @Resolver(() => CustomerEntity)
 export class CustomerResolver {
@@ -190,15 +191,31 @@ export class CustomerResolver {
             type: () => CustomerStatus,
         })
         status?: CustomerStatus,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<number> {
-        const where = status ? { status } : {};
+        const where: any = status ? { status } : {};
+        // Center managers count only their center's customers.
+        const scope = caller ? centerScope(caller) : undefined;
+        if (scope) where.centerId = scope;
         return this.customerRepo.count({ where });
+    }
+
+    /** Reject if a center manager targets a customer in another center. */
+    private async assertCenterAccess(customerId: string, caller?: JwtPayload): Promise<void> {
+        const scope = caller ? centerScope(caller) : undefined;
+        if (!scope) return; // super admin → allow.
+        const customer = await this.customerRepo.findOne({ where: { id: customerId } });
+        if (customer && customer.centerId && customer.centerId !== scope) {
+            throw new ForbiddenException('This customer belongs to a different center.');
+        }
     }
 
     @Query(() => [DepositEntity])
     async customerDeposits(
         @Args('customerId', { type: () => ID }) customerId: string,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<DepositEntity[]> {
+        await this.assertCenterAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.deposits', 'deposit')
@@ -212,7 +229,9 @@ export class CustomerResolver {
     @Query(() => [ContractEntity])
     async customerContracts(
         @Args('customerId', { type: () => ID }) customerId: string,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<ContractEntity[]> {
+        await this.assertCenterAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.contracts', 'contract')
@@ -226,7 +245,9 @@ export class CustomerResolver {
     @Query(() => [InvoiceEntity])
     async customerInvoices(
         @Args('customerId', { type: () => ID }) customerId: string,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<InvoiceEntity[]> {
+        await this.assertCenterAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.invoices', 'invoice')

@@ -13,6 +13,9 @@ import { Repository } from 'typeorm';
 import { ScheduledReport } from '../../typeorm/entities/scheduled-report.entity';
 import { CreateScheduledReportInput, UpdateScheduledReportInput } from '../inputs/scheduled-report.input';
 import { ScheduledReportsService } from '../../enterprise/scheduled-reports.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => ScheduledReport)
 export class ScheduledReportResolver {
@@ -25,8 +28,12 @@ export class ScheduledReportResolver {
   @Query(() => [ScheduledReport])
   async scheduledReports(
     @Args('userId', { type: () => ID, nullable: true }) userId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<ScheduledReport[]> {
-    const where = userId ? { userId } : {};
+    const where: any = userId ? { userId } : {};
+    // Center managers see only their center's scheduled reports.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     return this.repo.find({ where, relations: ['user', 'center'], order: { createdAt: 'DESC' } });
   }
 
