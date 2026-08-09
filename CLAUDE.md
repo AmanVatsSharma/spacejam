@@ -17,7 +17,7 @@ Shared libraries live under `libs/`:
 - `libs/shared` — cross-app TS types
 - `libs/ui` — cross-app UI primitives
 
-Package manager: pnpm workspaces. Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
+Package manager: npm workspaces (a `pnpm-lock.yaml` exists but `pnpm` may not be on PATH — use `npx nx`). Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
 
 See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integration) — load it for any task that touches Nx config, generators, or `nx-workspace` / `nx-generate` skills.
 
@@ -27,9 +27,11 @@ See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integrati
 
 ```sh
 npx nx dev web          # Next.js dev server (port 3000)
-npx nx serve api        # NestJS dev server (port 4000 — NOT 3001)
+npx nx serve api        # NestJS dev server (port from apps/api/.env, currently 3100 dev / 4000 prod)
 npx nx start mobile     # Expo dev server
 ```
+
+The API can also be run directly after a build (faster iteration, avoids the `nx serve` webpack watch): `cd apps/api && npx nx build api --configuration=development && node dist/main.js`. It reads `apps/api/.env`. For a dev schema bootstrap, prefix with `DATABASE_SYNCHRONIZE=true` once (see Migration section).
 
 ### Building
 
@@ -38,6 +40,8 @@ npx nx build web        # Next.js production build (webpack, standalone output)
 npx nx build api        # NestJS production build (webpack-cli, not tsc)
 ```
 
+Note: `npx nx build web` fails on the `_global-error` page prerendering — a persistent Next.js 16 issue. **Ignore it**; `next start` and the dev server still work.
+
 ### Tests
 
 ```sh
@@ -45,8 +49,10 @@ npx nx build api        # NestJS production build (webpack-cli, not tsc)
 npx nx test web
 npx nx test web -- --run path/to/file.test.ts    # single file, CI mode
 
-# API tests (Vitest, configured at apps/api/vitest.config.ts)
-npx nx test api
+# API tests — run directly via vitest (no nx target exists):
+cd apps/api && npx vitest run src/path/to.spec.ts
+# The full auth + subscription + customer-employee suite:
+cd apps/api && npx vitest run src/auth/services/ src/subscription/ src/graphql/resolvers/customer-employee.resolver.spec.ts
 
 # Playwright E2E (web + api-e2e)
 npx nx e2e web
@@ -85,7 +91,7 @@ npx nx affected:test --base=main # run tests affected by changes
 **Data flow**:
 1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`, `use-crm.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
 2. **Auth**: JWT access + refresh tokens stored in cookies. `contexts/auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
-3. **Route guard**: `proxy.ts` (Next.js 16) redirects authenticated users away from auth pages only. Dashboard auth is handled entirely client-side via the auth context — the Edge proxy cannot read localStorage. Admin route protection (`/dashboard/settings`, `/dashboard/crm`) is enforced client-side by role checks, not by the proxy.
+3. **Route guard**: `proxy.ts` (Next.js 16) redirects authenticated users away from auth pages only. Dashboard auth is handled entirely client-side via the auth context — the Edge proxy cannot read localStorage. **There is NO client-side role gate on admin routes** — protection is backend-only (`@Roles` on resolvers). The Integrations settings page self-gates with an in-component role check; other admin pages do not.
 4. **Apollo client**: `apps/web/src/lib/apollo/client.ts` — attaches access tokens, handles 401 → refresh → retry via `refreshTokensOnce()`. Uses memory token cache + cookie persistence. Server-side (SSR) client skips the refresh link.
 
 **Next.js config** (`apps/web/next.config.ts`):
@@ -95,33 +101,41 @@ npx nx affected:test --base=main # run tests affected by changes
 
 ### Backend (`apps/api`)
 
-**Module layout** (`apps/api/src/`): one folder per domain — `auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `observability`, `health`, `cache`, `config`, `graphql`, `typeorm`, `common`, `types`, `assets`, `app`.
+**Module layout** (`apps/api/src/`): one folder per domain — `auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `observability`, `health`, `cache`, `config`, `graphql`, `typeorm`, `common`, `types`, `assets`, `app`, plus the newer `subscription` (Plans/Subscriptions/billing) and `integrations` (SMS + Razorpay config).
 
-- **GraphQL schema**: SDL at `apps/api/src/graphql/schema.graphql` is the source of truth. Resolvers are code-first and mirror it.
-- **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. Run via TypeORM CLI (configured in `apps/api/package.json`).
+- **GraphQL schema**: generated code-first (`autoSchemaFile: true` in `apps/api/src/graphql/graphql.config.ts`). The hand-written `apps/api/src/graphql/schema.graphql` is **stale** — do NOT treat it as authoritative; introspect the live endpoint instead.
+- **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. **Every entity MUST be registered in BOTH `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) and the `data-source.ts` entities array**, or TypeORM metadata/synchronize breaks. Run via the migration scripts in `scripts/` (see Migrations below).
   - **Prod PostgreSQL is < v11** (no `CREATE TYPE IF NOT EXISTS`) — migrations must use `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` blocks
   - Prod runs with `synchronize: false`, so any new entity requires an explicit `CREATE TABLE` migration
-- **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). 2FA via TOTP. Guards: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
+- **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). **A global `APP_GUARD` (`GqlAuthGuard`) is registered in `app.module.ts`** — every resolver requires a valid JWT unless marked `@Public()`. `@CurrentUser()` injects the `JwtPayload` (`sub`, `email`, `role`, `centerId`, `sid`). Role-based authz via `@Roles(...)` + `RolesGuard` (reads `req.user.role`).
+  - **Phone OTP login** (M1): `requestOtp` / `verifyOtp` mutations provision `EMPLOYEE` / `COMPANY_ADMIN` / `MEMBER` users on first login. `OTP_DEV_BYPASS=true` returns a fixed dev code `000000` server-side; the mobile client has NO client-side bypass in release builds (only a `__DEV__`-gated dev shortcut).
+  - **Center scoping**: `centerScope(caller)` (`auth/helpers/center-scope.helper.ts`) returns a CENTER_MANAGER's `centerId`; resolvers apply it as `effectiveCenterId = scope ?? clientCenterId` so managers can't read cross-center data.
+- **Subscriptions & billing** (M2/M3): `Plan` (center's billable seat offering) → `Subscription` (customer commitment) → `BillingService.processSubscription` fans out into per-seat monthly Bookings (`Booking.planId` + `Booking.subscriptionId`) + an Invoice + advances `nextBillingDate`. Idempotent per cycle. `processDueSubscriptions` sweeps due subs — **but there is no cron scheduler yet**; it only runs on the admin "Run all due cycles" button.
+- **Integrations** (SMS + Razorpay): `app_settings` table holds platform config. `ConfigurableSmsProvider` routes OTP delivery to MSG91/Twilio based on config (console fallback when unconfigured). `RazorpayService` exposes `createOrder` + `verifyPayment`. Configured by a super-admin via the Integrations settings page (`@Roles(SUPER_ADMIN)`).
 - **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
-- **Build**: uses webpack-cli (configured in `apps/api/package.json` nx targets), NOT `tsc`.
+- **Build**: uses webpack-cli (configured in `apps/api/package.json` nx targets), NOT `tsc`. NOTE: `user.type.ts` ↔ `user.entity.ts` form a circular import; the `User` reference in `AuthPayload.user` is resolved lazily via `getUserType()` (do NOT re-add a top-level `import { User }`).
 
 ### Mobile (`apps/mobile`)
 
 Expo SDK 57 (~54). Structure under `apps/mobile/src/`:
-- `screens/` — one file per screen (~29 screens: Login, Home, MyBookings, Events, Wallet, Profile, etc.)
-- `navigation/AppNavigator.tsx` — single entry; `Stack` wraps a `Tab` (Home/Events/MyBookings/Profile) plus ~22 stack screens
+- `screens/` — one file per screen (~31 screens: Login, Home, MyBookings, Events, Wallet, Profile, Plans, MeetingRooms, etc.)
+- `navigation/AppNavigator.tsx` — single entry; `Stack` wraps a `Tab` whose set is **role-based** (EMPLOYEE/COMPANY_ADMIN get a Plans tab; staff/members get Home/Events/MyBookings/Profile) plus ~26 stack screens
 - `components/`, `lib/` (auth context, apollo client), `theme/` (tokens, animations)
 - Codegen via `codegen.ts` against the backend GraphQL schema
+
+**Login (M1)**: phone-number OTP — `REQUEST_OTP_MUTATION` / `VERIFY_OTP_MUTATION` against the backend. Release builds have NO client-side bypass; a `__DEV__`-only dev shortcut calls the real API with the server's dev code.
+
+**Role-based routing (M4)**: `AppNavigator` builds the tab set from `user.role` (`STAFF_ROLES` / `COMPANY_ROLES` buckets in the file).
 
 Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
 
 **Mobile ↔ Web event mapping** (when adding new event features on both surfaces):
 | Mobile screen | Web counterpart |
 |---|---|
-| `EventsScreen` | `/dashboard/events` |
-| `EventDetailsScreen` | `/dashboard/events/[id]` |
-| `MyEventDetailsScreen` | `/dashboard/events/my/[id]` |
+| `EventsScreen` | `/dashboard/operations/events` |
+| `EventDetailsScreen` | `/dashboard/operations/events/[id]` |
+| `MyEventDetailsScreen` | `/dashboard/operations/events/my/[id]` |
 | `EventSuccessScreen` | post-booking confirmation |
 
 ## Key Conventions
@@ -143,26 +157,55 @@ Always check versioned Expo docs before writing mobile code: https://docs.expo.d
 
 ### Mock-Fallback Convention
 
-Many pages render mock data when the GraphQL response is empty: `const rows = data?.items?.length ? data.items : MOCK_ITEMS`. Preserve mock fallbacks unless the backend for that page is fully verified.
+Most admin pages are now fully wired to live GraphQL data (no `MOCK_*` constants remain in `apps/web/src/app/dashboard/**`). The old mock-unwrap audit (2026-07-11) is stale.
 
-**Known limitations**:
-- `npx nx build web` fails on `_global-error` page prerendering (`Cannot read properties of null (reading 'useContext')`). Persistent Next.js 16 build issue — **ignore this error**; dev server and `next start` deploy still work.
-- `/dashboard/page.tsx` is an unwired demo duplicate of `/dashboard/home/page.tsx`.
-- Settings pages (finance/notification/security + permissions tab) have no backend entity — toggles/Save are cosmetic.
-- Frontend mock-unwrap audit (2026-07-11): many admin/dashboard pages still display MOCK_* when GraphQL returns empty — `apps/web/src/app/dashboard/page.tsx`, `inventory/`, `crm/`, `bookings/`, `operations/`, `analytics/`, `settings/finance|notification|security`, `meeting-room/events`, `set-up-new-center/centers` are in this state.
-- Mobile screens `MyEventDetailsScreen.tsx` and `EventDetailsScreen.tsx` have hardcoded event data / mismatched GraphQL query keys (`data?.event` may not match actual query result). Don't rely on them as the source of truth for event data shapes.
+**Known limitations (current)**:
+- `npx nx build web` fails on `_global-error` page prerendering — **ignore**; dev server and `next start` still work.
+- `/dashboard/page.tsx` redirects to `/dashboard/home` (no longer a demo duplicate).
+- Settings pages persist via `Center.settings` jsonb (`useSettingsGroup`); toggles are real but behavior-enforcement in other modules is partial.
+- **Web RBAC is backend-only**: there is no client-side role guard in `proxy.ts` / `ClientLayout`. A logged-in MEMBER can reach admin pages; the backend `@Roles` guard is the real barrier. (The Integrations page self-gates via a role check in-component.)
+- **Two parallel booking systems**: seat bookings → `bookings` table; meeting-room/event bookings → `events` table. Reporting (`dashboardMetrics`/`revenueReport`/`occupancyReport`) queries `bookings` only — meeting-room revenue is invisible to reports.
+- **Mobile**: seat-booking time slots are hardcoded constants (not real availability); the Plans subscribe path requires a `customerId` that `GET_ME` doesn't currently select; event booking from mobile fails because `GET_EVENT` omits `centerId`. See the verification audit for the full mobile gap list.
+- **Stubs (not yet wired)**: no billing cron scheduler; `processPayment`/`rechargeWallet` are balance bumps (Razorpay service exists but isn't called from checkout yet); calendar-sync `fetchExternal` returns `[]`; scheduled-reports has no `@Cron`; referral payouts never transition; employee email invites never sent; `regenerateRecoveryCodes` returns a mock array.
 
 ## Environment Variables
 
 | Scope | File | Key vars |
 |-------|------|----------|
-| Backend | `apps/api/.env` | `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_HOST`, `REDIS_PORT`, `PORT` (default 4000), `CORS_ORIGIN`, `NODE_ENV` |
+| Backend | `apps/api/.env` | `DATABASE_*` (or `DATABASE_URL`), `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_*`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `OTP_DEV_BYPASS`, `DATABASE_SYNCHRONIZE` |
 | Frontend | `apps/web/.env.local` | `NEXT_PUBLIC_GRAPHQL_HTTP_URL`, `NEXT_PUBLIC_GRAPHQL_WS_URL` |
 | Mobile | `apps/mobile/.env` | Expo/EAS vars |
+
+Backend env notes:
+- `OTP_DEV_BYPASS=true` — dev only. Makes `requestOtp` return the fixed code `000000` instead of sending SMS. **Must be `false` (unset) in production** or OTP login is open.
+- `DATABASE_SYNCHRONIZE=true` — opt-in. Lets TypeORM create/alter tables from entities (used for a one-off dev bootstrap). Prod leaves it off (migrations are the source of truth). The app `TypeOrmConfigModule` defaults `synchronize=false`.
+- SMS provider + Razorpay keys are **not** env vars — they live in the `app_settings` table, configured via the super-admin Integrations page.
 
 A reference `docker-compose.yml` is committed for local Postgres/Redis/NGINX/Prometheus/Grafana — not the deploy stack, just for spinning up dependencies.
 
 `pnpm-workspace.yaml` declares `allowBuilds` for native modules (`sharp`, `sqlite3`, `@swc/core`, `nx`, etc.) — required for pnpm to install these from source.
+
+## Migrations
+
+New entities require a migration AND registration in both `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) and `data-source.ts`. Prod runs `synchronize: false`, so a missing migration means the table/column won't exist and the API errors on boot or first query.
+
+The migration files are `.ts` and the entity graph pulls in GraphQL decorators that don't evaluate outside the Nest app context, so the TypeORM CLI DataSource can't always load cleanly. To apply migrations on the server, use the raw-SQL bootstrap script (idempotent — safe to re-run):
+
+```sh
+# On the server, from the repo root, after deploy.sh has built the API:
+cd /home/ubuntu/spacejam
+node apps/api/dist/main.js &   # boot once so synchronize creates tables, OR:
+# Apply migrations manually via the raw SQL in each migration's up() method.
+```
+
+The current migration set (in `apps/api/src/typeorm/migrations/`):
+- `20260719000000_create_all_tables` — base schema
+- … additive migrations through `20260724010000-AddEmployeeSeatRelation`, `20260807000000-AddCustomerUserAndForeignKeys`
+- `20260809000000-AddOtpAndEmployeeUser` — M1: `otp_requests` table + `customer_employees.userId`
+- `20260809100000-AddPlansAndSubscriptions` — M2: `plans` + `subscriptions`
+- `20260809200000-AddBookingSubscriptionId` — M3: `bookings.subscriptionId`
+- `20260809300000-AddAuditLogCenterId` — hardening: `audit_logs.centerId`
+- `20260809400000-CreateAppSettings` — integrations: `app_settings`
 
 ## Production Server
 
@@ -206,6 +249,8 @@ Security group: inbound **22, 80, 443**. Outbound: default.
 
 ### Deploy Workflow
 
+> **Before deploying**, ensure the new migrations will be applied — the API now depends on `otp_requests`, `plans`, `subscriptions`, `bookings.subscriptionId`, `audit_logs.centerId`, and `app_settings`. With `synchronize=false` in prod, a missing table means boot/runtime failure. Either run `DATABASE_SYNCHRONIZE=true` once after deploy (simplest) or apply each migration's SQL manually.
+
 ```sh
 # 1. Build locally
 npx nx build web && npx nx build api
@@ -219,6 +264,17 @@ scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" updat
 ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
 # Then run:
 bash /home/ubuntu/deploy.sh   # uses /home/ubuntu/deploy.sh, NOT scripts/deploy.sh (that path is broken in npm scripts)
+
+# 4. Apply new schema (one-off) — boot the API once with synchronize on so the
+#    new tables/columns are created, then restart normally:
+DATABASE_SYNCHRONIZE=true pm2 restart spacejam-api --update-env
+sleep 10   # let it create the schema
+# Then edit apps/api/.env to remove DATABASE_SYNCHRONIZE (or set false) and restart:
+pm2 restart spacejam-api --update-env
+
+# 5. After first deploy with integrations: log in as SUPER_ADMIN and configure
+#    Settings → Integrations (SMS provider + Razorpay). OTP delivery and
+#    payments are no-ops until this is done.
 ```
 
 The `deploy.sh` script:
@@ -229,6 +285,8 @@ The `deploy.sh` script:
 - Uses `pm2 resurrect` to restore the process list
 
 **`scripts/build_api.sh` and `scripts/rebuild_web.sh` have CRLF line-ending corruption** (Windows checkouts) — run their commands manually instead of invoking the scripts.
+
+**IMPORTANT — `OTP_DEV_BYPASS`**: ensure prod `apps/api/.env` does NOT have `OTP_DEV_BYPASS=true`. If left on, any caller can log in with code `000000`. Set it `false` or remove the line in production.
 
 ### Production Runtime Facts (2026-07-12)
 
@@ -243,14 +301,17 @@ Frontend (`apps/web/.env`):
 - `NEXT_PUBLIC_GRAPHQL_WS_URL` — WebSocket endpoint for subscriptions
 
 Backend (`apps/api/.env`):
-- `DATABASE_URL` — PostgreSQL connection
+- `DATABASE_URL` (or `DATABASE_HOST`/`PORT`/`USER`/`PASSWORD`/`NAME`) — PostgreSQL connection
 - `JWT_SECRET` — JWT signing secret
 - `REFRESH_TOKEN_SECRET` — Refresh token secret
 - `REDIS_HOST` / `REDIS_PORT` — Redis connection
-- `PORT=4000` — Backend port (intended; runtime ignores)
+- `PORT=4000` — Backend port
 - `CORS_ORIGIN` — Frontend origin for CORS
 - `FRONTEND_URL` — Frontend URL
 - `NODE_ENV=production`
+- `OTP_DEV_BYPASS` — **must be `false`/unset in prod** (dev returns code `000000`)
+- `DATABASE_SYNCHRONIZE` — leave unset/`false` in prod; set `true` only for a one-off schema bootstrap
+- SMS provider + Razorpay keys are configured at runtime via the Integrations settings page (stored in `app_settings`, not env)
 
 ---
 
