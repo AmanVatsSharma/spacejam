@@ -56,6 +56,7 @@ import { NotificationPreference } from './entities/notification-preference.entit
 import { OtpRequest } from './entities/otp-request.entity';
 import { Plan } from './entities/plan.entity';
 import { Subscription } from './entities/subscription.entity';
+import { AppSetting } from './entities/app-setting.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -104,6 +105,8 @@ const ALL_ENTITIES = [
   OtpRequest,
   Plan,
   Subscription,
+  // Integrations (app-level settings)
+  AppSetting,
 ];
 
 @Module({

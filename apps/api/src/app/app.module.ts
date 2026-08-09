@@ -40,6 +40,7 @@ import { SupportModule } from '../support/support.module';
 import { ReferralModule } from '../referral/referral.module';
 import { StatementModule } from '../statement/statement.module';
 import { SubscriptionModule } from '../subscription';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { SubscriptionModule } from '../subscription';
     ReferralModule,
     StatementModule,
     SubscriptionModule,
+    IntegrationsModule,
   ],
   controllers: [AppController],
   providers: [

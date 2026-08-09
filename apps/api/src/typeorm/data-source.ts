@@ -51,6 +51,7 @@ import { NotificationPreference } from './entities/notification-preference.entit
 import { OtpRequest } from './entities/otp-request.entity';
 import { Plan } from './entities/plan.entity';
 import { Subscription } from './entities/subscription.entity';
+import { AppSetting } from './entities/app-setting.entity';
 
 
 export const dataSource = new DataSource({
@@ -106,6 +107,8 @@ export const dataSource = new DataSource({
   OtpRequest,
   Plan,
   Subscription,
+  // Integrations
+  AppSetting,
 ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.NODE_ENV !== 'production',

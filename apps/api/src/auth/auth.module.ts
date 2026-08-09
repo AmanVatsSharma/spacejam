@@ -23,11 +23,8 @@ import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
 import { TwoFactorService } from './services/two-factor.service';
 import { OtpService } from './services/otp.service';
-import {
-  SMS_PROVIDER,
-  ConsoleSmsProvider,
-} from './services/sms-provider.interface';
 import { AuthResolver } from '../graphql/resolvers/auth.resolver';
+import { IntegrationsModule } from '../integrations/integrations.module';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
@@ -46,6 +43,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     }),
     TypeOrmModule.forFeature([User, UserSession, Customer, CustomerEmployee, OtpRequest]),
     UserRepositoryModule,
+    // IntegrationsModule provides the configurable SMS_PROVIDER (reads the
+    // chosen provider + API key from the super-admin Integrations settings).
+    IntegrationsModule,
   ],
   providers: [
     AuthResolver,
@@ -53,9 +53,6 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     EmailService,
     TwoFactorService,
     OtpService,
-    // Default SMS provider logs the OTP. Swap for a real provider (MSG91 /
-    // Twilio / SNS) by overriding this token once keys are configured.
-    { provide: SMS_PROVIDER, useClass: ConsoleSmsProvider },
     JwtStrategy,
     JwtRefreshStrategy,
   ],

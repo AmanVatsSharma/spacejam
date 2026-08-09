@@ -2427,3 +2427,37 @@ export const PROCESS_DUE_SUBSCRIPTIONS = gql`
   }
 `;
 
+// ─── Integrations (super-admin: SMS provider + Razorpay) ──────────────────
+export const GET_INTEGRATION_STATUS = gql`
+  query IntegrationStatus {
+    integrationStatus {
+      smsConfigured
+      smsProvider
+      razorpayConfigured
+      razorpayMode
+    }
+  }
+`;
+
+export const GET_INTEGRATION_SETTINGS = gql`
+  query IntegrationSettings($group: String!) {
+    integrationSettings(group: $group) {
+      key
+      value
+      secret
+    }
+  }
+`;
+
+export const SAVE_SMS_CONFIG = gql`
+  mutation SaveSmsConfig($input: SaveSmsConfigInput!) {
+    saveSmsConfig(input: $input)
+  }
+`;
+
+export const SAVE_RAZORPAY_CONFIG = gql`
+  mutation SaveRazorpayConfig($input: SaveRazorpayConfigInput!) {
+    saveRazorpayConfig(input: $input)
+  }
+`;
+

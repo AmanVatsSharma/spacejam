@@ -90,6 +90,7 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: 'center', label: 'Center', href: '/dashboard/settings/center' },
     { id: 'security', label: 'Security', href: '/dashboard/settings/security' },
     { id: 'operations', label: 'Operations', href: '/dashboard/settings/operations' },
+    { id: 'integrations', label: 'Integrations', href: '/dashboard/settings/integrations' },
   ],
 };
 
