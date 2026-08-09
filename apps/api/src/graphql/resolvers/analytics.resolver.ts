@@ -168,9 +168,14 @@ export class AnalyticsResolver {
   @Query(() => RevenueReport)
   async revenueReport(
     @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
-    @Args('period', { type: () => TimePeriod, nullable: true }) period?: TimePeriod
+    @Args('period', { type: () => TimePeriod, nullable: true }) period?: TimePeriod,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<RevenueReport> {
-    const cacheKey = centerId ? `revenue:report:${centerId}` : 'revenue:report:global';
+    // Center managers see only their center's revenue; scope overrides the
+    // client-supplied centerId (defense in depth).
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    const cacheKey = effectiveCenterId ? `revenue:report:${effectiveCenterId}` : 'revenue:report:global';
 
     return this.cache.getOrSet<RevenueReport>(cacheKey, async () => {
       const now = new Date();
@@ -192,11 +197,11 @@ export class AnalyticsResolver {
           break;
       }
 
-      if (centerId) {
+      if (effectiveCenterId) {
         // For center-specific, join through booking
         const bookings = await this.bookingRepo.find({
           where: {
-            centerId,
+            centerId: effectiveCenterId,
             createdAt: Between(dateRange.since, dateRange.until)
           } as any,
           relations: ['payment'],
@@ -234,7 +239,7 @@ export class AnalyticsResolver {
 
         const prevBookings = await this.bookingRepo.find({
           where: {
-            centerId,
+            centerId: effectiveCenterId,
             createdAt: Between(prevPeriodStart, prevPeriodEnd)
           } as any,
         });
@@ -258,7 +263,7 @@ export class AnalyticsResolver {
         relations: ['booking'],
       });
 
-      const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+      const totalRevenue = payments.reduce((sum, p) => sum => p.amount, 0);
 
       return {
         total: totalRevenue,
@@ -270,9 +275,17 @@ export class AnalyticsResolver {
 
   @Query(() => OccupancyReport)
   async occupancyReport(
-    @Args('centerId', { type: () => ID }) centerId: string,
-    @Args('period', { type: () => TimePeriod, nullable: true }) period: TimePeriod = TimePeriod.MONTH
+    @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
+    @Args('period', { type: () => TimePeriod, nullable: true }) period: TimePeriod = TimePeriod.MONTH,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<OccupancyReport> {
+    // Center managers are restricted to their center; if a manager calls
+    // without/with another centerId, override to their scope.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    if (!effectiveCenterId) {
+      return { averageOccupancy: 0, peakOccupancy: 0, byDay: [], bySeatType: [] } as OccupancyReport;
+    }
     const now = new Date();
     let dateRange = { since: new Date(), until: now };
 

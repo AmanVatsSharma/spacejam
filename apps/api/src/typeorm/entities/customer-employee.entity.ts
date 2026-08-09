@@ -21,6 +21,7 @@ import {
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Customer } from './customer.entity';
 import { Seat } from './seat.entity';
+import { User } from './user.entity';
 
 @Entity('customer_employees')
 @ObjectType()
@@ -83,6 +84,21 @@ export class CustomerEmployee {
   @Field()
   @Column({ type: 'varchar', length: 50, default: 'active' })
   status!: string;
+
+  /**
+   * Linked login account (nullable). Provisioned lazily the first time the
+   * employee authenticates via phone OTP — a User is created with role
+   * EMPLOYEE and linked here. Mirrors the Customer.userId pattern added by
+   * the 20260807000000 migration.
+   */
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'userId', type: 'uuid', nullable: true })
+  userId?: string | null;
+
+  @Field(() => User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user?: User | null;
 
   @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })

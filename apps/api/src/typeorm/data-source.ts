@@ -47,6 +47,10 @@ import { Offer, OfferRedemption } from './entities/offer.entity';
 import { SupportTicket, SupportMessage } from './entities/support-ticket.entity';
 import { Referral } from './entities/referral.entity';
 import { NotificationPreference } from './entities/notification-preference.entity';
+// M1–M3 entities
+import { OtpRequest } from './entities/otp-request.entity';
+import { Plan } from './entities/plan.entity';
+import { Subscription } from './entities/subscription.entity';
 
 
 export const dataSource = new DataSource({
@@ -98,6 +102,10 @@ export const dataSource = new DataSource({
   SupportMessage,
   Referral,
   NotificationPreference,
+  // M1–M3 entities
+  OtpRequest,
+  Plan,
+  Subscription,
 ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.NODE_ENV !== 'production',

@@ -21,6 +21,9 @@ import {
   CreateEventPayload,
 } from '../inputs/event.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => Event)
 export class EventResolver {
@@ -35,15 +38,20 @@ export class EventResolver {
   @Query(() => [Event])
   async events(
     @Args('filters', { nullable: true }) filters?: EventFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<Event[]> {
     const where: any = {};
+
+    // Center managers see only their center's events.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
       // The filter input exposes `type`, but the entity column is `eventType`
       // (mirrors createEvent/updateEvent). Map it so filtering by type works.
       if (filters.type) where.eventType = filters.type;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.meetingRoomId) where.meetingRoomId = filters.meetingRoomId;
       if (filters.startDate && filters.endDate) {
         where.eventDate = Between(filters.startDate, filters.endDate);

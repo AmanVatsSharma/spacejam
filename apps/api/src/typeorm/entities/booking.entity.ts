@@ -59,6 +59,15 @@ export class Booking {
   @Column({ name: 'planId', type: 'uuid', nullable: true })
   planId?: string | null;
 
+  /**
+   * Subscription that generated this booking (M3 billing fan-out). Lets the
+   * billing service detect an already-processed cycle (idempotency) and lets
+   * the admin link a seat booking back to its company subscription.
+   */
+  @Field(() => ID, { nullable: true })
+  @Column({ name: 'subscriptionId', type: 'uuid', nullable: true })
+  subscriptionId?: string | null;
+
   @Field(() => Date, { nullable: true })
   @Column({ type: 'timestamp', nullable: true })
   startDate?: Date;

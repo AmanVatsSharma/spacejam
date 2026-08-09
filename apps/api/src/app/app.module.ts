@@ -8,6 +8,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { LoggerModule } from 'nestjs-pino';
@@ -16,6 +17,7 @@ import { TypeOrmConfigModule } from '../typeorm/typeorm.module';
 import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { AuthModule } from '../auth/auth.module';
+import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { ConfigModule } from '../config/module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -37,6 +39,7 @@ import { OfferModule } from '../offer/offer.module';
 import { SupportModule } from '../support/support.module';
 import { ReferralModule } from '../referral/referral.module';
 import { StatementModule } from '../statement/statement.module';
+import { SubscriptionModule } from '../subscription';
 
 @Module({
   imports: [
@@ -84,8 +87,17 @@ import { StatementModule } from '../statement/statement.module';
     SupportModule,
     ReferralModule,
     StatementModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Global auth guard: every resolver now requires a valid JWT unless
+    // explicitly marked @Public(). Before this, most resolvers had no guard
+    // and were reachable anonymously. GqlAuthGuard honors @Public() (auth
+    // mutations, public floor listing, metrics). This is the intended design
+    // per the @Public() decorator's own documentation.
+    { provide: APP_GUARD, useClass: GqlAuthGuard },
+  ],
 })
 export class AppModule { }

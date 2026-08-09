@@ -14,6 +14,9 @@ import { Discount as DiscountEntity } from '../../typeorm/entities/discount.enti
 import { CreateDiscountInput, UpdateDiscountInput } from '../inputs/discount.input';
 import { CacheService } from '../../cache/cache.service';
 import { Discount } from '../types/discount.type';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => DiscountEntity)
 export class DiscountResolver {
@@ -26,9 +29,13 @@ export class DiscountResolver {
   @Query(() => [Discount])
   async discounts(
     @Args('centerId', { nullable: true }) centerId?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<Discount[]> {
     const where: any = {};
-    if (centerId) where.centerId = centerId;
+    // Center managers see only their center's discounts.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     return this.discountRepo.find({
       where,

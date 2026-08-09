@@ -10,12 +10,17 @@
 import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ForbiddenException } from '@nestjs/common';
 import { CustomerEmployee } from '../../typeorm/entities/customer-employee.entity';
+import { Customer } from '../../typeorm/entities/customer.entity';
 import {
   CreateCustomerEmployeeInput,
   UpdateCustomerEmployeeInput,
 } from '../inputs/customer-employee.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => CustomerEmployee)
 export class CustomerEmployeeResolver {
@@ -23,12 +28,17 @@ export class CustomerEmployeeResolver {
     private cache: CacheService,
     @InjectRepository(CustomerEmployee)
     private employeeRepo: Repository<CustomerEmployee>,
+    @InjectRepository(Customer)
+    private customerRepo: Repository<Customer>,
   ) {}
 
   @Query(() => [CustomerEmployee])
   async customerEmployees(
     @Args('customerId', { type: () => ID }) customerId: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<CustomerEmployee[]> {
+    // Center managers may only list employees of customers in their center.
+    await this.assertCenterAccess(customerId, caller);
     return this.employeeRepo.find({
       where: { customerId },
       relations: ['seat'],
@@ -36,10 +46,23 @@ export class CustomerEmployeeResolver {
     });
   }
 
+  /** Reject if a center manager tries to access a customer in another center. */
+  private async assertCenterAccess(customerId: string, caller?: JwtPayload): Promise<void> {
+    const scope = caller ? centerScope(caller) : undefined;
+    if (!scope) return; // super admin / no scope → allow.
+    const customer = await this.customerRepo.findOne({ where: { id: customerId } });
+    if (customer && customer.centerId && customer.centerId !== scope) {
+      throw new ForbiddenException('This customer belongs to a different center.');
+    }
+  }
+
   @Mutation(() => CustomerEmployee)
   async createCustomerEmployee(
     @Args('input') input: CreateCustomerEmployeeInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<CustomerEmployee> {
+    // Center managers can only add employees to customers in their center.
+    await this.assertCenterAccess(input.customerId, caller);
     const created = this.employeeRepo.create({
       ...input,
       role: input.role ?? 'Member',

@@ -8,7 +8,14 @@
  */
 
 import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { User } from '../../typeorm/entities/user.entity';
+
+// NOTE: the User entity is intentionally NOT imported at the top level here.
+// user.entity.ts imports enums from this file, so a static `import { User }`
+// forms a cycle that leaves the enums undefined when entity decorators
+// evaluate (TS hoists the import). We resolve User lazily inside the
+// @Field(() => …) arrow below, which runs at schema-build time after all
+// modules have loaded.
+type UserType = import('../../typeorm/entities/user.entity').User;
 
 // ============================================================================
 // ENUMS ONLY - Pure registry for GraphQL enums
@@ -95,6 +102,10 @@ registerEnumType(NotificationType, { name: 'NotificationType' });
 registerEnumType(NotificationPriority, { name: 'NotificationPriority' });
 
 // Object Types
+// UserRole is a single source of truth — `apps/api/src/auth/roles.enum.ts`
+// just re-exports it. New values (EMPLOYEE, COMPANY_ADMIN) power OTP-driven
+// logins: an onboarded company employee resolves to EMPLOYEE, a customer's
+// billing contact resolves to COMPANY_ADMIN.
 export enum UserRole {
   ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
@@ -104,6 +115,8 @@ export enum UserRole {
   STAFF = 'STAFF',
   FINANCE = 'FINANCE',
   SUPPORT = 'SUPPORT',
+  EMPLOYEE = 'EMPLOYEE',
+  COMPANY_ADMIN = 'COMPANY_ADMIN',
 }
 
 export enum CenterStatus {
@@ -134,6 +147,30 @@ export enum BookingStatus {
   CHECKED_OUT = 'CHECKED_OUT',
   CANCELLED = 'CANCELLED',
   COMPLETED = 'COMPLETED',
+}
+
+// ─── Plans & Subscriptions (M2) ──────────────────────────────────────────
+// A Plan is a center's billable seat offering (seatType + billingCycle +
+// price). A Subscription is a customer's commitment to N seats of a plan.
+export enum BillingCycle {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+}
+
+export enum PlanStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  CANCELLED = 'CANCELLED',
+  EXPIRED = 'EXPIRED',
+  PENDING = 'PENDING',
 }
 
 export enum PaymentMethod {
@@ -241,6 +278,10 @@ registerEnumType(BookingStatus, { name: 'BookingStatus' });
 registerEnumType(PaymentMethod, { name: 'PaymentMethod' });
 registerEnumType(PaymentStatus, { name: 'PaymentStatus' });
 registerEnumType(RecurrencePatternEnum, { name: 'RecurrencePattern' });
+// M2 enums — registered here (after declaration) so module-eval order is safe.
+registerEnumType(BillingCycle, { name: 'BillingCycle' });
+registerEnumType(PlanStatus, { name: 'PlanStatus' });
+registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 
 // Re-export analytics DTOs from their dedicated file
 export * from './analytics.type';
@@ -288,6 +329,39 @@ export class AuthPayload {
   @Field(() => String, { nullable: true })
   challengeToken?: string | null;
 
-  @Field(() => User, { nullable: true })
-  user?: User | null;
+  @Field(() => getUserType(), { nullable: true })
+  user?: UserType | null;
+}
+
+/**
+ * Result of requestOtp. In dev (OTP_DEV_BYPASS=true) `devCode` carries the
+ * fixed bypass code so the mobile client can auto-fill; in prod it is null and
+ * the code is delivered out-of-band via the SMS provider.
+ */
+@ObjectType()
+export class RequestOtpResult {
+  @Field()
+  ok!: boolean;
+
+  /** Seconds until the most-recent code expires. */
+  @Field(() => Int)
+  expiresInSeconds!: number;
+
+  @Field(() => String, { nullable: true })
+  devCode?: string | null;
+}
+
+/**
+ * Lazy resolver for the User class, used by AuthPayload.user's @Field above.
+ * Returning the class via a function (called at schema-build time, after every
+ * module has finished loading) avoids the user.type ↔ user.entity import cycle
+ * that otherwise leaves the enums undefined during decorator evaluation.
+ */
+let _userType: any = null;
+function getUserType(): any {
+  if (_userType === null) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _userType = require('../../typeorm/entities/user.entity').User;
+  }
+  return _userType;
 }

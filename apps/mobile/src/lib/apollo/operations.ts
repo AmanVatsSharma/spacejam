@@ -57,6 +57,35 @@ export const REFRESH_TOKENS_MUTATION = gql`
   }
 `;
 
+// Phone-number OTP login. requestOtp returns a `devCode` when the server runs
+// with OTP_DEV_BYPASS=true so dev builds can auto-fill; in prod `devCode` is
+// null and the code is delivered via SMS.
+export const REQUEST_OTP_MUTATION = gql`
+  mutation RequestOtp($phone: String!) {
+    requestOtp(input: { phone: $phone }) {
+      ok
+      expiresInSeconds
+      devCode
+    }
+  }
+`;
+
+export const VERIFY_OTP_MUTATION = gql`
+  mutation VerifyOtp($phone: String!, $code: String!) {
+    verifyOtp(input: { phone: $phone, code: $code }) {
+      accessToken
+      refreshToken
+      user {
+        id
+        email
+        name
+        role
+        tokenBalance
+      }
+    }
+  }
+`;
+
 export const EXTEND_BOOKING_MUTATION = gql`
   mutation ExtendBooking($id: ID!, $endTime: DateTime!) {
     extendBooking(id: $id, endTime: $endTime) {
@@ -487,6 +516,82 @@ export const GET_AVAILABLE_ROOMS = gql`
       status
       hourlyRate
       amenities
+    }
+  }
+`;
+
+// ─── Plans & Subscriptions (M4 mobile monthly-seat flow) ──────────────────
+// A customer/employee browses plans at their center and subscribes; the
+// backend then allocates a seat. Powered by the M2/M3 backend.
+
+export const GET_PLANS = gql`
+  query GetPlans($centerId: String) {
+    plans(input: { centerId: $centerId, status: ACTIVE }) {
+      id
+      centerId
+      name
+      description
+      seatType
+      billingCycle
+      price
+      currency
+      minSeats
+      status
+    }
+  }
+`;
+
+export const CREATE_SUBSCRIPTION = gql`
+  mutation CreateSubscription(
+    $customerId: ID!
+    $planId: ID!
+    $seatCount: Int!
+    $startDate: String
+  ) {
+    createSubscription(
+      input: {
+        customerId: $customerId
+        planId: $planId
+        seatCount: $seatCount
+        startDate: $startDate
+      }
+    ) {
+      id
+      customerId
+      planId
+      seatCount
+      amount
+      status
+      startDate
+      nextBillingDate
+    }
+  }
+`;
+
+export const GET_MY_SUBSCRIPTIONS = gql`
+  query GetMySubscriptions {
+    subscriptions(input: {}) {
+      id
+      customerId
+      planId
+      seatCount
+      amount
+      status
+      startDate
+      nextBillingDate
+      plan {
+        id
+        name
+        seatType
+        billingCycle
+        price
+        currency
+      }
+      customer {
+        id
+        name
+        company
+      }
     }
   }
 `;

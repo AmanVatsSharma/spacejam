@@ -10,7 +10,8 @@ import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
 import { AuthService } from '../../auth/services/auth.service';
-import { AuthPayload, GenericActionResult } from '../types/user.type';
+import { OtpService } from '../../auth/services/otp.service';
+import { AuthPayload, GenericActionResult, RequestOtpResult } from '../types/user.type';
 import { Public } from '../../auth/decorators/public.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -26,11 +27,16 @@ import { ChangePasswordInput } from '../../auth/dto/change-password.input';
 import { VerifyTwoFactorInput } from '../../auth/dto/verify-two-factor.input';
 import { EnableTwoFactorInput } from '../../auth/dto/enable-two-factor.input';
 import { VerifyMagicLinkInput } from '../../auth/dto/verify-magic-link.input';
+import { RequestOtpInput } from '../../auth/dto/request-otp.input';
+import { VerifyOtpInput } from '../../auth/dto/verify-otp.input';
 
 @UseGuards(FieldRateLimitGuard)
 @Resolver(() => AuthPayload)
 export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly otpService: OtpService,
+  ) {}
 
   private buildCtx(context: { req: { ip?: string; headers?: Record<string, string | string[]> } }) {
     const fwd = (context.req.headers?.['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim();
@@ -48,6 +54,31 @@ export class AuthResolver {
     @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
   ): Promise<AuthPayload> {
     return this.authService.signin(input, this.buildCtx(context));
+  }
+
+  @Public()
+  @FieldRateLimit({ name: 'requestOtp', limit: 5, windowSec: 60 })
+  @Mutation(() => RequestOtpResult, {
+    description:
+      'Request a phone-number OTP. In dev bypass mode (OTP_DEV_BYPASS=true) the code is returned in `devCode` for auto-fill; otherwise it is delivered via SMS.',
+  })
+  async requestOtp(
+    @Args('input') input: RequestOtpInput,
+  ): Promise<RequestOtpResult> {
+    return this.otpService.requestOtp(input.phone);
+  }
+
+  @Public()
+  @FieldRateLimit({ name: 'verifyOtp', limit: 10, windowSec: 60 })
+  @Mutation(() => AuthPayload, {
+    description:
+      'Verify a phone OTP and receive access/refresh tokens. Provisions an EMPLOYEE, COMPANY_ADMIN, or MEMBER account on first login.',
+  })
+  async verifyOtp(
+    @Args('input') input: VerifyOtpInput,
+    @Context() context: { req: { ip?: string; headers?: Record<string, string | string[]> } },
+  ): Promise<AuthPayload> {
+    return this.otpService.verifyOtp(input.phone, input.code, this.buildCtx(context));
   }
 
   @Public()

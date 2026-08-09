@@ -34,6 +34,9 @@ import PrintPreviewScreen from '../screens/PrintPreviewScreen';
 import PrintProcessingScreen from '../screens/PrintProcessingScreen';
 import PrintSuccessScreen from '../screens/PrintSuccessScreen';
 import MyInvoicesScreen from '../screens/MyInvoicesScreen';
+// M4: new screens
+import PlansScreen from '../screens/PlansScreen';
+import MeetingRoomsScreen from '../screens/MeetingRoomsScreen';
 
 import { useAuth } from '../lib/auth/context';
 import { FloatingNavBar } from '../components/FloatingNavBar';
@@ -41,24 +44,54 @@ import { FloatingNavBar } from '../components/FloatingNavBar';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Role buckets driving what each user sees. Staff = center managers / admins.
+const STAFF_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'CENTER_OWNER', 'CENTER_MANAGER', 'FINANCE', 'SUPPORT', 'STAFF']);
+const COMPANY_ROLES = new Set(['EMPLOYEE', 'COMPANY_ADMIN']);
+
 const TabNavigator = () => {
+  const { user } = useAuth();
+  const role = user?.role ?? 'MEMBER';
+  const isStaff = STAFF_ROLES.has(role);
+  const isCompany = COMPANY_ROLES.has(role);
+
+  // Build the tab set by role. Everyone gets Home + Bookings + Profile.
+  // Company employees get a "Plans" tab (their monthly seat). Staff see the
+  // same core tabs (they mostly use the web admin; mobile is for on-floor ops).
+  const tabs: { name: string; component: React.ComponentType }[] = [
+    { name: 'HomeTab', component: HomeScreen },
+  ];
+  if (isCompany) {
+    tabs.push({ name: 'PlansTab', component: PlansScreen });
+  }
+  tabs.push(
+    { name: 'EventsTab', component: EventsScreen },
+    { name: 'MyBookingsTab', component: MyBookingsScreen },
+    { name: 'ProfileTab', component: ProfileScreen },
+  );
+  void isStaff;
+
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
       tabBar={(props) => (
-        <FloatingNavBar 
-          activeTab={props.state.routes[props.state.index].name.toLowerCase() as any}
+        <FloatingNavBar
+          activeTab={props.state.routes[props.state.index].name.toLowerCase().replace('tab', '') as any}
           onTabChange={(tab) => {
-            const map: Record<string, string> = { home: 'HomeTab', events: 'EventsTab', bookings: 'MyBookingsTab', profile: 'ProfileTab' };
-            props.navigation.navigate(map[tab]);
+            const map: Record<string, string> = {
+              home: 'HomeTab',
+              plans: 'PlansTab',
+              events: 'EventsTab',
+              bookings: 'MyBookingsTab',
+              profile: 'ProfileTab',
+            };
+            props.navigation.navigate(map[tab] ?? 'HomeTab');
           }}
         />
       )}
     >
-      <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="EventsTab" component={EventsScreen} />
-      <Tab.Screen name="MyBookingsTab" component={MyBookingsScreen} />
-      <Tab.Screen name="ProfileTab" component={ProfileScreen} />
+      {tabs.map((t) => (
+        <Tab.Screen key={t.name} name={t.name} component={t.component} />
+      ))}
     </Tab.Navigator>
   );
 };
@@ -68,7 +101,7 @@ export const AppNavigator = () => {
 
   if (isLoading) {
     // Return a loading screen or null if handled by splash screen
-    return null; 
+    return null;
   }
 
   return (
@@ -83,6 +116,8 @@ export const AppNavigator = () => {
             <Stack.Screen name="Offers" component={OffersScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="AvailableRooms" component={AvailableRoomsScreen} />
+            <Stack.Screen name="MeetingRooms" component={MeetingRoomsScreen} />
+            <Stack.Screen name="Plans" component={PlansScreen} />
             <Stack.Screen name="QuickBooking" component={QuickBookingScreen} />
             <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
             <Stack.Screen name="EventDetails" component={EventDetailsScreen} />

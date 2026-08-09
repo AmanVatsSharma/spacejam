@@ -9,8 +9,8 @@
 
 import { Resolver, Query, Args, Mutation, Context, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
-// Note: Guards removed from mutations to allow operation without auth context.
-// Re-enable when proper JWT auth is wired end-to-end.
+// Auth is now enforced globally via the APP_GUARD in app.module.ts. The
+// per-method guards removed earlier are no longer needed; @Public() opts out.
 import { Repository, MoreThanOrEqual, Like, Not, In } from 'typeorm';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
 import { Booking } from '../../typeorm/entities/booking.entity';
@@ -31,6 +31,9 @@ import {
 } from '../inputs/meeting-room.input';
 import { CacheService } from '../../cache/cache.service';
 import { RoomStatus } from '../types/user.type';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => MeetingRoom)
 export class MeetingRoomResolver {
@@ -73,11 +76,16 @@ export class MeetingRoomResolver {
   @Query(() => [MeetingRoom])
   async meetingRooms(
     @Args('filters', { nullable: true }) filters?: RoomFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<MeetingRoom[]> {
     const where: any = { active: true };
 
+    // Center managers see only their center's rooms.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
+
     if (filters) {
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.floorId) where.floorId = filters.floorId;
       if (filters.type) where.roomType = filters.type;
       if (filters.status) where.status = filters.status;

@@ -24,7 +24,10 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { apolloClient } from '../lib/apollo/client';
-import { SIGNIN_MUTATION, VERIFY_TWO_FACTOR_MUTATION } from '../lib/apollo/operations';
+import {
+  REQUEST_OTP_MUTATION,
+  VERIFY_OTP_MUTATION,
+} from '../lib/apollo/operations';
 import { useAuth } from '../lib/auth/context';
 
 // ─── Tokens ────────────────────────────────────────────────────────────────────
@@ -180,11 +183,10 @@ const AnimatedInput = ({
 
 // ─── Main Login Screen Component ──────────────────────────────────────────────
 
-// DEV MODE: when true, any email/password reaches the OTP step and ANY 6-digit
-// OTP (e.g. 000000, 123456) logs into the dashboard — no real backend needed.
-// Set to false once the live API is wired and you want real 2FA enforcement.
-const DEV_ANY_OTP = true;
-
+// Login always goes through the real backend: requestOtp → verifyOtp. In dev,
+// the server (OTP_DEV_BYPASS=true) returns a fixed `devCode` that we auto-fill
+// so the developer doesn't need SMS. Release builds always require a real
+// delivered code. There is NO client-side login bypass.
 export default function LoginScreen() {
   const navigation = useNavigation();
   const authContext = useAuth();
@@ -202,8 +204,9 @@ export default function LoginScreen() {
   // ── Refs ───────────────────────────────────────────────────────────────────
   const otpInputs = useRef<Array<TextInput | null>>([]);
 
-  // ── Challenge token storage for 2FA ────────────────────────────────────────
-  const challengeTokenRef = useRef<string | null>(null);
+  // ── Phone + dev code (dev only) from the most-recent requestOtp call ───────
+  const submittedPhoneRef = useRef<string>('');
+  const devCodeRef = useRef<string | null>(null);
 
   // ── Animation helpers ──────────────────────────────────────────────────────
   const transitionToOtp = () => {
@@ -252,35 +255,30 @@ export default function LoginScreen() {
       return;
     }
 
-    // DEV: any phone number goes straight to OTP entry — no real OTP is sent.
-    if (DEV_ANY_OTP) {
-      transitionToOtp();
-      return;
-    }
-
-    // PROD path: request OTP for the phone number via the backend.
     setLoading(true);
     try {
       const { data } = await apolloClient.mutate({
-        mutation: SIGNIN_MUTATION,
-        variables: { email: `${digits}@phone.spacejam`, password: 'phone-otp' },
+        mutation: REQUEST_OTP_MUTATION,
+        variables: { phone },
       });
 
-      const result = data?.signin;
-      if (result?.twoFactorRequired) {
-        challengeTokenRef.current = result.challengeToken;
-        transitionToOtp();
-      } else if (result) {
-        const user = result.user;
-        await authContext.login(
-          { id: user.id, email: user.email, name: user.name, role: user.role },
-          result.accessToken,
-          result.refreshToken,
-        );
-        navigation.navigate('HomeTab' as never);
-      } else {
+      const result = data?.requestOtp;
+      if (!result?.ok) {
         ToastAndroid.show('Could not send OTP', ToastAndroid.SHORT);
+        return;
       }
+
+      // Remember which phone we're verifying + any dev-bypass code so the
+      // verify step has the exact phone regardless of input edits.
+      submittedPhoneRef.current = phone;
+      devCodeRef.current = result.devCode ?? null;
+
+      // In dev, the server returns a fixed code — pre-fill it for convenience.
+      if (__DEV__ && result.devCode) {
+        setOtp(result.devCode.split(''));
+      }
+
+      transitionToOtp();
     } catch (error: any) {
       ToastAndroid.show(error?.message || 'Could not send OTP', ToastAndroid.SHORT);
     } finally {
@@ -296,41 +294,15 @@ export default function LoginScreen() {
       return;
     }
 
-    // DEV: any 6-digit OTP logs in with a mock user — no real 2FA backend needed.
-    if (DEV_ANY_OTP) {
-      setLoading(true);
-      try {
-        await authContext.login(
-          {
-            id: 'dev-user-1',
-            email: `${phone.replace(/\D/g, '')}@phone.spacejam`,
-            name: 'Dev User',
-            role: 'ADMIN',
-          },
-          'dev-access-token',
-          'dev-refresh-token',
-        );
-        navigation.navigate('HomeTab' as never);
-      } catch (error: any) {
-        ToastAndroid.show(error?.message || 'Dev login failed', ToastAndroid.SHORT);
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
     setLoading(true);
     try {
       const { data } = await apolloClient.mutate({
-        mutation: VERIFY_TWO_FACTOR_MUTATION,
-        variables: {
-          challengeToken: challengeTokenRef.current,
-          code,
-        },
+        mutation: VERIFY_OTP_MUTATION,
+        variables: { phone: submittedPhoneRef.current || phone, code },
       });
 
-      const result = data?.verifyTwoFactor;
-      if (!result) {
+      const result = data?.verifyOtp;
+      if (!result || !result.accessToken) {
         ToastAndroid.show('Invalid OTP code', ToastAndroid.SHORT);
         setLoading(false);
         return;
@@ -355,8 +327,46 @@ export default function LoginScreen() {
     }
   };
 
-  const handleDevBypass = () => {
-    navigation.navigate('HomeTab' as never);
+  // Dev-only convenience: request + verify in one tap using the server's dev
+  // bypass code. Never present in release builds — gated on __DEV__.
+  const handleDevBypass = async () => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 8) {
+      ToastAndroid.show('Enter a phone number first', ToastAndroid.SHORT);
+      return;
+    }
+    setLoading(true);
+    try {
+      const req = await apolloClient.mutate({
+        mutation: REQUEST_OTP_MUTATION,
+        variables: { phone },
+      });
+      const devCode = req.data?.requestOtp?.devCode;
+      if (!devCode) {
+        ToastAndroid.show('Dev bypass unavailable (server not in OTP_DEV_BYPASS mode)', ToastAndroid.SHORT);
+        return;
+      }
+      const ver = await apolloClient.mutate({
+        mutation: VERIFY_OTP_MUTATION,
+        variables: { phone, code: devCode },
+      });
+      const result = ver.data?.verifyOtp;
+      if (!result?.accessToken) {
+        ToastAndroid.show('Dev bypass failed', ToastAndroid.SHORT);
+        return;
+      }
+      const user = result.user;
+      await authContext.login(
+        { id: user.id, email: user.email, name: user.name, role: user.role },
+        result.accessToken,
+        result.refreshToken,
+      );
+      navigation.navigate('HomeTab' as never);
+    } catch (error: any) {
+      ToastAndroid.show(error?.message || 'Dev bypass failed', ToastAndroid.SHORT);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── OTP helpers ─────────────────────────────────────────────────────────────
@@ -453,15 +463,17 @@ export default function LoginScreen() {
                     onBackToLogin={transitionToLogin}
                     loading={loading}
                     phoneNumber={phone}
+                    devCode={devCodeRef.current}
                   />
                 )}
               </Animated.View>
 
-              {/* Dev bypass — always visible (works in release builds) */}
-              {DEV_ANY_OTP && (
+              {/* Dev-only convenience: request + verify the server's dev-bypass
+                  code in one tap. Never rendered in release builds. */}
+              {__DEV__ && (
                 <TouchableWithoutFeedback onPress={handleDevBypass}>
                   <Animated.View style={styles.devBypass}>
-                    <Text style={styles.devBypassText}>{'🔫'}  Dev Bypass — skip login</Text>
+                    <Text style={styles.devBypassText}>{'🔫'}  Dev login (server bypass code)</Text>
                   </Animated.View>
                 </TouchableWithoutFeedback>
               )}
@@ -549,6 +561,7 @@ const OtpContent = ({
   onBackToLogin,
   loading,
   phoneNumber,
+  devCode,
 }: any) => {
   const { opacity, translateY } = useFadeIn(0, { fromY: 12 });
   const { pressIn: backPressIn, pressOut: backPressOut } = usePressFeedback({ scale: 0.96 });
@@ -564,8 +577,10 @@ const OtpContent = ({
         We've sent a 6-digit code to{'\n'}
         <Text style={{ fontWeight: '700' }}>{maskedPhone}</Text>
       </Text>
-      {DEV_ANY_OTP && (
-        <Text style={styles.otpSubtitle}>DEV MODE: enter any 6 digits (e.g. 000000).</Text>
+      {__DEV__ && devCode && (
+        <Text style={styles.otpSubtitle}>
+          DEV MODE: server bypass code is {devCode}
+        </Text>
       )}
 
       <View style={styles.otpInputRow}>

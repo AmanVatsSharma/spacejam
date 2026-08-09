@@ -12,6 +12,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { Equipment, EquipmentStatus } from '../../typeorm/entities/equipment.entity';
 import { CreateEquipmentInput, UpdateEquipmentInput, EquipmentFiltersInput } from '../inputs/equipment.input';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => Equipment)
 export class EquipmentResolver {
@@ -23,9 +26,13 @@ export class EquipmentResolver {
   @Query(() => [Equipment])
   async equipments(
     @Args('filters', { nullable: true }) filters?: EquipmentFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<Equipment[]> {
     const where: FindOptionsWhere<Equipment> = {};
-    if (filters?.centerId) where.centerId = filters.centerId;
+    // Center managers see only their center's equipment.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
     if (filters?.type) where.type = filters.type;
     if (filters?.status) where.status = filters.status;
     if (filters?.assignedTo) where.assignedTo = filters.assignedTo;

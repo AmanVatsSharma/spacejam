@@ -34,7 +34,23 @@ import {
   VERIFY_TWO_FACTOR,
 } from '@/lib/apollo/operations';
 
-export type UserRole = 'ADMIN' | 'CENTER_MANAGER' | 'MEMBER';
+// Must mirror the canonical UserRole enum in apps/api/src/graphql/types/user.type.ts.
+// EMPLOYEE and COMPANY_ADMIN were added for phone-OTP login: an onboarded
+// company employee resolves to EMPLOYEE, a customer's billing contact to
+// COMPANY_ADMIN. The admin web app only actively routes ADMIN/CENTER_MANAGER;
+// the others are accepted on the user object so a suspended/limited viewer
+// doesn't crash the type model.
+export type UserRole =
+  | 'ADMIN'
+  | 'SUPER_ADMIN'
+  | 'CENTER_OWNER'
+  | 'CENTER_MANAGER'
+  | 'MEMBER'
+  | 'STAFF'
+  | 'FINANCE'
+  | 'SUPPORT'
+  | 'EMPLOYEE'
+  | 'COMPANY_ADMIN';
 
 export interface AuthUser {
   id: string;

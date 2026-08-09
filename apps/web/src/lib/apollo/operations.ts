@@ -1110,6 +1110,21 @@ export const GET_CUSTOMER = gql`
         uploadedAt
         createdAt
       }
+      subscriptions {
+        id
+        planId
+        seatCount
+        unitPrice
+        amount
+        status
+        startDate
+        nextBillingDate
+        endDate
+        createdAt
+        plan {
+          id name seatType billingCycle price currency
+        }
+      }
     }
   }
 `;
@@ -1591,6 +1606,9 @@ export const GET_BOOKINGS = gql`
       status
       totalPrice
       notes
+      planId
+      subscriptionId
+      customerId
       createdAt
       updatedAt
       user {
@@ -2232,6 +2250,180 @@ export const UPDATE_CUSTOMER_DOCUMENT = gql`
 export const DELETE_CUSTOMER_DOCUMENT = gql`
   mutation DeleteCustomerDocument($id: ID!) {
     deleteCustomerDocument(id: $id)
+  }
+`;
+
+// ─── Plans & Subscriptions (M2) ───────────────────────────────────────────
+// A Plan is a center's billable seat offering; a Subscription is a customer's
+// commitment to N seats of a plan. These power the company → employee →
+// monthly-seat model. M3 will fan subscriptions out into bookings + invoices.
+
+export const PLAN_FIELDS = gql`
+  fragment PlanFields on Plan {
+    id
+    centerId
+    name
+    description
+    seatType
+    billingCycle
+    price
+    currency
+    minSeats
+    status
+    createdAt
+    updatedAt
+  }
+`;
+
+export const SUBSCRIPTION_FIELDS = gql`
+  fragment SubscriptionFields on Subscription {
+    id
+    customerId
+    planId
+    centerId
+    seatCount
+    unitPrice
+    amount
+    status
+    startDate
+    nextBillingDate
+    endDate
+    notes
+    createdAt
+    updatedAt
+  }
+`;
+
+export const GET_PLANS = gql`
+  ${PLAN_FIELDS}
+  query Plans($input: PlanFiltersInput) {
+    plans(input: $input) {
+      ...PlanFields
+    }
+  }
+`;
+
+export const GET_PLAN = gql`
+  ${PLAN_FIELDS}
+  query Plan($id: ID!) {
+    plan(id: $id) {
+      ...PlanFields
+    }
+  }
+`;
+
+export const CREATE_PLAN = gql`
+  ${PLAN_FIELDS}
+  mutation CreatePlan($input: CreatePlanInput!) {
+    createPlan(input: $input) {
+      ...PlanFields
+    }
+  }
+`;
+
+export const UPDATE_PLAN = gql`
+  ${PLAN_FIELDS}
+  mutation UpdatePlan($id: ID!, $input: UpdatePlanInput!) {
+    updatePlan(id: $id, input: $input) {
+      ...PlanFields
+    }
+  }
+`;
+
+export const DELETE_PLAN = gql`
+  mutation DeletePlan($id: ID!) {
+    deletePlan(id: $id)
+  }
+`;
+
+export const GET_SUBSCRIPTIONS = gql`
+  ${SUBSCRIPTION_FIELDS}
+  query Subscriptions($input: SubscriptionFiltersInput) {
+    subscriptions(input: $input) {
+      ...SubscriptionFields
+      plan {
+        id name seatType billingCycle price currency
+      }
+      customer {
+        id name company
+      }
+    }
+  }
+`;
+
+export const GET_SUBSCRIPTION = gql`
+  ${SUBSCRIPTION_FIELDS}
+  query Subscription($id: ID!) {
+    subscription(id: $id) {
+      ...SubscriptionFields
+      plan {
+        id name seatType billingCycle price currency
+      }
+      customer {
+        id name company
+      }
+    }
+  }
+`;
+
+export const CREATE_SUBSCRIPTION = gql`
+  ${SUBSCRIPTION_FIELDS}
+  mutation CreateSubscription($input: CreateSubscriptionInput!) {
+    createSubscription(input: $input) {
+      ...SubscriptionFields
+    }
+  }
+`;
+
+export const UPDATE_SUBSCRIPTION = gql`
+  ${SUBSCRIPTION_FIELDS}
+  mutation UpdateSubscription($id: ID!, $input: UpdateSubscriptionInput!) {
+    updateSubscription(id: $id, input: $input) {
+      ...SubscriptionFields
+    }
+  }
+`;
+
+export const CANCEL_SUBSCRIPTION = gql`
+  mutation CancelSubscription($id: ID!) {
+    cancelSubscription(id: $id)
+  }
+`;
+
+// ─── Billing fan-out (M3) ─────────────────────────────────────────────────
+// processSubscriptionCycle fans one subscription out into per-seat monthly
+// bookings (Booking.planId + subscriptionId set) + an invoice, then advances
+// nextBillingDate. processDueSubscriptions does the same for all due cycles.
+
+export const PROCESS_SUBSCRIPTION_CYCLE = gql`
+  mutation ProcessSubscriptionCycle($subscriptionId: ID!) {
+    processSubscriptionCycle(subscriptionId: $subscriptionId) {
+      subscriptionId
+      customerId
+      invoiceId
+      bookingsCreated
+      seatsAllocated
+      cycleStart
+      cycleEnd
+      amount
+      skipped
+    }
+  }
+`;
+
+export const PROCESS_DUE_SUBSCRIPTIONS = gql`
+  mutation ProcessDueSubscriptions {
+    processDueSubscriptions {
+      subscriptionId
+      customerId
+      invoiceId
+      bookingsCreated
+      seatsAllocated
+      cycleStart
+      cycleEnd
+      amount
+      skipped
+    }
   }
 `;
 

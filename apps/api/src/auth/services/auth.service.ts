@@ -91,7 +91,7 @@ export class AuthService {
         verifyUrl: this.buildEmailVerifyUrl(saved.id),
       })
       .catch((err) => this.logger.warn(`welcome email failed: ${err}`));
-    return this.issueTokensFor(saved, ctx);
+    return this.issueTokensForImpl(saved, ctx);
   }
 
   async signin(input: SigninInput, ctx: AuthContext = {}): Promise<AuthPayload> {
@@ -128,7 +128,7 @@ export class AuthService {
     user.lastLoginAt = new Date();
     await this.userRepo.save(user);
     void this.maybeSendLoginAlert(user, ctx);
-    return this.issueTokensFor(user, ctx, !!input.rememberMe);
+    return this.issueTokensForImpl(user, ctx, !!input.rememberMe);
   }
 
   async refreshTokens(refreshToken: string, ctx: AuthContext = {}): Promise<AuthPayload> {
@@ -160,7 +160,7 @@ export class AuthService {
     if (payload.sid) {
       await this.sessionRepo.update(payload.sid, { isActive: false } as never);
     }
-    return this.issueTokensFor(user, ctx, true);
+    return this.issueTokensForImpl(user, ctx, true);
   }
 
   async logout(userId: string, sessionId?: string): Promise<boolean> {
@@ -304,7 +304,7 @@ export class AuthService {
 
     user.lastLoginAt = new Date();
     await this.userRepo.save(user);
-    return this.issueTokensFor(user, { twoFactorVerified: true });
+    return this.issueTokensForImpl(user, { twoFactorVerified: true });
   }
 
   async disableTwoFactor(userId: string, code: string): Promise<boolean> {
@@ -328,7 +328,20 @@ export class AuthService {
     return { sub: payload.sub };
   }
 
-  private async issueTokensFor(
+  /**
+   * Issue access + refresh tokens for an already-authenticated user.
+   * Public so the OTP flow (OtpService) can reuse the exact same token
+   * machinery as signin instead of duplicating it.
+   */
+  async issueTokensFor(
+    user: User,
+    ctx: AuthContext,
+    remember = false,
+  ): Promise<AuthPayload> {
+    return this.issueTokensForImpl(user, ctx, remember);
+  }
+
+  private async issueTokensForImpl(
     user: User,
     ctx: AuthContext,
     remember = false,

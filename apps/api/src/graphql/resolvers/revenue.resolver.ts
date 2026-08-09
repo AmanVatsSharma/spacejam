@@ -140,9 +140,13 @@ export class InvoiceResolver {
 
   @Query(() => Number)
   async invoiceCount(
-    @Args('status', { type: () => InvoiceStatus, nullable: true }) status?: InvoiceStatus
+    @Args('status', { type: () => InvoiceStatus, nullable: true }) status?: InvoiceStatus,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<number> {
-    const where = status ? { status } : {};
+    const where: any = status ? { status } : {};
+    // Center managers must only count their own center's invoices.
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     return this.invoiceRepo.count({ where });
   }
 }
@@ -157,13 +161,19 @@ export class DepositResolver {
 
   @Query(() => [DepositEntity])
   async deposits(
-    @Args('filters', { nullable: true }) filters?: DepositFiltersInput
+    @Args('filters', { nullable: true }) filters?: DepositFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<DepositEntity[]> {
     const where: any = {};
+    // Center managers see only their center's deposits; the client-supplied
+    // centerId filter is ignored for them (defense in depth — a manager can't
+    // bypass by passing another center's id).
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.customerId) where.customerId = filters.customerId;
       if (filters.dateFrom) where.receivedDate = { gte: filters.dateFrom };
       if (filters.dateTo) where.receivedDate = { ...(where.receivedDate ?? {}), lte: filters.dateTo };
@@ -345,8 +355,13 @@ export class DepositResolver {
   @Mutation(() => String)
   async exportDeposits(
     @Args('format', { nullable: true }) format?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<string> {
+    const where: any = {};
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope) where.centerId = scope;
     const deposits = await this.depositRepo.find({
+      where,
       relations: ['center', 'customer'],
       order: { createdAt: 'DESC' },
       take: 500,
@@ -388,13 +403,17 @@ export class ContractResolver {
 
   @Query(() => [ContractEntity])
   async contracts(
-    @Args('filters', { nullable: true }) filters?: ContractFiltersInput
+    @Args('filters', { nullable: true }) filters?: ContractFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<ContractEntity[]> {
     const where: any = {};
+    // Center managers see only their center's contracts.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
 
     if (filters) {
       if (filters.status) where.status = filters.status;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.customerId) where.customerId = filters.customerId;
       if (filters.dateFrom) where.startDate = { gte: filters.dateFrom };
       if (filters.dateTo) where.endDate = { lte: filters.dateTo };

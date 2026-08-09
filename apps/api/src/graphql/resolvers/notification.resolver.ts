@@ -23,6 +23,9 @@ import {
   NotificationStatistics,
 } from '../inputs/notification.input';
 import { CacheService } from '../../cache/cache.service';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { centerScope } from '../../auth/helpers/center-scope.helper';
 
 @Resolver(() => Notification)
 export class NotificationResolver {
@@ -39,12 +42,17 @@ export class NotificationResolver {
   @Query(() => [Notification])
   async notifications(
     @Args('filters', { nullable: true }) filters?: NotificationFiltersInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<Notification[]> {
     const where: any = {};
 
+    // Center managers see only their center's notifications.
+    const scope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = scope ?? filters?.centerId;
+    if (effectiveCenterId) where.centerId = effectiveCenterId;
+
     if (filters) {
       if (filters.userId) where.userId = filters.userId;
-      if (filters.centerId) where.centerId = filters.centerId;
       if (filters.type) where.type = filters.type;
       if (filters.priority) where.priority = filters.priority;
       if (typeof filters.read === 'boolean') where.read = filters.read;

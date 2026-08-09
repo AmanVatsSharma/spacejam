@@ -139,22 +139,34 @@ export default function HomeScreen() {
               index={0}
             />
             <QuickAccessItem
+              icon="door"
+              label="Meeting Room"
+              onPress={() => navigation.navigate('MeetingRooms')}
+              index={1}
+            />
+            <QuickAccessItem
+              icon="desk"
+              label="Plans"
+              onPress={() => navigation.navigate('Plans')}
+              index={2}
+            />
+            <QuickAccessItem
               icon="invoice"
               label="Invoices"
               onPress={() => navigation.navigate('MyInvoices')}
-              index={1}
+              index={3}
             />
             <QuickAccessItem
               icon="print"
               label="Print"
               onPress={() => setShowPrintModal(true)}
-              index={2}
+              index={4}
             />
             <QuickAccessItem
               icon="wallet"
               label="Wallet"
               onPress={() => navigation.navigate('Wallet')}
-              index={3}
+              index={5}
             />
           </View>
         </View>
@@ -169,7 +181,17 @@ export default function HomeScreen() {
           />
           <PolishedCard elevation="card">
             {data?.myBookings?.slice(0, 2).map((b: any, i: number) => {
-              const d = new Date(parseInt(b.date));
+              // GET_HOME_DATA returns startDate/endDate (ISO strings), not the
+              // old b.date/b.startTime/b.endTime fields the prior code read.
+              const d = b.startDate ? new Date(b.startDate) : new Date();
+              const start = b.startDate ? new Date(b.startDate) : null;
+              const end = b.endDate ? new Date(b.endDate) : null;
+              const sameDay = start && end && start.toDateString() === end.toDateString();
+              const timeStr = start && end && sameDay
+                ? `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : end
+                  ? `until ${end.toLocaleDateString()}`
+                  : '';
               return (
                 <React.Fragment key={b.id}>
                   {i > 0 && <View style={styles.itemDivider} />}
@@ -179,7 +201,7 @@ export default function HomeScreen() {
                       .toLocaleString('default', { month: 'short' })
                       .toUpperCase()}
                     title={`${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`}
-                    time={`${b.startTime} - ${b.endTime}`}
+                    time={timeStr}
                   />
                 </React.Fragment>
               );
@@ -366,7 +388,7 @@ const AnimatedHeader = ({
               {name.split(' ')[0]}
             </Animated.Text>
           </View>
-          <TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={() => navigation.navigate('Notifications')}>
             <Animated.View
               style={[styles.bellBtn, { transform: [{ scale: pulse.scale }] }]}
             >
@@ -573,6 +595,37 @@ const QuickAccessItem = ({ icon, label, onPress, index }: any) => {
                 <Path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
                 <Path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
                 <Path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+              </Svg>
+            )}
+            {icon === 'door' && (
+              <Svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={palette.ink}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <Path d="M3 21h18" />
+                <Path d="M6 21V3h12v18" />
+                <Path d="M14 12h.01" />
+              </Svg>
+            )}
+            {icon === 'desk' && (
+              <Svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={palette.ink}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <Rect x="2" y="7" width="20" height="10" rx="2" />
+                <Path d="M6 17v4M18 17v4" />
               </Svg>
             )}
           </View>

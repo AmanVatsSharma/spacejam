@@ -44,7 +44,10 @@ export class Payment {
   method!: PaymentMethod;
 
   @Field(() => PaymentStatus)
-  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  // Default as the string literal 'PENDING' (the enum's underlying value) to
+  // avoid a circular-import runtime lookup of PaymentStatus.PENDING during
+  // decorator evaluation — user.type.ts ↔ user.entity.ts form a cycle.
+  @Column({ type: 'enum', enum: PaymentStatus, default: 'PENDING' })
   status!: PaymentStatus;
 
   @Field(() => String, { nullable: true })

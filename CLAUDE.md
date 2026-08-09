@@ -17,7 +17,7 @@ Shared libraries live under `libs/`:
 - `libs/shared` — cross-app TS types
 - `libs/ui` — cross-app UI primitives
 
-Package manager: npm workspaces. Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
+Package manager: pnpm workspaces. Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
 
 See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integration) — load it for any task that touches Nx config, generators, or `nx-workspace` / `nx-generate` skills.
 
@@ -34,8 +34,8 @@ npx nx start mobile     # Expo dev server
 ### Building
 
 ```sh
-npx nx build web        # Next.js production build
-npx nx build api        # NestJS production build
+npx nx build web        # Next.js production build (webpack, standalone output)
+npx nx build api        # NestJS production build (webpack-cli, not tsc)
 ```
 
 ### Tests
@@ -85,7 +85,13 @@ npx nx affected:test --base=main # run tests affected by changes
 **Data flow**:
 1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`, `use-crm.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
 2. **Auth**: JWT access + refresh tokens stored in cookies. `contexts/auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
-3. **Route guard**: `proxy.ts` (Next.js 16) checks cookies for auth tokens, redirects unauthenticated users, and enforces role-based access to admin routes. Not a middleware — it runs as a proxy.
+3. **Route guard**: `proxy.ts` (Next.js 16) redirects authenticated users away from auth pages only. Dashboard auth is handled entirely client-side via the auth context — the Edge proxy cannot read localStorage. Admin route protection (`/dashboard/settings`, `/dashboard/crm`) is enforced client-side by role checks, not by the proxy.
+4. **Apollo client**: `apps/web/src/lib/apollo/client.ts` — attaches access tokens, handles 401 → refresh → retry via `refreshTokensOnce()`. Uses memory token cache + cookie persistence. Server-side (SSR) client skips the refresh link.
+
+**Next.js config** (`apps/web/next.config.ts`):
+- `output: 'standalone'` — required for production deploy workflow
+- Rewrite: `/api/graphql` → `http://localhost:4000/graphql` (prod) or `NEXT_PUBLIC_API_URL` (dev)
+- The `/api/graphql` path is handled by Next.js rewrites, NOT the NestJS API directly
 
 ### Backend (`apps/api`)
 
@@ -98,6 +104,7 @@ npx nx affected:test --base=main # run tests affected by changes
 - **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). 2FA via TOTP. Guards: `@UseGuards(GqlAuthGuard)` on resolvers, `@CurrentUser()` for user injection.
 - **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
 - **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
+- **Build**: uses webpack-cli (configured in `apps/api/package.json` nx targets), NOT `tsc`.
 
 ### Mobile (`apps/mobile`)
 
@@ -132,6 +139,7 @@ Always check versioned Expo docs before writing mobile code: https://docs.expo.d
 - **Mobile floating nav**: `FloatingNavBar` is rendered inside `TabNavigator` (in `AppNavigator.tsx`), not inside individual tab screens. Tab screens must use `activeTab` via `useNavigation()` state, not render their own nav bar.
 - **Mobile animations**: use `useFadeIn`, `useSlideIn`, `usePressFeedback`, `usePulse` from `apps/mobile/src/theme/animations.ts`; tokens from `theme/tokens.ts` (`palette`, `space`, `radius`, `elevation`, `duration`).
 - **Apollo operations**: centralized in `apps/web/src/lib/apollo/operations.ts` (web) and `apps/mobile/src/lib/apollo/operations.ts` (mobile). Re-run codegen after schema changes.
+- **Prettier**: `singleQuote: true` (`.prettierrc`).
 
 ### Mock-Fallback Convention
 
@@ -153,6 +161,8 @@ Many pages render mock data when the GraphQL response is empty: `const rows = da
 | Mobile | `apps/mobile/.env` | Expo/EAS vars |
 
 A reference `docker-compose.yml` is committed for local Postgres/Redis/NGINX/Prometheus/Grafana — not the deploy stack, just for spinning up dependencies.
+
+`pnpm-workspace.yaml` declares `allowBuilds` for native modules (`sharp`, `sqlite3`, `@swc/core`, `nx`, etc.) — required for pnpm to install these from source.
 
 ## Production Server
 
@@ -214,7 +224,7 @@ bash /home/ubuntu/deploy.sh   # uses /home/ubuntu/deploy.sh, NOT scripts/deploy.
 The `deploy.sh` script:
 - Extracts the archive to `/home/ubuntu/spacejam`
 - Writes `.env` files for both `apps/web` and `apps/api`
-- Runs `npx nx build web` (frontend) and `tsc` (backend)
+- Runs `npx nx build web` (frontend) and `npx nx build api` (backend via webpack-cli)
 - Starts/restarts PM2 processes: `spacejam-web` (frontend) and `spacejam-api` (backend)
 - Uses `pm2 resurrect` to restore the process list
 
@@ -223,7 +233,7 @@ The `deploy.sh` script:
 ### Production Runtime Facts (2026-07-12)
 
 - API listens on **port 4000** (not 3001 — `deploy.sh` writes `PORT=3001` to `.env` but the app ignores `PORT` or defaults to 4000).
-- GraphQL endpoint: `http://localhost:4000/graphql` (NOT `/api/graphql`; that path 404s — `/api/*` is the REST global prefix).
+- GraphQL endpoint: `http://localhost:4000/graphql` (NOT `/api/graphql`; that path 404s on the API — `/api/*` is the Next.js REST global prefix, which rewrites `/api/graphql` to the backend).
 - Web listens on port 3000. nginx on :80/:443 proxies to both.
 
 ### Environment Variables (Production)

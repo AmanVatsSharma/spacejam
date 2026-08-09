@@ -27,6 +27,27 @@ import { StatusPill } from '../components/StatusPill';
 import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
 
+// Format a booking's date from the real startDate/endDate fields on the
+// GET_MY_BOOKINGS selection (the old code read b.date/b.startTime which don't
+// exist in the query — producing "Invalid Date"). Handles monthly (multi-day)
+// and hourly bookings gracefully.
+const fmtBookingDate = (b: any): string => {
+  const start = b.startDate ? new Date(b.startDate) : null;
+  const end = b.endDate ? new Date(b.endDate) : null;
+  if (!start) return '';
+  const sameDay = end && start.toDateString() === end.toDateString();
+  const dateStr = start.toLocaleDateString();
+  if (sameDay || !end) {
+    // Hourly same-day booking — show the time range too.
+    const timeStr = end
+      ? `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      : start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${dateStr} • ${timeStr}`;
+  }
+  // Monthly / multi-day — show the range.
+  return `${dateStr} → ${end.toLocaleDateString()}`;
+};
+
 export default function MyBookingsScreen() {
   const navigation = useNavigation<any>();
 
@@ -44,8 +65,8 @@ export default function MyBookingsScreen() {
         id: b.id,
         icon: 'door', // simplistic map
         title: `${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`,
-        details: `${b.seat?.floor?.center?.name || 'Center'}`,
-        date: `${new Date(parseInt(b.date)).toLocaleDateString()} • ${b.startTime}`,
+        details: `${b.center?.name || b.seat?.floor?.center?.name || 'Center'}`,
+        date: fmtBookingDate(b),
         status: b.status,
       }));
   }, [data]);
@@ -58,8 +79,8 @@ export default function MyBookingsScreen() {
         id: b.id,
         icon: 'desk',
         title: `${b.seat?.floor?.name || ''} - ${b.seat?.name || ''}`,
-        details: `${b.seat?.floor?.center?.name || 'Center'}`,
-        date: `${new Date(parseInt(b.date)).toLocaleDateString()} • ${b.startTime}`,
+        details: `${b.center?.name || b.seat?.floor?.center?.name || 'Center'}`,
+        date: fmtBookingDate(b),
         status: b.status,
         amount: 'Paid',
       }));

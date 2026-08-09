@@ -52,6 +52,10 @@ import { Offer, OfferRedemption } from './entities/offer.entity';
 import { SupportTicket, SupportMessage } from './entities/support-ticket.entity';
 import { Referral } from './entities/referral.entity';
 import { NotificationPreference } from './entities/notification-preference.entity';
+// M1–M3 entities
+import { OtpRequest } from './entities/otp-request.entity';
+import { Plan } from './entities/plan.entity';
+import { Subscription } from './entities/subscription.entity';
 
 const ALL_ENTITIES = [
   User,
@@ -96,6 +100,10 @@ const ALL_ENTITIES = [
   SupportMessage,
   Referral,
   NotificationPreference,
+  // M1–M3 entities
+  OtpRequest,
+  Plan,
+  Subscription,
 ];
 
 @Module({
@@ -112,7 +120,10 @@ const ALL_ENTITIES = [
             type: 'postgres',
             url: dbUrl,
             entities: ALL_ENTITIES,
-            synchronize: false,
+            // synchronize is opt-in via env so a dev DB can be bootstrapped
+            // from the entities. Prod leaves it off (migrations are the
+            // source of truth there).
+            synchronize: config.get<string>('DATABASE_SYNCHRONIZE') === 'true',
             logging: process.env.NODE_ENV === 'development',
             extra: {
               max: parseInt(config.get<string>('DATABASE_POOL_SIZE') || '10', 10),
@@ -131,7 +142,8 @@ const ALL_ENTITIES = [
           password: config.get<string>('DATABASE_PASSWORD') || 'spacejam',
           database: config.get<string>('DATABASE_NAME') || 'spacejam',
           entities: ALL_ENTITIES,
-          synchronize: false,
+          // opt-in synchronize for dev bootstrap; off by default.
+          synchronize: config.get<string>('DATABASE_SYNCHRONIZE') === 'true',
           logging: process.env.NODE_ENV === 'development',
           ssl: config.get<string>('DATABASE_SSL') === 'true',
           extra: {
