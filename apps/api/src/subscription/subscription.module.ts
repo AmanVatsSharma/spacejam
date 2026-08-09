@@ -20,6 +20,7 @@ import { Booking } from '../typeorm/entities/booking.entity';
 import { Invoice } from '../typeorm/entities/invoice.entity';
 import { PlanResolver } from '../graphql/resolvers/subscription.resolver';
 import { BillingService } from './billing.service';
+import { BillingScheduler } from './billing-scheduler';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { BillingService } from './billing.service';
     ]),
     CacheModule,
   ],
-  providers: [PlanResolver, BillingService],
+  providers: [PlanResolver, BillingService, BillingScheduler],
   exports: [BillingService, TypeOrmModule],
 })
 export class SubscriptionModule {}

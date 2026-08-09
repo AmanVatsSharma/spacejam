@@ -13,11 +13,12 @@ import { BookingResolver } from '../graphql/resolvers/booking.resolver';
 import { Booking } from '../typeorm/entities/booking.entity';
 import { Seat } from '../typeorm/entities/seat.entity';
 import { Payment } from '../typeorm/entities/payment.entity';
+import { Offer, OfferRedemption } from '../typeorm/entities/offer.entity';
 import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Seat, Payment]),
+    TypeOrmModule.forFeature([Booking, Seat, Payment, Offer, OfferRedemption]),
     CacheModule,
     PubSubModule,
   ],

@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-04
  */
 import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
-import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, ID, Int, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -20,6 +20,7 @@ import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
+import { Customer } from '../../typeorm/entities/customer.entity';
 import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
@@ -46,9 +47,25 @@ export class UserResolver {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly sessionRepo: UserSessionRepository,
+    @InjectRepository(Customer)
+    private readonly customerRepo: Repository<Customer>,
     @InjectRepository(WalletTransaction)
     private readonly walletTxRepo: Repository<WalletTransaction>,
   ) {}
+
+  /**
+   * Resolve the Customer (company) id a user belongs to, by reverse lookup of
+   * Customer.userId. Powers the mobile Plans subscribe flow — the client needs
+   * to know which company to create the Subscription against.
+   */
+  @ResolveField(() => String, { nullable: true })
+  async customerId(@Parent() user: UserEntity): Promise<string | null> {
+    const customer = await this.customerRepo.findOne({
+      where: { userId: user.id },
+      select: ['id'],
+    });
+    return customer?.id ?? null;
+  }
 
   @Query(() => UserEntity, { description: 'The currently signed-in user' })
   async me(@CurrentUser() current: JwtPayload): Promise<UserEntity> {

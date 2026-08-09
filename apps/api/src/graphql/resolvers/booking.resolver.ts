@@ -18,6 +18,8 @@ import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
 import { CreateBookingInput, BookingFiltersInput, UpdateBookingInput } from '../inputs/booking.input';
+import { Offer } from '../../typeorm/entities/offer.entity';
+import { OfferRedemption } from '../../typeorm/entities/offer.entity';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
@@ -40,6 +42,10 @@ export class BookingResolver {
     private seatRepo: Repository<SeatEntity>,
     @InjectRepository(PaymentEntity)
     private paymentRepo: Repository<PaymentEntity>,
+    @InjectRepository(Offer)
+    private offerRepo: Repository<Offer>,
+    @InjectRepository(OfferRedemption)
+    private redemptionRepo: Repository<OfferRedemption>,
     private readonly pubSub: PubSubService,
   ) { }
 
@@ -150,6 +156,43 @@ export class BookingResolver {
       }
     }
 
+    // ── Apply promo/offer code if provided ────────────────────────────────
+    let discount = 0;
+    let appliedCode: string | null = null;
+    if (input.discountCode) {
+      const offer = await this.offerRepo.findOne({
+        where: { code: input.discountCode.toUpperCase(), isActive: true },
+      });
+      if (offer) {
+        const now = new Date();
+        const inDate = (!offer.validFrom || now >= offer.validFrom) && (!offer.validUntil || now <= offer.validUntil);
+        const underLimit = !offer.usageLimit || offer.usageCount < offer.usageLimit;
+        const meetsMin = !offer.minOrderAmount || seat.price >= offer.minOrderAmount;
+        if (inDate && underLimit && meetsMin) {
+          discount =
+            offer.type === 'PERCENTAGE'
+              ? (seat.price * offer.value) / 100
+              : offer.type === 'FIXED'
+                ? Math.min(offer.value, seat.price)
+                : 0; // TOKENS handled at wallet level, not here
+          appliedCode = offer.code;
+          // Record the redemption + bump usage.
+          await this.redemptionRepo.save(
+            this.redemptionRepo.create({ offerId: offer.id, userId, code: offer.code, discountAmount: discount } as any),
+          );
+          await this.offerRepo.increment({ id: offer.id }, 'usageCount', 1);
+        } else if (!inDate) {
+          throw new BadRequestException(`Offer code ${offer.code} is not active right now.`);
+        } else if (!underLimit) {
+          throw new BadRequestException(`Offer code ${offer.code} has reached its usage limit.`);
+        } else {
+          throw new BadRequestException(`Offer code ${offer.code} requires a minimum booking of ₹${offer.minOrderAmount}.`);
+        }
+      } else {
+        throw new BadRequestException(`Invalid offer code: ${input.discountCode}`);
+      }
+    }
+
     const newBooking = this.bookingRepo.create({
       userId,
       seatId: input.seatId,
@@ -161,6 +204,8 @@ export class BookingResolver {
       startDate: start,
       endDate: end,
       totalPrice: seat.price,
+      discount,
+      discountCode: appliedCode,
     });
 
     const booking = await this.bookingRepo.save(newBooking);

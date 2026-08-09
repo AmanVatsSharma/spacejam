@@ -43,6 +43,15 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   centerId!: string | null;
 
+  /**
+   * The Customer (company) this user belongs to, if any. NOT a DB column —
+   * resolved via UserResolver.customerId field resolver (looks up
+   * Customer.userId). Lets the mobile Plans screen know which company to
+   * subscribe against.
+   */
+  @Field(() => String, { nullable: true })
+  customerId?: string | null;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', nullable: true })
   phone!: string | null;

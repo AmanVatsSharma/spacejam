@@ -9,7 +9,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_MY_BOOKINGS } from '../lib/apollo/operations';
+import { GET_MY_BOOKINGS, GET_MY_CENTERS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -56,6 +56,8 @@ export default function MyBookingsScreen() {
   const headerSlide = useSlideIn('down', 0, 16, duration.slow);
 
   const { data, loading, refetch } = useQuery(GET_MY_BOOKINGS);
+  const { data: centersData } = useQuery(GET_MY_CENTERS);
+  const centerName = centersData?.myCenters?.[0]?.name ?? 'Your Center';
 
   const upcoming = useMemo(() => {
     if (!data?.myBookings) return [];
@@ -104,8 +106,8 @@ export default function MyBookingsScreen() {
                     <Circle cx="12" cy="10" r="3" />
                   </Svg>
                   <View style={styles.locTexts}>
-                    <Text style={styles.locTitle}>X11 Space</Text>
-                    <Text style={styles.locSub}>Mohali</Text>
+                    <Text style={styles.locTitle}>{centerName}</Text>
+                    <Text style={styles.locSub}>My bookings</Text>
                   </View>
                 </View>
               </View>

@@ -10,17 +10,13 @@ import ReferAndEarnScreen from '../screens/ReferAndEarnScreen';
 import OffersScreen from '../screens/OffersScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AvailableRoomsScreen from '../screens/AvailableRoomsScreen';
-import QuickBookingScreen from '../screens/QuickBookingScreen';
 import BookingDetailsScreen from '../screens/BookingDetailsScreen';
 import EventsScreen from '../screens/EventsScreen';
 import EventDetailsScreen from '../screens/EventDetailsScreen';
-import PaymentScreen from '../screens/PaymentScreen';
 import EventSuccessScreen from '../screens/EventSuccessScreen';
 import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 import MyBookingsScreen from '../screens/MyBookingsScreen';
 import MyRoomDetailsScreen from '../screens/MyRoomDetailsScreen';
-import MyEventDetailsScreen from '../screens/MyEventDetailsScreen';
-import MyPrintDetailsScreen from '../screens/MyPrintDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
@@ -29,7 +25,6 @@ import AboutScreen from '../screens/AboutScreen';
 import SupportScreen from '../screens/SupportScreen';
 import WalletScreen from '../screens/WalletScreen';
 import RechargeTokensScreen from '../screens/RechargeTokensScreen';
-import AddTokensPaymentScreen from '../screens/AddTokensPaymentScreen';
 import PrintPreviewScreen from '../screens/PrintPreviewScreen';
 import PrintProcessingScreen from '../screens/PrintProcessingScreen';
 import PrintSuccessScreen from '../screens/PrintSuccessScreen';
@@ -118,15 +113,11 @@ export const AppNavigator = () => {
             <Stack.Screen name="AvailableRooms" component={AvailableRoomsScreen} />
             <Stack.Screen name="MeetingRooms" component={MeetingRoomsScreen} />
             <Stack.Screen name="Plans" component={PlansScreen} />
-            <Stack.Screen name="QuickBooking" component={QuickBookingScreen} />
             <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} />
             <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
-            <Stack.Screen name="Payment" component={PaymentScreen} />
             <Stack.Screen name="EventSuccess" component={EventSuccessScreen} />
             <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
             <Stack.Screen name="MyRoomDetails" component={MyRoomDetailsScreen} />
-            <Stack.Screen name="MyEventDetails" component={MyEventDetailsScreen} />
-            <Stack.Screen name="MyPrintDetails" component={MyPrintDetailsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
             <Stack.Screen name="Terms" component={TermsScreen} />
@@ -134,7 +125,6 @@ export const AppNavigator = () => {
             <Stack.Screen name="Support" component={SupportScreen} />
             <Stack.Screen name="Wallet" component={WalletScreen} />
             <Stack.Screen name="RechargeTokens" component={RechargeTokensScreen} />
-            <Stack.Screen name="AddTokensPayment" component={AddTokensPaymentScreen} />
             <Stack.Screen name="PrintPreview" component={PrintPreviewScreen} />
             <Stack.Screen name="PrintProcessing" component={PrintProcessingScreen} />
             <Stack.Screen name="PrintSuccess" component={PrintSuccessScreen} />

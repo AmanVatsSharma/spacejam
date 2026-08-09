@@ -35,6 +35,12 @@ export class CreateBookingInput {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  /** Optional promo/offer code. If valid, the booking's discount is applied. */
+  @Field(() => String, { nullable: true })
+  @IsString()
+  @IsOptional()
+  discountCode?: string;
 }
 
 @InputType()

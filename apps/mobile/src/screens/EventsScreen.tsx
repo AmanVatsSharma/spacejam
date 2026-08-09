@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@apollo/client';
-import { GET_EVENTS } from '../lib/apollo/operations';
+import { GET_EVENTS, GET_MY_CENTERS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -34,6 +34,8 @@ const EVENT_IMG_2 = 'https://images.unsplash.com/photo-1522071820081-009f0129c71
 export default function EventsScreen() {
   const navigation = useNavigation<any>();
   const { data, loading } = useQuery(GET_EVENTS);
+  const { data: centersData } = useQuery(GET_MY_CENTERS);
+  const centerName = centersData?.myCenters?.[0]?.name ?? 'Your Center';
 
   const headerSlide = useSlideIn('down', 0, 16, duration.slow);
   const pulse = usePulse({ minScale: 0.8, maxScale: 1.1, duration: 2000 });
@@ -59,8 +61,8 @@ export default function EventsScreen() {
                       <Circle cx="12" cy="10" r="3" />
                     </Svg>
                     <View style={styles.locTexts}>
-                      <Text style={styles.locTitle}>X11 Space</Text>
-                      <Text style={styles.locSub}>Mohali</Text>
+                      <Text style={styles.locTitle}>{centerName}</Text>
+                      <Text style={styles.locSub}>Events</Text>
                     </View>
                   </View>
                   <Animated.View style={{ transform: [{ scale: pulse.scale }] }}>
@@ -95,7 +97,7 @@ export default function EventsScreen() {
                   title={evt.title}
                   date={new Date(parseInt(evt.eventDate)).toLocaleDateString()}
                   time={`${evt.startTime} - ${evt.endTime}`}
-                  location={evt.meetingRoom?.name || 'X11 Space, Mohali'}
+                  location={evt.meetingRoom?.name || centerName}
                   presenter={evt.company || 'Host'}
                   role={evt.eventType || ''}
                   price={evt.cost ? `₹${evt.cost}` : 'Free'}

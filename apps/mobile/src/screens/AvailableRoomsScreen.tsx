@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@apollo/client';
-import { GET_SEATS } from '../lib/apollo/operations';
+import { GET_SEATS, GET_MY_CENTERS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -42,6 +42,8 @@ export default function AvailableRoomsScreen() {
   const [showDateTime, setShowDateTime] = useState(false);
 
   const { data, loading } = useQuery(GET_SEATS);
+  const { data: centersData } = useQuery(GET_MY_CENTERS);
+  const centerName = centersData?.myCenters?.[0]?.name ?? 'Your Center';
 
   const headerSlide = useSlideIn('down', 0, 20, duration.slow);
   const filterSlide = useSlideIn('down', 100, 16, duration.slow);
@@ -75,8 +77,8 @@ export default function AvailableRoomsScreen() {
                     <Circle cx="12" cy="10" r="3" />
                   </Svg>
                   <View>
-                    <Text style={styles.locTitle}>X11 Space</Text>
-                    <Text style={styles.locSub}>Mohali</Text>
+                    <Text style={styles.locTitle}>{centerName}</Text>
+                    <Text style={styles.locSub}>Available spaces</Text>
                   </View>
                 </View>
                 <Svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

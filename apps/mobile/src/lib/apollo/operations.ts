@@ -193,6 +193,7 @@ export const GET_ME = gql`
       phone
       role
       tokenBalance
+      customerId
       center { id name }
     }
   }
@@ -381,7 +382,8 @@ export const GET_EVENT = gql`
       cost
       notes
       addons
-      meetingRoom { id name }
+      centerId
+      meetingRoom { id name center { id name } }
       requestedBy { id name email }
     }
   }
