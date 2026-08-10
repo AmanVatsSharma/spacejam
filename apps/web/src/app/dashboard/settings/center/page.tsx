@@ -5,6 +5,8 @@ import { useQuery } from "@apollo/client";
 import { toast } from "sonner";
 import { GET_MY_CENTERS } from "@/lib/apollo/operations";
 import { useUpdateCenterSettings } from "@/hooks/use-settings";
+import { useAuth } from "@/contexts/auth-context";
+import CenterManagerConfig from "./CenterConfiguration";
 import styles from "./center.module.css";
 
 const Icons = {
@@ -88,6 +90,7 @@ const Icons = {
 };
 
 export default function CenterSettingsPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("Booking Defaults");
   const [saving, setSaving] = useState(false);
 
@@ -255,6 +258,10 @@ export default function CenterSettingsPage() {
     }
     toast.info("Reverted to saved defaults");
   };
+
+  if (user?.role === 'CENTER_MANAGER') {
+    return <CenterManagerConfig />;
+  }
 
   return (
     <div className={styles.page}>

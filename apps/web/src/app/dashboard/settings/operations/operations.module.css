@@ -277,3 +277,143 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Manager Specific Styles */
+.managerSplitLayout {
+  display: flex;
+  gap: 24px;
+}
+
+.managerLeftCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.managerRightCol {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoBox {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.infoBoxHeader {
+  display: flex;
+  gap: 12px;
+}
+
+.infoBoxIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #FF7847;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.infoBoxTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.infoBoxDesc {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.infoBoxList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.infoBoxList li {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #6B7280;
+  align-items: flex-start;
+}
+.infoBoxList li::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #FF7847;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.impactBox {
+  background: #FFF9F6;
+  border: 1px solid #FFE4D6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #FF7847;
+  margin-top: 16px;
+}
+
+.scheduleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.scheduleTime {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.scheduleRemove {
+  font-size: 12px;
+  color: #FF7847;
+  cursor: pointer;
+}
+
+.addSlotRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.addSlotInput {
+  flex: 1;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+}
+.addSlotBtn {
+  background: #FF7847;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+

@@ -132,6 +132,19 @@ export default function DashboardLayout({
   // role badge or surface account actions (logout, profile menu).
   const { user, logout } = useAuth();
 
+  let settingsTabs = SECTION_TABS['settings'];
+  if (user?.role === 'CENTER_MANAGER') {
+    settingsTabs = [
+      { id: 'center', label: 'Centers', href: '/dashboard/settings/center' },
+      { id: 'finance', label: 'Finance', href: '/dashboard/settings/finance' },
+      { id: 'notification', label: 'Notification', href: '/dashboard/settings/notification' },
+      { id: 'operations', label: 'Operation', href: '/dashboard/settings/operations' },
+    ];
+  }
+
+  // Update tabs if section is 'settings'
+  const finalTabs = (pathname?.startsWith('/dashboard/settings') ? settingsTabs : tabs);
+
   // ── Client-side RBAC ───────────────────────────────────────────────────
   // Backend resolvers enforce roles (@Roles), but this keeps the UI honest:
   // a MEMBER/EMPLOYEE browsing to an admin-only route is bounced to Home
@@ -163,7 +176,7 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-[#FBF6F4]">
       {/* Fixed Header - stays at top */}
       <Header
-        tabs={tabs}
+        tabs={finalTabs}
         activeTabId={activeId}
         onTabChange={(tab) => router.push(tab.href)}
         onSetUpNewCenter={() => setShowSetUpModal(true)}

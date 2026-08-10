@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useSettingsGroup } from "@/hooks/use-settings";
+import { useAuth } from "@/contexts/auth-context";
+import CenterManagerFinanceConfig from "./CenterManagerFinanceConfig";
 import styles from "./finance.module.css";
 
 const Icons = {
@@ -90,6 +92,9 @@ const Icons = {
 };
 
 export default function FinanceSettingsPage() {
+  const { user } = useAuth();
+  const isManager = user?.role === "CENTER_MANAGER";
+
   const [activeTab, setActiveTab] = useState("Wallet Rules");
 
   // Persisted via Center.settings.finance (deep-merged on save).
@@ -120,6 +125,10 @@ export default function FinanceSettingsPage() {
     defaultDueDate: "7", // days from invoice date
     reminderIntervals: [1, 3, 7], // days before due date
   });
+
+  if (isManager) {
+    return <CenterManagerFinanceConfig />;
+  }
 
   return (
     <div className={styles.page}>

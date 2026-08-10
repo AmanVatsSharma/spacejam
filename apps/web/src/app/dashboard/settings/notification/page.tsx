@@ -12,6 +12,7 @@ import {
   useUpdateAutomation,
 } from "@/hooks/use-operations";
 import { toast } from "sonner";
+import CenterManagerNotificationConfig from "./CenterManagerNotificationConfig";
 import styles from "./notification.module.css";
 
 // Trigger/channel options must match the backend AutomationTrigger and
@@ -127,6 +128,9 @@ const Icons = {
 };
 
 export default function NotificationSettingsPage() {
+  const { user } = useAuth();
+  const isManager = user?.role === "CENTER_MANAGER";
+
   const [activeTab, setActiveTab] = useState("Channels");
 
   // Persisted via Center.settings.notifications (deep-merged on save).
@@ -388,6 +392,10 @@ export default function NotificationSettingsPage() {
 
     return null;
   };
+
+  if (isManager) {
+    return <CenterManagerNotificationConfig />;
+  }
 
   return (
     <div className={styles.page}>

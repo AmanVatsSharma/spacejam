@@ -10,6 +10,8 @@
 
 import { useState } from 'react';
 import { useSettingsGroup } from '@/hooks/use-settings';
+import { useAuth } from '@/contexts/auth-context';
+import CenterManagerOperationsConfig from './CenterManagerOperationsConfig';
 import styles from './operations.module.css';
 
 const Icons = {
@@ -126,6 +128,9 @@ const Icons = {
 };
 
 export default function OperationsSettingsPage() {
+  const { user } = useAuth();
+  const isManager = user?.role === "CENTER_MANAGER";
+
   const [activeTab, setActiveTab] = useState('Booking Rules');
 
   const booking = useSettingsGroup('bookingRules', {
@@ -149,7 +154,14 @@ export default function OperationsSettingsPage() {
     autoBlockOnMaintenance: true,
     notifyOnMaintenance: true,
     maintenanceLeadDays: '7',
+    autoEscalate: true,
   });
+
+  const saving = booking.saving || room.saving || maintenance.saving;
+
+  if (isManager) {
+    return <CenterManagerOperationsConfig />;
+  }
 
   return (
     <div className={styles.page}>
