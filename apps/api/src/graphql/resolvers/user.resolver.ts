@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-07-04
  */
-import { UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import { UseGuards, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Args, ID, Int, Mutation, Query, Resolver, ResolveField, Parent } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,6 +17,7 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { UserRole as EntityUserRole } from '../../auth/roles.enum';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
+import { AuditService } from '../../auth/services/audit.service';
 
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { UserSession } from '../../typeorm/entities/user-session.entity';
@@ -25,21 +26,10 @@ import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.ent
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
-import { UserRole, UserRole as GraphqlUserRole } from '../types/user.type';
+import { UserRole } from '../types/user.type';
 import { CreateAdminInput, DashboardAdminRole } from '../../auth/dto/create-admin.input';
 import * as bcrypt from 'bcryptjs';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
-/**
- * The entity role taxonomy (5 tiers) is richer than the GraphQL type
- * (3 tiers), so we map to the closest existing GraphQL enum value.
- */
-
-
-function toEntityRole(role: GraphqlUserRole): EntityUserRole {
-  if (role === UserRole.ADMIN) return EntityUserRole.ADMIN;
-  if (role === UserRole.CENTER_MANAGER) return EntityUserRole.STAFF;
-  return EntityUserRole.MEMBER;
-}
 
 @Resolver(() => UserEntity)
 @UseGuards(GqlAuthGuard, RolesGuard)
@@ -51,6 +41,7 @@ export class UserResolver {
     private readonly customerRepo: Repository<Customer>,
     @InjectRepository(WalletTransaction)
     private readonly walletTxRepo: Repository<WalletTransaction>,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -87,11 +78,19 @@ export class UserResolver {
   }
 
   @Query(() => UserEntity, { description: 'Fetch a user by id (admin only)' })
-  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER)
-  async user(@Args('id', { type: () => ID }) id: string): Promise<UserEntity> {
-    const user = await this.userRepo.findById(id);
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+  @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN, EntityUserRole.CENTER_OWNER, EntityUserRole.CENTER_MANAGER)
+  async user(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() current: JwtPayload,
+  ): Promise<UserEntity> {
+    const target = await this.userRepo.findById(id);
+    if (!target) throw new NotFoundException('User not found');
+    // CENTER_MANAGER scope: may only read users in their own center.
+    const scope = centerScope(current);
+    if (scope && target.centerId !== scope) {
+      throw new ForbiddenException('Not allowed to view this user');
+    }
+    return target;
   }
 
   @Mutation(() => UserEntity, { description: 'Update the current user profile' })
@@ -109,7 +108,18 @@ export class UserResolver {
 
   @Mutation(() => Boolean, { description: 'Soft-delete a user (admin only)' })
   @Roles(EntityUserRole.ADMIN, EntityUserRole.SUPER_ADMIN)
-  async deleteUser(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+  async deleteUser(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() current: JwtPayload,
+  ): Promise<boolean> {
+    const target = await this.userRepo.findById(id);
+    this.audit.record({
+      action: 'USER_DELETE',
+      userId: current.sub,
+      entityType: 'User',
+      entityId: id,
+      centerId: target?.centerId ?? null,
+    }).catch(() => {});
     await this.userRepo.delete(id);
     return true;
   }
@@ -119,8 +129,35 @@ export class UserResolver {
   async setUserRole(
     @Args('id', { type: () => ID }) id: string,
     @Args('role', { type: () => UserRole }) role: UserRole,
+    @CurrentUser() current: JwtPayload,
   ): Promise<boolean> {
-    const updated = await this.userRepo.update(id, { role: toEntityRole(role) });
+    const target = await this.userRepo.findById(id);
+    if (!target) throw new NotFoundException('User not found');
+
+    // Prevent self-demotion of the last super admin. The guard fires only
+    // when the caller is demoting *themselves* away from SUPER_ADMIN —
+    // other admins can still demote a colleague even if that colleague is
+    // the last one (an explicit policy decision, not an accident).
+    if (
+      target.role === EntityUserRole.SUPER_ADMIN &&
+      role !== EntityUserRole.SUPER_ADMIN &&
+      current.sub === id
+    ) {
+      const remaining = await this.userRepo.countSuperAdmins();
+      if (remaining <= 1) {
+        throw new BadRequestException('Cannot demote the last super admin');
+      }
+    }
+
+    const updated = await this.userRepo.update(id, { role });
+    this.audit.record({
+      action: 'USER_ROLE_CHANGE',
+      userId: current.sub,
+      entityType: 'User',
+      entityId: id,
+      centerId: target.centerId ?? null,
+      changes: { from: target.role, to: role },
+    }).catch(() => {});
     return !!updated;
   }
 
@@ -129,8 +166,19 @@ export class UserResolver {
   async setUserActive(
     @Args('id', { type: () => ID }) id: string,
     @Args('active', { type: () => Boolean }) active: boolean,
+    @CurrentUser() current: JwtPayload,
   ): Promise<boolean> {
+    const target = await this.userRepo.findById(id);
+    if (!target) throw new NotFoundException('User not found');
     const updated = await this.userRepo.update(id, { active });
+    this.audit.record({
+      action: 'USER_ACTIVE_CHANGE',
+      userId: current.sub,
+      entityType: 'User',
+      entityId: id,
+      centerId: target.centerId ?? null,
+      changes: { active },
+    }).catch(() => {});
     return !!updated;
   }
 
@@ -138,6 +186,7 @@ export class UserResolver {
   @Roles(EntityUserRole.SUPER_ADMIN)
   async createAdminUser(
     @Args('input') input: CreateAdminInput,
+    @CurrentUser() current: JwtPayload,
   ): Promise<UserEntity> {
     // Center managers must be assigned to a center
     if (input.role === DashboardAdminRole.CENTER_MANAGER && !input.centerId) {
@@ -151,7 +200,7 @@ export class UserResolver {
 
     const passwordHash = await bcrypt.hash(input.password, 12);
 
-    return this.userRepo.create({
+    const created = await this.userRepo.create({
       email: input.email,
       name: input.name,
       phone: input.phone,
@@ -161,6 +210,17 @@ export class UserResolver {
       active: true,
       emailVerified: true, // Auto-verified — account was created by a super admin
     });
+
+    this.audit.record({
+      action: 'USER_CREATE',
+      userId: current.sub,
+      entityType: 'User',
+      entityId: created.id,
+      centerId: input.centerId ?? null,
+      changes: { role: input.role, email: input.email },
+    }).catch(() => {});
+
+    return created;
   }
 
   // ─── Session / Device Management ──────────────────────────────────────────

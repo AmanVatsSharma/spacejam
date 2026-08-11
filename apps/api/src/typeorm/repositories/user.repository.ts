@@ -57,6 +57,19 @@ export class UserRepository {
     });
   }
 
+  /**
+   * Count active SUPER_ADMINs — used by the last-super-admin lockout guard
+   * in UserResolver.setUserRole so a super admin can never demote themselves
+   * if they are the only one left. Mirrors the `findOne({ where })` idiom
+   * used by findByIdActive; the `role` column is a Postgres enum so the
+   * literal is coerced to the entity's UserRole type via `as any`.
+   */
+  async countSuperAdmins(): Promise<number> {
+    return this.userRepo.count({
+      where: { role: 'SUPER_ADMIN' as any, active: true },
+    });
+  }
+
   async findAll(filters?: UserFilters): Promise<{ users: User[]; total: number }> {
     const queryBuilder = this.userRepo.createQueryBuilder('user');
 
