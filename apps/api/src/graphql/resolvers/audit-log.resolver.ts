@@ -9,12 +9,17 @@
  */
 import { Resolver, Query, Args, ID, Int, Mutation } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UseGuards } from '@nestjs/common';
 import { Repository, Between, Like, FindOptionsWhere } from 'typeorm';
 import { AuditLog } from '../../typeorm/entities/audit-log.entity';
 import { ObjectType, Field, InputType } from '@nestjs/graphql';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { UserRole } from '../../graphql/types/user.type';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 
 @InputType()
 export class AuditLogFiltersInput {
@@ -36,6 +41,7 @@ export class AuditLogStatistics {
 }
 
 @Resolver(() => AuditLog)
+@UseGuards(GqlAuthGuard, RolesGuard)
 export class AuditLogResolver {
   constructor(
     @InjectRepository(AuditLog)
@@ -111,6 +117,7 @@ export class AuditLogResolver {
   }
 
   @Mutation(() => Boolean)
+  @Roles(UserRole.SUPER_ADMIN)
   async pruneAuditLogs(
     @Args('olderThanDays', { type: () => Int }) olderThanDays: number,
   ): Promise<boolean> {

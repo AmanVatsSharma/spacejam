@@ -26,6 +26,7 @@ import { OtpService } from './services/otp.service';
 import { AuthResolver } from '../graphql/resolvers/auth.resolver';
 import { IntegrationsModule } from '../integrations/integrations.module';
 
+import { AuditModule } from './audit.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
@@ -43,6 +44,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     }),
     TypeOrmModule.forFeature([User, UserSession, Customer, CustomerEmployee, OtpRequest]),
     UserRepositoryModule,
+    // AuditModule provides + exports AuditService (TypeORM-only, no auth dep,
+    // so no DI cycle). Imported here so legacy auth consumers keep resolving.
+    AuditModule,
     // IntegrationsModule provides the configurable SMS_PROVIDER (reads the
     // chosen provider + API key from the super-admin Integrations settings).
     IntegrationsModule,
@@ -56,6 +60,13 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtStrategy,
     JwtRefreshStrategy,
   ],
-  exports: [AuthService, OtpService, JwtModule, PassportModule, UserRepositoryModule],
+  // Re-export AuditModule (not AuditService directly). In this NestJS version
+  // the DI validator (Module.validateExportedProvider) only accepts a provider
+  // in `exports` if it is in this module's own providers OR appears as an
+  // imported module's metatype. Re-exporting the AuditService class token
+  // satisfies neither, so we re-export AuditModule, which transitively
+  // exposes AuditService to any consumer that imports AuthModule. Center and
+  // User modules import AuditModule directly, so they are unaffected.
+  exports: [AuthService, OtpService, AuditModule, JwtModule, PassportModule, UserRepositoryModule],
 })
 export class AuthModule {}

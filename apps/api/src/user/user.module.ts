@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { UserRepositoryModule } from '../typeorm/repositories/user.repository.module';
 import { UserSessionRepositoryModule } from '../typeorm/repositories/user-session.repository.module';
+import { AuditModule } from '../auth/audit.module';
 import { UserResolver } from '../graphql/resolvers/user.resolver';
 import { User } from '../typeorm/entities/user.entity';
 import { Customer } from '../typeorm/entities/customer.entity';
@@ -22,6 +23,7 @@ import { WalletTransaction } from '../typeorm/entities/wallet-transaction.entity
     CacheModule,
     UserRepositoryModule,
     UserSessionRepositoryModule,
+    AuditModule,
   ],
   providers: [
     UserResolver,

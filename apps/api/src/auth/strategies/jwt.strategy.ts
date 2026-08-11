@@ -19,6 +19,8 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  /** Center this user is assigned to. Present for CENTER_MANAGER; null/absent otherwise. */
+  centerId?: string | null;
   sid: string;
   typ: 'access';
   iat?: number;
@@ -43,10 +45,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) {
       throw new UnauthorizedException('User no longer exists or is disabled');
     }
+    // Widened to carry centerId (so centerScope() works) plus canonical
+    // JwtPayload aliases (sub/sid) alongside the legacy id/sessionId names.
     return {
+      sub: payload.sub,
       id: payload.sub,
       email: payload.email,
       role: payload.role,
+      centerId: payload.centerId ?? null,
+      sid: payload.sid,
       sessionId: payload.sid,
     };
   }

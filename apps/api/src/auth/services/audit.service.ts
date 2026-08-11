@@ -54,13 +54,24 @@ export type AuditAction =
   | 'BOOKING_CREATE'
   | 'BOOKING_CANCEL'
   | 'PAYMENT_CREATE'
-  | 'PAYMENT_REFUND';
+  | 'PAYMENT_REFUND'
+  // Settings & user-management actions (added 2026-08-10, settings foundation).
+  | 'CENTER_SETTINGS_UPDATE'
+  | 'CENTER_UPDATE'
+  | 'CENTER_CREATE'
+  | 'CENTER_DELETE'
+  | 'USER_ROLE_CHANGE'
+  | 'USER_ACTIVE_CHANGE'
+  | 'USER_CREATE'
+  | 'USER_DELETE';
 
 export interface AuditEntry {
   action: AuditAction;
   userId?: string | null;
   entityType?: string;
   entityId?: string;
+  /** Center this event relates to — lets managers see only their center's trail. */
+  centerId?: string | null;
   changes?: Record<string, unknown> | null;
   ipAddress?: string;
   userAgent?: string;
@@ -91,6 +102,7 @@ export class AuditService {
         action: entry.action,
         entityType: entry.entityType ?? null,
         entityId: entry.entityId ?? null,
+        centerId: entry.centerId ?? null,
         changes: entry.changes ?? entry.metadata ?? null,
         ipAddress: entry.ipAddress ?? null,
         userAgent: entry.userAgent ?? null,

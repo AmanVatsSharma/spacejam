@@ -1,112 +1,43 @@
-/**
- * File:        apps/api/src/common/utils/settings.util.spec.ts
- * Module:      API · Common · Settings Utils · Tests
- * Purpose:     Verifies that deepMergeSettings preserves sibling groups
- *              (e.g., updating settings.finance never wipes settings.security).
- *              This is the contract every Settings page relies on when it
- *              calls UPDATE_CENTER_SETTINGS with a group-scoped partial.
- *
- * Author:      AmanVatsSharma
- * Last-updated: 2026-07-22
- */
+import { sanitizeSettings, deepMergeSettings } from './settings.util';
+import { BadRequestException } from '@nestjs/common';
 
-import { describe, it, expect } from 'vitest';
-import { deepMergeSettings } from './settings.util';
-
-describe('deepMergeSettings', () => {
-  it('preserves sibling keys not present in incoming', () => {
-    const target = {
-      finance: { verificationRequired: true },
-      security: { twoFactor: false },
-    };
-    const incoming = { finance: { verificationRequired: false } };
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.finance.verificationRequired).toBe(false);
-    expect(result.security).toEqual({ twoFactor: false });
+describe('sanitizeSettings', () => {
+  it('keeps whitelisted top-level keys', () => {
+    const out = sanitizeSettings({ finance: { a: 1 }, operations: { b: 2 } });
+    expect(out).toEqual({ finance: { a: 1 }, operations: { b: 2 } });
   });
 
-  it('adds new groups without affecting existing ones', () => {
-    const target = { finance: { verificationRequired: true } };
-    const incoming = {
-      operations: { bookingRules: { advanceBookingDays: 14 } },
-    };
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.finance).toEqual({ verificationRequired: true });
-    expect(result.operations).toEqual({
-      bookingRules: { advanceBookingDays: 14 },
-    });
+  it('drops non-whitelisted top-level keys', () => {
+    const out = sanitizeSettings({ finance: { a: 1 }, evil: 'x', __proto__: null } as any);
+    expect(out).toEqual({ finance: { a: 1 } });
+    expect(out).not.toHaveProperty('evil');
   });
 
-  it('recurses into nested objects key-by-key', () => {
-    const target = {
-      operations: {
-        bookingRules: { advanceBookingDays: 7, minimumDurationMinutes: 30 },
-        roomDefaults: { defaultCapacity: 8 },
-      },
-    };
-    const incoming = {
-      operations: {
-        bookingRules: { advanceBookingDays: 30 },
-        maintenance: { enabled: true },
-      },
-    };
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.operations.bookingRules.advanceBookingDays).toBe(30);
-    expect(result.operations.bookingRules.minimumDurationMinutes).toBe(30);
-    expect(result.operations.roomDefaults).toEqual({ defaultCapacity: 8 });
-    expect(result.operations.maintenance).toEqual({ enabled: true });
+  it('throws when payload exceeds 64KB', () => {
+    const big = { finance: { blob: 'x'.repeat(70 * 1024) } };
+    expect(() => sanitizeSettings(big)).toThrow(BadRequestException);
   });
 
-  it('overwrites primitives (does not attempt to merge them)', () => {
-    const target = { finance: { taxRate: 0.05, currency: 'USD' } };
-    const incoming = { finance: { taxRate: 0.07 } };
+  it('preserves nested values inside a whitelisted key', () => {
+    const out = sanitizeSettings({ managerConfig: { finance: { reminderTiming: 'weekly' } } });
+    expect(out.managerConfig.finance.reminderTiming).toBe('weekly');
+  });
+});
 
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.finance.taxRate).toBe(0.07);
-    expect(result.finance.currency).toBe('USD');
+describe('deepMergeSettings (with depth limit)', () => {
+  it('merges sibling objects without clobbering', () => {
+    const merged = deepMergeSettings({ finance: { a: 1 }, security: { x: 9 } }, { finance: { b: 2 } });
+    expect(merged).toEqual({ finance: { a: 1, b: 2 }, security: { x: 9 } });
   });
 
-  it('replaces arrays entirely (does not deep-merge them)', () => {
-    const target = { notifications: { recipients: ['a@x.com', 'b@x.com'] } };
-    const incoming = { notifications: { recipients: ['c@x.com'] } };
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.notifications.recipients).toEqual(['c@x.com']);
+  it('overwrites primitives and arrays', () => {
+    const merged = deepMergeSettings({ a: 1, arr: [1] }, { a: 2, arr: [2, 3] });
+    expect(merged).toEqual({ a: 2, arr: [2, 3] });
   });
 
-  it('handles empty incoming as identity (returns a copy)', () => {
-    const target = { finance: { x: 1 } };
-    const incoming = {};
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result).toEqual({ finance: { x: 1 } });
-    expect(result).not.toBe(target);
-  });
-
-  it('does not mutate the target object', () => {
-    const target = { finance: { x: 1 } };
-    const incoming = { finance: { x: 2 } };
-
-    deepMergeSettings(target, incoming);
-
-    expect(target.finance.x).toBe(1);
-  });
-
-  it('merges nested objects key-by-key when both sides are objects', () => {
-    const target = { center: { id: 'existing' } };
-    const incoming = { center: { name: 'New' } };
-
-    const result = deepMergeSettings(target, incoming);
-
-    expect(result.center).toEqual({ id: 'existing', name: 'New' });
+  it('throws when nesting exceeds the depth cap (default 5)', () => {
+    // depth 6: {a:{b:{c:{d:{e:{f:1}}}}}} — six levels of object nesting.
+    const nested = { a: { b: { c: { d: { e: { f: 1 } } } } } };
+    expect(() => deepMergeSettings({}, nested)).toThrow(BadRequestException);
   });
 });

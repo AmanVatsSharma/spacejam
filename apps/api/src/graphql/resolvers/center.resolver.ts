@@ -8,9 +8,14 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
-import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  NotFoundException,
+  UnauthorizedException,
+  UseGuards,
+  Logger,
+} from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
-import { CenterStatus } from '../types/user.type';
+import { CenterStatus, UserRole } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Center as CenterEntity } from '../../typeorm/entities/center.entity';
@@ -30,10 +35,16 @@ import {
   CreateSeatInput,
   UpdateSeatInput,
 } from '../inputs/center.input';
-import { deepMergeSettings } from '../../common/utils/settings.util';
+import { deepMergeSettings, sanitizeSettings } from '../../common/utils/settings.util';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { CenterScoped } from '../../auth/decorators/center-scoped.decorator';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { CenterScopedGuard } from '../../auth/guards/center-scoped.guard';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { AuditService } from '../../auth/services/audit.service';
 
 export const CENTER_TRIGGERS = {
   centerUpdated: 'center.updated',
@@ -47,7 +58,9 @@ export const CENTER_TRIGGERS = {
  */
 
 @Resolver(() => CenterEntity)
+@UseGuards(GqlAuthGuard, RolesGuard, CenterScopedGuard)
 export class CenterResolver {
+  private readonly logger = new Logger(CenterResolver.name);
   constructor(
     private cache: CacheService,
     @InjectRepository(CenterEntity)
@@ -57,6 +70,7 @@ export class CenterResolver {
 
 
     private readonly pubSub: PubSubService,
+    private readonly audit: AuditService,
   ) {}
 
   @Query(() => [CenterEntity])
@@ -121,6 +135,7 @@ export class CenterResolver {
   }
 
   @Mutation(() => CenterEntity)
+  @Roles(UserRole.SUPER_ADMIN)
   async createCenter(
     @Args('input') input: CreateCenterInput,
     @Context() context: any
@@ -147,10 +162,19 @@ export class CenterResolver {
     });
     const center = await this.centerRepo.save(newCenter);
     await this.cache.invalidatePattern('centers:*');
+    this.audit.record({
+      action: 'CENTER_CREATE',
+      userId: context.req.user?.sub ?? context.req.user?.id ?? null,
+      entityType: 'Center',
+      entityId: center.id,
+      centerId: center.id,
+    }).catch(() => { /* record() already swallows; belt-and-suspenders */ });
     return center;
   }
 
   @Mutation(() => CenterEntity)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  @CenterScoped('id')
   async updateCenter(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateCenterInput,
@@ -164,10 +188,18 @@ export class CenterResolver {
     if (!center) throw new NotFoundException('Center not found');
     await this.cache.invalidatePattern(`center:${id}`);
     await this.pubSub.publish(CENTER_TRIGGERS.centerUpdated, { centerUpdated: center });
+    this.audit.record({
+      action: 'CENTER_UPDATE',
+      userId: context.req.user?.sub ?? context.req.user?.id ?? null,
+      entityType: 'Center',
+      entityId: id,
+      centerId: id,
+    }).catch(() => { /* record() already swallows; belt-and-suspenders */ });
     return center;
   }
 
   @Mutation(() => Boolean)
+  @Roles(UserRole.SUPER_ADMIN)
   async deleteCenter(
     @Args('id', { type: () => ID }) id: string,
     @Context() context: any
@@ -175,6 +207,13 @@ export class CenterResolver {
 
     await this.centerRepo.update(id, { status: CenterStatus.MAINTENANCE });
     await this.cache.invalidatePattern(`center:${id}`);
+    this.audit.record({
+      action: 'CENTER_DELETE',
+      userId: context.req.user?.sub ?? context.req.user?.id ?? null,
+      entityType: 'Center',
+      entityId: id,
+      centerId: id,
+    }).catch(() => { /* record() already swallows; belt-and-suspenders */ });
     return true;
   }
 
@@ -184,8 +223,12 @@ export class CenterResolver {
    * security, operations, permissions) to load their toggles.
    */
   @Query(() => String, { description: 'Center settings as a JSON string' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  @CenterScoped('centerId')
   async centerSettings(
     @Args('centerId', { type: () => ID }) centerId: string,
+    @CurrentUser() caller?: JwtPayload,
+    @Context() context?: any,
   ): Promise<string> {
     const center = await this.centerRepo.findOne({ where: { id: centerId } });
     return JSON.stringify(center?.settings ?? {});
@@ -197,10 +240,13 @@ export class CenterResolver {
    * overwritten; existing sibling keys are preserved.
    */
   @Mutation(() => String, { description: 'Update center settings (JSON string), returns merged settings' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  @CenterScoped('centerId')
   async updateCenterSettings(
     @Args('centerId', { type: () => ID }) centerId: string,
     @Args('settings', { type: () => String }) settings: string,
-    @Context() context: any
+    @CurrentUser() caller?: JwtPayload,
+    @Context() context?: any,
   ): Promise<string> {
     const center = await this.centerRepo.findOne({ where: { id: centerId } });
     if (!center) throw new NotFoundException('Center not found');
@@ -212,12 +258,34 @@ export class CenterResolver {
       incoming = {};
     }
 
+    // Whitelist + size cap. Drop unknown keys silently but log so bugs surface.
+    const before = Object.keys(incoming);
+    incoming = sanitizeSettings(incoming);
+    const dropped = before.filter((k) => !(k in incoming));
+    if (dropped.length) {
+      this.logger.warn(
+        `updateCenterSettings dropped non-whitelisted keys for center ${centerId}: ${dropped.join(', ')}`,
+      );
+    }
+
     const merged = deepMergeSettings(center.settings ?? {}, incoming);
     await this.centerRepo.update(centerId, { settings: merged });
     await this.cache.invalidatePattern(`center:${centerId}`);
     await this.pubSub.publish(CENTER_TRIGGERS.centerUpdated, {
       centerUpdated: { ...center, settings: merged },
     });
+
+    // Fire-and-forget audit. changes = keys only (values may later hold secrets).
+    this.audit.record({
+      action: 'CENTER_SETTINGS_UPDATE',
+      userId: caller?.sub ?? caller?.id ?? null,
+      entityType: 'Center',
+      entityId: centerId,
+      centerId,
+      changes: { keys: Object.keys(incoming) },
+      ipAddress: context?.req?.headers?.['x-forwarded-for'] ?? context?.req?.ip ?? null,
+      userAgent: context?.req?.headers?.['user-agent'] ?? null,
+    }).catch(() => { /* record() already swallows; belt-and-suspenders */ });
 
     return JSON.stringify(merged);
   }
