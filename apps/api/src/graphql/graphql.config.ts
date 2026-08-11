@@ -168,8 +168,10 @@ async function buildValidationRules(
  * attaches it to `req.user`. Lazy-requires jsonwebtoken to avoid pulling it
  * into the module-eval graph (mirrors the lazy requires in buildRequestLoaders).
  * Silent on failure: any missing/invalid/expired token simply leaves
- * req.user undefined. The payload shape matches JwtStrategy.validate
- * (sub -> id, email, role, sid -> sessionId).
+ * req.user undefined. The payload shape matches JwtStrategy.validate's widened
+ * output: sub/id, email, role, centerId, sid/sessionId. centerId is sourced
+ * from the JWT claim (signed at auth.service.ts:366), not a DB lookup, so
+ * role/scope stay consistent within a token's lifetime.
  */
 function hydrateUserFromToken(req: any): void {
   try {
@@ -184,13 +186,17 @@ function hydrateUserFromToken(req: any): void {
       sub?: string;
       email?: string;
       role?: string;
+      centerId?: string | null;
       sid?: string;
     };
     if (payload && payload.sub) {
       req.user = {
+        sub: payload.sub,
         id: payload.sub,
         email: payload.email,
         role: payload.role,
+        centerId: payload.centerId ?? null,
+        sid: payload.sid,
         sessionId: payload.sid,
       };
     }

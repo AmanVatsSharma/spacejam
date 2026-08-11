@@ -13,9 +13,17 @@ import { GqlExecutionContext } from '@nestjs/graphql';
 import { UserRole } from '../../graphql/types/user.type';
 
 export interface AuthenticatedUser {
+  /** Canonical subject id (matches JWT `sub`). */
+  sub: string;
+  /** Legacy alias for `sub`. Kept for transition. */
   id: string;
   email?: string;
   role: UserRole;
+  /** Center this user is assigned to. null for SUPER_ADMIN; set for CENTER_MANAGER. */
+  centerId?: string | null;
+  /** Canonical session id (matches JWT `sid`). */
+  sid?: string;
+  /** Legacy alias for `sid`. Kept for transition. */
   sessionId?: string;
 }
 
