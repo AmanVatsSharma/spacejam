@@ -27,7 +27,6 @@ import { AuthResolver } from '../graphql/resolvers/auth.resolver';
 import { IntegrationsModule } from '../integrations/integrations.module';
 
 import { AuditModule } from './audit.module';
-import { AuditService } from './services/audit.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
