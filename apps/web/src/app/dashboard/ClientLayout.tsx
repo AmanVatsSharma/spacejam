@@ -91,6 +91,7 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: 'security', label: 'Security', href: '/dashboard/settings/security' },
     { id: 'operations', label: 'Operations', href: '/dashboard/settings/operations' },
     { id: 'integrations', label: 'Integrations', href: '/dashboard/settings/integrations' },
+    { id: 'promotion', label: 'Promotion', href: '/dashboard/settings/promotion' },
   ],
 };
 
@@ -139,6 +140,7 @@ export default function DashboardLayout({
       { id: 'finance', label: 'Finance', href: '/dashboard/settings/finance' },
       { id: 'notification', label: 'Notification', href: '/dashboard/settings/notification' },
       { id: 'operations', label: 'Operation', href: '/dashboard/settings/operations' },
+      { id: 'promotion', label: 'Promotion', href: '/dashboard/settings/promotion' },
     ];
   }
 

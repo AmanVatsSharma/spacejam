@@ -1,0 +1,362 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pageTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+.pageSubtitle {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
+}
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+.btnSecondary {
+  background: #FFFFFF;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btnPrimary {
+  background: #FF7847;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tabs */
+.tabsContainer {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #E5E7EB;
+  padding-bottom: 16px;
+}
+.tab {
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4B5563;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab.active {
+  background: #FF7847;
+  color: #FFFFFF;
+  border-color: #FF7847;
+}
+
+/* Sections */
+.sectionCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+}
+.sectionHeader {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+/* Form Elements */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.formGroup:last-child {
+  margin-bottom: 0;
+}
+.formLabel {
+  font-size: 13px;
+  color: #4B5563;
+  font-weight: 500;
+}
+.formInput, .formSelect {
+  width: 100%;
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+}
+.formInput:focus, .formSelect:focus {
+  border-color: #FF7847;
+}
+.inputGroupFlex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #9CA3AF;
+  margin-bottom: 4px;
+}
+.pillsGroup {
+  display: flex;
+  gap: 8px;
+}
+.pill {
+  padding: 6px 16px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.pill.active {
+  background: #FF7847;
+  color: #FFFFFF;
+}
+.pill.inactive {
+  background: #F3F4F6;
+  color: #4B5563;
+}
+
+/* Toggle Switch */
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.toggleRow:last-child {
+  margin-bottom: 0;
+}
+.toggleSwitch {
+  width: 44px;
+  height: 24px;
+  background: #E5E7EB;
+  border-radius: 100px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggleSwitch.active {
+  background: #FF7847;
+}
+.toggleKnob {
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.toggleSwitch.active .toggleKnob {
+  transform: translateX(20px);
+}
+
+/* Drag to reorder list */
+.dragList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dragItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+}
+.dragHandle {
+  color: #9CA3AF;
+  cursor: grab;
+}
+
+/* Grid Layouts */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Feed Cards */
+.feedCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+}
+.feedIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #FFF9F6;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.feedContent {
+  flex: 1;
+}
+.feedTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+.feedDesc {
+  font-size: 13px;
+  color: #4B5563;
+  margin: 0 0 6px 0;
+}
+.feedTime {
+  font-size: 11px;
+  color: #9CA3AF;
+}
+
+/* Live Previews */
+.previewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.previewTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+.previewIcons {
+  display: flex;
+  gap: 4px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  padding: 4px;
+}
+.previewIcon {
+  padding: 4px;
+  color: #9CA3AF;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.previewIcon.active {
+  background: #FFFFFF;
+  color: #FF7847;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.lobbyPreview {
+  background: #1F2937;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.lobbyTicker {
+  background: #FF7847;
+  color: #FFFFFF;
+  padding: 12px 16px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lobbyDots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4B5563;
+}
+.dot.active {
+  background: #FF7847;
+}
+
+.bannerPreview {
+  background: #FF9A76;
+  border-radius: 12px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  min-height: 240px;
+}
+.bannerBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #FBBF24;
+  color: #92400E;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 100px;
+}
+.bannerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+}
+.bannerDesc {
+  font-size: 13px;
+  color: rgba(255,255,255,0.9);
+  margin: 0 0 16px 0;
+}
+.bannerBtn {
+  background: #FFFFFF;
+  color: #FF7847;
+  border: none;
+  border-radius: 100px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}

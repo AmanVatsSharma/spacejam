@@ -124,6 +124,23 @@ const Icons = {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9 18 15 12 9 6"></polyline>
     </svg>
+  ),
+  paperclip: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+    </svg>
+  ),
+  x: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  ),
+  eyeHide: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+    </svg>
   )
 };
 
@@ -195,6 +212,8 @@ export default function NotificationSettingsPage() {
     delayMinutes: "0",
   });
   const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState<number>(3); // 1: Trigger, 2: Channel, 3: Message, 4: Escalation
+  const [showPreview, setShowPreview] = useState(true);
 
   const resetAutoForm = () => {
     setAutoForm({
@@ -487,29 +506,30 @@ export default function NotificationSettingsPage() {
               </div>
 
               <div className={styles.flowStepper}>
-                <div className={`${styles.stepperItem}`}>
-                  <div className={`${styles.stepperDot}`}></div>
+                <div className={`${styles.stepperItem} ${activeStep >= 1 ? styles.stepperItemActive : ''}`} onClick={() => setActiveStep(1)} style={{ cursor: 'pointer' }}>
+                  <div className={`${styles.stepperDot} ${activeStep >= 1 ? styles.stepperDotActive : ''}`}></div>
                   Trigger
                 </div>
                 <div className={styles.stepperLine}></div>
-                <div className={`${styles.stepperItem}`}>
-                  <div className={`${styles.stepperDot}`}></div>
+                <div className={`${styles.stepperItem} ${activeStep >= 2 ? styles.stepperItemActive : ''}`} onClick={() => setActiveStep(2)} style={{ cursor: 'pointer' }}>
+                  <div className={`${styles.stepperDot} ${activeStep >= 2 ? styles.stepperDotActive : ''}`}></div>
                   Channel
                 </div>
                 <div className={styles.stepperLine}></div>
-                <div className={`${styles.stepperItem} ${styles.stepperItemActive}`}>
-                  <div className={`${styles.stepperDot} ${styles.stepperDotActive}`}></div>
+                <div className={`${styles.stepperItem} ${activeStep >= 3 ? styles.stepperItemActive : ''}`} onClick={() => setActiveStep(3)} style={{ cursor: 'pointer' }}>
+                  <div className={`${styles.stepperDot} ${activeStep >= 3 ? styles.stepperDotActive : ''}`}></div>
                   Message
                 </div>
                 <div className={styles.stepperLine}></div>
-                <div className={`${styles.stepperItem}`}>
-                  <div className={`${styles.stepperDot}`}></div>
+                <div className={`${styles.stepperItem} ${activeStep >= 4 ? styles.stepperItemActive : ''}`} onClick={() => setActiveStep(4)} style={{ cursor: 'pointer' }}>
+                  <div className={`${styles.stepperDot} ${activeStep >= 4 ? styles.stepperDotActive : ''}`}></div>
                   Escalation
                 </div>
               </div>
 
-              <div className={styles.autoStepCard}>
-                <div className={styles.autoStepHeader}>
+              {/* STEP 1: TRIGGER */}
+              <div className={`${styles.autoStepCard} ${activeStep === 1 ? styles.autoStepCardActive : ''}`} onClick={() => { if (activeStep !== 1) setActiveStep(1); }}>
+                <div className={styles.autoStepHeader} style={{ cursor: 'pointer' }}>
                   <div className={styles.autoStepInfo}>
                     <div className={styles.autoStepIcon}>{Icons.lightning}</div>
                     <div className={styles.autoStepTexts}>
@@ -517,25 +537,75 @@ export default function NotificationSettingsPage() {
                       <span className={styles.autoStepDesc}>{labelForTrigger(autoForm.triggerEvent)}</span>
                     </div>
                   </div>
-                  {Icons.chevronRight}
+                  <div style={{ transform: activeStep === 1 ? 'rotate(90deg)' : 'none', transition: 'all 0.2s' }}>{Icons.chevronRight}</div>
                 </div>
+                {activeStep === 1 && (
+                  <div className={styles.autoStepContent}>
+                    <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                      <label className={styles.formLabel}>Select Trigger Event</label>
+                      <select
+                        className={`${styles.formInput} ${styles.selectBox}`}
+                        value={autoForm.triggerEvent}
+                        onChange={(e) => setAutoForm((p) => ({ ...p, triggerEvent: e.target.value }))}
+                      >
+                        {TRIGGER_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.infoBlock}>
+                      This automation will start when the selected event occurs
+                    </div>
+                    <button className={styles.dashedBtn}>
+                      {Icons.plus} Add Custom Trigger
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className={styles.autoStepCard}>
-                <div className={styles.autoStepHeader}>
+              {/* STEP 2: CHANNEL */}
+              <div className={`${styles.autoStepCard} ${activeStep === 2 ? styles.autoStepCardActive : ''}`} onClick={() => { if (activeStep !== 2) setActiveStep(2); }}>
+                <div className={styles.autoStepHeader} style={{ cursor: 'pointer' }}>
                   <div className={styles.autoStepInfo}>
-                    <div className={styles.autoStepIcon}>{Icons.sms}</div>
+                    <div className={styles.autoStepIcon}>{Icons.email}</div>
                     <div className={styles.autoStepTexts}>
                       <span className={styles.autoStepTitle}>Channel</span>
                       <span className={styles.autoStepDesc}>{labelForChannel(autoForm.channel)}</span>
                     </div>
                   </div>
-                  {Icons.chevronRight}
+                  <div style={{ transform: activeStep === 2 ? 'rotate(90deg)' : 'none', transition: 'all 0.2s' }}>{Icons.chevronRight}</div>
                 </div>
+                {activeStep === 2 && (
+                  <div className={styles.autoStepContent}>
+                    <label className={styles.formLabel} style={{ marginBottom: '8px' }}>Select Channels</label>
+                    <div className={styles.channelSelectGrid}>
+                      <div className={`${styles.channelSelectBtn} ${autoForm.channel === 'WHATSAPP' ? styles.channelSelectBtnActive : ''}`} onClick={() => setAutoForm(p => ({ ...p, channel: 'WHATSAPP' }))}>
+                        {Icons.whatsapp}
+                        WhatsApp
+                      </div>
+                      <div className={`${styles.channelSelectBtn} ${autoForm.channel === 'EMAIL' ? styles.channelSelectBtnActive : ''}`} onClick={() => setAutoForm(p => ({ ...p, channel: 'EMAIL' }))}>
+                        {Icons.email}
+                        Email
+                      </div>
+                      <div className={`${styles.channelSelectBtn} ${autoForm.channel === 'PUSH' ? styles.channelSelectBtnActive : ''}`} onClick={() => setAutoForm(p => ({ ...p, channel: 'PUSH' }))}>
+                        {Icons.push}
+                        Push Notification
+                      </div>
+                      <div className={`${styles.channelSelectBtn} ${autoForm.channel === 'SMS' ? styles.channelSelectBtnActive : ''}`} onClick={() => setAutoForm(p => ({ ...p, channel: 'SMS' }))}>
+                        {Icons.sms}
+                        SMS
+                      </div>
+                    </div>
+                    <button className={styles.dashedBtn}>
+                      {Icons.plus} Add Custom Channel
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className={`${styles.autoStepCard} ${styles.autoStepCardActive}`}>
-                <div className={styles.autoStepHeader}>
+              {/* STEP 3: MESSAGE */}
+              <div className={`${styles.autoStepCard} ${activeStep === 3 ? styles.autoStepCardActive : ''}`} onClick={() => { if (activeStep !== 3) setActiveStep(3); }}>
+                <div className={styles.autoStepHeader} style={{ cursor: 'pointer' }}>
                   <div className={styles.autoStepInfo}>
                     <div className={styles.autoStepIcon}>{Icons.sms}</div>
                     <div className={styles.autoStepTexts}>
@@ -547,115 +617,168 @@ export default function NotificationSettingsPage() {
                       </span>
                     </div>
                   </div>
-                  <div style={{ transform: 'rotate(90deg)' }}>{Icons.chevronRight}</div>
+                  <div style={{ transform: activeStep === 3 ? 'rotate(90deg)' : 'none', transition: 'all 0.2s' }}>{Icons.chevronRight}</div>
                 </div>
 
-                <div className={styles.autoStepContent}>
-                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
-                    <label className={styles.formLabel}>Automation Name</label>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      placeholder="e.g. Booking Confirmation Flow"
-                      value={autoForm.name}
-                      onChange={(e) => setAutoForm((p) => ({ ...p, name: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
-                    <label className={styles.formLabel}>Trigger Event</label>
-                    <select
-                      className={`${styles.formInput} ${styles.selectBox}`}
-                      value={autoForm.triggerEvent}
-                      onChange={(e) => setAutoForm((p) => ({ ...p, triggerEvent: e.target.value }))}
-                    >
-                      {TRIGGER_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
-                    <label className={styles.formLabel}>Channel</label>
-                    <select
-                      className={`${styles.formInput} ${styles.selectBox}`}
-                      value={autoForm.channel}
-                      onChange={(e) => setAutoForm((p) => ({ ...p, channel: e.target.value }))}
-                    >
-                      {CHANNEL_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
-                    <label className={styles.formLabel}>Delay (minutes)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      className={styles.formInput}
-                      value={autoForm.delayMinutes}
-                      onChange={(e) => setAutoForm((p) => ({ ...p, delayMinutes: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                    <label className={styles.formLabel}>Message Template</label>
-                    <textarea
-                      className={styles.textareaBox}
-                      placeholder="Hi {{name}}, your booking is confirmed for {{date}} at {{time}}."
-                      rows={4}
-                      value={autoForm.template}
-                      onChange={(e) => setAutoForm((p) => ({ ...p, template: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className={styles.variablesWrap}>
-                    <span className={styles.variablesLabel}>Insert variables:</span>
-                    <div className={styles.variablePills}>
-                      {["name", "date", "time", "center_name", "booking_id", "amount"].map((v) => (
-                        <span
-                          key={v}
-                          className={styles.variablePill}
-                          style={{ cursor: "pointer" }}
-                          onClick={() =>
-                            setAutoForm((p) => ({ ...p, template: `${p.template}{{${v}}}` }))
-                          }
-                        >
-                          {"{{" + v + "}}"}
-                        </span>
-                      ))}
+                {activeStep === 3 && (
+                  <div className={styles.autoStepContent}>
+                    
+                    <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                      <label className={styles.formLabel}>Template</label>
+                      <select className={`${styles.formInput} ${styles.selectBox}`}>
+                        <option>Select template</option>
+                      </select>
                     </div>
+
+                    <div className={styles.formGroup} style={{ marginBottom: "12px" }}>
+                      <label className={styles.formLabel}>Template Name</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        placeholder="e.g. Booking Confirmation Flow"
+                        value={autoForm.name}
+                        onChange={(e) => setAutoForm((p) => ({ ...p, name: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                      <label className={styles.formLabel}>Message Body</label>
+                      <textarea
+                        className={styles.textareaBox}
+                        placeholder="Type your message here..."
+                        rows={4}
+                        value={autoForm.template}
+                        onChange={(e) => setAutoForm((p) => ({ ...p, template: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className={styles.variablesWrap}>
+                      <span className={styles.variablesLabel}>Insert variables:</span>
+                      <div className={styles.variablePills}>
+                        {["name", "date", "time", "center_name", "booking_id", "amount"].map((v) => (
+                          <span
+                            key={v}
+                            className={styles.variablePill}
+                            onClick={() =>
+                              setAutoForm((p) => ({ ...p, template: `${p.template}{{${v}}}` }))
+                            }
+                          >
+                            {"{{" + v + "}}"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.formGroup} style={{ marginTop: '12px' }}>
+                      <label className={styles.formLabel}>Attachments</label>
+                      <div className={styles.uploadBoxActive}>
+                        <div className={styles.uploadBoxActiveIcon}>
+                          {Icons.paperclip} invoice.pdf
+                        </div>
+                        <div style={{ color: '#9CA3AF', cursor: 'pointer' }}>{Icons.x}</div>
+                      </div>
+                      <button className={styles.dashedBtn}>
+                        {Icons.upload} Upload Attachment
+                      </button>
+                    </div>
+
+                    <div className={styles.actionRow} style={{ borderTop: 'none', paddingTop: 0, marginTop: '8px' }}>
+                      <button type="button" className={styles.testBtnAlt} style={{ flex: 1, marginRight: '12px' }} onClick={() => setShowPreview(!showPreview)}>
+                        {showPreview ? Icons.eyeHide : Icons.preview} {showPreview ? 'Hide Preview' : 'Show Preview'}
+                      </button>
+                      <button type="button" className={styles.testBtnAlt} style={{ flex: 1 }} onClick={() => handleSendTest(autoForm.channel.toLowerCase())}>
+                        {Icons.send} Send Test
+                      </button>
+                    </div>
+
+                    {showPreview && (
+                      <div className={styles.previewContainer}>
+                        <div className={styles.previewLabel}>WhatsApp Preview</div>
+                        <div className={styles.previewBubble}>
+                          Hi John Doe, your booking is confirmed for Apr 30, 2026 at Downtown Hub. Reference: BK-12345
+                          <div className={styles.previewAttachment}>{Icons.paperclip} invoice.pdf</div>
+                          <span className={styles.previewTime}>10:30 AM</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
 
-              <div className={styles.actionRow}>
+              {/* STEP 4: ESCALATION */}
+              <div className={`${styles.autoStepCard} ${activeStep === 4 ? styles.autoStepCardActive : ''}`} onClick={() => { if (activeStep !== 4) setActiveStep(4); }}>
+                <div className={styles.autoStepHeader} style={{ cursor: 'pointer' }}>
+                  <div className={styles.autoStepInfo}>
+                    <div className={styles.autoStepIcon} style={{ background: '#F59E0B' }}>{Icons.warningTriangle}</div>
+                    <div className={styles.autoStepTexts}>
+                      <span className={styles.autoStepTitle}>Escalation</span>
+                      <span className={styles.autoStepDesc}>After {autoForm.delayMinutes} mins → Send SMS</span>
+                    </div>
+                  </div>
+                  <div style={{ transform: activeStep === 4 ? 'rotate(90deg)' : 'none', transition: 'all 0.2s' }}>{Icons.chevronRight}</div>
+                </div>
+                {activeStep === 4 && (
+                  <div className={styles.autoStepContent}>
+                    <label className={styles.formLabel}>Escalation 1</label>
+                    <div className={styles.escalationRow}>
+                      <div className={styles.escalationCol}>
+                        <label className={styles.formLabel} style={{ marginBottom: '8px', display: 'block' }}>Wait Time</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className={styles.formInput}
+                          value={autoForm.delayMinutes}
+                          onChange={(e) => setAutoForm((p) => ({ ...p, delayMinutes: e.target.value }))}
+                        />
+                      </div>
+                      <div className={styles.escalationCol}>
+                        <label className={styles.formLabel} style={{ marginBottom: '8px', display: 'block' }}>Unit</label>
+                        <select className={`${styles.formInput} ${styles.selectBox}`}>
+                          <option>Hours</option>
+                          <option>Minutes</option>
+                          <option>Days</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Then Take Action</label>
+                      <select className={`${styles.formInput} ${styles.selectBox}`}>
+                        <option>Send SMS</option>
+                        <option>Send Email</option>
+                      </select>
+                    </div>
+
+                    <button className={styles.dashedBtn}>
+                      {Icons.plus} Add Escalation Rule
+                    </button>
+
+                    <div className={styles.warningBlock}>
+                      Escalations ensure important messages don't go unnoticed
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.actionRow} style={{ borderTop: 'none', paddingTop: 0 }}>
                 <button
                   className={styles.saveBtn}
-                  style={{ padding: '12px 24px' }}
+                  style={{ padding: '12px 24px', flex: 1, justifyContent: 'center' }}
                   onClick={handleSaveAutomation}
                   disabled={creatingAutomation || updatingAutomation}
                 >
                   {(creatingAutomation || updatingAutomation)
                     ? "Saving…"
                     : editingAutomationId
-                      ? "Update Automation"
+                      ? "Save Automation"
                       : "Save Automation"}
                 </button>
-                <div className={styles.rightActions}>
-                  {editingAutomationId && (
-                    <button
-                      type="button"
-                      className={styles.testBtn}
-                      style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }}
-                      onClick={resetAutoForm}
-                    >
-                      Cancel Edit
-                    </button>
-                  )}
-                  <button className={styles.testBtn} style={{ marginTop: 0, padding: '10px 16px', background: 'transparent' }} onClick={() => handleSendTest('email')}>
+                <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
+                  <button type="button" className={styles.testBtnAlt} style={{ flex: 1, marginTop: 0 }} onClick={() => handleSendTest('email')}>
                     {Icons.send} Send Test
+                  </button>
+                  <button type="button" className={styles.testBtnAlt} style={{ flex: 1, marginTop: 0 }} onClick={() => setShowPreview(!showPreview)}>
+                    {Icons.preview} Preview
                   </button>
                 </div>
               </div>
