@@ -61,6 +61,13 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtStrategy,
     JwtRefreshStrategy,
   ],
-  exports: [AuthService, OtpService, AuditService, JwtModule, PassportModule, UserRepositoryModule],
+  // Re-export AuditModule (not AuditService directly). In this NestJS version
+  // the DI validator (Module.validateExportedProvider) only accepts a provider
+  // in `exports` if it is in this module's own providers OR appears as an
+  // imported module's metatype. Re-exporting the AuditService class token
+  // satisfies neither, so we re-export AuditModule, which transitively
+  // exposes AuditService to any consumer that imports AuthModule. Center and
+  // User modules import AuditModule directly, so they are unaffected.
+  exports: [AuthService, OtpService, AuditModule, JwtModule, PassportModule, UserRepositoryModule],
 })
 export class AuthModule {}
