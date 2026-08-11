@@ -1,0 +1,477 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header & Controls */
+.headerCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+}
+.headerTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+}
+.headerSubtitle {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 16px;
+}
+.searchWrap {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+}
+.searchInput {
+  width: 100%;
+  padding: 10px 10px 10px 36px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+}
+.searchInput::placeholder {
+  color: #9CA3AF;
+}
+
+.filtersWrap {
+  display: flex;
+  gap: 12px;
+}
+.filterSelect {
+  padding: 10px 32px 10px 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  background-color: #FFFFFF;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  outline: none;
+}
+
+/* KPI Cards */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kpiCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.kpiIconWrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #FFF0EB;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kpiLabel {
+  font-size: 13px;
+  color: #6B7280;
+}
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.kpiValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.kpiTrendUp {
+  font-size: 13px;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.kpiTrendDown {
+  font-size: 13px;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Section Title */
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 16px 0 0 0;
+}
+
+/* Analytics Row 1 */
+.analyticsGrid1 {
+  display: grid;
+  grid-template-columns: 350px 200px 1fr;
+  gap: 16px;
+}
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+}
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+}
+.cardSub {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+/* Donut Chart */
+.donutWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.donutSvg {
+  transform: rotate(-90deg);
+}
+.donutInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  margin-top: 24px;
+}
+.donutNumber {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+}
+.donutLabel {
+  font-size: 11px;
+  color: #6B7280;
+}
+.donutLegend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #4B5563;
+}
+.dotPaid { width: 10px; height: 10px; border-radius: 50%; background: #2DD4BF; }
+.dotOverdue { width: 10px; height: 10px; border-radius: 50%; background: #FCD34D; }
+.dotPartial { width: 10px; height: 10px; border-radius: 50%; background: #F87171; }
+
+/* Mini Cards Column */
+.miniCardsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.miniCard {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.miniHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.miniTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.miniIconWrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #FFE4D6;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.miniValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+  margin-top: 16px;
+}
+.miniTrend {
+  font-size: 12px;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.miniTrend b {
+  color: #FF7847;
+  font-weight: 600;
+}
+
+/* Occupancy Trend Bar Chart */
+.barChartWrap {
+  height: 200px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 20px;
+  margin-top: 24px;
+}
+.yAxis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #9CA3AF;
+  width: 100%;
+}
+.yLine {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  position: relative;
+}
+.yLine::after {
+  content: '';
+  position: absolute;
+  left: 32px;
+  right: 0;
+  bottom: 6px;
+  border-bottom: 1px dashed #E5E7EB;
+}
+.barCol {
+  width: 40px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 1;
+}
+.barBlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.barBlock {
+  background: #FF9A76;
+  width: 100%;
+  border-radius: 2px;
+}
+.barLabel {
+  font-size: 10px;
+  color: #6B7280;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Secondary Analytics Row */
+.analyticsGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Lead to Converted Chart */
+.badgeCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.growthBadge {
+  background: #FFF0EB;
+  color: #FF7847;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid #FFE4D6;
+}
+.leadBarCol {
+  width: 32px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 1;
+}
+.leadBlockGreen {
+  background: #34D399; /* Green for converted */
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+}
+.leadBlockYellow {
+  background: #FCD34D; /* Yellow for lead */
+  width: 100%;
+  border-radius: 0 0 4px 4px;
+}
+.leadLegend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+/* Top Performing Centers List */
+.centersList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+.centerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #F9FAFB;
+  border-radius: 12px;
+}
+.centerName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topBadge {
+  background: #FF7847;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.centerStat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.statLabel {
+  font-size: 11px;
+  color: #6B7280;
+}
+.statValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+}
+.statTrendUp {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.statTrendDown {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF7847;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Operational Insights */
+.insightsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.insightBox {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.insightIconWrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #FF7847;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.insightText {
+  font-size: 13px;
+  color: #FF7847;
+}
