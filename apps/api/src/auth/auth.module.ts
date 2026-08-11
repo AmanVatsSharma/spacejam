@@ -26,6 +26,8 @@ import { OtpService } from './services/otp.service';
 import { AuthResolver } from '../graphql/resolvers/auth.resolver';
 import { IntegrationsModule } from '../integrations/integrations.module';
 
+import { AuditModule } from './audit.module';
+import { AuditService } from './services/audit.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 
@@ -43,6 +45,9 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     }),
     TypeOrmModule.forFeature([User, UserSession, Customer, CustomerEmployee, OtpRequest]),
     UserRepositoryModule,
+    // AuditModule provides + exports AuditService (TypeORM-only, no auth dep,
+    // so no DI cycle). Imported here so legacy auth consumers keep resolving.
+    AuditModule,
     // IntegrationsModule provides the configurable SMS_PROVIDER (reads the
     // chosen provider + API key from the super-admin Integrations settings).
     IntegrationsModule,
@@ -56,6 +61,6 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtStrategy,
     JwtRefreshStrategy,
   ],
-  exports: [AuthService, OtpService, JwtModule, PassportModule, UserRepositoryModule],
+  exports: [AuthService, OtpService, AuditService, JwtModule, PassportModule, UserRepositoryModule],
 })
 export class AuthModule {}
