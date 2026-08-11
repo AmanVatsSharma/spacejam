@@ -1,0 +1,526 @@
+.pageContainer {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  padding-bottom: 80px; /* space for bottom bar */
+}
+
+.mainColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sideColumn {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header Blocks */
+.headerBlock {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.headerSubtitle {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
+}
+
+.btnPrimary {
+  background: #FF7847;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btnPrimary:hover {
+  background: #E66A3D;
+}
+.btnSecondary {
+  background: #FFFFFF;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btnSecondary:hover {
+  background: #F9FAFB;
+}
+
+/* Controls Block */
+.controlsBlock {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.monthLabel {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+.dateNav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.navBtn {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+}
+.navBtn:hover {
+  background: #F9FAFB;
+}
+
+.viewToggles {
+  display: flex;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+.toggleBtn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+.toggleBtn.active {
+  background: #FFFFFF;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.todayBtn {
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  margin-right: 12px;
+}
+
+/* Calendar Grid */
+.calendarContainer {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+}
+.weekdaysRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 12px;
+}
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+}
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.dayCell {
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+  min-height: 120px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dayCell.empty {
+  border-color: transparent;
+  background: transparent;
+}
+.dayCell.active {
+  border: 2px solid #FF9A76;
+  background: #FFF9F6;
+}
+.dayNumber {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.eventPill {
+  font-size: 10px;
+  font-weight: 600;
+  color: #FFFFFF;
+  padding: 4px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.eventOrange { background: #FF7847; }
+.eventBlue { background: #3B82F6; }
+.eventPurple { background: #8B5CF6; }
+.eventGrey { background: #6B7280; }
+.eventPink { background: #EC4899; }
+.moreText {
+  font-size: 9px;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+
+/* Side Panel Modules */
+.sideModule {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+}
+.sideModuleTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px 0;
+}
+
+/* Today's Schedule */
+.scheduleItem {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.scheduleIconWrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+}
+.scheduleIconOrange { background: #FF7847; }
+.scheduleIconGrey { background: #6B7280; }
+.scheduleTime {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scheduleBadge {
+  font-size: 9px;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+.scheduleTitle {
+  font-size: 12px;
+  color: #4B5563;
+  margin: 2px 0 0 0;
+}
+
+/* Legend */
+.legendList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4B5563;
+}
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Birthdays */
+.birthdayList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.birthdayCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+.bdayLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FF9A76;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+.bdayName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+.bdayDate {
+  font-size: 11px;
+  color: #6B7280;
+}
+.wishBtn {
+  background: #FFF0EB;
+  color: #FF7847;
+  border: 1px solid #FFE4D6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wishBtn:hover {
+  background: #FFE4D6;
+}
+
+/* Bottom Floating Bar */
+.bottomActionBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 12px 24px;
+  display: flex;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  z-index: 50;
+}
+
+/* Modals */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(17, 24, 39, 0.4);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modalContent {
+  background: #FFFFFF;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+.modalHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+.modalSubtitle {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 4px 0 0 0;
+}
+.modalClose {
+  background: none;
+  border: none;
+  color: #6B7280;
+  cursor: pointer;
+  padding: 4px;
+}
+.modalClose:hover { color: #111827; }
+.modalBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.modalFooter {
+  padding: 16px 24px;
+  background: #F9FAFB;
+  border-top: 1px solid #E5E7EB;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+/* Form Elements */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.formInput, .formSelect, .formTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #F9FAFB;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition: all 0.2s;
+}
+.formInput:focus, .formSelect:focus, .formTextarea:focus {
+  border-color: #FF7847;
+  background: #FFFFFF;
+}
+.formTextarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+/* Birthday Modal Specific */
+.bdayHero {
+  background: #FFF9F6;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.quickMessageGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.quickMessageCard {
+  background: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: #4B5563;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.quickMessageCard:hover {
+  border-color: #FF7847;
+  background: #FFF9F6;
+}
+.uploadBox {
+  border: 1px dashed #D1D5DB;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: #F9FAFB;
+  cursor: pointer;
+}
+.uploadBox:hover {
+  border-color: #9CA3AF;
+}
+.uploadIcon {
+  color: #6B7280;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+.uploadText {
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
+}
+.uploadSubtext {
+  font-size: 11px;
+  color: #9CA3AF;
+  margin: 4px 0 0 0;
+}
+

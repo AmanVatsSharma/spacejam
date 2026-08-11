@@ -238,6 +238,16 @@ export function Header({ tabs = [], activeTabId, onTabChange, onSetUpNewCenter, 
 
       {/* Notifications & User Profile */}
       <div className="flex items-center gap-3">
+        {/* Calendar Icon */}
+        <Link href="/dashboard/calendar" className="relative w-11 h-11 flex items-center justify-center bg-white rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.1)] hover:bg-gray-50 transition-all duration-200 active:scale-[0.97]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5565" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </Link>
+        
         {/* Notification Icon */}
         <div className="relative" ref={notifMenuRef}>
           <button
