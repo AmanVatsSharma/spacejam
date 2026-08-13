@@ -165,8 +165,11 @@ export class CalendarResolver {
     const startMonth = start.getMonth();
     const endMonth = end.getMonth();
     for (const c of customers) {
-      const dob = (c as any).dob as Date | null | undefined;
-      if (!dob) continue;
+      const rawDob = (c as any).dob;
+      if (!rawDob) continue;
+      // TypeORM may return dob as a string depending on driver config — normalize.
+      const dob = rawDob instanceof Date ? rawDob : new Date(rawDob);
+      if (isNaN(dob.getTime())) continue;
       const m = dob.getMonth();
       const d = dob.getDate();
       // Match if the birthday's month is within the range's month span.
