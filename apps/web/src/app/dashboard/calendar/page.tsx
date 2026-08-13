@@ -7,6 +7,8 @@ import {
   useCalendarFeed,
   useCreateEvent,
   useCreateVisit,
+  useCancelEvent,
+  useCancelVisit,
   useBookRoom,
   useMeetingRooms,
 } from "@/hooks/use-operations";
@@ -133,6 +135,12 @@ export default function CalendarPage() {
     centerId: effectiveCenterId,
     types: Array.from(enabledTypes),
   });
+
+  // Cancel hooks (used by the day popup's trash buttons)
+  const { cancel: cancelEventItem } = useCancelEvent();
+  const { cancel: cancelVisitItem } = useCancelVisit();
+  const cancelEvent = async (id: string) => { try { await cancelEventItem(id); } catch {} };
+  const cancelVisit = async (id: string) => { try { await cancelVisitItem(id); } catch {} };
 
   const today = new Date();
   const label =
@@ -279,7 +287,8 @@ export default function CalendarPage() {
           items={byDate.get(toISODate(selectedDay)) ?? []}
           onClose={() => setSelectedDay(null)}
           onAdd={(kind) => { const d = toISODate(selectedDay); setSelectedDay(null); openModal(kind, d); }}
-          onEditEvent={async (id) => { setSelectedDay(null); /* cancel quick-action for v1 */ }}
+          onCancelEvent={async (id) => { await cancelEvent(id); refetch(); setSelectedDay(null); }}
+          onCancelVisit={async (id) => { await cancelVisit(id); refetch(); setSelectedDay(null); }}
         />
       )}
 
@@ -289,6 +298,7 @@ export default function CalendarPage() {
           defaults={modalDefaults}
           centerId={effectiveCenterId}
           onClose={() => setActiveModal(null)}
+          onCreated={() => refetch()}
         />
       )}
       {activeModal === "visit" && (
@@ -296,6 +306,7 @@ export default function CalendarPage() {
           defaults={modalDefaults}
           centerId={effectiveCenterId}
           onClose={() => setActiveModal(null)}
+          onCreated={() => refetch()}
         />
       )}
       {activeModal === "room" && (
@@ -303,6 +314,7 @@ export default function CalendarPage() {
           defaults={modalDefaults}
           centerId={effectiveCenterId}
           onClose={() => setActiveModal(null)}
+          onCreated={() => refetch()}
         />
       )}
       {activeModal === "block" && (
@@ -310,6 +322,7 @@ export default function CalendarPage() {
           defaults={modalDefaults}
           centerId={effectiveCenterId}
           onClose={() => setActiveModal(null)}
+          onCreated={() => refetch()}
         />
       )}
       {activeModal === "birthday" && <BirthdayModal onClose={() => setActiveModal(null)} />}
@@ -426,10 +439,12 @@ function TimeGridView({
 
 // ─── Day popup ──────────────────────────────────────────────────────────────
 function DayPopup({
-  date, items, onClose, onAdd, onEditEvent,
+  date, items, onClose, onAdd, onCancelEvent, onCancelVisit,
 }: {
   date: Date; items: CalendarItem[]; onClose: () => void;
-  onAdd: (kind: ModalKind) => void; onEditEvent: (id: string) => void;
+  onAdd: (kind: ModalKind) => void;
+  onCancelEvent: (id: string) => void;
+  onCancelVisit: (id: string) => void;
 }) {
   const iso = toISODate(date);
   return (
@@ -468,12 +483,12 @@ function DayPopup({
                   </div>
                   <div className={styles.popupRowActions}>
                     {(it.kind === "EVENT" || it.kind === "VISIT") && (
-                      <button className={styles.popupActionBtn} onClick={() => onEditEvent(it.referenceId ?? "")}>
-                        {Icons.edit}
-                      </button>
-                    )}
-                    {(it.kind === "EVENT" || it.kind === "VISIT") && (
-                      <button className={`${styles.popupActionBtn} ${styles.danger}`}>
+                      <button className={`${styles.popupActionBtn} ${styles.danger}`}
+                        onClick={() => {
+                          if (it.kind === "EVENT") onCancelEvent(it.referenceId ?? "");
+                          else if (it.kind === "VISIT") onCancelVisit(it.referenceId ?? "");
+                        }}
+                        title="Cancel">
                         {Icons.trash}
                       </button>
                     )}
@@ -598,7 +613,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: "#4B5563", display: "block", marginBottom: 4 };
 const rowStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 };
 
-function CreateEventModal({ defaults, centerId, onClose }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void }) {
+function CreateEventModal({ defaults, centerId, onClose, onCreated }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void; onCreated?: () => void }) {
   const { create, saving } = useCreateEvent();
   const [form, setForm] = useState({
     title: "", description: "", eventDate: defaults.date ?? toISODate(new Date()),
@@ -612,6 +627,7 @@ function CreateEventModal({ defaults, centerId, onClose }: { defaults: { date?: 
       startTime: form.startTime, endTime: form.endTime, attendeesCount: Number(form.attendeesCount),
       type: form.type, centerId: form.centerId || undefined,
     });
+    onCreated?.();
     onClose();
   }
 
@@ -646,7 +662,7 @@ function CreateEventModal({ defaults, centerId, onClose }: { defaults: { date?: 
   );
 }
 
-function ScheduleVisitModal({ defaults, centerId, onClose }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void }) {
+function ScheduleVisitModal({ defaults, centerId, onClose, onCreated }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void; onCreated?: () => void }) {
   const { create, saving } = useCreateVisit();
   const [form, setForm] = useState({
     visitorName: "", visitorPhone: "", visitorEmail: "", company: "",
@@ -664,6 +680,7 @@ function ScheduleVisitModal({ defaults, centerId, onClose }: { defaults: { date?
       tourType: form.tourType, partySize: Number(form.partySize), interestedPlan: form.interestedPlan || undefined,
       notes: form.notes || undefined, centerId: form.centerId || undefined,
     });
+    onCreated?.();
     onClose();
   }
 
@@ -702,7 +719,7 @@ function ScheduleVisitModal({ defaults, centerId, onClose }: { defaults: { date?
   );
 }
 
-function BookRoomModal({ defaults, centerId, onClose }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void }) {
+function BookRoomModal({ defaults, centerId, onClose, onCreated }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void; onCreated?: () => void }) {
   const { book, saving } = useBookRoom();
   const [form, setForm] = useState({
     roomId: "", eventDate: defaults.date ?? toISODate(new Date()),
@@ -718,6 +735,7 @@ function BookRoomModal({ defaults, centerId, onClose }: { defaults: { date?: str
       startTime: form.startTime, endTime: form.endTime, title: form.title,
       attendeesCount: Number(form.attendeesCount),
     });
+    onCreated?.();
     onClose();
   }
 
@@ -746,7 +764,7 @@ function BookRoomModal({ defaults, centerId, onClose }: { defaults: { date?: str
   );
 }
 
-function BlockTimeModal({ defaults, centerId, onClose }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void }) {
+function BlockTimeModal({ defaults, centerId, onClose, onCreated }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void; onCreated?: () => void }) {
   // v1: block-time writes a Request of type MAINTENANCE (closest existing model).
   const client = useApolloClient();
   const [saving, setSaving] = useState(false);
@@ -769,7 +787,7 @@ function BlockTimeModal({ defaults, centerId, onClose }: { defaults: { date?: st
           input: {
             title: `Blocked: ${form.reason}`,
             description: form.notes || form.reason,
-            requestType: form.blockType,
+            type: form.blockType,
             urgency: "MEDIUM",
             centerId: form.centerId || undefined,
             dueDate: `${form.visitDate}T${form.startTime}:00`,
@@ -777,6 +795,7 @@ function BlockTimeModal({ defaults, centerId, onClose }: { defaults: { date?: st
           },
         },
       });
+      onCreated?.();
       onClose();
     } finally {
       setSaving(false);
