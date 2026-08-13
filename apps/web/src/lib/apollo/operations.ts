@@ -2461,3 +2461,102 @@ export const SAVE_RAZORPAY_CONFIG = gql`
   }
 `;
 
+/* ========================= Calendar (unified feed) ========================= */
+
+export const GET_CALENDAR_FEED = gql`
+  query GetCalendarFeed($startDate: String!, $endDate: String!, $centerId: ID, $types: [String!]) {
+    calendarFeed(startDate: $startDate, endDate: $endDate, centerId: $centerId, types: $types) {
+      id
+      kind
+      title
+      date
+      startTime
+      endTime
+      status
+      color
+      referenceId
+      meta
+    }
+  }
+`;
+
+/* ========================= Visits (scheduled tours) ========================= */
+
+export const GET_VISITS = gql`
+  query GetVisits($filters: VisitFiltersInput) {
+    visits(filters: $filters) {
+      id
+      centerId
+      leadId
+      requestedById
+      assignedToId
+      visitorName
+      visitorPhone
+      visitorEmail
+      company
+      visitDate
+      startTime
+      endTime
+      tourType
+      interestedPlan
+      partySize
+      status
+      notes
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const CREATE_VISIT = gql`
+  mutation CreateVisit($input: CreateVisitInput!) {
+    createVisit(input: $input) {
+      id
+      centerId
+      visitorName
+      visitDate
+      startTime
+      endTime
+      tourType
+      status
+    }
+  }
+`;
+
+export const UPDATE_VISIT = gql`
+  mutation UpdateVisit($id: ID!, $input: UpdateVisitInput!) {
+    updateVisit(id: $id, input: $input) {
+      id
+      visitorName
+      visitDate
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+export const UPDATE_VISIT_STATUS = gql`
+  mutation UpdateVisitStatus($id: ID!, $status: VisitStatus!) {
+    updateVisitStatus(id: $id, status: $status) {
+      id
+      status
+    }
+  }
+`;
+
+export const CANCEL_VISIT = gql`
+  mutation CancelVisit($id: ID!) {
+    cancelVisit(id: $id) {
+      id
+      status
+    }
+  }
+`;
+
+export const DELETE_VISIT = gql`
+  mutation DeleteVisit($id: ID!) {
+    deleteVisit(id: $id)
+  }
+`;
+
