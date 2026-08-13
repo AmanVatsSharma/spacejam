@@ -8,15 +8,21 @@
  */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { registerEnumType } from '@nestjs/graphql';
 import { VisitResolver } from '../graphql/resolvers/visit.resolver';
 import { CalendarResolver } from '../graphql/resolvers/calendar.resolver';
 import { Visit } from '../typeorm/entities/visit.entity';
-import { Event } from '../typeorm/entities/event.entity';
-import { Booking } from '../typeorm/entities/booking.entity';
-import { Customer } from '../typeorm/entities/customer.entity';
+import { TourType, VisitStatus } from '../graphql/enums/visit.enums';
+
+// Register the Visit-domain enums with the GraphQL schema. Done here in the
+// module file (loads during DI setup, before schema build) rather than at the
+// top of an entity/input file, which caused a webpack load-order cycle that
+// broke resolver class instantiation ("metatype is not a constructor").
+try { registerEnumType(TourType, { name: 'TourType' }); } catch { /* already registered */ }
+try { registerEnumType(VisitStatus, { name: 'VisitStatus' }); } catch { /* already registered */ }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Visit, Event, Booking, Customer])],
+  imports: [TypeOrmModule.forFeature([Visit])],
   providers: [VisitResolver, CalendarResolver],
   exports: [VisitResolver, CalendarResolver],
 })

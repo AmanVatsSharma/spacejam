@@ -10,9 +10,9 @@
  * Author:      ZCode
  * Last-updated: 2026-08-13
  */
-import { UseGuards, NotFoundException } from '@nestjs/common';
+import { UseGuards, NotFoundException, Inject } from '@nestjs/common';
 import { Args, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, FindOptionsWhere } from 'typeorm';
 
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -36,7 +36,11 @@ import {
 @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
 export class VisitResolver {
   constructor(
-    @InjectRepository(Visit)
+    // Use the string token form to dodge the webpack entity-class identity
+    // mismatch that causes "metatype is not a constructor" when the resolver
+    // is instantiated. The token 'VisitRepository' matches what
+    // TypeOrmModule.forFeature([Visit]) registers.
+    @Inject(getRepositoryToken(Visit))
     private readonly visitRepo: Repository<Visit>,
   ) {}
 
