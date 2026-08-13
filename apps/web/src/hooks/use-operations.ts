@@ -19,6 +19,13 @@ import {
   CREATE_AUTOMATION,
   UPDATE_AUTOMATION,
   DELETE_AUTOMATION,
+  GET_CALENDAR_FEED,
+  GET_VISITS,
+  CREATE_VISIT,
+  UPDATE_VISIT,
+  UPDATE_VISIT_STATUS,
+  CANCEL_VISIT,
+  DELETE_VISIT,
 } from '@/lib/apollo/operations';
 import { toast } from 'sonner';
 
@@ -1293,4 +1300,137 @@ export function useDeleteAutomation() {
   };
 
   return { remove, loading };
+}
+
+// ═══════════════════════════════════════════════════════
+// Calendar — unified feed + Visits
+// ═══════════════════════════════════════════════════════
+
+export function useCalendarFeed(params: {
+  startDate: string;
+  endDate: string;
+  centerId?: string;
+  types?: string[];
+}) {
+  const result = useQuery(GET_CALENDAR_FEED, {
+    variables: {
+      startDate: params.startDate,
+      endDate: params.endDate,
+      centerId: params.centerId,
+      types: params.types,
+    },
+    fetchPolicy: 'cache-and-network',
+  });
+  const { data, loading, error, refetch } = result;
+  return { items: data?.calendarFeed ?? [], loading, error, refetch };
+}
+
+export function useVisits(filters?: {
+  centerId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const result = useQuery(GET_VISITS, {
+    variables: { filters },
+    fetchPolicy: 'cache-and-network',
+  });
+  const { data, loading, error } = result;
+  return { visits: data?.visits ?? [], loading, error };
+}
+
+export function useCreateVisit() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const create = async (input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CREATE_VISIT,
+        variables: { input },
+      });
+      toast.success('Visit scheduled');
+      return data?.createVisit;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to schedule visit');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { create, saving: loading };
+}
+
+export function useUpdateVisit() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const update = async (id: string, input: any): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_VISIT,
+        variables: { id, input },
+      });
+      toast.success('Visit updated');
+      return data?.updateVisit;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update visit');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { update, saving: loading };
+}
+
+export function useUpdateVisitStatus() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const updateStatus = async (id: string, status: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: UPDATE_VISIT_STATUS,
+        variables: { id, status },
+      });
+      toast.success(`Visit marked ${status.toLowerCase()}`);
+      return data?.updateVisitStatus;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update visit status');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { updateStatus, saving: loading };
+}
+
+export function useCancelVisit() {
+  const [loading, setLoading] = useState(false);
+  const client = useApolloClient();
+
+  const cancel = async (id: string): Promise<any> => {
+    setLoading(true);
+    try {
+      const { data } = await client.mutate({
+        mutation: CANCEL_VISIT,
+        variables: { id },
+      });
+      toast.success('Visit cancelled');
+      return data?.cancelVisit;
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel visit');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { cancel, saving: loading };
 }

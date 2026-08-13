@@ -41,6 +41,7 @@ import { ReferralModule } from '../referral/referral.module';
 import { StatementModule } from '../statement/statement.module';
 import { SubscriptionModule } from '../subscription';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { CalendarModule } from '../calendar/calendar.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     StatementModule,
     SubscriptionModule,
     IntegrationsModule,
+    CalendarModule,
   ],
   controllers: [AppController],
   providers: [
