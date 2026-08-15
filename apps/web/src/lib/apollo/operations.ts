@@ -2011,6 +2011,20 @@ export const UPDATE_CENTER_SETTINGS = gql`
   }
 `;
 
+/* ========================= Per-User Settings ======================== */
+
+export const GET_USER_SETTINGS = gql`
+  query GetUserSettings($userId: ID!) {
+    userSettings(userId: $userId)
+  }
+`;
+
+export const UPDATE_USER_SETTINGS = gql`
+  mutation UpdateUserSettings($userId: ID!, $settings: String!) {
+    updateUserSettings(userId: $userId, settings: $settings)
+  }
+`;
+
 /* ========================= Notifications ========================= */
 
 export const GET_NOTIFICATIONS = gql`

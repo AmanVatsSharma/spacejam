@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
+import { useState } from "react";
 import { toast } from "sonner";
-import { GET_MY_CENTERS } from "@/lib/apollo/operations";
-import { useUpdateCenterSettings } from "@/hooks/use-settings";
+import { useManagerCenterConfig } from "@/hooks/use-settings";
 import styles from "./finance.module.css";
 
 const Icons = {
@@ -48,64 +46,23 @@ const MOCK_REQUESTS = [
 ];
 
 export default function CenterManagerFinanceConfig() {
-  const [saving, setSaving] = useState(false);
-  
-  // Load center data
-  const { data: centersData } = useQuery(GET_MY_CENTERS, {
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { update: updateCenterSettings } = useUpdateCenterSettings();
-  const centers = centersData?.myCenters ?? [];
-  const primaryCenter = centers[0];
-
-  // State
-  const [reminderTiming, setReminderTiming] = useState("1 day before due date");
-  const [reminderFrequency, setReminderFrequency] = useState("Daily");
-  const [receiptAutoShare, setReceiptAutoShare] = useState(true);
+  // Auto-saving config bound to the active center's managerConfig.finance
+  // group. The hook hydrates once and only saves on real user changes.
+  const { draft: finance, set: setFinance, saving } = useManagerCenterConfig(
+    "managerConfig",
+    "finance",
+    {
+      reminderTiming: "1 day before due date",
+      reminderFrequency: "Daily",
+      receiptAutoShare: true,
+    } as { reminderTiming: string; reminderFrequency: string; receiptAutoShare: boolean },
+  );
+  const { reminderTiming, reminderFrequency, receiptAutoShare } = finance;
 
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedReq, setSelectedReq] = useState(MOCK_REQUESTS[0]);
   const [verificationNotes, setVerificationNotes] = useState("");
-
-  const savedSettings = (primaryCenter?.settings as Record<string, any> | null) ?? null;
-  const savedFinance = savedSettings?.managerConfig?.finance ?? null;
-
-  useEffect(() => {
-    if (savedFinance) {
-      if (savedFinance.reminderTiming) setReminderTiming(savedFinance.reminderTiming);
-      if (savedFinance.reminderFrequency) setReminderFrequency(savedFinance.reminderFrequency);
-      if (typeof savedFinance.receiptAutoShare === 'boolean') setReceiptAutoShare(savedFinance.receiptAutoShare);
-    }
-  }, [savedFinance]);
-
-  // Handle saving the invoice preferences
-  useEffect(() => {
-    if (!primaryCenter) return;
-    const saveSettings = async () => {
-      setSaving(true);
-      try {
-        await updateCenterSettings(primaryCenter.id, {
-          managerConfig: {
-            finance: {
-              reminderTiming,
-              reminderFrequency,
-              receiptAutoShare
-            }
-          }
-        });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setSaving(false);
-      }
-    };
-    
-    // Using a simple debounce approach for the auto-save feel on toggles
-    const timeout = setTimeout(saveSettings, 1000);
-    return () => clearTimeout(timeout);
-  }, [reminderTiming, reminderFrequency, receiptAutoShare, primaryCenter]);
 
 
   const filteredRequests = MOCK_REQUESTS.filter(r => {
@@ -137,11 +94,11 @@ export default function CenterManagerFinanceConfig() {
         <div className={styles.inputGrid} style={{ marginTop: '24px' }}>
           <div className={styles.inputGroup}>
             <label className={styles.inputLabel} style={{ fontWeight: 400 }}>Reminder Timing</label>
-            <input type="text" className={styles.inputBox} value={reminderTiming} onChange={e => setReminderTiming(e.target.value)} />
+            <input type="text" className={styles.inputBox} value={reminderTiming} onChange={e => setFinance("reminderTiming", e.target.value)} />
           </div>
           <div className={styles.inputGroup}>
             <label className={styles.inputLabel} style={{ fontWeight: 400 }}>Payment Reminder Frequency</label>
-            <input type="text" className={styles.inputBox} value={reminderFrequency} onChange={e => setReminderFrequency(e.target.value)} />
+            <input type="text" className={styles.inputBox} value={reminderFrequency} onChange={e => setFinance("reminderFrequency", e.target.value)} />
           </div>
         </div>
 
@@ -150,7 +107,7 @@ export default function CenterManagerFinanceConfig() {
             <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Receipt Auto-share</span>
             <span className={styles.toggleSub}>Automatically send receipts to clients after payment</span>
           </div>
-          <div className={`${styles.toggleSwitch} ${!receiptAutoShare ? styles.toggleSwitchOff : ''}`} onClick={() => setReceiptAutoShare(!receiptAutoShare)}>
+          <div className={`${styles.toggleSwitch} ${!receiptAutoShare ? styles.toggleSwitchOff : ''}`} onClick={() => setFinance("receiptAutoShare", !receiptAutoShare)}>
             <div className={styles.toggleKnob} style={{ transform: receiptAutoShare ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
           </div>
         </div>

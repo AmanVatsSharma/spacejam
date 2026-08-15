@@ -106,6 +106,7 @@ export class CenterResolver {
   }
 
   @Query(() => [CenterEntity])
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
   async myCenters(
     @Context() context: any,
     @CurrentUser() caller?: JwtPayload,
@@ -223,7 +224,7 @@ export class CenterResolver {
    * security, operations, permissions) to load their toggles.
    */
   @Query(() => String, { description: 'Center settings as a JSON string' })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
   @CenterScoped('centerId')
   async centerSettings(
     @Args('centerId', { type: () => ID }) centerId: string,
@@ -240,7 +241,7 @@ export class CenterResolver {
    * overwritten; existing sibling keys are preserved.
    */
   @Mutation(() => String, { description: 'Update center settings (JSON string), returns merged settings' })
-  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
   @CenterScoped('centerId')
   async updateCenterSettings(
     @Args('centerId', { type: () => ID }) centerId: string,

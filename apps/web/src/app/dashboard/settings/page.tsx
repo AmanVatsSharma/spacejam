@@ -11,7 +11,8 @@ import {
   UPDATE_PROFILE,
   GET_AUDIT_LOGS,
 } from '@/lib/apollo/operations';
-import { useSettingsGroup } from '@/hooks/use-settings';
+import { useUserSettingsGroup, useCenterSettings } from '@/hooks/use-settings';
+import { useActiveCenter } from '@/contexts/active-center-context';
 import styles from './settings.module.css';
 
 const Icons = {
@@ -235,26 +236,6 @@ export default function SettingsAccessPage() {
     fetchPolicy: 'cache-and-network',
   });
 
-  // Permissions persist under Center.settings.permissions (per-center matrix).
-  const {
-    draft: perms,
-    set: setPerm,
-    save: savePerms,
-  } = useSettingsGroup('permissions', {
-    editBookings: true,
-    cancelBookings: true,
-    overrideRoomLimits: false,
-    issueRefunds: true,
-    freezeDeposits: false,
-    accessInvoices: true,
-    sendCampaigns: false,
-    viewAnalytics: true,
-    manageOffers: false,
-    createUsers: true,
-    editPermissions: true,
-    deleteUsers: false,
-  });
-
   const users = usersData?.users ?? [];
   const defaultUser =
     users.length > 0
@@ -268,27 +249,60 @@ export default function SettingsAccessPage() {
     if (activeUser) setEditingName(activeUser.name);
   }, [activeUser?.id]);
 
-  // Settings groups: persisted via Center.settings JSONB
-  const {
-    draft: secDraft,
-    set: setSec,
-    save: saveSec,
-  } = useSettingsGroup('permissionsSecurity', {
+  // Per-user settings groups (User.settings). These used to live under
+  // Center.settings, which silently shared one permissions blob across
+  // every user — they are now bound to the selected user. Legacy center
+  // groups (if present) seed the defaults so prior configuration isn't lost.
+  const { activeCenter } = useActiveCenter();
+  const { settings: legacyCenterSettings } = useCenterSettings(activeCenter?.id);
+
+  const permsDefaults = {
+    editBookings: true,
+    cancelBookings: true,
+    overrideRoomLimits: false,
+    issueRefunds: true,
+    freezeDeposits: false,
+    accessInvoices: true,
+    sendCampaigns: false,
+    viewAnalytics: true,
+    manageOffers: false,
+    createUsers: true,
+    editPermissions: true,
+    deleteUsers: false,
+    ...(legacyCenterSettings?.permissions ?? {}),
+  };
+  const secDefaults = {
     otpRequired: true,
     biometricLogin: false,
     sessionTimeout: 30,
-  });
-  const {
-    draft: notifDraft,
-    set: setNotif,
-    save: saveNotif,
-  } = useSettingsGroup('permissionsNotifications', {
+    ...(legacyCenterSettings?.permissionsSecurity ?? {}),
+  };
+  const notifDefaults = {
     whatsapp: true,
     email: true,
     push: false,
     emailDigest: 'none',
     sms: true,
-  });
+    ...(legacyCenterSettings?.permissionsNotifications ?? {}),
+  };
+
+  const {
+    draft: perms,
+    set: setPerm,
+    save: savePerms,
+  } = useUserSettingsGroup(activeUser?.id ?? null, 'permissions', permsDefaults);
+
+  const {
+    draft: secDraft,
+    set: setSec,
+    save: saveSec,
+  } = useUserSettingsGroup(activeUser?.id ?? null, 'permissionsSecurity', secDefaults);
+
+  const {
+    draft: notifDraft,
+    set: setNotif,
+    save: saveNotif,
+  } = useUserSettingsGroup(activeUser?.id ?? null, 'permissionsNotifications', notifDefaults);
 
   const getInitials = (name: string) => {
     return name
@@ -544,6 +558,13 @@ export default function SettingsAccessPage() {
               </div>
             </>
           ) : activeTab === 'Permissions' ? (
+            !activeUser ? (
+              <div
+                style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}
+              >
+                Select a user to manage their permissions.
+              </div>
+            ) : (
             <>
               <input
                 type="text"
@@ -598,6 +619,7 @@ export default function SettingsAccessPage() {
                 </button>
               </div>
             </>
+            )
           ) : activeTab === 'Centers' ? (
             <>
               <p className={styles.centersSubtitle}>
@@ -632,6 +654,13 @@ export default function SettingsAccessPage() {
               </div>
             </>
           ) : activeTab === 'Security' ? (
+            !activeUser ? (
+              <div
+                style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}
+              >
+                Select a user to manage their security settings.
+              </div>
+            ) : (
             <>
               <div className={styles.secGroup}>
                 <h3 className={styles.secGroupTitle}>Authentication</h3>
@@ -710,7 +739,15 @@ export default function SettingsAccessPage() {
                 </button>
               </div>
             </>
+            )
           ) : activeTab === 'Notifications' ? (
+            !activeUser ? (
+              <div
+                style={{ padding: '64px', textAlign: 'center', color: '#6B7280' }}
+              >
+                Select a user to manage their notification settings.
+              </div>
+            ) : (
             <>
               <div className={styles.secGroup}>
                 <h3 className={styles.secGroupTitle}>Notification Channels</h3>
@@ -832,6 +869,7 @@ export default function SettingsAccessPage() {
                 </button>
               </div>
             </>
+            )
           ) : activeTab === 'Audit Log' ? (
             <div className={styles.auditLogContainer}>
               {auditLoading ? (

@@ -38,18 +38,44 @@ const MAX_SETTINGS_BYTES = 64 * 1024;
 const MAX_MERGE_DEPTH = 5;
 
 /**
+ * Whitelist for User.settings (per-user: permissions matrix, personal
+ * security and notification preferences). Same intentional-friction idea as
+ * the center whitelist above.
+ */
+const USER_SETTINGS_WHITELIST = new Set([
+  'permissions',
+  'permissionsSecurity',
+  'permissionsNotifications',
+]);
+
+/**
  * Drop any top-level key not in the whitelist and reject oversized payloads.
  * Non-whitelisted keys are dropped silently (the frontend never sends them
  * today); callers should log when this happens so a future bug surfaces.
  */
 export function sanitizeSettings(incoming: Record<string, any>): Record<string, any> {
+  return sanitizeWithWhitelist(incoming, SETTINGS_WHITELIST);
+}
+
+/**
+ * User.settings counterpart of sanitizeSettings: drops unknown top-level
+ * groups and rejects oversized payloads.
+ */
+export function sanitizeUserSettings(incoming: Record<string, any>): Record<string, any> {
+  return sanitizeWithWhitelist(incoming, USER_SETTINGS_WHITELIST);
+}
+
+function sanitizeWithWhitelist(
+  incoming: Record<string, any>,
+  whitelist: Set<string>,
+): Record<string, any> {
   const json = JSON.stringify(incoming);
   if (json.length > MAX_SETTINGS_BYTES) {
     throw new BadRequestException(`Settings payload exceeds ${MAX_SETTINGS_BYTES} bytes`);
   }
   const out: Record<string, any> = {};
   for (const [key, value] of Object.entries(incoming)) {
-    if (SETTINGS_WHITELIST.has(key)) {
+    if (whitelist.has(key)) {
       out[key] = value;
     }
   }

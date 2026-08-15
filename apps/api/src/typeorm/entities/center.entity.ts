@@ -19,6 +19,7 @@ import {
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { CenterStatus } from '../../graphql/types/user.type';
+import { JsonScalar } from '../../graphql/scalars/json.scalar';
 import { User } from './user.entity';
 import { Location } from './location.entity';
 import { Floor } from './floor.entity';
@@ -45,7 +46,10 @@ export class Center {
   @Column({ type: 'enum', enum: CenterStatus, default: 'ACTIVE' })
   status!: CenterStatus;
 
-  @Field(() => String, { nullable: true })
+  // JSON scalar, not String: the jsonb column hydrates to a plain object and
+  // the String scalar's serializer rejects objects — which made every
+  // `myCenters { settings }` query fail once a center had saved settings.
+  @Field(() => JsonScalar, { nullable: true })
   @Column({ type: 'jsonb', nullable: true })
   settings!: Record<string, any> | null;
 

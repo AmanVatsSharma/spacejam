@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_MY_CENTERS } from "@/lib/apollo/operations";
-import { useUpdateCenterSettings } from "@/hooks/use-settings";
+import { useState } from "react";
+import { useManagerCenterConfig } from "@/hooks/use-settings";
 import styles from "./operations.module.css";
 
 const Icons = {
@@ -61,70 +59,38 @@ const Icons = {
 };
 
 export default function CenterManagerOperationsConfig() {
-  // Load center data
-  const { data: centersData } = useQuery(GET_MY_CENTERS, {
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { update: updateCenterSettings } = useUpdateCenterSettings();
-  const centers = centersData?.myCenters ?? [];
-  const primaryCenter = centers[0];
+  // Auto-saving config bound to the active center's managerConfig.operations
+  // group. The hook hydrates once and only saves on real user changes.
+  const { draft: ops, set: setOps } = useManagerCenterConfig(
+    "managerConfig",
+    "operations",
+    {
+      setupDuration: "10",
+      cleaningBuffer: "15",
+      escalationTiming: "30",
+      printerAccess: true,
+      schedules: ["9:00 AM", "6:00 PM"],
+    } as {
+      setupDuration: string;
+      cleaningBuffer: string;
+      escalationTiming: string;
+      printerAccess: boolean;
+      schedules: string[];
+    },
+  );
+  const { setupDuration, cleaningBuffer, escalationTiming, printerAccess, schedules } = ops;
 
-  const savedSettings = (primaryCenter?.settings as Record<string, any> | null) ?? null;
-  const savedOps = savedSettings?.managerConfig?.operations ?? null;
-
-  // States
-  const [setupDuration, setSetupDuration] = useState("10");
-  const [cleaningBuffer, setCleaningBuffer] = useState("15");
-  const [escalationTiming, setEscalationTiming] = useState("30");
-  const [printerAccess, setPrinterAccess] = useState(true);
-  const [schedules, setSchedules] = useState(["9:00 AM", "6:00 PM"]);
   const [newSchedule, setNewSchedule] = useState("");
-
-  useEffect(() => {
-    if (savedOps) {
-      if (savedOps.setupDuration) setSetupDuration(savedOps.setupDuration);
-      if (savedOps.cleaningBuffer) setCleaningBuffer(savedOps.cleaningBuffer);
-      if (savedOps.escalationTiming) setEscalationTiming(savedOps.escalationTiming);
-      if (typeof savedOps.printerAccess === 'boolean') setPrinterAccess(savedOps.printerAccess);
-      if (Array.isArray(savedOps.schedules)) setSchedules(savedOps.schedules);
-    }
-  }, [savedOps]);
-
-  useEffect(() => {
-    if (!primaryCenter) return;
-    const saveSettings = async () => {
-      try {
-        await updateCenterSettings(primaryCenter.id, {
-          managerConfig: {
-            operations: {
-              setupDuration,
-              cleaningBuffer,
-              escalationTiming,
-              printerAccess,
-              schedules
-            }
-          }
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    const timeout = setTimeout(saveSettings, 1000);
-    return () => clearTimeout(timeout);
-  }, [setupDuration, cleaningBuffer, escalationTiming, printerAccess, schedules, primaryCenter]);
 
   const addSchedule = () => {
     if (newSchedule && !schedules.includes(newSchedule)) {
-      setSchedules([...schedules, newSchedule]);
+      setOps("schedules", [...schedules, newSchedule]);
       setNewSchedule("");
     }
   };
 
   const removeSchedule = (idx: number) => {
-    const updated = [...schedules];
-    updated.splice(idx, 1);
-    setSchedules(updated);
+    setOps('schedules', schedules.filter((_, i) => i !== idx));
   };
 
   return (
@@ -156,7 +122,7 @@ export default function CenterManagerOperationsConfig() {
                   type="text" 
                   className={styles.inputBox} 
                   value={setupDuration} 
-                  onChange={e => setSetupDuration(e.target.value)} 
+                  onChange={e => setOps('setupDuration', e.target.value)} 
                 />
                 <span className={styles.inputSub}>Rooms will be prepared {setupDuration} minutes before booking</span>
               </div>
@@ -167,7 +133,7 @@ export default function CenterManagerOperationsConfig() {
                   type="text" 
                   className={styles.inputBox} 
                   value={cleaningBuffer} 
-                  onChange={e => setCleaningBuffer(e.target.value)} 
+                  onChange={e => setOps('cleaningBuffer', e.target.value)} 
                 />
                 <span className={styles.inputSub}>Cleaning will take {cleaningBuffer} minutes after each session</span>
               </div>
@@ -195,7 +161,7 @@ export default function CenterManagerOperationsConfig() {
                   type="text" 
                   className={styles.inputBox} 
                   value={escalationTiming} 
-                  onChange={e => setEscalationTiming(e.target.value)} 
+                  onChange={e => setOps('escalationTiming', e.target.value)} 
                 />
                 <span className={styles.inputSub}>If an issue is not resolved within {escalationTiming} min, it will be escalated to senior management</span>
               </div>
@@ -224,7 +190,7 @@ export default function CenterManagerOperationsConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 400, color: '#FF7847' }}>Enable Printer Access</span>
                   <span className={styles.toggleSub}>Allow members to use printing facilities</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!printerAccess ? styles.toggleSwitchOff : ''}`} onClick={() => setPrinterAccess(!printerAccess)}>
+                <div className={`${styles.toggleSwitch} ${!printerAccess ? styles.toggleSwitchOff : ''}`} onClick={() => setOps('printerAccess', !printerAccess)}>
                   <div className={styles.toggleKnob} style={{ transform: printerAccess ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>

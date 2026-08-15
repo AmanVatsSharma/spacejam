@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
-import { GET_MY_CENTERS } from "@/lib/apollo/operations";
-import { useUpdateCenterSettings } from "@/hooks/use-settings";
+import { useManagerCenterConfig } from "@/hooks/use-settings";
 import styles from "./notification.module.css";
 
 const Icons = {
@@ -50,67 +47,33 @@ const Icons = {
 };
 
 export default function CenterManagerNotificationConfig() {
-  // Load center data
-  const { data: centersData } = useQuery(GET_MY_CENTERS, {
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
-  const { update: updateCenterSettings } = useUpdateCenterSettings();
-  const centers = centersData?.myCenters ?? [];
-  const primaryCenter = centers[0];
+  // Auto-saving config bound to the active center's managerConfig.notifications
+  // group. The hook hydrates once and only saves on real user changes.
+  const { draft: notif, set: setNotif } = useManagerCenterConfig(
+    "managerConfig",
+    "notifications",
+    {
+      whatsapp: true,
+      email: true,
+      push: false,
+      bookingAlerts: true,
+      upgradeRequests: true,
+      maintenanceAlerts: true,
+      leadNotifications: true,
+      paymentOverdue: true,
+      accountHold: false,
+    } as {
+      whatsapp: boolean; email: boolean; push: boolean;
+      bookingAlerts: boolean; upgradeRequests: boolean; maintenanceAlerts: boolean;
+      leadNotifications: boolean; paymentOverdue: boolean; accountHold: boolean;
+    },
+  );
 
-  const savedSettings = (primaryCenter?.settings as Record<string, any> | null) ?? null;
-  const savedNotif = savedSettings?.managerConfig?.notifications ?? null;
-
-  // States
-  const [whatsapp, setWhatsapp] = useState(true);
-  const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(false);
-
-  const [bookingAlerts, setBookingAlerts] = useState(true);
-  const [upgradeRequests, setUpgradeRequests] = useState(true);
-  const [maintenanceAlerts, setMaintenanceAlerts] = useState(true);
-
-  const [leadNotifications, setLeadNotifications] = useState(true);
-  const [paymentOverdue, setPaymentOverdue] = useState(true);
-  const [accountHold, setAccountHold] = useState(false);
-
-  useEffect(() => {
-    if (savedNotif) {
-      if (typeof savedNotif.whatsapp === 'boolean') setWhatsapp(savedNotif.whatsapp);
-      if (typeof savedNotif.email === 'boolean') setEmail(savedNotif.email);
-      if (typeof savedNotif.push === 'boolean') setPush(savedNotif.push);
-
-      if (typeof savedNotif.bookingAlerts === 'boolean') setBookingAlerts(savedNotif.bookingAlerts);
-      if (typeof savedNotif.upgradeRequests === 'boolean') setUpgradeRequests(savedNotif.upgradeRequests);
-      if (typeof savedNotif.maintenanceAlerts === 'boolean') setMaintenanceAlerts(savedNotif.maintenanceAlerts);
-
-      if (typeof savedNotif.leadNotifications === 'boolean') setLeadNotifications(savedNotif.leadNotifications);
-      if (typeof savedNotif.paymentOverdue === 'boolean') setPaymentOverdue(savedNotif.paymentOverdue);
-      if (typeof savedNotif.accountHold === 'boolean') setAccountHold(savedNotif.accountHold);
-    }
-  }, [savedNotif]);
-
-  useEffect(() => {
-    if (!primaryCenter) return;
-    const saveSettings = async () => {
-      try {
-        await updateCenterSettings(primaryCenter.id, {
-          managerConfig: {
-            notifications: {
-              whatsapp, email, push,
-              bookingAlerts, upgradeRequests, maintenanceAlerts,
-              leadNotifications, paymentOverdue, accountHold
-            }
-          }
-        });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    const timeout = setTimeout(saveSettings, 1000);
-    return () => clearTimeout(timeout);
-  }, [whatsapp, email, push, bookingAlerts, upgradeRequests, maintenanceAlerts, leadNotifications, paymentOverdue, accountHold, primaryCenter]);
+  const {
+    whatsapp, email, push,
+    bookingAlerts, upgradeRequests, maintenanceAlerts,
+    leadNotifications, paymentOverdue, accountHold,
+  } = notif;
 
 
   return (
@@ -138,7 +101,7 @@ export default function CenterManagerNotificationConfig() {
               <div className={`${styles.channelBox} ${whatsapp ? styles.channelBoxActive : ''}`}>
                 <div className={styles.channelBoxTop}>
                   <span className={styles.channelBoxTitle}>WhatsApp</span>
-                  <div className={`${styles.toggleSwitch} ${!whatsapp ? styles.toggleSwitchOff : ''}`} onClick={() => setWhatsapp(!whatsapp)}>
+                  <div className={`${styles.toggleSwitch} ${!whatsapp ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('whatsapp', !whatsapp)}>
                     <div className={styles.toggleKnob} style={{ transform: whatsapp ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
@@ -151,7 +114,7 @@ export default function CenterManagerNotificationConfig() {
               <div className={`${styles.channelBox} ${email ? styles.channelBoxActive : ''}`}>
                 <div className={styles.channelBoxTop}>
                   <span className={styles.channelBoxTitle}>Email</span>
-                  <div className={`${styles.toggleSwitch} ${!email ? styles.toggleSwitchOff : ''}`} onClick={() => setEmail(!email)}>
+                  <div className={`${styles.toggleSwitch} ${!email ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('email', !email)}>
                     <div className={styles.toggleKnob} style={{ transform: email ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
@@ -164,7 +127,7 @@ export default function CenterManagerNotificationConfig() {
               <div className={`${styles.channelBox} ${push ? styles.channelBoxActive : ''}`}>
                 <div className={styles.channelBoxTop}>
                   <span className={styles.channelBoxTitle}>Push Notifications</span>
-                  <div className={`${styles.toggleSwitch} ${!push ? styles.toggleSwitchOff : ''}`} onClick={() => setPush(!push)}>
+                  <div className={`${styles.toggleSwitch} ${!push ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('push', !push)}>
                     <div className={styles.toggleKnob} style={{ transform: push ? 'translateX(24px)' : 'translateX(0px)', transition: 'transform 0.2s' }}></div>
                   </div>
                 </div>
@@ -192,7 +155,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Booking Alerts</span>
                   <span className={styles.toggleSub}>Get notified when members book or cancel spaces</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!bookingAlerts ? styles.toggleSwitchOff : ''}`} onClick={() => setBookingAlerts(!bookingAlerts)}>
+                <div className={`${styles.toggleSwitch} ${!bookingAlerts ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('bookingAlerts', !bookingAlerts)}>
                   <div className={styles.toggleKnob} style={{ transform: bookingAlerts ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>
@@ -202,7 +165,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Upgrade Requests</span>
                   <span className={styles.toggleSub}>Alert when members request plan upgrades</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!upgradeRequests ? styles.toggleSwitchOff : ''}`} onClick={() => setUpgradeRequests(!upgradeRequests)}>
+                <div className={`${styles.toggleSwitch} ${!upgradeRequests ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('upgradeRequests', !upgradeRequests)}>
                   <div className={styles.toggleKnob} style={{ transform: upgradeRequests ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>
@@ -212,7 +175,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Maintenance Alerts</span>
                   <span className={styles.toggleSub}>Receive updates on facility maintenance issues</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!maintenanceAlerts ? styles.toggleSwitchOff : ''}`} onClick={() => setMaintenanceAlerts(!maintenanceAlerts)}>
+                <div className={`${styles.toggleSwitch} ${!maintenanceAlerts ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('maintenanceAlerts', !maintenanceAlerts)}>
                   <div className={styles.toggleKnob} style={{ transform: maintenanceAlerts ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>
@@ -235,7 +198,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Lead Notifications</span>
                   <span className={styles.toggleSub}>Get alerts when new leads are assigned to you</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!leadNotifications ? styles.toggleSwitchOff : ''}`} onClick={() => setLeadNotifications(!leadNotifications)}>
+                <div className={`${styles.toggleSwitch} ${!leadNotifications ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('leadNotifications', !leadNotifications)}>
                   <div className={styles.toggleKnob} style={{ transform: leadNotifications ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>
@@ -245,7 +208,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Payment Overdue Alerts</span>
                   <span className={styles.toggleSub}>Notify when member payments are past due</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!paymentOverdue ? styles.toggleSwitchOff : ''}`} onClick={() => setPaymentOverdue(!paymentOverdue)}>
+                <div className={`${styles.toggleSwitch} ${!paymentOverdue ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('paymentOverdue', !paymentOverdue)}>
                   <div className={styles.toggleKnob} style={{ transform: paymentOverdue ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>
@@ -255,7 +218,7 @@ export default function CenterManagerNotificationConfig() {
                   <span className={styles.toggleTitle} style={{ fontWeight: 600 }}>Account Hold Alerts</span>
                   <span className={styles.toggleSub}>Alert when member accounts are placed on hold</span>
                 </div>
-                <div className={`${styles.toggleSwitch} ${!accountHold ? styles.toggleSwitchOff : ''}`} onClick={() => setAccountHold(!accountHold)}>
+                <div className={`${styles.toggleSwitch} ${!accountHold ? styles.toggleSwitchOff : ''}`} onClick={() => setNotif('accountHold', !accountHold)}>
                   <div className={styles.toggleKnob} style={{ transform: accountHold ? 'translateX(24px)' : 'translateX(0px)' }}></div>
                 </div>
               </div>

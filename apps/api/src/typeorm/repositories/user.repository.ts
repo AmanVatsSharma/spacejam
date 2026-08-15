@@ -104,6 +104,9 @@ export class UserRepository {
 
     const users = await queryBuilder
       .orderBy('user.createdAt', 'DESC')
+      // Include the center relation so the Teams page can show the assigned
+      // center name instead of a misleading "No center assigned".
+      .leftJoinAndSelect('user.center', 'center')
       .getMany();
 
     return { users, total };

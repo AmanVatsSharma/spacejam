@@ -18,6 +18,7 @@ import {
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { UserRole } from '../../graphql/types/user.type';
+import { JsonScalar } from '../../graphql/scalars/json.scalar';
 import { Center } from './center.entity';
 
 @ObjectType()
@@ -42,6 +43,16 @@ export class User {
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', nullable: true })
   centerId!: string | null;
+
+  /**
+   * Per-user settings blob (jsonb): permissions matrix, personal security
+   * and notification preferences. Distinct from Center.settings — those are
+   * center-wide policy; these belong to this user regardless of center.
+   * Groups are whitelisted server-side (see sanitizeUserSettings).
+   */
+  @Field(() => JsonScalar, { nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
+  settings!: Record<string, any> | null;
 
   /**
    * The Customer (company) this user belongs to, if any. NOT a DB column —

@@ -3,6 +3,7 @@
 import { ApolloProvider } from '@apollo/client';
 import { getApolloClient } from '@/lib/apollo/client';
 import { AuthProvider } from '@/contexts/auth-context';
+import { ActiveCenterProvider } from '@/contexts/active-center-context';
 import { Toaster } from 'sonner';
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
@@ -11,7 +12,7 @@ export default function ClientProviders({ children }: { children: React.ReactNod
   return (
     <AuthProvider>
       <ApolloProvider client={client}>
-        {children}
+        <ActiveCenterProvider>{children}</ActiveCenterProvider>
         <Toaster richColors />
       </ApolloProvider>
     </AuthProvider>

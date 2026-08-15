@@ -30,6 +30,7 @@ import { UserRole } from '../types/user.type';
 import { CreateAdminInput, DashboardAdminRole } from '../../auth/dto/create-admin.input';
 import * as bcrypt from 'bcryptjs';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { deepMergeSettings, sanitizeUserSettings } from '../../common/utils/settings.util';
 
 @Resolver(() => UserEntity)
 @UseGuards(GqlAuthGuard, RolesGuard)
@@ -221,6 +222,104 @@ export class UserResolver {
     }).catch(() => {});
 
     return created;
+  }
+
+  // ─── Per-User Settings ─────────────────────────────────────────────────────
+  //
+  // User.settings holds per-user groups (permissions matrix, personal
+  // security + notification preferences) — as opposed to Center.settings,
+  // which holds center-wide policy. Access rules mirror the user() query:
+  // a user may always read/write their own settings; staff roles may manage
+  // others (a CENTER_MANAGER only within their own center).
+
+  /**
+   * Load the target user's settings as a JSON string ('{}' when unset).
+   */
+  @Query(() => String, { description: 'Per-user settings as a JSON string' })
+  @Roles(
+    EntityUserRole.ADMIN,
+    EntityUserRole.SUPER_ADMIN,
+    EntityUserRole.CENTER_OWNER,
+    EntityUserRole.CENTER_MANAGER,
+  )
+  async userSettings(
+    @Args('userId', { type: () => ID }) userId: string,
+    @CurrentUser() caller: JwtPayload,
+  ): Promise<string> {
+    const target = await this.assertCanManageUser(userId, caller);
+    return JSON.stringify(target.settings ?? {});
+  }
+
+  /**
+   * Deep-merge a partial settings object into User.settings (whitelisted
+   * groups only) and return the merged settings as a JSON string.
+   */
+  @Mutation(() => String, {
+    description: 'Update per-user settings (JSON string), returns merged settings',
+  })
+  @Roles(
+    EntityUserRole.ADMIN,
+    EntityUserRole.SUPER_ADMIN,
+    EntityUserRole.CENTER_OWNER,
+    EntityUserRole.CENTER_MANAGER,
+  )
+  async updateUserSettings(
+    @Args('userId', { type: () => ID }) userId: string,
+    @Args('settings', { type: () => String }) settings: string,
+    @CurrentUser() caller: JwtPayload,
+  ): Promise<string> {
+    const target = await this.assertCanManageUser(userId, caller);
+
+    let incoming: Record<string, any> = {};
+    try {
+      incoming = settings ? JSON.parse(settings) : {};
+    } catch {
+      throw new BadRequestException('Settings must be valid JSON');
+    }
+    incoming = sanitizeUserSettings(incoming);
+
+    const merged = deepMergeSettings((target as any).settings ?? {}, incoming);
+    await this.userRepo.update(userId, { settings: merged } as Partial<UserEntity>);
+
+    this.audit.record({
+      action: 'USER_SETTINGS_UPDATE',
+      userId: caller.sub,
+      entityType: 'User',
+      entityId: userId,
+      centerId: target.centerId ?? null,
+      changes: { keys: Object.keys(incoming) },
+    }).catch(() => {});
+
+    return JSON.stringify(merged);
+  }
+
+  /**
+   * Shared authorization for the settings resolvers: resolves the target
+   * user, allows self-access, allows unscoped staff (ADMIN/SUPER_ADMIN/
+   * CENTER_OWNER), and restricts CENTER_MANAGER to users in their own
+   * center. Throws NotFound/Forbidden otherwise.
+   */
+  private async assertCanManageUser(userId: string, caller: JwtPayload): Promise<UserEntity> {
+    const target = await this.userRepo.findById(userId);
+    if (!target) throw new NotFoundException('User not found');
+    if (target.id === caller.sub) return target;
+
+    const scope = centerScope(caller);
+    if (!scope) {
+      // Unscoped staff roles (ADMIN, SUPER_ADMIN, CENTER_OWNER) — allowed.
+      if (
+        caller.role === EntityUserRole.ADMIN ||
+        caller.role === EntityUserRole.SUPER_ADMIN ||
+        caller.role === EntityUserRole.CENTER_OWNER
+      ) {
+        return target;
+      }
+      throw new ForbiddenException('Not allowed to manage this user');
+    }
+    if (target.centerId !== scope) {
+      throw new ForbiddenException('Not allowed to manage this user');
+    }
+    return target;
   }
 
   // ─── Session / Device Management ──────────────────────────────────────────

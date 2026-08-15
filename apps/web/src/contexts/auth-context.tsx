@@ -216,8 +216,12 @@ function MeQueryClient({ client, hasToken, isDevLoginAvailable }: {
     setMounted(true);
   }, []);
 
+  // Always restore the real user when a token exists. Dev-login availability
+  // only ADDS the dev sign-in buttons — it must not disable real session
+  // restore, otherwise every reload renders "Guest" and role-aware UI
+  // (settings tabs, page variants) silently falls back to the wrong role.
   useEffect(() => {
-    if (!mounted || !client || !hasToken || isDevLoginAvailable) return;
+    if (!mounted || !client || !hasToken) return;
 
     let cancelled = false;
     client

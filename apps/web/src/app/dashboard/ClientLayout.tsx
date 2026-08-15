@@ -21,6 +21,30 @@ import { Sidebar } from '@/components/ui/sidebar';
 import { Header, type HeaderTab } from '@/components/ui/header';
 import { SetUpNewCenter } from '@/components/ui/set-up-new-center';
 import { useAuth } from '@/contexts/auth-context';
+import { useActiveCenter } from '@/contexts/active-center-context';
+
+/** Compact center selector shown on Settings when the caller has >1 center. */
+function CenterPicker() {
+  const { centers, activeCenter, setActiveCenter } = useActiveCenter();
+  if (centers.length <= 1) return null;
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-xs font-medium text-[#6B7280]">Center</span>
+      <select
+        aria-label="Active center"
+        value={activeCenter?.id ?? ''}
+        onChange={(e) => setActiveCenter(e.target.value)}
+        className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 text-sm font-medium text-[#1F2937] shadow-sm outline-none focus:border-[#FF6A2F]"
+      >
+        {centers.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 /**
  * Per-section sub-navigation. The first tab of each section is the
@@ -201,6 +225,13 @@ export default function DashboardLayout({
 
         {/* Scrollable Content Area */}
         <main className="flex-1 overflow-y-auto px-8 py-6 compact:px-4 compact:py-4 min-w-0">
+          {/* Settings are center-scoped: surface the active center switcher
+              so a multi-center admin edits the center they intend to. */}
+          {pathname?.startsWith('/dashboard/settings') && (
+            <div className="flex justify-end mb-2">
+              <CenterPicker />
+            </div>
+          )}
           {children}
         </main>
       </div>

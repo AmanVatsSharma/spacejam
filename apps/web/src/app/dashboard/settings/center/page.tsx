@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import { GET_MY_CENTERS } from "@/lib/apollo/operations";
 import { useUpdateCenterSettings } from "@/hooks/use-settings";
+import { useActiveCenter } from "@/contexts/active-center-context";
 import { useAuth } from "@/contexts/auth-context";
 import CenterManagerConfig from "./CenterConfiguration";
 import styles from "./center.module.css";
@@ -94,20 +93,15 @@ export default function CenterSettingsPage() {
   const [activeTab, setActiveTab] = useState("Booking Defaults");
   const [saving, setSaving] = useState(false);
 
-  // Load center data
-  const { data: centersData } = useQuery(GET_MY_CENTERS, {
-    fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-  });
+  // Resolve the shared, persisted active center (multi-center admins can
+  // switch it via the header picker) instead of an arbitrary myCenters[0].
+  const { activeCenter: primaryCenter, loading: centersLoading } = useActiveCenter();
 
   // Persist via the deep-merge updateCenterSettings mutation (NOT updateCenter,
   // whose UpdateCenterInput has no `settings` field — so the old Save silently
   // dropped everything). Deep-merge also prevents clobbering sibling groups
   // (finance/security/notifications) written by other settings pages.
   const { update: updateCenterSettings } = useUpdateCenterSettings();
-
-  const centers = centersData?.myCenters ?? [];
-  const primaryCenter = centers[0];
 
   // Booking Defaults State
   const [lastMinuteBooking, setLastMinuteBooking] = useState(true);
