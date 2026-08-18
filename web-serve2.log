@@ -1,0 +1,2690 @@
+▲ Next.js 16.2.0 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.5:3000
+- Environments: .env.local
+✓ Ready in 1555ms
+
+ GET /signin 200 in 1397ms (next.js: 272ms, proxy.ts: 401ms, application-code: 724ms)
+ GET /signin 200 in 591ms (next.js: 39ms, proxy.ts: 70ms, application-code: 482ms)
+[browser] An error occurred! For more details, see the full error text at https://go.apollo.dev/c/err#%7B%22version%22%3A%223.14.1%22%2C%22message%22%3A103%2C%22args%22%3A%5B%22ApolloClient%22%2C%22connectToDevTools%22%2C%22Please%20use%20%60devtools.enabled%60%20instead.%22%5D%7D (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ScrollAndMaybeFocusHandler cacheNode={{rsc:{...}, ...}}>
+      <InnerScrollAndFocusHandlerOld focusAndScrollRef={{scrollRef:null, ...}} cacheNode={{rsc:{...}, ...}}>
+        <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+          <LoadingBoundary name="signin/" loading={null}>
+            <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/signin" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} ...>
+                    <SegmentViewNode type="page" pagePath="(auth)/sig...">
+                      <SegmentTrieNode>
+                      <SignInPage>
+                        <div className="auth-modul...">
+                          <AuthBackground>
+                            <div className="auth-modul...">
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "27.60939111131459px"
+-                                 width: "27.6094px"
++                                 height: "23.469778437689122px"
+-                                 height: "23.4698px"
++                                 marginLeft: "-129.85894304001704px"
++                                 marginTop: "428.3859415122606px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 0.5858750562765636px 0.9374000900425017px rgba(0, 0, 0, 0.0070305006..."
++                                 opacity: 0.16171750112553127
+-                                 opacity: "0.161718"
++                                 filter: "blur(9.765649977489375px)"
+-                                 filter: "blur(9.76565px)"
++                                 backdropFilter: "none"
++                                 zIndex: 0
++                                 animationDuration: "78.59389986493625s"
++                                 animationDelay: "-54.994269022099616s"
+-                                 margin-left: "-129.859px"
+-                                 margin-top: "428.386px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.008) 0px 0.585875px 0.9374px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "0"
+-                                 animation-duration: "78.5939s"
+-                                 animation-delay: "-54.9943s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "48.43995498240224px"
+-                                 width: "48.44px"
++                                 height: "48.43995498240224px"
+-                                 height: "48.44px"
++                                 marginLeft: "-392.961166495661px"
++                                 marginTop: "214.00591110432288px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 4.604586136929356px 7.36733781908697px rgba(0, 0, 0, 0.0552550336431..."
++                                 opacity: 0.24209172273858712
+-                                 opacity: "0.242092"
++                                 filter: "blur(8.158165545228258px)"
+-                                 filter: "blur(8.15817px)"
++                                 backdropFilter: "none"
++                                 zIndex: 7
++                                 animationDuration: "68.94899327136955s"
++                                 animationDelay: "-46.727894258692686s"
+-                                 margin-left: "-392.961px"
+-                                 margin-top: "214.006px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.055) 0px 4.60459px 7.36734px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "7"
+-                                 animation-duration: "68.949s"
+-                                 animation-delay: "-46.7279s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "64.6992919172139px"
+-                                 width: "64.6993px"
++                                 height: "64.6992919172139px"
+-                                 height: "64.6993px"
++                                 marginLeft: "114.5063020681846px"
++                                 marginTop: "222.56228354308405px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFD7C4"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 7.143866313617764px 11.430186101788422px rgba(0, 0, 0, 0.08572639576..."
++                                 opacity: 0.2928773262723553
+-                                 opacity: "0.292877"
++                                 filter: "blur(7.1424534745528945px)"
+-                                 filter: "blur(7.14245px)"
++                                 backdropFilter: "none"
++                                 zIndex: 11
++                                 animationDuration: "62.85472084731737s"
++                                 animationDelay: "-21.58439791510318s"
+-                                 margin-left: "114.506px"
+-                                 margin-top: "222.562px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 215, 196)"
+-                                 border-right-color: "rgb(255, 215, 196)"
+-                                 border-bottom-color: "rgb(255, 215, 196)"
+-                                 border-left-color: "rgb(255, 215, 196)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.086) 0px 7.14387px 11.4302px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "11"
+-                                 animation-duration: "62.8547s"
+-                                 animation-delay: "-21.5844s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "44.50753386743138px"
+-                                 width: "44.5075px"
++                                 height: "44.50753386743138px"
+-                                 height: "44.5075px"
++                                 marginLeft: "-57.50907609035494px"
++                                 marginTop: "249.09398030104057px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 5.8095610199416114px 9.295297631906578px rgba(0, 0, 0, 0.06971473223..."
++                                 opacity: 0.26619122039883225
+-                                 opacity: "0.266191"
++                                 filter: "blur(7.676175592023355px)"
+-                                 filter: "blur(7.67618px)"
++                                 backdropFilter: "none"
++                                 zIndex: 9
++                                 animationDuration: "66.05705355214013s"
++                                 animationDelay: "-31.793643586606777s"
+-                                 margin-left: "-57.5091px"
+-                                 margin-top: "249.094px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.07) 0px 5.80956px 9.2953px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "9"
+-                                 animation-duration: "66.0571s"
+-                                 animation-delay: "-31.7936s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "137.17008358706704px"
+-                                 width: "137.17px"
++                                 height: "137.17008358706704px"
+-                                 height: "137.17px"
++                                 marginLeft: "-345.9757345917751px"
++                                 marginTop: "-303.2738864476414px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 23.165927807860953px 37.065484492577525px rgba(0, 0, 0, 0.2779911336..."
++                                 opacity: 0.6133185561572191
+-                                 opacity: "0.613319"
++                                 filter: "blur(0.7336288768556187px)"
+-                                 filter: "blur(0.733629px)"
++                                 backdropFilter: "none"
++                                 zIndex: 37
++                                 animationDuration: "24.401773261133712s"
++                                 animationDelay: "-33.53229597933023s"
+-                                 margin-left: "-345.976px"
+-                                 margin-top: "-303.274px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.28) 0px 23.1659px 37.0655px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "37"
+-                                 animation-duration: "24.4018s"
+-                                 animation-delay: "-33.5323s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "41.77410879941377px"
+-                                 width: "41.7741px"
++                                 height: "51.23688307702379px"
+-                                 height: "51.2369px"
++                                 marginLeft: "-197.84346078231465px"
++                                 marginTop: "-437.777366143564px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 2.057482291695578px 3.291971666712925px rgba(0, 0, 0, 0.024689787500..."
++                                 opacity: 0.19114964583391156
+-                                 opacity: "0.19115"
++                                 filter: "blur(9.177007083321769px)"
+-                                 filter: "blur(9.17701px)"
++                                 backdropFilter: "none"
++                                 zIndex: 3
++                                 animationDuration: "75.06204249993061s"
++                                 animationDelay: "-11.57289884261445s"
+-                                 margin-left: "-197.843px"
+-                                 margin-top: "-437.777px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.024) 0px 2.05748px 3.29197px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "3"
+-                                 animation-duration: "75.062s"
+-                                 animation-delay: "-11.5729s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "74.52451251369429px"
+-                                 width: "74.5245px"
++                                 height: "95.24444425852798px"
+-                                 height: "95.2444px"
++                                 marginLeft: "-302.6005992651335px"
++                                 marginTop: "69.25079373490917px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 6.922445653549403px 11.075913045679044px rgba(0, 0, 0, 0.08306934784..."
++                                 opacity: 0.2884489130709881
+-                                 opacity: "0.288449"
++                                 filter: "blur(7.231021738580239px)"
+-                                 filter: "blur(7.23102px)"
++                                 backdropFilter: "none"
++                                 zIndex: 11
++                                 animationDuration: "63.38613043148143s"
++                                 animationDelay: "-14.331722377173719s"
+-                                 margin-left: "-302.601px"
+-                                 margin-top: "69.2508px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.082) 0px 6.92245px 11.0759px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "11"
+-                                 animation-duration: "63.3861s"
+-                                 animation-delay: "-14.3317s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "78.24431653344024px"
+-                                 width: "78.2443px"
++                                 height: "78.24431653344024px"
+-                                 height: "78.2443px"
++                                 marginLeft: "-210.59880439424887px"
++                                 marginTop: "106.22231706634011px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.100468842230839px 20.960750147569343px rgba(0, 0, 0, 0.1572056261..."
++                                 opacity: 0.4120093768446168
+-                                 opacity: "0.412009"
++                                 filter: "blur(4.759812463107664px)"
+-                                 filter: "blur(4.75981px)"
++                                 backdropFilter: "blur(8px)"
++                                 zIndex: 20
++                                 animationDuration: "48.558874778645986s"
++                                 animationDelay: "-48.78267799225796s"
+-                                 margin-left: "-210.599px"
+-                                 margin-top: "106.222px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.157) 0px 13.1005px 20.9608px"
+-                                 backdrop-filter: "blur(8px)"
+-                                 z-index: "20"
+-                                 animation-duration: "48.5589s"
+-                                 animation-delay: "-48.7827s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "91.65096757291633px"
+-                                 width: "91.651px"
++                                 height: "114.92059206144602px"
+-                                 height: "114.921px"
++                                 marginLeft: "142.14028262140346px"
++                                 marginTop: "-135.51205370367825px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 10.174027582024792px 16.278444131239667px rgba(0, 0, 0, 0.1220883309..."
++                                 opacity: 0.35348055164049585
+-                                 opacity: "0.353481"
++                                 filter: "blur(5.930388967190083px)"
+-                                 filter: "blur(5.93039px)"
++                                 backdropFilter: "none"
++                                 zIndex: 16
++                                 animationDuration: "55.5823338031405s"
++                                 animationDelay: "-11.781680844651419s"
+-                                 margin-left: "142.14px"
+-                                 margin-top: "-135.512px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.12) 0px 10.174px 16.2784px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "16"
+-                                 animation-duration: "55.5823s"
+-                                 animation-delay: "-11.7817s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "92.85345323560502px"
+-                                 width: "92.8535px"
++                                 height: "92.85345323560502px"
+-                                 height: "92.8535px"
++                                 marginLeft: "-346.1412554963317px"
++                                 marginTop: "-107.20181097531167px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 18.612981525939176px 29.780770441502682px rgba(0, 0, 0, 0.2233557783..."
++                                 opacity: 0.5222596305187835
+-                                 opacity: "0.52226"
++                                 filter: "blur(2.5548073896243295px)"
+-                                 filter: "blur(2.55481px)"
++                                 backdropFilter: "none"
++                                 zIndex: 29
++                                 animationDuration: "35.32884433774598s"
++                                 animationDelay: "-1.1741439921024721s"
+-                                 margin-left: "-346.141px"
+-                                 margin-top: "-107.202px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.224) 0px 18.613px 29.7808px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "29"
+-                                 animation-duration: "35.3288s"
+-                                 animation-delay: "-1.17414s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "117.42516491060383px"
+-                                 width: "117.425px"
++                                 height: "117.42516491060383px"
+-                                 height: "117.425px"
++                                 marginLeft: "49.12284193269443px"
++                                 marginTop: "149.11217794997356px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFD7C4"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 12.438052081324713px 19.90088333011954px rgba(0, 0, 0, 0.14925662497..."
++                                 opacity: 0.3987610416264943
+-                                 opacity: "0.398761"
++                                 filter: "blur(5.024779167470115px)"
+-                                 filter: "blur(5.02478px)"
++                                 backdropFilter: "none"
++                                 zIndex: 19
++                                 animationDuration: "50.14867500482069s"
++                                 animationDelay: "-39.99628074139764s"
+-                                 margin-left: "49.1228px"
+-                                 margin-top: "149.112px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 215, 196)"
+-                                 border-right-color: "rgb(255, 215, 196)"
+-                                 border-bottom-color: "rgb(255, 215, 196)"
+-                                 border-left-color: "rgb(255, 215, 196)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.15) 0px 12.4381px 19.9009px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "19"
+-                                 animation-duration: "50.1487s"
+-                                 animation-delay: "-39.9963s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "101.15781112699375px"
+-                                 width: "101.158px"
++                                 height: "101.15781112699375px"
+-                                 height: "101.158px"
++                                 marginLeft: "238.30723763312562px"
++                                 marginTop: "-119.52803332314943px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 20.601687015164316px 32.962699224262906px rgba(0, 0, 0, 0.2472202441..."
++                                 opacity: 0.5620337403032863
+-                                 opacity: "0.562034"
++                                 filter: "blur(1.7593251939342736px)"
+-                                 filter: "blur(1.75933px)"
++                                 backdropFilter: "none"
++                                 zIndex: 32
++                                 animationDuration: "30.55595116360564s"
++                                 animationDelay: "-0.2985904277920781s"
+-                                 margin-left: "238.307px"
+-                                 margin-top: "-119.528px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.247) 0px 20.6017px 32.9627px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "32"
+-                                 animation-duration: "30.556s"
+-                                 animation-delay: "-0.29859s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "39.064221751191035px"
+-                                 width: "39.0642px"
++                                 height: "24.983513831477374px"
+-                                 height: "24.9835px"
++                                 marginLeft: "32.31770363781834px"
++                                 marginTop: "-489.5474014028878px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 5.078527402747568px 8.125643844396109px rgba(0, 0, 0, 0.060942328832..."
++                                 opacity: 0.2515705480549514
+-                                 opacity: "0.251571"
++                                 filter: "blur(7.968589038900973px)"
+-                                 filter: "blur(7.96859px)"
++                                 backdropFilter: "none"
++                                 zIndex: 8
++                                 animationDuration: "67.81153423340584s"
++                                 animationDelay: "-31.695248103096674s"
+-                                 margin-left: "32.3177px"
+-                                 margin-top: "-489.547px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.063) 0px 5.07853px 8.12564px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "8"
+-                                 animation-duration: "67.8115s"
+-                                 animation-delay: "-31.6952s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "123.75718604879003px"
+-                                 width: "123.757px"
++                                 height: "123.75718604879003px"
+-                                 height: "123.757px"
++                                 marginLeft: "-201.47328681487124px"
++                                 marginTop: "333.85793832894706px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 19.86025394535318px 31.776406312565086px rgba(0, 0, 0, 0.23832304734..."
++                                 opacity: 0.5472050789070636
+-                                 opacity: "0.547205"
++                                 filter: "blur(2.0558984218587284px)"
+-                                 filter: "blur(2.0559px)"
++                                 backdropFilter: "none"
++                                 zIndex: 31
++                                 animationDuration: "32.33539053115237s"
++                                 animationDelay: "-20.722819204856933s"
+-                                 margin-left: "-201.473px"
+-                                 margin-top: "333.858px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.24) 0px 19.8603px 31.7764px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "31"
+-                                 animation-duration: "32.3354s"
+-                                 animation-delay: "-20.7228s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "97.51972235375706px"
+-                                 width: "97.5197px"
++                                 height: "97.51972235375706px"
+-                                 height: "97.5197px"
++                                 marginLeft: "-65.35129541662172px"
++                                 marginTop: "-273.12103761892104px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.369007252595111px 21.390411604152177px rgba(0, 0, 0, 0.1604280870..."
++                                 opacity: 0.41738014505190224
+-                                 opacity: "0.41738"
++                                 filter: "blur(4.652397098961956px)"
+-                                 filter: "blur(4.6524px)"
++                                 backdropFilter: "none"
++                                 zIndex: 21
++                                 animationDuration: "47.914382593771734s"
++                                 animationDelay: "-51.795540844013885s"
+-                                 margin-left: "-65.3513px"
+-                                 margin-top: "-273.121px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.16) 0px 13.369px 21.3904px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "21"
+-                                 animation-duration: "47.9144s"
+-                                 animation-delay: "-51.7955s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "39.013916279870784px"
+-                                 width: "39.0139px"
++                                 height: "39.013916279870784px"
+-                                 height: "39.0139px"
++                                 marginLeft: "269.8680702756974px"
++                                 marginTop: "-218.11345784021796px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 3.3094144702545236px 5.295063152407238px rgba(0, 0, 0, 0.03971297364..."
++                                 opacity: 0.21618828940509047
+-                                 opacity: "0.216188"
++                                 filter: "blur(8.67623421189819px)"
+-                                 filter: "blur(8.67623px)"
++                                 backdropFilter: "none"
++                                 zIndex: 5
++                                 animationDuration: "72.05740527138914s"
++                                 animationDelay: "-0.05943892479990609s"
+-                                 margin-left: "269.868px"
+-                                 margin-top: "-218.113px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.04) 0px 3.30941px 5.29506px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "5"
+-                                 animation-duration: "72.0574s"
+-                                 animation-delay: "-0.0594389s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "30.797786818639935px"
+-                                 width: "30.7978px"
++                                 height: "35.47850244957115px"
+-                                 height: "35.4785px"
++                                 marginLeft: "233.40851306275px"
++                                 marginTop: "457.0552399150074px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 3.727709865097495px 5.964335784155992px rgba(0, 0, 0, 0.044732518381..."
++                                 opacity: 0.2245541973019499
+-                                 opacity: "0.224554"
++                                 filter: "blur(8.508916053961002px)"
+-                                 filter: "blur(8.50892px)"
++                                 backdropFilter: "none"
++                                 zIndex: 5
++                                 animationDuration: "71.05349632376601s"
++                                 animationDelay: "-4.839600237355626s"
+-                                 margin-left: "233.409px"
+-                                 margin-top: "457.055px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.043) 0px 3.72771px 5.96434px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "5"
+-                                 animation-duration: "71.0535s"
+-                                 animation-delay: "-4.8396s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "35.05204426498143px"
+-                                 width: "35.052px"
++                                 height: "35.05204426498143px"
+-                                 height: "35.052px"
++                                 marginLeft: "276.816735927423px"
++                                 marginTop: "295.100842517968px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 2.2930536560124892px 3.6688858496199828px rgba(0, 0, 0, 0.0275166438..."
++                                 opacity: 0.19586107312024978
+-                                 opacity: "0.195861"
++                                 filter: "blur(9.082778537595004px)"
+-                                 filter: "blur(9.08278px)"
++                                 backdropFilter: "none"
++                                 zIndex: 3
++                                 animationDuration: "74.49667122557003s"
++                                 animationDelay: "-1.547593319430689s"
+-                                 margin-left: "276.817px"
+-                                 margin-top: "295.101px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.027) 0px 2.29305px 3.66889px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "3"
+-                                 animation-duration: "74.4967s"
+-                                 animation-delay: "-1.54759s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "64.53194413339797px"
+-                                 width: "64.5319px"
++                                 height: "64.53194413339797px"
+-                                 height: "64.5319px"
++                                 marginLeft: "-287.83927079930436px"
++                                 marginTop: "-163.18873400177836px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 6.234834204371964px 9.975734726995142px rgba(0, 0, 0, 0.074818010452..."
++                                 opacity: 0.2746966840874393
+-                                 opacity: "0.274697"
++                                 filter: "blur(7.506066318251214px)"
+-                                 filter: "blur(7.50607px)"
++                                 backdropFilter: "none"
++                                 zIndex: 9
++                                 animationDuration: "65.03639790950729s"
++                                 animationDelay: "-40.41444078652148s"
+-                                 margin-left: "-287.839px"
+-                                 margin-top: "-163.189px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.075) 0px 6.23483px 9.97573px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "9"
+-                                 animation-duration: "65.0364s"
+-                                 animation-delay: "-40.4144s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "93.55509119060241px"
+-                                 width: "93.5551px"
++                                 height: "93.55509119060241px"
+-                                 height: "93.5551px"
++                                 marginLeft: "131.2392218169407px"
++                                 marginTop: "242.55433915823232px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 10.366492505932001px 16.586388009491202px rgba(0, 0, 0, 0.1243979100..."
++                                 opacity: 0.35732985011864005
+-                                 opacity: "0.35733"
++                                 filter: "blur(5.8534029976271995px)"
+-                                 filter: "blur(5.8534px)"
++                                 backdropFilter: "none"
++                                 zIndex: 16
++                                 animationDuration: "55.1204179857632s"
++                                 animationDelay: "-45.67374806587395s"
+-                                 margin-left: "131.239px"
+-                                 margin-top: "242.554px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.125) 0px 10.3665px 16.5864px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "16"
+-                                 animation-duration: "55.1204s"
+-                                 animation-delay: "-45.6737s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "32.14866157281455px"
+-                                 width: "32.1487px"
++                                 height: "32.14866157281455px"
+-                                 height: "32.1487px"
++                                 marginLeft: "-359.4746519716864px"
++                                 marginTop: "-6.209268154179881px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 1.7510416190816613px 2.801666590530658px rgba(0, 0, 0, 0.02101249942..."
++                                 opacity: 0.18502083238163322
+-                                 opacity: "0.185021"
++                                 filter: "blur(9.299583352367335px)"
+-                                 filter: "blur(9.29958px)"
++                                 backdropFilter: "none"
++                                 zIndex: 2
++                                 animationDuration: "75.79750011420401s"
++                                 animationDelay: "-14.92187254694727s"
+-                                 margin-left: "-359.475px"
+-                                 margin-top: "-6.20927px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.02) 0px 1.75104px 2.80167px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "2"
+-                                 animation-duration: "75.7975s"
+-                                 animation-delay: "-14.9219s"
+                                }}
+                              >
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "108.27146502205387px"
+-                                 width: "108.271px"
++                                 height: "88.55465460987529px"
+-                                 height: "88.5547px"
++                                 marginLeft: "-366.66718681190105px"
++                                 marginTop: "265.6030026691951px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.923231341323117px 22.277170146116987px rgba(0, 0, 0, 0.1670787760..."
++                                 opacity: 0.42846462682646236
+-                                 opacity: "0.428465"
++                                 filter: "blur(4.430707463470753px)"
+-                                 filter: "blur(4.43071px)"
++                                 backdropFilter: "none"
++                                 zIndex: 22
++                                 animationDuration: "46.58424478082452s"
++                                 animationDelay: "-0.8549423662407207s"
+-                                 margin-left: "-366.667px"
+-                                 margin-top: "265.603px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.17) 0px 13.9232px 22.2772px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "22"
+-                                 animation-duration: "46.5842s"
+-                                 animation-delay: "-0.854942s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "102.23131361051398px"
+-                                 width: "102.231px"
++                                 height: "102.23131361051398px"
+-                                 height: "102.231px"
++                                 marginLeft: "-387.0723535555953px"
++                                 marginTop: "-433.36591217303067px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 11.92710739364884px 19.083371829838143px rgba(0, 0, 0, 0.14312528872..."
++                                 opacity: 0.3885421478729768
+-                                 opacity: "0.388542"
++                                 filter: "blur(5.229157042540464px)"
+-                                 filter: "blur(5.22916px)"
++                                 backdropFilter: "none"
++                                 zIndex: 19
++                                 animationDuration: "51.374942255242786s"
++                                 animationDelay: "-5.405607955872256s"
+-                                 margin-left: "-387.072px"
+-                                 margin-top: "-433.366px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.14) 0px 11.9271px 19.0834px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "19"
+-                                 animation-duration: "51.3749s"
+-                                 animation-delay: "-5.40561s"
+                                }}
+                              >
+                              ...
+                              ...
+                          ...
+                    ...
+                  ...
+        ...
+ 
+    at <unknown> (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3439:25)
+    at runWithFiberInDEV (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at emitPendingHydrationWarnings (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3438:13)
+    at completeWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6885:102)
+    at runWithFiberInDEV (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:131)
+    at completeUnitOfWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9622:23)
+    at performUnitOfWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9557:28)
+    at workLoopConcurrentByScheduler (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9551:58)
+    at renderRootConcurrent (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9534:71)
+    at performWorkOnRoot (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64) (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3439:25)
+ GET /dashboard 200 in 210ms (next.js: 108ms, proxy.ts: 20ms, application-code: 82ms)
+[browser] Image with src "/_next/static/media/logo.0mt5hmw1syvad.png" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)
+ GET /dashboard/home 200 in 411ms (next.js: 150ms, proxy.ts: 38ms, application-code: 223ms)
+ GET /dashboard/home 200 in 156ms (next.js: 29ms, proxy.ts: 30ms, application-code: 97ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)
+ GET /dashboard/settings 200 in 150ms (next.js: 76ms, proxy.ts: 14ms, application-code: 61ms)
+ GET /signin 200 in 166ms (next.js: 29ms, proxy.ts: 21ms, application-code: 116ms)
+[browser] An error occurred! For more details, see the full error text at https://go.apollo.dev/c/err#%7B%22version%22%3A%223.14.1%22%2C%22message%22%3A103%2C%22args%22%3A%5B%22ApolloClient%22%2C%22connectToDevTools%22%2C%22Please%20use%20%60devtools.enabled%60%20instead.%22%5D%7D (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_115brz8._.js:2431:13)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <ScrollAndMaybeFocusHandler cacheNode={{rsc:{...}, ...}}>
+      <InnerScrollAndFocusHandlerOld focusAndScrollRef={{scrollRef:null, ...}} cacheNode={{rsc:{...}, ...}}>
+        <ErrorBoundary errorComponent={undefined} errorStyles={undefined} errorScripts={undefined}>
+          <LoadingBoundary name="signin/" loading={null}>
+            <HTTPAccessFallbackBoundary notFound={undefined} forbidden={undefined} unauthorized={undefined}>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/signin" tree={[...]} params={{}} cacheNode={{rsc:{...}, ...}} ...>
+                    <SegmentViewNode type="page" pagePath="(auth)/sig...">
+                      <SegmentTrieNode>
+                      <SignInPage>
+                        <div className="auth-modul...">
+                          <AuthBackground>
+                            <div className="auth-modul...">
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "27.60939111131459px"
+-                                 width: "27.6094px"
++                                 height: "23.469778437689122px"
+-                                 height: "23.4698px"
++                                 marginLeft: "-129.85894304001704px"
++                                 marginTop: "428.3859415122606px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 0.5858750562765636px 0.9374000900425017px rgba(0, 0, 0, 0.0070305006..."
++                                 opacity: 0.16171750112553127
+-                                 opacity: "0.161718"
++                                 filter: "blur(9.765649977489375px)"
+-                                 filter: "blur(9.76565px)"
++                                 backdropFilter: "none"
++                                 zIndex: 0
++                                 animationDuration: "78.59389986493625s"
++                                 animationDelay: "-54.994269022099616s"
+-                                 margin-left: "-129.859px"
+-                                 margin-top: "428.386px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.008) 0px 0.585875px 0.9374px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "0"
+-                                 animation-duration: "78.5939s"
+-                                 animation-delay: "-54.9943s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "48.43995498240224px"
+-                                 width: "48.44px"
++                                 height: "48.43995498240224px"
+-                                 height: "48.44px"
++                                 marginLeft: "-392.961166495661px"
++                                 marginTop: "214.00591110432288px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 4.604586136929356px 7.36733781908697px rgba(0, 0, 0, 0.0552550336431..."
++                                 opacity: 0.24209172273858712
+-                                 opacity: "0.242092"
++                                 filter: "blur(8.158165545228258px)"
+-                                 filter: "blur(8.15817px)"
++                                 backdropFilter: "none"
++                                 zIndex: 7
++                                 animationDuration: "68.94899327136955s"
++                                 animationDelay: "-46.727894258692686s"
+-                                 margin-left: "-392.961px"
+-                                 margin-top: "214.006px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.055) 0px 4.60459px 7.36734px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "7"
+-                                 animation-duration: "68.949s"
+-                                 animation-delay: "-46.7279s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "64.6992919172139px"
+-                                 width: "64.6993px"
++                                 height: "64.6992919172139px"
+-                                 height: "64.6993px"
++                                 marginLeft: "114.5063020681846px"
++                                 marginTop: "222.56228354308405px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFD7C4"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 7.143866313617764px 11.430186101788422px rgba(0, 0, 0, 0.08572639576..."
++                                 opacity: 0.2928773262723553
+-                                 opacity: "0.292877"
++                                 filter: "blur(7.1424534745528945px)"
+-                                 filter: "blur(7.14245px)"
++                                 backdropFilter: "none"
++                                 zIndex: 11
++                                 animationDuration: "62.85472084731737s"
++                                 animationDelay: "-21.58439791510318s"
+-                                 margin-left: "114.506px"
+-                                 margin-top: "222.562px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 215, 196)"
+-                                 border-right-color: "rgb(255, 215, 196)"
+-                                 border-bottom-color: "rgb(255, 215, 196)"
+-                                 border-left-color: "rgb(255, 215, 196)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.086) 0px 7.14387px 11.4302px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "11"
+-                                 animation-duration: "62.8547s"
+-                                 animation-delay: "-21.5844s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "44.50753386743138px"
+-                                 width: "44.5075px"
++                                 height: "44.50753386743138px"
+-                                 height: "44.5075px"
++                                 marginLeft: "-57.50907609035494px"
++                                 marginTop: "249.09398030104057px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 5.8095610199416114px 9.295297631906578px rgba(0, 0, 0, 0.06971473223..."
++                                 opacity: 0.26619122039883225
+-                                 opacity: "0.266191"
++                                 filter: "blur(7.676175592023355px)"
+-                                 filter: "blur(7.67618px)"
++                                 backdropFilter: "none"
++                                 zIndex: 9
++                                 animationDuration: "66.05705355214013s"
++                                 animationDelay: "-31.793643586606777s"
+-                                 margin-left: "-57.5091px"
+-                                 margin-top: "249.094px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.07) 0px 5.80956px 9.2953px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "9"
+-                                 animation-duration: "66.0571s"
+-                                 animation-delay: "-31.7936s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "137.17008358706704px"
+-                                 width: "137.17px"
++                                 height: "137.17008358706704px"
+-                                 height: "137.17px"
++                                 marginLeft: "-345.9757345917751px"
++                                 marginTop: "-303.2738864476414px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 23.165927807860953px 37.065484492577525px rgba(0, 0, 0, 0.2779911336..."
++                                 opacity: 0.6133185561572191
+-                                 opacity: "0.613319"
++                                 filter: "blur(0.7336288768556187px)"
+-                                 filter: "blur(0.733629px)"
++                                 backdropFilter: "none"
++                                 zIndex: 37
++                                 animationDuration: "24.401773261133712s"
++                                 animationDelay: "-33.53229597933023s"
+-                                 margin-left: "-345.976px"
+-                                 margin-top: "-303.274px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.28) 0px 23.1659px 37.0655px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "37"
+-                                 animation-duration: "24.4018s"
+-                                 animation-delay: "-33.5323s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "41.77410879941377px"
+-                                 width: "41.7741px"
++                                 height: "51.23688307702379px"
+-                                 height: "51.2369px"
++                                 marginLeft: "-197.84346078231465px"
++                                 marginTop: "-437.777366143564px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 2.057482291695578px 3.291971666712925px rgba(0, 0, 0, 0.024689787500..."
++                                 opacity: 0.19114964583391156
+-                                 opacity: "0.19115"
++                                 filter: "blur(9.177007083321769px)"
+-                                 filter: "blur(9.17701px)"
++                                 backdropFilter: "none"
++                                 zIndex: 3
++                                 animationDuration: "75.06204249993061s"
++                                 animationDelay: "-11.57289884261445s"
+-                                 margin-left: "-197.843px"
+-                                 margin-top: "-437.777px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.024) 0px 2.05748px 3.29197px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "3"
+-                                 animation-duration: "75.062s"
+-                                 animation-delay: "-11.5729s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "74.52451251369429px"
+-                                 width: "74.5245px"
++                                 height: "95.24444425852798px"
+-                                 height: "95.2444px"
++                                 marginLeft: "-302.6005992651335px"
++                                 marginTop: "69.25079373490917px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 6.922445653549403px 11.075913045679044px rgba(0, 0, 0, 0.08306934784..."
++                                 opacity: 0.2884489130709881
+-                                 opacity: "0.288449"
++                                 filter: "blur(7.231021738580239px)"
+-                                 filter: "blur(7.23102px)"
++                                 backdropFilter: "none"
++                                 zIndex: 11
++                                 animationDuration: "63.38613043148143s"
++                                 animationDelay: "-14.331722377173719s"
+-                                 margin-left: "-302.601px"
+-                                 margin-top: "69.2508px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.082) 0px 6.92245px 11.0759px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "11"
+-                                 animation-duration: "63.3861s"
+-                                 animation-delay: "-14.3317s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "78.24431653344024px"
+-                                 width: "78.2443px"
++                                 height: "78.24431653344024px"
+-                                 height: "78.2443px"
++                                 marginLeft: "-210.59880439424887px"
++                                 marginTop: "106.22231706634011px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.100468842230839px 20.960750147569343px rgba(0, 0, 0, 0.1572056261..."
++                                 opacity: 0.4120093768446168
+-                                 opacity: "0.412009"
++                                 filter: "blur(4.759812463107664px)"
+-                                 filter: "blur(4.75981px)"
++                                 backdropFilter: "blur(8px)"
++                                 zIndex: 20
++                                 animationDuration: "48.558874778645986s"
++                                 animationDelay: "-48.78267799225796s"
+-                                 margin-left: "-210.599px"
+-                                 margin-top: "106.222px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.157) 0px 13.1005px 20.9608px"
+-                                 backdrop-filter: "blur(8px)"
+-                                 z-index: "20"
+-                                 animation-duration: "48.5589s"
+-                                 animation-delay: "-48.7827s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "91.65096757291633px"
+-                                 width: "91.651px"
++                                 height: "114.92059206144602px"
+-                                 height: "114.921px"
++                                 marginLeft: "142.14028262140346px"
++                                 marginTop: "-135.51205370367825px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 10.174027582024792px 16.278444131239667px rgba(0, 0, 0, 0.1220883309..."
++                                 opacity: 0.35348055164049585
+-                                 opacity: "0.353481"
++                                 filter: "blur(5.930388967190083px)"
+-                                 filter: "blur(5.93039px)"
++                                 backdropFilter: "none"
++                                 zIndex: 16
++                                 animationDuration: "55.5823338031405s"
++                                 animationDelay: "-11.781680844651419s"
+-                                 margin-left: "142.14px"
+-                                 margin-top: "-135.512px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.12) 0px 10.174px 16.2784px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "16"
+-                                 animation-duration: "55.5823s"
+-                                 animation-delay: "-11.7817s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "92.85345323560502px"
+-                                 width: "92.8535px"
++                                 height: "92.85345323560502px"
+-                                 height: "92.8535px"
++                                 marginLeft: "-346.1412554963317px"
++                                 marginTop: "-107.20181097531167px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 18.612981525939176px 29.780770441502682px rgba(0, 0, 0, 0.2233557783..."
++                                 opacity: 0.5222596305187835
+-                                 opacity: "0.52226"
++                                 filter: "blur(2.5548073896243295px)"
+-                                 filter: "blur(2.55481px)"
++                                 backdropFilter: "none"
++                                 zIndex: 29
++                                 animationDuration: "35.32884433774598s"
++                                 animationDelay: "-1.1741439921024721s"
+-                                 margin-left: "-346.141px"
+-                                 margin-top: "-107.202px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.224) 0px 18.613px 29.7808px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "29"
+-                                 animation-duration: "35.3288s"
+-                                 animation-delay: "-1.17414s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "117.42516491060383px"
+-                                 width: "117.425px"
++                                 height: "117.42516491060383px"
+-                                 height: "117.425px"
++                                 marginLeft: "49.12284193269443px"
++                                 marginTop: "149.11217794997356px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFD7C4"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 12.438052081324713px 19.90088333011954px rgba(0, 0, 0, 0.14925662497..."
++                                 opacity: 0.3987610416264943
+-                                 opacity: "0.398761"
++                                 filter: "blur(5.024779167470115px)"
+-                                 filter: "blur(5.02478px)"
++                                 backdropFilter: "none"
++                                 zIndex: 19
++                                 animationDuration: "50.14867500482069s"
++                                 animationDelay: "-39.99628074139764s"
+-                                 margin-left: "49.1228px"
+-                                 margin-top: "149.112px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 215, 196)"
+-                                 border-right-color: "rgb(255, 215, 196)"
+-                                 border-bottom-color: "rgb(255, 215, 196)"
+-                                 border-left-color: "rgb(255, 215, 196)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.15) 0px 12.4381px 19.9009px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "19"
+-                                 animation-duration: "50.1487s"
+-                                 animation-delay: "-39.9963s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "101.15781112699375px"
+-                                 width: "101.158px"
++                                 height: "101.15781112699375px"
+-                                 height: "101.158px"
++                                 marginLeft: "238.30723763312562px"
++                                 marginTop: "-119.52803332314943px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 20.601687015164316px 32.962699224262906px rgba(0, 0, 0, 0.2472202441..."
++                                 opacity: 0.5620337403032863
+-                                 opacity: "0.562034"
++                                 filter: "blur(1.7593251939342736px)"
+-                                 filter: "blur(1.75933px)"
++                                 backdropFilter: "none"
++                                 zIndex: 32
++                                 animationDuration: "30.55595116360564s"
++                                 animationDelay: "-0.2985904277920781s"
+-                                 margin-left: "238.307px"
+-                                 margin-top: "-119.528px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.247) 0px 20.6017px 32.9627px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "32"
+-                                 animation-duration: "30.556s"
+-                                 animation-delay: "-0.29859s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "39.064221751191035px"
+-                                 width: "39.0642px"
++                                 height: "24.983513831477374px"
+-                                 height: "24.9835px"
++                                 marginLeft: "32.31770363781834px"
++                                 marginTop: "-489.5474014028878px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 5.078527402747568px 8.125643844396109px rgba(0, 0, 0, 0.060942328832..."
++                                 opacity: 0.2515705480549514
+-                                 opacity: "0.251571"
++                                 filter: "blur(7.968589038900973px)"
+-                                 filter: "blur(7.96859px)"
++                                 backdropFilter: "none"
++                                 zIndex: 8
++                                 animationDuration: "67.81153423340584s"
++                                 animationDelay: "-31.695248103096674s"
+-                                 margin-left: "32.3177px"
+-                                 margin-top: "-489.547px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.063) 0px 5.07853px 8.12564px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "8"
+-                                 animation-duration: "67.8115s"
+-                                 animation-delay: "-31.6952s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "123.75718604879003px"
+-                                 width: "123.757px"
++                                 height: "123.75718604879003px"
+-                                 height: "123.757px"
++                                 marginLeft: "-201.47328681487124px"
++                                 marginTop: "333.85793832894706px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 19.86025394535318px 31.776406312565086px rgba(0, 0, 0, 0.23832304734..."
++                                 opacity: 0.5472050789070636
+-                                 opacity: "0.547205"
++                                 filter: "blur(2.0558984218587284px)"
+-                                 filter: "blur(2.0559px)"
++                                 backdropFilter: "none"
++                                 zIndex: 31
++                                 animationDuration: "32.33539053115237s"
++                                 animationDelay: "-20.722819204856933s"
+-                                 margin-left: "-201.473px"
+-                                 margin-top: "333.858px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.24) 0px 19.8603px 31.7764px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "31"
+-                                 animation-duration: "32.3354s"
+-                                 animation-delay: "-20.7228s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "97.51972235375706px"
+-                                 width: "97.5197px"
++                                 height: "97.51972235375706px"
+-                                 height: "97.5197px"
++                                 marginLeft: "-65.35129541662172px"
++                                 marginTop: "-273.12103761892104px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.369007252595111px 21.390411604152177px rgba(0, 0, 0, 0.1604280870..."
++                                 opacity: 0.41738014505190224
+-                                 opacity: "0.41738"
++                                 filter: "blur(4.652397098961956px)"
+-                                 filter: "blur(4.6524px)"
++                                 backdropFilter: "none"
++                                 zIndex: 21
++                                 animationDuration: "47.914382593771734s"
++                                 animationDelay: "-51.795540844013885s"
+-                                 margin-left: "-65.3513px"
+-                                 margin-top: "-273.121px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.16) 0px 13.369px 21.3904px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "21"
+-                                 animation-duration: "47.9144s"
+-                                 animation-delay: "-51.7955s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "39.013916279870784px"
+-                                 width: "39.0139px"
++                                 height: "39.013916279870784px"
+-                                 height: "39.0139px"
++                                 marginLeft: "269.8680702756974px"
++                                 marginTop: "-218.11345784021796px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 3.3094144702545236px 5.295063152407238px rgba(0, 0, 0, 0.03971297364..."
++                                 opacity: 0.21618828940509047
+-                                 opacity: "0.216188"
++                                 filter: "blur(8.67623421189819px)"
+-                                 filter: "blur(8.67623px)"
++                                 backdropFilter: "none"
++                                 zIndex: 5
++                                 animationDuration: "72.05740527138914s"
++                                 animationDelay: "-0.05943892479990609s"
+-                                 margin-left: "269.868px"
+-                                 margin-top: "-218.113px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.04) 0px 3.30941px 5.29506px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "5"
+-                                 animation-duration: "72.0574s"
+-                                 animation-delay: "-0.0594389s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid1"
+                                style={{
++                                 width: "30.797786818639935px"
+-                                 width: "30.7978px"
++                                 height: "35.47850244957115px"
+-                                 height: "35.4785px"
++                                 marginLeft: "233.40851306275px"
++                                 marginTop: "457.0552399150074px"
++                                 backgroundColor: "#FFA782"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 3.727709865097495px 5.964335784155992px rgba(0, 0, 0, 0.044732518381..."
++                                 opacity: 0.2245541973019499
+-                                 opacity: "0.224554"
++                                 filter: "blur(8.508916053961002px)"
+-                                 filter: "blur(8.50892px)"
++                                 backdropFilter: "none"
++                                 zIndex: 5
++                                 animationDuration: "71.05349632376601s"
++                                 animationDelay: "-4.839600237355626s"
+-                                 margin-left: "233.409px"
+-                                 margin-top: "457.055px"
+-                                 background-color: "rgb(255, 167, 130)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.043) 0px 3.72771px 5.96434px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "5"
+-                                 animation-duration: "71.0535s"
+-                                 animation-delay: "-4.8396s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "35.05204426498143px"
+-                                 width: "35.052px"
++                                 height: "35.05204426498143px"
+-                                 height: "35.052px"
++                                 marginLeft: "276.816735927423px"
++                                 marginTop: "295.100842517968px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFC4A6"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 2.2930536560124892px 3.6688858496199828px rgba(0, 0, 0, 0.0275166438..."
++                                 opacity: 0.19586107312024978
+-                                 opacity: "0.195861"
++                                 filter: "blur(9.082778537595004px)"
+-                                 filter: "blur(9.08278px)"
++                                 backdropFilter: "none"
++                                 zIndex: 3
++                                 animationDuration: "74.49667122557003s"
++                                 animationDelay: "-1.547593319430689s"
+-                                 margin-left: "276.817px"
+-                                 margin-top: "295.101px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 196, 166)"
+-                                 border-right-color: "rgb(255, 196, 166)"
+-                                 border-bottom-color: "rgb(255, 196, 166)"
+-                                 border-left-color: "rgb(255, 196, 166)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.027) 0px 2.29305px 3.66889px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "3"
+-                                 animation-duration: "74.4967s"
+-                                 animation-delay: "-1.54759s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "64.53194413339797px"
+-                                 width: "64.5319px"
++                                 height: "64.53194413339797px"
+-                                 height: "64.5319px"
++                                 marginLeft: "-287.83927079930436px"
++                                 marginTop: "-163.18873400177836px"
++                                 backgroundColor: "transparent"
++                                 border: "2px solid #FFA782"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 6.234834204371964px 9.975734726995142px rgba(0, 0, 0, 0.074818010452..."
++                                 opacity: 0.2746966840874393
+-                                 opacity: "0.274697"
++                                 filter: "blur(7.506066318251214px)"
+-                                 filter: "blur(7.50607px)"
++                                 backdropFilter: "none"
++                                 zIndex: 9
++                                 animationDuration: "65.03639790950729s"
++                                 animationDelay: "-40.41444078652148s"
+-                                 margin-left: "-287.839px"
+-                                 margin-top: "-163.189px"
+-                                 background-color: "transparent"
+-                                 border-top-width: "2px"
+-                                 border-right-width: "2px"
+-                                 border-bottom-width: "2px"
+-                                 border-left-width: "2px"
+-                                 border-top-style: "solid"
+-                                 border-right-style: "solid"
+-                                 border-bottom-style: "solid"
+-                                 border-left-style: "solid"
+-                                 border-top-color: "rgb(255, 167, 130)"
+-                                 border-right-color: "rgb(255, 167, 130)"
+-                                 border-bottom-color: "rgb(255, 167, 130)"
+-                                 border-left-color: "rgb(255, 167, 130)"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.075) 0px 6.23483px 9.97573px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "9"
+-                                 animation-duration: "65.0364s"
+-                                 animation-delay: "-40.4144s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "93.55509119060241px"
+-                                 width: "93.5551px"
++                                 height: "93.55509119060241px"
+-                                 height: "93.5551px"
++                                 marginLeft: "131.2392218169407px"
++                                 marginTop: "242.55433915823232px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 10.366492505932001px 16.586388009491202px rgba(0, 0, 0, 0.1243979100..."
++                                 opacity: 0.35732985011864005
+-                                 opacity: "0.35733"
++                                 filter: "blur(5.8534029976271995px)"
+-                                 filter: "blur(5.8534px)"
++                                 backdropFilter: "none"
++                                 zIndex: 16
++                                 animationDuration: "55.1204179857632s"
++                                 animationDelay: "-45.67374806587395s"
+-                                 margin-left: "131.239px"
+-                                 margin-top: "242.554px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.125) 0px 10.3665px 16.5864px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "16"
+-                                 animation-duration: "55.1204s"
+-                                 animation-delay: "-45.6737s"
+                                }}
+                              >
+                              <div>
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid4"
+                                style={{
++                                 width: "32.14866157281455px"
+-                                 width: "32.1487px"
++                                 height: "32.14866157281455px"
+-                                 height: "32.1487px"
++                                 marginLeft: "-359.4746519716864px"
++                                 marginTop: "-6.209268154179881px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 1.7510416190816613px 2.801666590530658px rgba(0, 0, 0, 0.02101249942..."
++                                 opacity: 0.18502083238163322
+-                                 opacity: "0.185021"
++                                 filter: "blur(9.299583352367335px)"
+-                                 filter: "blur(9.29958px)"
++                                 backdropFilter: "none"
++                                 zIndex: 2
++                                 animationDuration: "75.79750011420401s"
++                                 animationDelay: "-14.92187254694727s"
+-                                 margin-left: "-359.475px"
+-                                 margin-top: "-6.20927px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.02) 0px 1.75104px 2.80167px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "2"
+-                                 animation-duration: "75.7975s"
+-                                 animation-delay: "-14.9219s"
+                                }}
+                              >
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid3"
+                                style={{
++                                 width: "108.27146502205387px"
+-                                 width: "108.271px"
++                                 height: "88.55465460987529px"
+-                                 height: "88.5547px"
++                                 marginLeft: "-366.66718681190105px"
++                                 marginTop: "265.6030026691951px"
++                                 backgroundColor: "#FFC4A6"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 13.923231341323117px 22.277170146116987px rgba(0, 0, 0, 0.1670787760..."
++                                 opacity: 0.42846462682646236
+-                                 opacity: "0.428465"
++                                 filter: "blur(4.430707463470753px)"
+-                                 filter: "blur(4.43071px)"
++                                 backdropFilter: "none"
++                                 zIndex: 22
++                                 animationDuration: "46.58424478082452s"
++                                 animationDelay: "-0.8549423662407207s"
+-                                 margin-left: "-366.667px"
+-                                 margin-top: "265.603px"
+-                                 background-color: "rgb(255, 196, 166)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.17) 0px 13.9232px 22.2772px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "22"
+-                                 animation-duration: "46.5842s"
+-                                 animation-delay: "-0.854942s"
+                                }}
+                              >
+                              <div>
+                              <div
+                                className="auth-module__9lQH2W__baseShape auth-module__9lQH2W__asteroid2"
+                                style={{
++                                 width: "102.23131361051398px"
+-                                 width: "102.231px"
++                                 height: "102.23131361051398px"
+-                                 height: "102.231px"
++                                 marginLeft: "-387.0723535555953px"
++                                 marginTop: "-433.36591217303067px"
++                                 backgroundColor: "#FFD7C4"
++                                 border: "none"
++                                 borderRadius: "0px"
++                                 boxShadow: "0px 11.92710739364884px 19.083371829838143px rgba(0, 0, 0, 0.14312528872..."
++                                 opacity: 0.3885421478729768
+-                                 opacity: "0.388542"
++                                 filter: "blur(5.229157042540464px)"
+-                                 filter: "blur(5.22916px)"
++                                 backdropFilter: "none"
++                                 zIndex: 19
++                                 animationDuration: "51.374942255242786s"
++                                 animationDelay: "-5.405607955872256s"
+-                                 margin-left: "-387.072px"
+-                                 margin-top: "-433.366px"
+-                                 background-color: "rgb(255, 215, 196)"
+-                                 border-top-width: "medium"
+-                                 border-right-width: "medium"
+-                                 border-bottom-width: "medium"
+-                                 border-left-width: "medium"
+-                                 border-top-style: "none"
+-                                 border-right-style: "none"
+-                                 border-bottom-style: "none"
+-                                 border-left-style: "none"
+-                                 border-top-color: "currentcolor"
+-                                 border-right-color: "currentcolor"
+-                                 border-bottom-color: "currentcolor"
+-                                 border-left-color: "currentcolor"
+-                                 border-image-source: "none"
+-                                 border-image-slice: "100%"
+-                                 border-image-width: "1"
+-                                 border-image-outset: "0"
+-                                 border-image-repeat: "stretch"
+-                                 border-top-left-radius: "0px"
+-                                 border-top-right-radius: "0px"
+-                                 border-bottom-right-radius: "0px"
+-                                 border-bottom-left-radius: "0px"
+-                                 box-shadow: "rgba(0, 0, 0, 0.14) 0px 11.9271px 19.0834px"
+-                                 backdrop-filter: "none"
+-                                 z-index: "19"
+-                                 animation-duration: "51.3749s"
+-                                 animation-delay: "-5.40561s"
+                                }}
+                              >
+                              ...
+                              ...
+                          ...
+                    ...
+                  ...
+        ...
+ 
+    at <unknown> (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3439:25)
+    at runWithFiberInDEV (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at emitPendingHydrationWarnings (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3438:13)
+    at completeWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6885:102)
+    at runWithFiberInDEV (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:131)
+    at completeUnitOfWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9622:23)
+    at performUnitOfWork (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9557:28)
+    at workLoopConcurrentByScheduler (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9551:58)
+    at renderRootConcurrent (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9534:71)
+    at performWorkOnRoot (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64) (file://C:/Users/ASUS TUF A15/Desktop/DevOPS/Workspace/spacejam/apps/web/.next/dev/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3439:25)
+[?25h
