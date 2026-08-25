@@ -107,7 +107,11 @@ export function FloorMapEditor({
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Capture is best-effort — moves also bubble to the canvas handler.
+    }
     const g = toGrid(e);
     dragRef.current = { kind, id, offX: g.x - orig.x, offY: g.y - orig.y, startX: g.x, startY: g.y, orig };
     setSelected(id);
@@ -239,7 +243,11 @@ export function FloorMapEditor({
                 title="Drag onto the map"
                 onPointerDown={(e) => {
                   e.preventDefault();
-                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  try {
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                  } catch {
+                    /* best-effort */
+                  }
                   dragRef.current = { kind: "chip", id: s.id, offX: 0, offY: 0, startX: 0, startY: 0, orig: { x: 0, y: 0 } };
                   setSelected(null);
                 }}
@@ -282,6 +290,8 @@ export function FloorMapEditor({
                     fontSize: `${12 * zoom}px`,
                   }}
                   onPointerDown={(e) => onItemPointerDown(e, "zone", z.id, { x: z.x, y: z.y })}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
                   onDoubleClick={() => {
                     const next = window.prompt("Zone name", z.label);
                     if (next != null)
@@ -295,6 +305,8 @@ export function FloorMapEditor({
                     onPointerDown={(e) =>
                       onItemPointerDown(e, "zoneResize", z.id, { x: z.x, y: z.y, w: z.w, h: z.h })
                     }
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
                   />
                 </div>
               );
@@ -306,6 +318,8 @@ export function FloorMapEditor({
                 className={`${styles.editorLabel} ${selected === l.id ? styles.editorSelected : ""}`}
                 style={{ left: l.x * GRID * zoom, top: l.y * GRID * zoom, fontSize: `${12 * zoom}px` }}
                 onPointerDown={(e) => onItemPointerDown(e, "label", l.id, { x: l.x, y: l.y })}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
                 onDoubleClick={() => {
                   const next = window.prompt("Label text", l.text);
                   if (next != null)
@@ -329,6 +343,8 @@ export function FloorMapEditor({
                     height: GRID * zoom - 4,
                   }}
                   onPointerDown={(e) => onItemPointerDown(e, "seat", s.id, { x: pos.x, y: pos.y })}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
                   onDoubleClick={() => setPositions((p) => ({ ...p, [s.id]: null }))}
                   title={`${s.name} — double-click to remove from map`}
                 >
