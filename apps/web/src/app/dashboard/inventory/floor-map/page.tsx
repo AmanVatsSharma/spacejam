@@ -15,6 +15,16 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { ContextMenu } from "@/components/ui/context-menu";
 import { SeatBookModal } from "@/app/dashboard/inventory/table-view/seat-book-modal";
+import { useAuth } from "@/contexts/auth-context";
+import { UPDATE_FLOOR_LAYOUT } from "@/lib/apollo/operations";
+import {
+  FloorMapEditor,
+  GRID,
+  CANVAS_COLS,
+  CANVAS_ROWS,
+  type EditorLayout,
+  type SeatPosition,
+} from "./FloorMapEditor";
 import {
   GET_MY_CENTERS,
   GET_FLOORS,
@@ -115,6 +125,90 @@ function seatTypeLabel(type: string): string {
   return type || "Seat";
 }
 
+/**
+ * Renders the saved custom map: zones, labels, and seats at their exact
+ * grid positions. Seats keep the page's normal click behavior (available →
+ * booking modal, otherwise select). Floors without a custom map use the
+ * legacy auto-grid in the page itself.
+ */
+function CustomMapView({
+  layout,
+  seats,
+  onSeatClick,
+  canEdit,
+  onEdit,
+}: {
+  layout: EditorLayout | null;
+  seats: any[];
+  onSeatClick: (seat: any) => void;
+  canEdit: boolean;
+  onEdit: () => void;
+}) {
+  const placed = seats.filter((s) => s.x != null && s.y != null);
+  const tray = seats.filter((s) => s.x == null || s.y == null);
+  return (
+    <div className={styles.customMapWrap}>
+      {tray.length > 0 && (
+        <div className={styles.customMapTrayBar}>
+          <span>
+            {tray.length} seat{tray.length === 1 ? "" : "s"} not on the map.
+          </span>
+          {canEdit && (
+            <button type="button" className={styles.editLayoutBtn} onClick={onEdit}>
+              Place them
+            </button>
+          )}
+        </div>
+      )}
+      <div
+        className={styles.customMapCanvas}
+        style={{
+          width: CANVAS_COLS * GRID,
+          height: CANVAS_ROWS * GRID,
+          backgroundImage:
+            "linear-gradient(#F9FAFB 1px, transparent 1px), linear-gradient(90deg, #F9FAFB 1px, transparent 1px)",
+          backgroundSize: `${GRID}px ${GRID}px`,
+        }}
+      >
+        {(layout?.zones ?? []).map((z) => (
+          <div
+            key={z.id}
+            className={`${styles.editorZone} ${(styles as any)[`zone_${z.kind}`] ?? ""}`}
+            style={{ left: z.x * GRID, top: z.y * GRID, width: z.w * GRID, height: z.h * GRID }}
+          >
+            <span className={styles.zoneLabel}>{z.label}</span>
+          </div>
+        ))}
+        {(layout?.labels ?? []).map((l) => (
+          <div key={l.id} className={styles.editorLabel} style={{ left: l.x * GRID, top: l.y * GRID }}>
+            📍 {l.text}
+          </div>
+        ))}
+        {placed.map((s) => {
+          const status = normalizeStatus(s.status);
+          const colorClass =
+            status === "AVAILABLE"
+              ? styles.customMapSeatAvailable
+              : status === "OCCUPIED" || status === "BOOKED"
+                ? styles.customMapSeatOccupied
+                : styles.customMapSeatOther;
+          return (
+            <div
+              key={s.id}
+              className={`${styles.customMapSeat} ${colorClass}`}
+              style={{ left: s.x * GRID, top: s.y * GRID, width: GRID - 4, height: GRID - 4 }}
+              onClick={() => onSeatClick(s)}
+              title={`${s.name} · ${status}`}
+            >
+              <span className={styles.seatName}>{s.name}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function FloorMapPage() {
   const router = useRouter();
   // Read deep-link params (?centerId=...&floorId=...) so the inventory page's
@@ -161,6 +255,7 @@ export default function FloorMapPage() {
     data: floorsData,
     loading: floorsLoading,
     error: floorsError,
+    refetch: refetchFloors,
   } = useQuery<{ floors: any[] }>(GET_FLOORS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
@@ -172,6 +267,7 @@ export default function FloorMapPage() {
     data: seatsData,
     loading: seatsLoading,
     error: seatsError,
+    refetch: refetchSeats,
   } = useQuery<{ seats: any[] }>(GET_SEATS, {
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
@@ -214,6 +310,50 @@ export default function FloorMapPage() {
 
   const [seatMenu, setSeatMenu] = useState<{ seatId: string; x: number; y: number } | null>(null);
 
+  // ── Manual layout editor wiring ─────────────────────────────────────────
+  const { user } = useAuth();
+  const STAFF_ROLES = new Set(["ADMIN", "SUPER_ADMIN", "CENTER_OWNER", "CENTER_MANAGER", "FINANCE", "SUPPORT"]);
+  const canEditLayout = STAFF_ROLES.has(user?.role ?? "");
+  const [editMode, setEditMode] = useState(false);
+  const [savingLayout, setSavingLayout] = useState(false);
+  const [updateFloorLayoutMut] = useMutation(UPDATE_FLOOR_LAYOUT);
+
+  const handleSaveLayout = async (layout: EditorLayout, seatPositions: SeatPosition[]) => {
+    setSavingLayout(true);
+    try {
+      try {
+        await updateFloorLayoutMut({
+          variables: { floorId: activeFloorId, layout: JSON.stringify(layout) },
+        });
+      } catch (err: any) {
+        const msg = err?.graphQLErrors?.[0]?.message ?? err?.message ?? "";
+        if (/current version/i.test(msg)) {
+          toast.error("This floor's layout changed elsewhere. Reloading the latest…");
+        } else {
+          toast.error(`Could not save layout: ${msg || "unknown error"}`);
+        }
+        throw err;
+      }
+      const failed: string[] = [];
+      for (const pos of seatPositions) {
+        try {
+          await updateSeat({ variables: { id: pos.id, input: { x: pos.x, y: pos.y } } });
+        } catch {
+          failed.push(pos.id);
+        }
+      }
+      if (failed.length) {
+        toast.warning(`${failed.length} seat position(s) failed to save — edit again and re-save.`);
+      } else {
+        toast.success("Floor layout saved");
+      }
+      setEditMode(false);
+      await Promise.all([refetchSeats(), refetchFloors()]);
+    } finally {
+      setSavingLayout(false);
+    }
+  };
+
   // Derived data
   const floors = floorsData?.floors ?? [];
   const seats = seatsData?.seats ?? [];
@@ -228,6 +368,11 @@ export default function FloorMapPage() {
     () => floors.find((f: any) => f.id === activeFloorId) ?? null,
     [floors, activeFloorId]
   );
+
+  // Custom map is active once this floor has a saved layout or any placed seat.
+  const activeFloorLayout: EditorLayout | null = (activeFloor as any)?.layout ?? null;
+  const hasCustomMap =
+    !!activeFloorLayout || seats.some((s: any) => s.x != null && s.y != null);
 
   // Auto-select first center when centers load and none selected
   useEffect(() => {
@@ -681,6 +826,24 @@ export default function FloorMapPage() {
             </div>
 
             <div className={styles.mapToolbarRight}>
+              {activeFloorId && canEditLayout && !editMode && (
+                <button
+                  type="button"
+                  className={styles.editLayoutBtn}
+                  onClick={() => setEditMode(true)}
+                >
+                  ✏️ Edit Layout
+                </button>
+              )}
+              {editMode && (
+                <button
+                  type="button"
+                  className={styles.editLayoutBtn}
+                  onClick={() => setEditMode(false)}
+                >
+                  ✕ Exit Editor
+                </button>
+              )}
               <div className={styles.mapDatePicker}>
                 {Icons.calendar}
                 {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -692,7 +855,36 @@ export default function FloorMapPage() {
             </div>
           </div>
 
-          {/* Map Canvas */}
+          {/* Map Canvas — manual editor, custom saved map, or legacy auto-grid */}
+          {editMode && activeFloorId ? (
+            <FloorMapEditor
+              floor={{
+                id: activeFloorId,
+                name: activeFloor?.name ?? "Floor",
+                layout: activeFloorLayout,
+              }}
+              seats={seats}
+              onSaveLayout={handleSaveLayout}
+              saving={savingLayout}
+            />
+          ) : hasCustomMap && activeFloorId ? (
+            <CustomMapView
+              layout={activeFloorLayout}
+              seats={seats}
+              onSeatClick={(seat: any) => {
+                if (normalizeStatus(seat.status) === "AVAILABLE") {
+                  setBookModal({
+                    seatId: seat.id,
+                    seatName: `${seatTypeLabel(seat.seatType)} ${seat.name ?? `Seat ${seat.id}`}`,
+                  });
+                } else {
+                  setSelectedSeatId(seat.id);
+                }
+              }}
+              canEdit={canEditLayout}
+              onEdit={() => setEditMode(true)}
+            />
+          ) : (
           <div className={styles.mapCanvas} style={{ transition: 'all 0.2s' }}>
             {isLoading && seats.length === 0 ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9CA3AF", fontSize: "14px" }}>
@@ -797,6 +989,7 @@ export default function FloorMapPage() {
               >{Icons.zoomOut}</button>
             </div>
           </div>
+          )}
 
         </div>
 
