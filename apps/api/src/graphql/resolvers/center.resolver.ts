@@ -13,6 +13,9 @@ import {
   UnauthorizedException,
   UseGuards,
   Logger,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { CenterStatus, UserRole } from '../types/user.type';
@@ -36,6 +39,7 @@ import {
   UpdateSeatInput,
 } from '../inputs/center.input';
 import { deepMergeSettings, sanitizeSettings } from '../../common/utils/settings.util';
+import { sanitizeFloorLayout } from '../../common/utils/floor-layout.util';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
@@ -349,6 +353,7 @@ export class FloorResolver {
     private floorRepo: Repository<FloorEntity>,
 
     private readonly pubSub: PubSubService,
+    private readonly audit: AuditService,
   ) {}
 
   @Public()
@@ -384,6 +389,68 @@ export class FloorResolver {
     await this.cache.invalidatePattern(`center:${floor.centerId}`);
     await this.pubSub.publish(CENTER_TRIGGERS.floorUpdated, { floorUpdated: floor });
     return floor;
+  }
+
+  /**
+   * Replace a floor's layout (zones + labels) with a validated blob.
+   * Optimistic concurrency: incoming version must be current+1 (any value
+   * is accepted for the first save and normalized to 1). CENTER_MANAGER
+   * callers may only edit floors of their own center.
+   */
+  @Mutation(() => FloorEntity)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
+  async updateFloorLayout(
+    @Args('floorId', { type: () => ID }) floorId: string,
+    @Args('layout', { type: () => String }) layout: string,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<FloorEntity> {
+    const floor = await this.floorRepo.findOne({ where: { id: floorId } });
+    if (!floor) throw new NotFoundException('Floor not found');
+
+    // Inline center scoping (the @CenterScoped guard compares a centerId
+    // arg; ours is a floorId, so the check lives here).
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope && floor.centerId !== scope) {
+      throw new ForbiddenException('Not allowed to edit this floor');
+    }
+
+    let incoming: unknown;
+    try {
+      incoming = layout ? JSON.parse(layout) : null;
+    } catch {
+      throw new BadRequestException('Layout must be valid JSON');
+    }
+    const sanitized = sanitizeFloorLayout(incoming);
+
+    const current = floor.layout as { version?: number } | null;
+    if (current?.version) {
+      if (sanitized.version !== current.version + 1) {
+        throw new ConflictException(
+          `Floor layout was modified elsewhere (current version ${current.version}). Reload and retry.`,
+        );
+      }
+    } else {
+      sanitized.version = 1;
+    }
+
+    await this.floorRepo.update(floorId, { layout: sanitized } as any);
+    await this.cache.invalidatePattern(`floor:${floorId}`);
+    await this.cache.invalidatePattern(`center:${floor.centerId}`);
+    await this.pubSub.publish(CENTER_TRIGGERS.floorUpdated, {
+      floorUpdated: { ...floor, layout: sanitized },
+    });
+
+    this.audit.record({
+      action: 'FLOOR_LAYOUT_UPDATE',
+      userId: caller?.sub ?? null,
+      entityType: 'Floor',
+      entityId: floorId,
+      centerId: floor.centerId,
+      changes: { zones: sanitized.zones.length, labels: sanitized.labels.length, version: sanitized.version },
+    }).catch(() => { /* record() already swallows; belt-and-suspenders */ });
+
+    const updated = await this.floorRepo.findOne({ where: { id: floorId }, relations: ['seats'] });
+    return updated!;
   }
 
   @Mutation(() => Boolean)
