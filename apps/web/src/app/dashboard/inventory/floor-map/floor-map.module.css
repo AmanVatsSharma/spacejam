@@ -769,3 +769,97 @@
   }
 }
 
+
+/* ---------------- Manual Layout Editor ---------------- */
+.editorWrap { display: flex; flex-direction: column; gap: 12px; }
+.editorToolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px; padding: 10px 12px;
+}
+.editorTitle { font-size: 13px; font-weight: 700; color: #1F2937; margin-right: 6px; }
+.editorBtn {
+  border: 1px solid #E5E7EB; background: #FFFFFF; color: #374151;
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.editorBtn:hover { background: #F9FAFB; }
+.editorBtnDanger { border-color: #FECACA; background: #FEF2F2; color: #DC2626; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.editorZoom { font-size: 12px; color: #6B7280; min-width: 38px; text-align: center; }
+.editorDirty { font-size: 11px; color: #D97706; font-weight: 600; }
+.editorToolbarRight { margin-left: auto; }
+.editorSave {
+  background: #FF6A2F; color: #FFFFFF; border: none; border-radius: 8px;
+  padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.editorSave:disabled { background: #F3F4F6; color: #9CA3AF; cursor: not-allowed; }
+.editorBody { display: flex; gap: 12px; align-items: flex-start; }
+.editorTray { width: 220px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px; padding: 12px; }
+.trayTitle { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; }
+.trayChips { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+.trayChip {
+  border: 1px dashed #FF6A2F; color: #C2410C; background: #FFF7ED;
+  border-radius: 8px; padding: 6px 8px; font-size: 12px; font-weight: 600;
+  cursor: grab; user-select: none; touch-action: none;
+}
+.trayEmpty { font-size: 12px; color: #059669; font-weight: 600; }
+.trayHint { font-size: 11px; color: #9CA3AF; margin-top: 8px; }
+.editorCanvasOuter { flex: 1; overflow: auto; }
+.editorCanvas {
+  position: relative; background: #FFFFFF;
+  border: 2px solid #E5E7EB; border-radius: 12px;
+  touch-action: none; user-select: none;
+}
+.editorZone {
+  position: absolute; border: 2px solid #93C5FD; background: rgba(191, 219, 254, 0.35);
+  border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;
+  padding: 6px 8px; cursor: move; touch-action: none;
+}
+.zone_MEETING_ROOM { border-color: #93C5FD; background: rgba(191, 219, 254, 0.35); }
+.zone_PANTRY { border-color: #86EFAC; background: rgba(187, 247, 208, 0.4); }
+.zone_WASHROOM { border-color: #A5B4FC; background: rgba(199, 210, 254, 0.4); }
+.zone_RECEPTION { border-color: #FCA5A5; background: rgba(254, 205, 211, 0.4); }
+.zone_CUSTOM { border-color: #D1D5DB; background: rgba(229, 231, 235, 0.4); }
+.zoneLabel { font-weight: 700; color: #1F2937; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zoneKind { font-size: 10px; color: #6B7280; pointer-events: none; }
+.zoneResizeHandle {
+  position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
+  background: #FF6A2F; border: 2px solid #FFFFFF; border-radius: 50%; cursor: nwse-resize;
+  touch-action: none;
+}
+.editorLabel {
+  position: absolute; font-weight: 600; color: #1F2937;
+  background: rgba(255, 255, 255, 0.85); padding: 2px 6px; border-radius: 6px;
+  cursor: move; touch-action: none; white-space: nowrap;
+}
+.editorSeat {
+  position: absolute; background: #ECFDF5; border: 2px solid #34D399;
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  cursor: move; touch-action: none;
+}
+.editorSeat .seatName { color: #065F46; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.editorSelected { outline: 2px solid #FF6A2F; outline-offset: 2px; }
+.editorFooterHint { font-size: 11px; color: #9CA3AF; }
+
+/* ---------------- Custom Map View ---------------- */
+.customMapWrap { display: flex; flex-direction: column; gap: 10px; }
+.customMapTrayBar {
+  display: flex; align-items: center; gap: 10px; font-size: 13px; color: #92400E;
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 8px 12px;
+}
+.customMapCanvas { position: relative; background: #FFFFFF; border: 2px solid #E5E7EB; border-radius: 12px; overflow: auto; }
+.customMapSeat {
+  position: absolute; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border: 2px solid; transition: transform 0.1s;
+}
+.customMapSeat:hover { transform: scale(1.06); }
+.customMapSeatAvailable { background: #ECFDF5; border-color: #34D399; }
+.customMapSeatAvailable .seatName { color: #065F46; }
+.customMapSeatOccupied { background: #FEF2F2; border-color: #F87171; }
+.customMapSeatOccupied .seatName { color: #991B1B; }
+.customMapSeatOther { background: #F3F4F6; border-color: #9CA3AF; }
+.customMapSeatOther .seatName { color: #374151; }
+.customMapSeat .seatName { font-size: 10px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.editLayoutBtn {
+  background: #FFFFFF; border: 1px solid #E5E7EB; color: #C2410C;
+  border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.editLayoutBtn:hover { background: #FFF7ED; }
