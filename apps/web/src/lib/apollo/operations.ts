@@ -1464,6 +1464,8 @@ export const GET_FLOORS = gql`
         price
         amenities
         location
+        x
+        y
       }
     }
   }
@@ -1479,6 +1481,8 @@ export const GET_SEATS = gql`
       price
       amenities
       location
+      x
+      y
       createdAt
       updatedAt
       floor {
@@ -1567,6 +1571,17 @@ export const UPDATE_SEAT = gql`
       seatType
       status
       price
+    }
+  }
+`;
+
+export const UPDATE_FLOOR_LAYOUT = gql`
+  mutation UpdateFloorLayout($floorId: ID!, $layout: String!) {
+    updateFloorLayout(floorId: $floorId, layout: $layout) {
+      id
+      name
+      layout
+      updatedAt
     }
   }
 `;
