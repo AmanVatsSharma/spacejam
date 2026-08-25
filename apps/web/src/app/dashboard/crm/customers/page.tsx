@@ -11,6 +11,7 @@ import {
   CREATE_CUSTOMER,
 } from "@/lib/apollo/operations";
 import { AddClientModal } from "@/components/ui/dashboard/add-client-modal";
+import { useActiveCenter } from "@/contexts/active-center-context";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 
@@ -126,6 +127,10 @@ export default function CustomersPage() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
 
+  // Attribute new clients to the active center so they appear in the
+  // center-scoped client report.
+  const { activeCenter } = useActiveCenter();
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Apollo query
@@ -144,7 +149,9 @@ export default function CustomersPage() {
 
   const handleAddClient = async (input: Record<string, string>) => {
     try {
-      await createCustomer({ variables: { input } });
+      await createCustomer({
+        variables: { input: { ...input, centerId: activeCenter?.id } },
+      });
       toast.success("Client created successfully");
       setShowAddClient(false);
       // Force a fresh refetch to ensure the new client appears immediately

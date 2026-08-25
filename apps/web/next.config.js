@@ -25,8 +25,10 @@ const nextConfig = {
     return config;
   },
   /**
-   * Proxy /api/graphql requests to the NestJS backend.
-   * Production backend listens on localhost:4000. Dev uses 3001.
+   * Proxy backend routes through the Next server so the browser only ever
+   * talks to one origin. Production backend listens on localhost:4000;
+   * dev uses NEXT_PUBLIC_API_URL (default 3001). The API's REST global
+   * prefix is /api, hence /api/print/upload → <api>/api/print/upload.
    */
   async rewrites() {
     const backendUrl =
@@ -37,6 +39,17 @@ const nextConfig = {
       {
         source: '/api/graphql',
         destination: `${backendUrl}/graphql`,
+      },
+      {
+        // Document uploads (GST/Aadhaar/agreement files) from the CRM.
+        source: '/api/print/upload',
+        destination: `${backendUrl}/api/print/upload`,
+      },
+      {
+        // Uploaded files are served by the API at /uploads/* — mirror the
+        // path so document URLs resolve on the public origin.
+        source: '/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
       },
     ];
   },

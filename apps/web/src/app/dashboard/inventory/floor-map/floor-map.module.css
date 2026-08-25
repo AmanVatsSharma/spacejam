@@ -329,12 +329,15 @@
 }
 
 /* ---------------- Interactive Map Canvas ---------------- */
+/* Scrollable rather than clipped: seats beyond the fixed grid rows used to
+   be invisible AND unclickable because overflow:hidden cut them off. */
 .mapCanvas {
   border: 2px solid #E5E7EB;
   border-radius: 12px;
   height: 440px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #FFFFFF;
   padding: 16px;
 }
@@ -344,8 +347,11 @@
   display: grid;
   grid-template-columns: 140px repeat(4, 1fr) 0.5fr 0.5fr 1fr 1.5fr;
   grid-template-rows: 90px 100px 100px 80px;
+  /* Auto-placed seat cards beyond the fixed rows need real row sizing —
+     implicit rows previously collapsed/clipped under the canvas. */
+  grid-auto-rows: 96px;
   gap: 4px;
-  height: 100%;
+  min-height: 100%;
 }
 
 .roomBlock {

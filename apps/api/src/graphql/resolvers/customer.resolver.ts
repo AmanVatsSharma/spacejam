@@ -81,11 +81,21 @@ export class CustomerResolver {
     @Mutation(() => CustomerEntity)
     async createCustomer(
         @Args('input') input: CreateCustomerInput,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<CustomerEntity> {
         // Create Customer + Onboarding + (optional) login User inside one
         // transaction so the direct-create path (no lead) matches the
         // convertLeadWithOnboarding path: every customer has an Onboarding
         // record in its pipeline and, where possible, a self-service login.
+        //
+        // Center attribution: the UI historically never sent centerId, so
+        // customers landed with centerId=null and became invisible to
+        // center-scoped list queries (the "client report" a CENTER_MANAGER
+        // sees). Default to the caller's own center when scope exists.
+        const scope = caller ? centerScope(caller) : undefined;
+        const effectiveCenterId = input.centerId ?? scope ?? null;
+        const effectiveInput = { ...input, centerId: effectiveCenterId };
+        input = effectiveInput;
         const savedId = await this.dataSource.transaction(async (manager) => {
             // Provision (or reuse) a login user for this customer.
             let linkedUserId: string | null = null;

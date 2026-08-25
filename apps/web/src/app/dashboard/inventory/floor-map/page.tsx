@@ -9,7 +9,7 @@
  * Last-updated: 2026-07-06
  */
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
@@ -244,9 +244,19 @@ export default function FloorMapPage() {
     }
   }, [floors, activeFloorId]);
 
-  // Reset floor when center changes
+  // Reset floor when the center actually changes — but never on mount, so a
+  // deep link (?centerId=X&floorId=Y, e.g. Inventory → "View Floor Map")
+  // keeps its target floor instead of being clobbered back to floors[0].
+  const prevCenterRef = useRef<string | null>(null);
   useEffect(() => {
-    setActiveFloorId(null);
+    if (prevCenterRef.current === null) {
+      prevCenterRef.current = activeCenterId;
+      return;
+    }
+    if (prevCenterRef.current !== activeCenterId) {
+      prevCenterRef.current = activeCenterId;
+      setActiveFloorId(null);
+    }
   }, [activeCenterId]);
 
   // Filter seats by status + the left-bar search query

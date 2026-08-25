@@ -435,23 +435,28 @@ export class SeatResolver {
 
   @Mutation(() => SeatEntity)
   async createSeat(@Args('input') input: CreateSeatInput): Promise<SeatEntity> {
-    const newSeat = this.seatRepo.create(input);
+    // Derive centerId from the seat's floor. CreateSeatInput has no centerId
+    // and the seat column previously stayed NULL, which made scoped queries
+    // (seats/dashboardMetrics for CENTER_MANAGER) return nothing — the
+    // "floor map is empty" bug.
+    const floor = await this.seatRepo.manager.findOne(FloorEntity, {
+      where: { id: input.floorId } as any,
+    });
+    const seatCenterId = (floor as any)?.centerId ?? null;
+
+    const newSeat = this.seatRepo.create({ ...input, centerId: seatCenterId } as any);
     const seat = await this.seatRepo.save(newSeat);
 
     // Auto-sync: if seatType is MEETING_ROOM, also create a MeetingRoom record
     // so the Operations > Meeting Room page can see and book it.
-    if (input.seatType === 'MEETING_ROOM') {
-      const floor = await this.seatRepo.manager.findOne(FloorEntity, {
-        where: { id: input.floorId } as any,
-      });
-      const centerId = (floor as any)?.centerId;
-      if (centerId) {
+    if (input.seatType === 'MEETING_ROOM' && seatCenterId) {
+      {
         const roomRepo = this.seatRepo.manager.getRepository('MeetingRoom');
-        const existing = await roomRepo.findOne({ where: { name: input.name, centerId } as any });
+        const existing = await roomRepo.findOne({ where: { name: input.name, centerId: seatCenterId } as any });
         if (!existing) {
           await roomRepo.save(roomRepo.create({
             name: input.name,
-            centerId,
+            centerId: seatCenterId,
             floorId: input.floorId,
             capacity: 1,
             status: input.status || 'AVAILABLE',

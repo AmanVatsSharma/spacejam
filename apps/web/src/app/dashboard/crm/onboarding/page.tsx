@@ -13,7 +13,41 @@ import {
   CREATE_CONTRACT,
   CREATE_INVOICE,
   COMPLETE_ONBOARDING,
+  CREATE_CUSTOMER_DOCUMENT,
 } from "@/lib/apollo/operations";
+import { useActiveCenter } from "@/contexts/active-center-context";
+import { getAccessToken } from "@/lib/apollo/token-storage";
+
+/** Document slots collected in step 6 (Legal & Compliance). */
+type DocSlot = "pan" | "aadhaarFront" | "aadhaarBack" | "gst";
+
+const DOC_META: Record<DocSlot, { label: string; documentType: string }> = {
+  pan: { label: "PAN Card", documentType: "id_proof" },
+  aadhaarFront: { label: "Aadhaar Front Side", documentType: "id_proof" },
+  aadhaarBack: { label: "Aadhaar Back Side", documentType: "id_proof" },
+  gst: { label: "GST Certificate", documentType: "gst_certificate" },
+};
+
+/**
+ * Upload one KYC file to the backend (/api/print/upload, proxied by Next)
+ * and return its public URL path.
+ */
+async function uploadDocumentFile(file: File): Promise<string> {
+  const body = new FormData();
+  body.append("file", file);
+  // The upload endpoint sits behind the same JWT guard as GraphQL.
+  const token = getAccessToken();
+  const res = await fetch("/api/print/upload", {
+    method: "POST",
+    body,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.path) {
+    throw new Error(json?.message || `Upload failed (${res.status})`);
+  }
+  return json.path as string;
+}
 // import styles from "./onboarding-wizard.module.css"; // Not using module CSS right now as I'm styling with Tailwind.
 
 const STEPS = [
@@ -46,6 +80,19 @@ export default function OnboardingWizardPage() {
   const [leadId, setLeadId] = useState<string | null>(null);
   const [leadPrefilled, setLeadPrefilled] = useState(false);
 
+  // Active center (the manager's own center, or the admin's selection) —
+  // customers must be attributed to a center or they never show up in the
+  // center-scoped client report.
+  const { activeCenter } = useActiveCenter();
+
+  // Step 6 — selected KYC files, uploaded on final submit.
+  const [kycDocs, setKycDocs] = useState<Record<DocSlot, File | null>>({
+    pan: null,
+    aadhaarFront: null,
+    aadhaarBack: null,
+    gst: null,
+  });
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -68,6 +115,7 @@ export default function OnboardingWizardPage() {
   const [createContract] = useMutation(CREATE_CONTRACT);
   const [createInvoice] = useMutation(CREATE_INVOICE);
   const [completeOnboarding] = useMutation(COMPLETE_ONBOARDING);
+  const [createCustomerDocument] = useMutation(CREATE_CUSTOMER_DOCUMENT);
 
   // Form State - Step 1 (Basic Information) — kept controlled so data
   // isn't lost when navigating between steps and so it can drive the
@@ -237,7 +285,11 @@ export default function OnboardingWizardPage() {
       const companyAddress = undefined; // collected visually but no dedicated field yet
       const gstNumber = basicInfo.gst?.trim() || undefined;
       const alternateEmail = basicInfo.altContact?.trim() || undefined;
-      const dob = basicInfo.dob || undefined;
+      // Only send a dob when it parses to a real date — an Invalid Date
+      // used to fail the entire createCustomer mutation.
+      const rawDob = basicInfo.dob?.trim() || undefined;
+      const parsedDob = rawDob ? new Date(rawDob) : null;
+      const dob = parsedDob && !Number.isNaN(parsedDob.getTime()) ? rawDob : undefined;
       const emergencyContact = undefined;
       const emergencyPhone = undefined;
 
@@ -303,6 +355,9 @@ export default function OnboardingWizardPage() {
               emergencyContactName: emergencyContact,
               emergencyContactPhone: undefined,
               communicationChannel: communicationChannelVal,
+              // Attribute the customer to the active center so they appear
+              // in the center-scoped client report.
+              centerId: activeCenter?.id,
             },
           },
         });
@@ -377,6 +432,37 @@ export default function OnboardingWizardPage() {
         });
       });
 
+      // ── Step 6 documents: upload each selected KYC file and attach it to
+      //    the new customer. Non-fatal per file — the customer is already
+      //    created; the admin is told which uploads need a retry.
+      const docSlots = (Object.keys(DOC_META) as DocSlot[]).filter(
+        (slot) => kycDocs[slot],
+      );
+      const docErrors: string[] = [];
+      if (docSlots.length > 0) {
+        const docResults = await Promise.allSettled(
+          docSlots.map(async (slot) => {
+            const file = kycDocs[slot]!;
+            const fileUrl = await uploadDocumentFile(file);
+            await createCustomerDocument({
+              variables: {
+                input: {
+                  customerId,
+                  name: DOC_META[slot].label,
+                  documentType: DOC_META[slot].documentType,
+                  fileUrl,
+                  fileSize: String(file.size),
+                  mimeType: file.type || undefined,
+                },
+              },
+            });
+          }),
+        );
+        docResults.forEach((r, i) => {
+          if (r.status === "rejected") docErrors.push(DOC_META[docSlots[i]].label);
+        });
+      }
+
       // ── B4: flip the onboarding record to COMPLETED once the customer +
       //    paperwork exist. Non-fatal if it fails — the customer is created.
       if (onboardingId) {
@@ -399,11 +485,24 @@ export default function OnboardingWizardPage() {
           `Customer created, but some revenue records failed: ${revenueErrors.join(", ")}. You can add them manually from the customer page.`,
         );
       }
+      if (docErrors.length > 0) {
+        toast.warning(
+          `Customer created, but these document uploads failed: ${docErrors.join(", ")}. You can upload them from the customer's Documents tab.`,
+        );
+      }
 
       router.push(`/dashboard/crm/customers/${customerId}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to complete onboarding. Please try again.");
+      const detail =
+        err?.graphQLErrors?.[0]?.message ||
+        err?.networkError?.message ||
+        err?.message;
+      toast.error(
+        detail
+          ? `Failed to complete onboarding: ${detail}`
+          : "Failed to complete onboarding. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -1540,7 +1639,7 @@ export default function OnboardingWizardPage() {
                               <p className="text-[12px] text-gray-500">Required</p>
                             </div>
                           </div>
-                          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                          <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${kycDocs.pan ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{kycDocs.pan ? "Selected" : "Not Uploaded"}</span>
                         </div>
                         <div className="p-6">
                           <div className="border border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center bg-gray-50/50">
@@ -1549,15 +1648,22 @@ export default function OnboardingWizardPage() {
                             </div>
                             <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop your document or choose an option</p>
                             <p className="text-[12px] text-gray-500 mb-6">Supported formats: JPG, PNG, PDF (max 10MB)</p>
+                            {kycDocs.pan && (
+                              <p className="text-[13px] text-green-700 font-medium mb-4">
+                                ✓ {kycDocs.pan.name} ({Math.ceil(kycDocs.pan.size / 1024)} KB)
+                              </p>
+                            )}
                             <div className="flex gap-3">
-                              <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2">
+                              <label className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 Take Photo
-                              </button>
-                              <button className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2">
+                                <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" capture="environment" onChange={(e) => setKycDocs((d) => ({ ...d, pan: e.target.files?.[0] ?? null }))} />
+                              </label>
+                              <label className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2 cursor-pointer">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Upload File
-                              </button>
+                                <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" onChange={(e) => setKycDocs((d) => ({ ...d, pan: e.target.files?.[0] ?? null }))} />
+                              </label>
                             </div>
                           </div>
                         </div>
@@ -1576,8 +1682,8 @@ export default function OnboardingWizardPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <span className="text-[12px] text-gray-500 font-medium">Progress: 0/2</span>
-                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                            <span className="text-[12px] text-gray-500 font-medium">Progress: {(kycDocs.aadhaarFront ? 1 : 0) + (kycDocs.aadhaarBack ? 1 : 0)}/2</span>
+                            <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${(kycDocs.aadhaarFront && kycDocs.aadhaarBack) ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{(kycDocs.aadhaarFront && kycDocs.aadhaarBack) ? "Selected" : "Not Uploaded"}</span>
                           </div>
                         </div>
                         <div className="p-6">
@@ -1591,15 +1697,22 @@ export default function OnboardingWizardPage() {
                                 </div>
                                 <p className="text-[13px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
                                 <p className="text-[11px] text-gray-500 mb-4">JPG, PNG, PDF (max 10MB)</p>
+                                {kycDocs.aadhaarFront && (
+                                  <p className="text-[12px] text-green-700 font-medium mb-3">
+                                    ✓ {kycDocs.aadhaarFront.name} ({Math.ceil(kycDocs.aadhaarFront.size / 1024)} KB)
+                                  </p>
+                                )}
                                 <div className="flex gap-2">
-                                  <button className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                                  <label className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5 cursor-pointer">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                     Photo
-                                  </button>
-                                  <button className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5">
+                                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" capture="environment" onChange={(e) => setKycDocs((d) => ({ ...d, aadhaarFront: e.target.files?.[0] ?? null }))} />
+                                  </label>
+                                  <label className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5 cursor-pointer">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                     Upload
-                                  </button>
+                                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" onChange={(e) => setKycDocs((d) => ({ ...d, aadhaarFront: e.target.files?.[0] ?? null }))} />
+                                  </label>
                                 </div>
                               </div>
                             </div>
@@ -1613,15 +1726,22 @@ export default function OnboardingWizardPage() {
                                 </div>
                                 <p className="text-[13px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
                                 <p className="text-[11px] text-gray-500 mb-4">JPG, PNG, PDF (max 10MB)</p>
+                                {kycDocs.aadhaarBack && (
+                                  <p className="text-[12px] text-green-700 font-medium mb-3">
+                                    ✓ {kycDocs.aadhaarBack.name} ({Math.ceil(kycDocs.aadhaarBack.size / 1024)} KB)
+                                  </p>
+                                )}
                                 <div className="flex gap-2">
-                                  <button className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5">
+                                  <label className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[12px] font-medium hover:bg-gray-50 flex items-center gap-1.5 cursor-pointer">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                     Photo
-                                  </button>
-                                  <button className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5">
+                                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" capture="environment" onChange={(e) => setKycDocs((d) => ({ ...d, aadhaarBack: e.target.files?.[0] ?? null }))} />
+                                  </label>
+                                  <label className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-lg text-[12px] font-medium hover:bg-[#E55A20] flex items-center gap-1.5 cursor-pointer">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                     Upload
-                                  </button>
+                                    <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" onChange={(e) => setKycDocs((d) => ({ ...d, aadhaarBack: e.target.files?.[0] ?? null }))} />
+                                  </label>
                                 </div>
                               </div>
                             </div>
@@ -1641,7 +1761,7 @@ export default function OnboardingWizardPage() {
                               <p className="text-[12px] text-gray-500">Optional</p>
                             </div>
                           </div>
-                          <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[12px] font-medium">Not Uploaded</span>
+                          <span className={`px-3 py-1 rounded-full text-[12px] font-medium ${kycDocs.gst ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{kycDocs.gst ? "Selected" : "Not Uploaded"}</span>
                         </div>
                         <div className="p-6">
                           <div className="border border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center bg-gray-50/50">
@@ -1650,15 +1770,22 @@ export default function OnboardingWizardPage() {
                             </div>
                             <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop your document or choose an option</p>
                             <p className="text-[12px] text-gray-500 mb-6">Supported formats: JPG, PNG, PDF (max 10MB)</p>
+                            {kycDocs.gst && (
+                              <p className="text-[13px] text-green-700 font-medium mb-4">
+                                ✓ {kycDocs.gst.name} ({Math.ceil(kycDocs.gst.size / 1024)} KB)
+                              </p>
+                            )}
                             <div className="flex gap-3">
-                              <button className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2">
+                              <label className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-[13px] font-medium hover:bg-gray-50 flex items-center gap-2 cursor-pointer">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 Take Photo
-                              </button>
-                              <button className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2">
+                                <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" capture="environment" onChange={(e) => setKycDocs((d) => ({ ...d, gst: e.target.files?.[0] ?? null }))} />
+                              </label>
+                              <label className="px-4 py-2 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-medium hover:bg-[#E55A20] flex items-center gap-2 cursor-pointer">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 Upload File
-                              </button>
+                                <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.heic" onChange={(e) => setKycDocs((d) => ({ ...d, gst: e.target.files?.[0] ?? null }))} />
+                              </label>
                             </div>
                           </div>
                         </div>

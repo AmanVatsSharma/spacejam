@@ -104,8 +104,13 @@ export class CrmResolver {
     @Context() context: any
   ): Promise<LeadEntity> {
     const userId = context.req?.user?.id;
+    // Attribute the lead to the caller's center when none was supplied, so
+    // converted customers inherit a centerId and stay visible in scoped
+    // list queries (the center-manager client report).
+    const scope = context.req?.user ? centerScope(context.req.user) : undefined;
+    const effectiveInput = { ...input, centerId: input.centerId ?? scope ?? null };
     const newLead = this.leadRepo.create({
-      ...input,
+      ...effectiveInput,
       ...(userId ? { assignedToId: userId } : {}),
     });
     const lead = await this.leadRepo.save(newLead);
@@ -131,7 +136,8 @@ export class CrmResolver {
 
   @Mutation(() => LeadEntity)
   async convertLead(
-    @Args('id', { type: () => ID }) id: string
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<LeadEntity> {
     const lead = await this.leadRepo.findOne({
       where: { id },
@@ -153,7 +159,7 @@ export class CrmResolver {
       company: lead.company,
       location: lead.location,
       notes: lead.notes,
-      centerId: lead.centerId,
+      centerId: lead.centerId ?? (caller ? centerScope(caller) : undefined) ?? null,
       status: CustomerStatus.ACTIVE,
       joinDate: new Date(),
       totalBookings: 0,
@@ -282,12 +288,19 @@ export class CrmResolver {
     @Args('agreementUrl', { nullable: true }) agreementUrl?: string,
     @Args('notes', { nullable: true }) notes?: string,
     @Args('provisionLogin', { nullable: true, defaultValue: true }) provisionLogin?: boolean,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<ConvertLeadResult> {
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
     if (!lead) throw new NotFoundException('Lead not found');
+
+    // Center attribution: lead center ?? caller's own center. Without this,
+    // leads created before center attribution existed converted into
+    // customers with centerId=null — invisible to center-scoped queries.
+    const callerScope = caller ? centerScope(caller) : undefined;
+    const effectiveCenterId = lead.centerId ?? callerScope ?? null;
 
     // Resolve all overrides once (form value ?? lead value).
     const resolvedName = contactName ?? companyName ?? lead.company ?? lead.name;
@@ -342,7 +355,7 @@ export class CrmResolver {
                 agreementUrl,
                 notes: resolvedNotes,
                 assignedToId: lead.assignedToId,
-                centerId: lead.centerId,
+                centerId: effectiveCenterId,
               });
               existingOnboarding = await manager.save(repaired);
             }
@@ -364,7 +377,7 @@ export class CrmResolver {
             resolvedEmail,
             resolvedName,
             resolvedPhone ?? null,
-            lead.centerId ?? null,
+            effectiveCenterId,
           );
         }
 
@@ -377,7 +390,7 @@ export class CrmResolver {
           company: resolvedCompany,
           location: resolvedCompanyAddress,
           notes: resolvedNotes,
-          centerId: lead.centerId,
+          centerId: effectiveCenterId,
           status: CustomerStatus.ACTIVE,
           joinDate: new Date(),
           totalBookings: 0,
@@ -426,7 +439,7 @@ export class CrmResolver {
           agreementUrl,
           notes: resolvedNotes,
           assignedToId: lead.assignedToId,
-          centerId: lead.centerId,
+          centerId: effectiveCenterId,
         });
         const savedOnboarding = await manager.save(newOnboarding);
 

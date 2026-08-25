@@ -12,6 +12,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import * as path from 'path';
+import * as fs from 'fs';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -22,6 +24,14 @@ async function bootstrap() {
   // Global prefix
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+
+  // Static file serving for uploaded documents (GST certificates, Aadhaar,
+  // agreements…). PrintController stores uploads under ./uploads and returns
+  // /uploads/<filename> URLs — those URLs only resolve if we serve the
+  // directory. Registered BEFORE the global prefix so paths stay /uploads/*.
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
 
   // Cookies — required for refresh-token handling on the GraphQL path
   app.use(cookieParser());
