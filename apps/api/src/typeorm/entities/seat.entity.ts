@@ -67,6 +67,15 @@ export class Seat {
   @Column({ type: 'varchar', nullable: true })
   location!: string | null;
 
+  /** Manual map position in grid units (1 unit ≈ 40px at zoom 1). NULL = unplaced (tray). */
+  @Field(() => Float, { nullable: true })
+  @Column({ type: 'float', nullable: true })
+  x!: number | null;
+
+  @Field(() => Float, { nullable: true })
+  @Column({ type: 'float', nullable: true })
+  y!: number | null;
+
   @Field(() => Int)
   @Column({ name: 'minBookingDuration', type: 'int', default: 30 })
   minBookingDuration!: number;

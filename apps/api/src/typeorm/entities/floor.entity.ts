@@ -18,6 +18,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { JsonScalar } from '../../graphql/scalars/json.scalar';
 import { Center } from './center.entity';
 import { Seat } from './seat.entity';
 
@@ -36,7 +37,11 @@ export class Floor {
   @Column()
   name!: string;
 
-  @Field(() => String, { nullable: true })
+  // JSON scalar (not String): the jsonb column hydrates to an object and the
+  // String scalar's serializer rejects objects — GET_FLOORS{layout} would
+  // crash for every user once a layout is saved (same bug class as
+  // Center.settings).
+  @Field(() => JsonScalar, { nullable: true })
   @Column({ type: 'jsonb', nullable: true })
   layout!: Record<string, any> | null;
 

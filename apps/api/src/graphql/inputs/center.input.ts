@@ -297,6 +297,16 @@ export class UpdateSeatInput {
   @IsOptional()
   price?: number;
 
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  x?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  y?: number;
+
   @Field(() => SeatStatus, { nullable: true })
   @IsEnum(SeatStatus)
   @IsOptional()
