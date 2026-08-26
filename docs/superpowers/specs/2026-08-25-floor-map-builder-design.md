@@ -143,5 +143,14 @@ Same canvas, editor chrome:
 ## Out of Scope (explicit)
 
 - Background floor-plan images, wall/door drawing, undo history, multi-user
-  realtime co-editing, seat rotation, mobile touch editor polish (works, but
+  realtime co-editing, mobile touch editor polish (works, but
   not the design target).
+
+## Amendment (2026-08-26): seat sizing + rotation
+
+Client requested resizable and rotatable boxes. Seats gain `w`/`h` grid-unit
+columns (NULL = 1×1 default) and a `rotation` degrees column (NULL = 0).
+Zones gain `rotation` (0–360) in the layout JSON. The editor adds a corner
+resize handle and a top rotation handle (snaps to 15° when snap is on) for
+seats; zones get the rotation handle on top of their existing resize. View
+mode renders exact sizes and angles.
