@@ -26,11 +26,18 @@ export interface EditorZone {
   x: number; y: number; w: number; h: number;
   label: string;
   kind: ZoneKind;
+  rotation?: number;
 }
 export interface EditorLabel { id: string; x: number; y: number; text: string; }
 export interface EditorLayout { version: number; zones: EditorZone[]; labels: EditorLabel[]; }
-export interface SeatLike { id: string; name: string; seatType?: string; status?: string; x?: number | null; y?: number | null; }
+export interface SeatLike {
+  id: string; name: string; seatType?: string; status?: string;
+  x?: number | null; y?: number | null;
+  w?: number | null; h?: number | null; rotation?: number | null;
+}
 export interface SeatPosition { id: string; x: number; y: number; }
+/** Full geometry override for a seat (position + size + rotation). */
+export interface SeatGeometry extends SeatPosition { w: number; h: number; rotation: number; }
 
 const ZONE_KIND_LABELS: Record<ZoneKind, string> = {
   MEETING_ROOM: "Meeting Room",
@@ -44,13 +51,18 @@ const newId = (p: string) => `${p}${Math.random().toString(36).slice(2, 9)}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 interface DragState {
-  kind: "seat" | "zone" | "zoneResize" | "label" | "chip";
+  kind: "seat" | "seatResize" | "zone" | "zoneResize" | "rotate" | "label" | "chip";
   id: string;
   offX: number;
   offY: number;
   startX: number;
   startY: number;
   orig: { x: number; y: number; w?: number; h?: number };
+  /** For "rotate": the item's screen-space center (canvas-relative px). */
+  centerX?: number;
+  centerY?: number;
+  /** For "rotate": whether the target is a zone (vs a seat). */
+  isZone?: boolean;
 }
 
 export function FloorMapEditor({
@@ -61,7 +73,7 @@ export function FloorMapEditor({
 }: {
   floor: { id: string; name: string; layout: EditorLayout | null };
   seats: SeatLike[];
-  onSaveLayout: (layout: EditorLayout, seatPositions: SeatPosition[]) => Promise<void>;
+  onSaveLayout: (layout: EditorLayout, seatPositions: SeatGeometry[]) => Promise<void>;
   saving: boolean;
 }) {
   const serverLayout: EditorLayout = floor.layout ?? { version: 1, zones: [], labels: [] };
@@ -69,6 +81,8 @@ export function FloorMapEditor({
   const [labels, setLabels] = useState<EditorLabel[]>(serverLayout.labels);
   // Local positions: undefined = untouched, {x,y} = set (null = removed)
   const [positions, setPositions] = useState<Record<string, { x: number; y: number } | null>>({});
+  // Local size/rotation overrides: undefined = untouched.
+  const [geoms, setGeoms] = useState<Record<string, { w: number; h: number; rotation: number }>>({});
   const [snap, setSnap] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
@@ -80,13 +94,25 @@ export function FloorMapEditor({
     [positions],
   );
 
+  /** Effective size/rotation for a seat (override ?? server ?? default). */
+  const seatGeom = useCallback(
+    (s: SeatLike) =>
+      geoms[s.id] ?? {
+        w: s.w ?? 1,
+        h: s.h ?? 1,
+        rotation: s.rotation ?? 0,
+      },
+    [geoms],
+  );
+
   const placed = useMemo(() => seats.filter((s) => seatPos(s)), [seats, seatPos]);
   const tray = useMemo(() => seats.filter((s) => !seatPos(s)), [seats, seatPos]);
 
   const dirty =
     JSON.stringify(zones) !== JSON.stringify(serverLayout.zones) ||
     JSON.stringify(labels) !== JSON.stringify(serverLayout.labels) ||
-    Object.keys(positions).length > 0;
+    Object.keys(positions).length > 0 ||
+    Object.keys(geoms).length > 0;
 
   const toGrid = (e: PointerEvent | React.PointerEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -117,6 +143,50 @@ export function FloorMapEditor({
     setSelected(id);
   };
 
+  /**
+   * Begin rotating an item (seat or zone). The handle sits at the top of
+   * the box; 0° = handle pointing up. The item's screen-space center is
+   * computed from grid geometry so rotation works at any zoom.
+   */
+  const onRotatePointerDown = (
+    e: React.PointerEvent,
+    id: string,
+    isZone: boolean,
+    orig: { x: number; y: number; w: number; h: number },
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* best-effort */
+    }
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    const centerX = canvasRect ? canvasRect.left + (orig.x + orig.w / 2) * GRID * zoom : 0;
+    const centerY = canvasRect ? canvasRect.top + (orig.y + orig.h / 2) * GRID * zoom : 0;
+    dragRef.current = {
+      kind: "rotate",
+      id,
+      offX: 0,
+      offY: 0,
+      startX: 0,
+      startY: 0,
+      orig,
+      centerX,
+      centerY,
+      isZone,
+    };
+    setSelected(id);
+  };
+
+  /** Pointer angle around the item center, normalized to [0, 360). */
+  const angleFromCenter = (d: DragState, e: React.PointerEvent): number => {
+    const deg = (Math.atan2(e.clientY - (d.centerY ?? 0), e.clientX - (d.centerX ?? 0)) * 180) / Math.PI + 90;
+    let norm = Math.round(((deg % 360) + 360) % 360);
+    if (snap) norm = Math.round(norm / 15) * 15 % 360;
+    return norm;
+  };
+
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
@@ -144,6 +214,23 @@ export function FloorMapEditor({
       const w = clamp(Math.round(g.x - d.orig.x + (d.orig.w ?? 1)), 1, CANVAS_COLS - d.orig.x);
       const h = clamp(Math.round(g.y - d.orig.y + (d.orig.h ?? 1)), 1, CANVAS_ROWS - d.orig.y);
       setZones((zs) => zs.map((z) => (z.id === d.id ? { ...z, w, h } : z)));
+    } else if (d.kind === "seatResize") {
+      const w = clamp(Math.round(g.x - d.orig.x + (d.orig.w ?? 1)), 1, CANVAS_COLS - d.orig.x);
+      const h = clamp(Math.round(g.y - d.orig.y + (d.orig.h ?? 1)), 1, CANVAS_ROWS - d.orig.y);
+      setGeoms((gs) => ({
+        ...gs,
+        [d.id]: { ...(gs[d.id] ?? { w: d.orig.w ?? 1, h: d.orig.h ?? 1, rotation: 0 }), w, h },
+      }));
+    } else if (d.kind === "rotate") {
+      const angle = angleFromCenter(d, e);
+      if (d.isZone) {
+        setZones((zs) => zs.map((z) => (z.id === d.id ? { ...z, rotation: angle } : z)));
+      } else {
+        setGeoms((gs) => ({
+          ...gs,
+          [d.id]: { ...(gs[d.id] ?? { w: d.orig.w ?? 1, h: d.orig.h ?? 1, rotation: 0 }), rotation: angle },
+        }));
+      }
     }
   };
 
@@ -166,13 +253,25 @@ export function FloorMapEditor({
 
   const handleSave = async () => {
     const layout: EditorLayout = { version: serverLayout.version + 1, zones, labels };
-    const seatPositions: SeatPosition[] = [];
+    const seatPositions: SeatGeometry[] = [];
     for (const s of seats) {
       const pos = positions[s.id];
-      if (pos) seatPositions.push({ id: s.id, x: pos.x, y: pos.y });
+      const geom = geoms[s.id];
+      if (pos || geom) {
+        const base = seatGeom(s);
+        seatPositions.push({
+          id: s.id,
+          x: pos?.x ?? s.x ?? 0,
+          y: pos?.y ?? s.y ?? 0,
+          w: geom?.w ?? base.w,
+          h: geom?.h ?? base.h,
+          rotation: geom?.rotation ?? base.rotation,
+        });
+      }
     }
     await onSaveLayout(layout, seatPositions);
     setPositions({});
+    setGeoms({});
   };
 
   return (
@@ -288,6 +387,7 @@ export function FloorMapEditor({
                     width: z.w * GRID * zoom,
                     height: z.h * GRID * zoom,
                     fontSize: `${12 * zoom}px`,
+                    transform: z.rotation ? `rotate(${z.rotation}deg)` : undefined,
                   }}
                   onPointerDown={(e) => onItemPointerDown(e, "zone", z.id, { x: z.x, y: z.y })}
                   onPointerMove={onPointerMove}
@@ -304,6 +404,15 @@ export function FloorMapEditor({
                     className={styles.zoneResizeHandle}
                     onPointerDown={(e) =>
                       onItemPointerDown(e, "zoneResize", z.id, { x: z.x, y: z.y, w: z.w, h: z.h })
+                    }
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                  />
+                  <span
+                    className={styles.rotateHandle}
+                    title="Drag to rotate"
+                    onPointerDown={(e) =>
+                      onRotatePointerDown(e, z.id, true, { x: z.x, y: z.y, w: z.w, h: z.h })
                     }
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
@@ -332,6 +441,7 @@ export function FloorMapEditor({
 
             {placed.map((s) => {
               const pos = seatPos(s)!;
+              const geom = seatGeom(s);
               return (
                 <div
                   key={s.id}
@@ -339,10 +449,13 @@ export function FloorMapEditor({
                   style={{
                     left: pos.x * GRID * zoom,
                     top: pos.y * GRID * zoom,
-                    width: GRID * zoom - 4,
-                    height: GRID * zoom - 4,
+                    width: geom.w * GRID * zoom - 4,
+                    height: geom.h * GRID * zoom - 4,
+                    transform: geom.rotation ? `rotate(${geom.rotation}deg)` : undefined,
                   }}
-                  onPointerDown={(e) => onItemPointerDown(e, "seat", s.id, { x: pos.x, y: pos.y })}
+                  onPointerDown={(e) =>
+                    onItemPointerDown(e, "seat", s.id, { x: pos.x, y: pos.y, w: geom.w, h: geom.h })
+                  }
                   onPointerMove={onPointerMove}
                   onPointerUp={onPointerUp}
                   onDoubleClick={() => setPositions((p) => ({ ...p, [s.id]: null }))}
@@ -351,6 +464,23 @@ export function FloorMapEditor({
                   <span className={styles.seatName} style={{ fontSize: `${10 * zoom}px` }}>
                     {s.name}
                   </span>
+                  <span
+                    className={styles.seatResizeHandle}
+                    onPointerDown={(e) =>
+                      onItemPointerDown(e, "seatResize", s.id, { x: pos.x, y: pos.y, w: geom.w, h: geom.h })
+                    }
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                  />
+                  <span
+                    className={styles.rotateHandle}
+                    title="Drag to rotate"
+                    onPointerDown={(e) =>
+                      onRotatePointerDown(e, s.id, false, { x: pos.x, y: pos.y, w: geom.w, h: geom.h })
+                    }
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                  />
                 </div>
               );
             })}
@@ -358,8 +488,8 @@ export function FloorMapEditor({
         </div>
       </div>
       <p className={styles.editorFooterHint}>
-        Drag to move · double-click a seat to remove it from the map · double-click zones/labels to rename · corner
-        handle resizes zones
+        Drag to move · corner handle resizes · top handle rotates (15° steps when snap is on) · double-click a seat
+        to remove it from the map · double-click zones/labels to rename
       </p>
     </div>
   );

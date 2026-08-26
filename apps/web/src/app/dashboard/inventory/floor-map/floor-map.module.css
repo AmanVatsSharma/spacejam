@@ -863,3 +863,19 @@
   border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .editLayoutBtn:hover { background: #FFF7ED; }
+
+/* Sizing + rotation handles */
+.seatResizeHandle {
+  position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px;
+  background: #34D399; border: 2px solid #FFFFFF; border-radius: 50%;
+  cursor: nwse-resize; touch-action: none;
+}
+.rotateHandle {
+  position: absolute; left: 50%; top: -22px; margin-left: -7px;
+  width: 14px; height: 14px; background: #FF6A2F; border: 2px solid #FFFFFF;
+  border-radius: 50%; cursor: grab; touch-action: none; z-index: 3;
+}
+.rotateHandle::after {
+  content: ""; position: absolute; left: 50%; top: 14px; height: 8px;
+  width: 1px; background: #FF6A2F;
+}

@@ -23,7 +23,7 @@ import {
   CANVAS_COLS,
   CANVAS_ROWS,
   type EditorLayout,
-  type SeatPosition,
+  type SeatGeometry,
 } from "./FloorMapEditor";
 import {
   GET_MY_CENTERS,
@@ -174,7 +174,13 @@ function CustomMapView({
           <div
             key={z.id}
             className={`${styles.editorZone} ${(styles as any)[`zone_${z.kind}`] ?? ""}`}
-            style={{ left: z.x * GRID, top: z.y * GRID, width: z.w * GRID, height: z.h * GRID }}
+            style={{
+              left: z.x * GRID,
+              top: z.y * GRID,
+              width: z.w * GRID,
+              height: z.h * GRID,
+              transform: z.rotation ? `rotate(${z.rotation}deg)` : undefined,
+            }}
           >
             <span className={styles.zoneLabel}>{z.label}</span>
           </div>
@@ -192,11 +198,20 @@ function CustomMapView({
               : status === "OCCUPIED" || status === "BOOKED"
                 ? styles.customMapSeatOccupied
                 : styles.customMapSeatOther;
+          const w = s.w ?? 1;
+          const h = s.h ?? 1;
+          const rotation = s.rotation ?? 0;
           return (
             <div
               key={s.id}
               className={`${styles.customMapSeat} ${colorClass}`}
-              style={{ left: s.x * GRID, top: s.y * GRID, width: GRID - 4, height: GRID - 4 }}
+              style={{
+                left: s.x * GRID,
+                top: s.y * GRID,
+                width: w * GRID - 4,
+                height: h * GRID - 4,
+                transform: rotation ? `rotate(${rotation}deg)` : undefined,
+              }}
               onClick={() => onSeatClick(s)}
               title={`${s.name} · ${status}`}
             >
@@ -318,7 +333,7 @@ export default function FloorMapPage() {
   const [savingLayout, setSavingLayout] = useState(false);
   const [updateFloorLayoutMut] = useMutation(UPDATE_FLOOR_LAYOUT);
 
-  const handleSaveLayout = async (layout: EditorLayout, seatPositions: SeatPosition[]) => {
+  const handleSaveLayout = async (layout: EditorLayout, seatPositions: SeatGeometry[]) => {
     setSavingLayout(true);
     try {
       try {
@@ -337,7 +352,9 @@ export default function FloorMapPage() {
       const failed: string[] = [];
       for (const pos of seatPositions) {
         try {
-          await updateSeat({ variables: { id: pos.id, input: { x: pos.x, y: pos.y } } });
+          await updateSeat({
+            variables: { id: pos.id, input: { x: pos.x, y: pos.y, w: pos.w, h: pos.h, rotation: pos.rotation } },
+          });
         } catch {
           failed.push(pos.id);
         }
