@@ -20,6 +20,8 @@ export interface FloorZone {
   h: number;
   label: string;
   kind: ZoneKind;
+  /** Clockwise rotation in degrees, 0–360. */
+  rotation: number;
 }
 
 export interface FloorLabel {
@@ -78,6 +80,12 @@ export function sanitizeFloorLayout(incoming: unknown): FloorLayout {
     if (z.w < 1 || z.h < 1 || z.w > MAX_SIZE || z.h > MAX_SIZE) {
       throw new BadRequestException(`zones[${i}] size out of bounds (1..${MAX_SIZE})`);
     }
+    // Rotation is optional (legacy layouts) and normalized to [0, 360).
+    let rotation = 0;
+    if (z.rotation !== undefined && z.rotation !== null) {
+      if (!isNum(z.rotation)) throw new BadRequestException(`zones[${i}].rotation must be a number`);
+      rotation = ((Math.round(z.rotation) % 360) + 360) % 360;
+    }
     return {
       id: String(z.id ?? `z${i}`).slice(0, 40),
       x: Math.round(z.x),
@@ -86,6 +94,7 @@ export function sanitizeFloorLayout(incoming: unknown): FloorLayout {
       h: Math.round(z.h),
       label: clampText(z.label, 'Zone'),
       kind,
+      rotation,
     };
   });
 

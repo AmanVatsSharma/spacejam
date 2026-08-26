@@ -56,6 +56,14 @@ describe('sanitizeFloorLayout', () => {
     expect(() => sanitizeFloorLayout({ zones: [], labels: manyLabels })).toThrow(BadRequestException);
   });
 
+  it('normalizes zone rotation into [0, 360) and rejects non-numeric', () => {
+    const out = sanitizeFloorLayout({ zones: [zone({ rotation: 370 })] });
+    expect(out.zones[0].rotation).toBe(10);
+    const neg = sanitizeFloorLayout({ zones: [zone({ rotation: -90 })] });
+    expect(neg.zones[0].rotation).toBe(270);
+    expect(() => sanitizeFloorLayout({ zones: [zone({ rotation: 'abc' as any })] })).toThrow(BadRequestException);
+  });
+
   it('rejects NaN coordinates', () => {
     expect(() => sanitizeFloorLayout({ zones: [zone({ x: 'abc' as any })] })).toThrow(BadRequestException);
   });

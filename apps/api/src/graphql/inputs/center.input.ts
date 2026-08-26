@@ -307,6 +307,21 @@ export class UpdateSeatInput {
   @IsOptional()
   y?: number;
 
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  w?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  h?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  rotation?: number;
+
   @Field(() => SeatStatus, { nullable: true })
   @IsEnum(SeatStatus)
   @IsOptional()

@@ -76,6 +76,20 @@ export class Seat {
   @Column({ type: 'float', nullable: true })
   y!: number | null;
 
+  /** Manual map size in grid units (NULL = 1×1 default). */
+  @Field(() => Float, { nullable: true })
+  @Column({ type: 'float', nullable: true })
+  w!: number | null;
+
+  @Field(() => Float, { nullable: true })
+  @Column({ type: 'float', nullable: true })
+  h!: number | null;
+
+  /** Clockwise rotation in degrees (NULL = 0). */
+  @Field(() => Float, { nullable: true })
+  @Column({ type: 'float', nullable: true })
+  rotation!: number | null;
+
   @Field(() => Int)
   @Column({ name: 'minBookingDuration', type: 'int', default: 30 })
   minBookingDuration!: number;
