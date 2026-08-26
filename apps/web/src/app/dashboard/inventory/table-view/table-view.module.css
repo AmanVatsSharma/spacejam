@@ -250,9 +250,9 @@
 
 /* Dropdown Menu */
 .actionDropdown {
-  position: absolute;
-  top: 100%;
-  right: 24px;
+  /* Positioned inline (fixed, viewport-anchored) by the page — fixed escapes
+     the table scroll container's clipping that cut the old absolute
+     dropdown off near the bottom of the table. */
   background: #FFFFFF;
   border: 1px solid #F3F4F6;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

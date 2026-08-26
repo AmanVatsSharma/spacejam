@@ -92,7 +92,12 @@ function formatCurrency(amount: number): string {
 }
 
 export default function TableViewPage() {
-  const [activeDropdown, setActiveDropdown] = useState<number | null>(0);
+  // Action dropdown — single fixed-position menu anchored to the clicked
+  // row's button. (The old per-row absolute dropdown rendered open on page
+  // load, never closed on outside clicks, and was clipped by the table's
+  // scroll container.)
+  const [actionMenu, setActionMenu] = useState<{ seatId: string; x: number; y: number } | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [rowMenu, setRowMenu] = useState<{
     rowId: string;
@@ -269,9 +274,40 @@ export default function TableViewPage() {
     setSearch('');
   };
 
-  const toggleDropdown = (index: number) => {
-    setActiveDropdown(activeDropdown === index ? null : index);
+  const openActionMenu = (seatId: string, e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // Flip above the button when a ~180px menu would overflow the viewport.
+    const flip = rect.bottom + 190 > window.innerHeight;
+    setActionMenu((m) =>
+      m?.seatId === seatId
+        ? null
+        : {
+            seatId,
+            x: Math.min(rect.left, window.innerWidth - 160),
+            y: flip ? rect.top - 190 : rect.bottom + 4,
+          },
+    );
   };
+
+  // Close the action dropdown on outside click / Escape (same pattern as
+  // ContextMenu).
+  useEffect(() => {
+    if (!actionMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target as Node)) {
+        setActionMenu(null);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActionMenu(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [actionMenu]);
 
   // Add Space: opens a modal form for number + type + price.
   const openAddSpaceModal = () => {
@@ -330,7 +366,7 @@ export default function TableViewPage() {
 
   // Per-row status change via UPDATE_SEAT.
   const handleStatusChange = async (seatId: string, newStatus: string) => {
-    setActiveDropdown(null);
+    setActionMenu(null);
     try {
       await updateSeat({
         variables: {
@@ -657,42 +693,10 @@ export default function TableViewPage() {
                     )}
                     <div
                       className={styles.actionBtn}
-                      onClick={() => toggleDropdown(index)}
+                      onClick={(e) => openActionMenu(row.id, e)}
                     >
                       {Icons.chevronDown}
                     </div>
-                    {activeDropdown === index && (
-                      <div className={styles.actionDropdown}>
-                        <div
-                          className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, 'OCCUPIED')}
-                        >
-                          Occupied
-                        </div>
-                        <div
-                          className={styles.dropdownItem}
-                          onClick={() =>
-                            handleStatusChange(row.id, 'AVAILABLE')
-                          }
-                        >
-                          Available
-                        </div>
-                        <div
-                          className={styles.dropdownItem}
-                          onClick={() =>
-                            handleStatusChange(row.id, 'MAINTENANCE')
-                          }
-                        >
-                          Maintenance
-                        </div>
-                        <div
-                          className={styles.dropdownItem}
-                          onClick={() => handleStatusChange(row.id, 'RESERVED')}
-                        >
-                          Reserved
-                        </div>
-                      </div>
-                    )}
                   </td>
                 </tr>
               ))
@@ -702,6 +706,26 @@ export default function TableViewPage() {
       </div>
 
       {/* Dead ExportExcelModal removed — see spacejam-2tf */}
+
+      {actionMenu && (
+        <div
+          ref={actionMenuRef}
+          className={styles.actionDropdown}
+          style={{ position: 'fixed', left: actionMenu.x, top: actionMenu.y, zIndex: 9999 }}
+          role="menu"
+        >
+          {(['OCCUPIED', 'AVAILABLE', 'MAINTENANCE', 'RESERVED'] as const).map((st) => (
+            <div
+              key={st}
+              role="menuitem"
+              className={styles.dropdownItem}
+              onClick={() => handleStatusChange(actionMenu.seatId, st)}
+            >
+              {st.charAt(0) + st.slice(1).toLowerCase()}
+            </div>
+          ))}
+        </div>
+      )}
 
       {rowMenu && (
         <ContextMenu
