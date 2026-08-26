@@ -1466,6 +1466,9 @@ export const GET_FLOORS = gql`
         location
         x
         y
+        w
+        h
+        rotation
       }
     }
   }
@@ -1483,6 +1486,9 @@ export const GET_SEATS = gql`
       location
       x
       y
+      w
+      h
+      rotation
       createdAt
       updatedAt
       floor {
