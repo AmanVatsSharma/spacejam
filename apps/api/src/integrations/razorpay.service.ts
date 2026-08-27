@@ -28,8 +28,14 @@ export class RazorpayService {
 
   constructor(private readonly settings: IntegrationSettingsService) {}
 
-  /** Create a Razorpay order for the given amount (rupees → paise). */
-  async createOrder(amountRupees: number, receipt: string): Promise<RazorpayOrder> {
+  /** Create a Razorpay order for the given amount (rupees → paise).
+   *  `notes` (e.g. { invoiceId }) is forwarded to the orders API so webhooks
+   *  can correlate the captured payment back to internal entities. */
+  async createOrder(
+    amountRupees: number,
+    receipt?: string,
+    notes?: Record<string, string>,
+  ): Promise<RazorpayOrder> {
     const cfg = await this.settings.getRazorpayConfig();
     if (!cfg.keyId || !cfg.keySecret) {
       throw new BadRequestException('Razorpay is not configured.');
@@ -43,7 +49,8 @@ export class RazorpayService {
       body: JSON.stringify({
         amount: Math.round(amountRupees * 100), // paise
         currency: 'INR',
-        receipt,
+        ...(receipt ? { receipt } : {}),
+        ...(notes ? { notes } : {}),
       }),
     });
     if (!res.ok) {
@@ -51,7 +58,7 @@ export class RazorpayService {
       throw new Error(`Razorpay order create failed (${res.status}): ${text}`);
     }
     const order = (await res.json()) as RazorpayOrder;
-    this.logger.log(`Razorpay order ${order.id} created for ₹${amountRupees} (receipt ${receipt}).`);
+    this.logger.log(`Razorpay order ${order.id} created for ₹${amountRupees} (receipt ${receipt ?? '-'}).`);
     return order;
   }
 

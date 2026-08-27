@@ -2462,7 +2462,7 @@ export const PROCESS_DUE_SUBSCRIPTIONS = gql`
   }
 `;
 
-// ─── Integrations (super-admin: SMS provider + Razorpay) ──────────────────
+// ─── Integrations (super-admin: SMS + Email/SMTP + WhatsApp + Razorpay) ───
 export const GET_INTEGRATION_STATUS = gql`
   query IntegrationStatus {
     integrationStatus {
@@ -2470,6 +2470,8 @@ export const GET_INTEGRATION_STATUS = gql`
       smsProvider
       razorpayConfigured
       razorpayMode
+      emailConfigured
+      whatsappConfigured
     }
   }
 `;
@@ -2493,6 +2495,53 @@ export const SAVE_SMS_CONFIG = gql`
 export const SAVE_RAZORPAY_CONFIG = gql`
   mutation SaveRazorpayConfig($input: SaveRazorpayConfigInput!) {
     saveRazorpayConfig(input: $input)
+  }
+`;
+
+export const SAVE_EMAIL_CONFIG = gql`
+  mutation SaveEmailConfig($input: SaveEmailConfigInput!) {
+    saveEmailConfig(input: $input)
+  }
+`;
+
+export const SAVE_WHATSAPP_CONFIG = gql`
+  mutation SaveWhatsappConfig($input: SaveWhatsappConfigInput!) {
+    saveWhatsappConfig(input: $input)
+  }
+`;
+
+export const SEND_TEST_EMAIL = gql`
+  mutation SendTestEmail($to: String!) {
+    sendTestEmail(to: $to)
+  }
+`;
+
+export const SEND_TEST_WHATSAPP = gql`
+  mutation SendTestWhatsapp($to: String!, $message: String!) {
+    sendTestWhatsapp(to: $to, message: $message)
+  }
+`;
+
+// Payment gateway status for checkout flows (exposes key id + mode only).
+export const GET_PAYMENT_CONFIG = gql`
+  query PaymentConfig {
+    paymentConfig {
+      configured
+      keyId
+      mode
+    }
+  }
+`;
+
+export const CREATE_PAYMENT_ORDER = gql`
+  mutation CreatePaymentOrder($amount: Float!, $invoiceId: ID) {
+    createPaymentOrder(amount: $amount, invoiceId: $invoiceId)
+  }
+`;
+
+export const VERIFY_PAYMENT = gql`
+  mutation VerifyPayment($input: VerifyPaymentInput!) {
+    verifyPayment(input: $input)
   }
 `;
 

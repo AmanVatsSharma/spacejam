@@ -442,7 +442,11 @@ export default function OnboardingWizardPage() {
                   customerId,
                   customerName,
                   amount: depositAmount,
-                  status: "Pending",
+                  // InvoiceStatus GraphQL literals are the enum KEYS
+                  // (SENT, not "Sent"/"Pending") — invalid values silently
+                  // failed invoice creation during onboarding (swallowed
+                  // by allSettled).
+                  status: "SENT",
                   planName: resolvedPlanType || "Standard",
                 },
               },

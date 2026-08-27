@@ -10,6 +10,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
 import { CrmResolver } from '../graphql/resolvers/crm.resolver';
 import { CustomerResolver } from '../graphql/resolvers/customer.resolver';
 import { OnboardingResolver } from '../graphql/resolvers/onboarding.resolver';
@@ -34,6 +35,9 @@ import { EmailService } from '../auth/services/email.service';
       User,
     ]),
     CacheModule,
+    // EmailService (provided below) reads its SMTP config from
+    // IntegrationSettingsService, which IntegrationsModule exports.
+    IntegrationsModule,
   ],
   providers: [
     CrmResolver,

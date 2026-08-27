@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   GET_INVOICES,
   DELETE_INVOICE,
-  MARK_INVOICE_PAID,
   GET_DISCOUNTS,
   CREATE_DISCOUNT,
   UPDATE_DISCOUNT,
@@ -14,6 +13,7 @@ import {
 } from "@/lib/apollo/operations";
 import { normalizeStatus, invoiceStatusLabel } from "@/lib/revenue-status";
 import { GenerateInvoiceModal } from "@/components/ui/dashboard/generate-invoice-modal";
+import { MarkPaidModal } from "@/components/ui/dashboard/mark-paid-modal";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 
 interface Invoice {
@@ -87,6 +87,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [markPaidInvoice, setMarkPaidInvoice] = useState<Invoice | null>(null);
 
   // Discounts tab state
   const [showDiscountModal, setShowDiscountModal] = useState(false);
@@ -115,10 +116,6 @@ export default function InvoicesPage() {
   });
 
   const [deleteInvoice] = useMutation(DELETE_INVOICE, {
-    refetchQueries: [{ query: GET_INVOICES }],
-  });
-
-  const [markInvoicePaid] = useMutation(MARK_INVOICE_PAID, {
     refetchQueries: [{ query: GET_INVOICES }],
   });
 
@@ -236,15 +233,6 @@ export default function InvoicesPage() {
       toast.success("Discount deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete discount");
-    }
-  };
-
-  const handleMarkPaid = async (id: string) => {
-    try {
-      await markInvoicePaid({ variables: { id } });
-      toast.success("Invoice marked as paid");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to mark invoice as paid");
     }
   };
 
@@ -373,7 +361,7 @@ export default function InvoicesPage() {
                       <td className="px-6 py-4 flex gap-2">
                         {normalizeStatus(invoice.status) !== "PAID" && (
                           <button
-                            onClick={() => handleMarkPaid(invoice.id)}
+                            onClick={() => setMarkPaidInvoice(invoice)}
                             className="text-green-600 text-sm font-medium hover:underline transition-all active:scale-[0.97] transition-transform duration-150"
                           >
                             Mark Paid
@@ -622,6 +610,14 @@ export default function InvoicesPage() {
       <GenerateInvoiceModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+      />
+
+      {/* Mark Paid Modal (online Razorpay / offline record) */}
+      <MarkPaidModal
+        isOpen={!!markPaidInvoice}
+        onClose={() => setMarkPaidInvoice(null)}
+        invoice={markPaidInvoice}
+        onPaid={() => refetchInvoices()}
       />
     </div>
   );

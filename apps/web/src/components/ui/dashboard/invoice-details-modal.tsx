@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
-import { useQuery, useMutation } from "@apollo/client";
+import React, { useState } from "react";
+import { useQuery } from "@apollo/client";
 import { toast } from "sonner";
 import styles from "./invoice-details-modal.module.css";
-import { GET_INVOICE, MARK_INVOICE_PAID, GET_INVOICES } from "@/lib/apollo/operations";
+import { GET_INVOICE } from "@/lib/apollo/operations";
+import { MarkPaidModal } from "./mark-paid-modal";
 
 interface InvoiceDetailsModalProps {
   isOpen: boolean;
@@ -70,40 +71,19 @@ export function InvoiceDetailsModal({
 }: InvoiceDetailsModalProps) {
   const skip = !isOpen || !invoiceId;
 
-  const { data, loading } = useQuery(GET_INVOICE, {
+  const { data, loading, refetch: refetchInvoice } = useQuery(GET_INVOICE, {
     variables: { id: invoiceId },
     skip,
   });
   const invoice = data?.invoice as Invoice | undefined;
 
-  const [markPaid, { loading: markingPaid }] = useMutation(MARK_INVOICE_PAID, {
-    refetchQueries: [{ query: GET_INVOICES }, { query: GET_INVOICE, variables: { id: invoiceId } }],
-  });
+  const [showMarkPaid, setShowMarkPaid] = useState(false);
 
   if (!isOpen) return null;
 
   const displayName = invoice?.customerName ?? clientName ?? "—";
   const displayAmount = invoice?.totalAmount ?? invoice?.amount ?? amount ?? 0;
   const isPaid = invoice?.status === "PAID";
-
-  const handleMarkPaid = async () => {
-    if (!invoiceId) {
-      toast.error("Cannot mark paid: missing invoice id");
-      return;
-    }
-    try {
-      await markPaid({ variables: { id: invoiceId, paymentMethod: "BANK_TRANSFER" } });
-      toast.success("Invoice marked as paid");
-    } catch (err) {
-      toast.error(
-        `Failed to mark paid: ${err instanceof Error ? err.message : "Unknown error"}`,
-      );
-    }
-  };
-
-  const handleSendReminder = () => {
-    toast.success("Reminder sent");
-  };
 
   const handleDownload = () => {
     if (!invoice) {
@@ -137,8 +117,9 @@ export function InvoiceDetailsModal({
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <>
+      <div className={styles.overlay} onClick={onClose}>
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
           <div className={styles.headerTitles}>
             <h2 className={styles.title}>Invoice Details</h2>
@@ -225,18 +206,6 @@ export function InvoiceDetailsModal({
         </div>
 
         <div className={styles.footer}>
-          <button
-            className={styles.sendReminderBtn}
-            onClick={handleSendReminder}
-            disabled={isPaid}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-            Send Reminder
-          </button>
-
           <div className={styles.footerRow}>
             <button className={styles.downloadBtn} onClick={handleDownload}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
@@ -248,17 +217,35 @@ export function InvoiceDetailsModal({
             </button>
             <button
               className={styles.markPaidBtn}
-              onClick={handleMarkPaid}
-              disabled={markingPaid || isPaid}
+              onClick={() => setShowMarkPaid(true)}
+              disabled={isPaid}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              {markingPaid ? "Marking…" : isPaid ? "Paid" : "Mark Paid"}
+              {isPaid ? "Paid" : "Mark Paid"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      <MarkPaidModal
+        isOpen={showMarkPaid}
+        onClose={() => setShowMarkPaid(false)}
+        invoice={
+          invoice
+            ? {
+                id: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                customerName: invoice.customerName,
+                totalAmount: invoice.totalAmount,
+                amount: invoice.amount,
+              }
+            : null
+        }
+        onPaid={() => refetchInvoice()}
+      />
+    </>
   );
 }

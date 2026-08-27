@@ -178,6 +178,12 @@ export enum PaymentMethod {
   UPI = 'UPI',
   WALLET = 'WALLET',
   BANK_TRANSFER = 'BANK_TRANSFER',
+  // Offline/manual methods + online gateway payments (values already present
+  // in the invoices.payment_method DB enum).
+  CASH = 'CASH',
+  CHEQUE = 'CHEQUE',
+  NET_BANKING = 'NET_BANKING',
+  ONLINE = 'ONLINE',
 }
 
 export enum PaymentStatus {

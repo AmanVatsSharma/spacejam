@@ -19,6 +19,9 @@ import { AppModule } from './app/app.module';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    // Keep the raw request body around so the Razorpay webhook controller
+    // can verify the x-razorpay-signature HMAC over the exact bytes sent.
+    rawBody: true,
   });
 
   // Global prefix

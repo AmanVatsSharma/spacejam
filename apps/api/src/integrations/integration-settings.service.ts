@@ -39,6 +39,22 @@ export interface RazorpayConfig {
   mode: 'test' | 'live' | '';
 }
 
+export interface EmailConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  from: string;
+}
+
+export interface WhatsappConfig {
+  provider: 'console' | 'msg91' | 'twilio' | '';
+  apiKey: string;
+  senderId: string;
+  templateId: string;
+}
+
 @Injectable()
 export class IntegrationSettingsService {
   private readonly logger = new Logger(IntegrationSettingsService.name);
@@ -95,6 +111,41 @@ export class IntegrationSettingsService {
   async isRazorpayConfigured(): Promise<boolean> {
     const c = await this.getRazorpayConfig();
     return !!c.keyId && !!c.keySecret;
+  }
+
+  /** SMTP email config (app_settings keys email.*). Port defaults to 587. */
+  async getEmailConfig(): Promise<EmailConfig> {
+    const port = parseInt((await this.getRaw('email.port')) ?? '', 10);
+    return {
+      host: (await this.getRaw('email.host')) ?? '',
+      port: Number.isFinite(port) && port > 0 ? port : 587,
+      secure: (await this.getRaw('email.secure')) === 'true',
+      user: (await this.getRaw('email.user')) ?? '',
+      password: (await this.getRaw('email.password')) ?? '',
+      from: (await this.getRaw('email.from')) ?? '',
+    };
+  }
+
+  /** WhatsApp config (app_settings keys whatsapp.*). */
+  async getWhatsappConfig(): Promise<WhatsappConfig> {
+    return {
+      provider: (await this.getRaw('whatsapp.provider')) as WhatsappConfig['provider'] ?? '',
+      apiKey: (await this.getRaw('whatsapp.apiKey')) ?? '',
+      senderId: (await this.getRaw('whatsapp.senderId')) ?? '',
+      templateId: (await this.getRaw('whatsapp.templateId')) ?? '',
+    };
+  }
+
+  /** Is a real SMTP account configured (host + user + password present)? */
+  async isEmailConfigured(): Promise<boolean> {
+    const c = await this.getEmailConfig();
+    return !!c.host && !!c.user && !!c.password;
+  }
+
+  /** Is a real (non-console) WhatsApp provider configured? */
+  async isWhatsappConfigured(): Promise<boolean> {
+    const c = await this.getWhatsappConfig();
+    return c.provider !== 'console' && c.provider !== '' && !!c.apiKey;
   }
 
   /**

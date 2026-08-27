@@ -7,10 +7,11 @@
  * Last-updated: 2026-07-02
  */
 import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { InvoiceStatus, DepositStatus, ContractStatus } from '../types/user.type';
+import { InvoiceStatus, DepositStatus, ContractStatus, PaymentMethod } from '../types/user.type';
 import { Invoice as InvoiceEntity } from '../../typeorm/entities/invoice.entity';
 import { Deposit as DepositEntity } from '../../typeorm/entities/deposit.entity';
 import { Contract as ContractEntity } from '../../typeorm/entities/contract.entity';
@@ -26,6 +27,7 @@ import {
   ContractFiltersInput,
 } from '../inputs/revenue.input';
 import { CacheService } from '../../cache/cache.service';
+import { EmailService } from '../../auth/services/email.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
@@ -122,11 +124,13 @@ export class InvoiceResolver {
   @Mutation(() => InvoiceEntity)
   async markInvoicePaid(
     @Args('id', { type: () => ID }) id: string,
-    @Args('paymentMethod', { nullable: true }) paymentMethod?: string,
+    @Args('paymentMethod', { type: () => PaymentMethod, nullable: true }) paymentMethod?: PaymentMethod,
   ): Promise<InvoiceEntity> {
     await this.invoiceRepo.update(id, {
       status: InvoiceStatus.PAID,
       paidDate: new Date(),
+      // Persist the supplied payment method (previously ignored).
+      ...(paymentMethod ? { paymentMethod } : {}),
     });
     const invoice = await this.invoiceRepo.findOne({
       where: { id },
@@ -153,10 +157,16 @@ export class InvoiceResolver {
 
 @Resolver(() => DepositEntity)
 export class DepositResolver {
+  private readonly logger = new Logger(DepositResolver.name);
+
   constructor(
     private cache: CacheService,
     @InjectRepository(DepositEntity)
     private depositRepo: Repository<DepositEntity>,
+    // EmailService lives in AuthModule/CrmModule; importing either here would
+    // create a module cycle (Auth already imports Integrations which the
+    // revenue flows don't need), so resolve it lazily from the app container.
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   @Query(() => [DepositEntity])
@@ -343,13 +353,49 @@ export class DepositResolver {
       relations: ['customer'],
     });
     if (!deposit) throw new NotFoundException('Deposit not found');
-    // Email/notification infra is not yet wired into the revenue module.
-    // Log the intent so it is observable until a notifier is integrated.
-    // eslint-disable-next-line no-console
-    console.log(
-      `[DepositReminder] deposit=${id} type=${reminderType} customer=${deposit.customerName} amount=${deposit.amount}`,
-    );
+
+    const customerEmail = deposit.customer?.email;
+    const email = this.resolveEmailService();
+    if (email && customerEmail && (await email.isConfigured())) {
+      try {
+        await email.sendPlain({
+          to: customerEmail,
+          subject: `SpaceJam deposit reminder (${deposit.referenceNumber})`,
+          text:
+            `Dear ${deposit.customerName},\n\n` +
+            `This is a friendly reminder regarding your deposit ${deposit.referenceNumber} ` +
+            `of ₹${deposit.amount} (status: ${deposit.status}).\n\n` +
+            `Please contact the SpaceJam front desk if you have any questions.\n\n— SpaceJam`,
+        });
+        this.logger.log(
+          `Deposit reminder (${reminderType}) emailed for deposit=${id} to=${customerEmail}`,
+        );
+      } catch (err: any) {
+        // Delivery failure shouldn't fail the mutation — the reminder is
+        // best-effort. Log loudly so ops can follow up.
+        this.logger.error(
+          `Deposit reminder email failed for deposit=${id}: ${err?.message}`,
+        );
+      }
+    } else {
+      // No transporter configured (or no customer email on file): still
+      // succeed — the mutation return type is Boolean — but log the intent.
+      this.logger.log(
+        `[DepositReminder] (not delivered) deposit=${id} type=${reminderType} ` +
+          `customer=${deposit.customerName} email=${customerEmail ?? 'none'}`,
+      );
+    }
     return true;
+  }
+
+  /** Lazily fetch EmailService from the app container; returns undefined in
+   *  isolated contexts (unit tests) where it isn't registered. */
+  private resolveEmailService(): EmailService | undefined {
+    try {
+      return this.moduleRef.get(EmailService, { strict: false });
+    } catch {
+      return undefined;
+    }
   }
 
   @Mutation(() => String)

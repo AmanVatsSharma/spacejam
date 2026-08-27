@@ -3,29 +3,25 @@
  * Module:      API · Integrations · Payment
  * Purpose:     Authenticated payment mutations wrapping RazorpayService so
  *              the mobile/web client can create a Razorpay order and verify
- *              a payment signature. Any authenticated user may pay; the
- *              super-admin configures the keys separately (Integrations page).
+ *              a payment signature. When an invoiceId is supplied it is
+ *              attached to the order notes and a successful verification
+ *              marks that invoice PAID (paymentMethod ONLINE).
  *
  * Author:      ZCode
- * Last-updated: 2026-08-09
+ * Last-updated: 2026-08-27
  */
-import { Resolver, Mutation, Args, Query } from '@nestjs/graphql';
-import { Field, Float, ObjectType } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Query, ID } from '@nestjs/graphql';
+import { Field, Float, ObjectType, InputType } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { IsOptional, IsString } from 'class-validator';
 
 import { RazorpayService } from './razorpay.service';
 import { IntegrationSettingsService } from './integration-settings.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
-
-@ObjectType()
-class RazorpayOrderGql {
-  @Field() id!: string;
-  @Field() entity!: string;
-  @Field(() => Float) amount!: number;
-  @Field() currency!: string;
-  @Field() status!: string;
-  @Field() receipt!: string;
-}
+import { Invoice } from '../typeorm/entities/invoice.entity';
+import { InvoiceStatus, PaymentMethod } from '../graphql/types/user.type';
 
 @ObjectType()
 class PaymentConfigGql {
@@ -34,11 +30,33 @@ class PaymentConfigGql {
   @Field(() => String, { nullable: true }) mode?: string | null;
 }
 
+@InputType()
+class VerifyPaymentInput {
+  @Field()
+  @IsString()
+  razorpayOrderId!: string;
+
+  @Field()
+  @IsString()
+  razorpayPaymentId!: string;
+
+  @Field()
+  @IsString()
+  razorpaySignature!: string;
+
+  @Field(() => ID, { nullable: true })
+  @IsOptional()
+  @IsString()
+  invoiceId?: string;
+}
+
 @Resolver()
 export class PaymentResolver {
   constructor(
     private readonly razorpay: RazorpayService,
     private readonly settings: IntegrationSettingsService,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepo: Repository<Invoice>,
   ) {}
 
   /** Public-ish config the client uses to initialise the Razorpay checkout SDK. */
@@ -53,23 +71,42 @@ export class PaymentResolver {
     };
   }
 
-  @Mutation(() => RazorpayOrderGql, { description: 'Create a Razorpay order for the given amount (rupees). Returns the order id the client passes to the checkout SDK.' })
+  @Mutation(() => String, { description: 'Create a Razorpay order for the given amount (rupees). Returns the order id the client passes to the checkout SDK. Optional invoiceId is embedded in the order notes so the webhook can reconcile the payment.' })
   @UseGuards(GqlAuthGuard)
   async createPaymentOrder(
     @Args('amount', { type: () => Float }) amount: number,
-    @Args('receipt') receipt: string,
-  ): Promise<RazorpayOrderGql> {
-    const order = await this.razorpay.createOrder(amount, receipt);
-    return order as RazorpayOrderGql;
+    @Args('invoiceId', { type: () => ID, nullable: true }) invoiceId?: string,
+  ): Promise<string> {
+    const order = await this.razorpay.createOrder(
+      amount,
+      `rcpt_${Date.now()}`,
+      invoiceId ? { invoiceId } : undefined,
+    );
+    return order.id;
   }
 
-  @Mutation(() => Boolean, { description: 'Verify a Razorpay payment signature after checkout. Returns true if valid.' })
+  @Mutation(() => Boolean, { description: 'Verify a Razorpay payment signature after checkout. Returns true if valid; marks the referenced invoice PAID (ONLINE) when an invoiceId is supplied.' })
   @UseGuards(GqlAuthGuard)
-  async verifyPayment(
-    @Args('orderId') orderId: string,
-    @Args('paymentId') paymentId: string,
-    @Args('signature') signature: string,
-  ): Promise<boolean> {
-    return this.razorpay.verifyPayment(orderId, paymentId, signature);
+  async verifyPayment(@Args('input') input: VerifyPaymentInput): Promise<boolean> {
+    const ok = await this.razorpay.verifyPayment(
+      input.razorpayOrderId,
+      input.razorpayPaymentId,
+      input.razorpaySignature,
+    );
+    if (!ok) return false;
+
+    if (input.invoiceId) {
+      // Idempotent: skip when the invoice is already PAID so a replayed
+      // verification doesn't move paidDate.
+      const invoice = await this.invoiceRepo.findOne({ where: { id: input.invoiceId } });
+      if (invoice && invoice.status !== InvoiceStatus.PAID) {
+        await this.invoiceRepo.update(input.invoiceId, {
+          status: InvoiceStatus.PAID,
+          paidDate: new Date(),
+          paymentMethod: PaymentMethod.ONLINE,
+        });
+      }
+    }
+    return true;
   }
 }
