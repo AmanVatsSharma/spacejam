@@ -272,6 +272,27 @@ export default function OnboardingWizardPage() {
     if (currentStep > 1) setCurrentStep((p) => p - 1);
   };
 
+  /**
+   * "Add Another Client" on the completion screen: reset every step's
+   * state so the wizard starts fresh without a page reload.
+   */
+  const resetWizard = () => {
+    setBasicInfo({ name: "", phone: "", email: "", altContact: "", dob: "", company: "", gst: "" });
+    setIndividuals([{ id: Date.now(), name: "", phone: "", email: "", dept: "", seat: "" }]);
+    setPlanType("Hot Desk");
+    setBookingType("Open Seating");
+    setSecurityDepositAmount("₹ 50,000");
+    setBillingCycle("Monthly");
+    setPaymentMode("UPI");
+    setKycDocs({ pan: null, aadhaarFront: null, aadhaarBack: null, gst: null });
+    setCurrentStep(1);
+    try {
+      localStorage.removeItem("onboarding_draft");
+    } catch {
+      /* ignore */
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -344,7 +365,10 @@ export default function OnboardingWizardPage() {
               email: basicInfo.email || "",
               phone: basicInfo.phone || "",
               company: basicInfo.company || "",
-              status: "Active",
+              // CustomerStatus enum values are UPPERCASE — "Active" was
+              // rejected by GraphQL validation and silently killed the
+              // entire createCustomer mutation.
+              status: "ACTIVE",
               gstNumber,
               companyAddress,
               planType: resolvedPlanType,
@@ -2371,11 +2395,18 @@ export default function OnboardingWizardPage() {
                       </button>
 
                       <div className="flex items-center gap-3 w-full mb-8">
-                        <button className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <button
+                          onClick={handleSubmit}
+                          disabled={isSubmitting}
+                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           View Client Profile
                         </button>
-                        <button className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <button
+                          onClick={resetWizard}
+                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+                        >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                           Add Another Client
                         </button>
