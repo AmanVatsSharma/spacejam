@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ import {
   CREATE_INVOICE,
   COMPLETE_ONBOARDING,
   CREATE_CUSTOMER_DOCUMENT,
+  GET_FLOORS,
+  ALLOCATE_CUSTOMER_SEATS,
 } from "@/lib/apollo/operations";
 import { useActiveCenter } from "@/contexts/active-center-context";
 import { getAccessToken } from "@/lib/apollo/token-storage";
@@ -92,6 +94,35 @@ export default function OnboardingWizardPage() {
     aadhaarBack: null,
     gst: null,
   });
+
+  // ── Inventory seats for the active center — powers the per-person seat
+  //    picker in step 2 and the final allocation call.
+  const { data: floorsData } = useQuery(GET_FLOORS, {
+    variables: activeCenter?.id ? { centerId: activeCenter.id } : undefined,
+    skip: !activeCenter?.id,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
+  });
+  const centerSeats = useMemo(() => {
+    const seats: { id: string; name: string; status: string; floorName: string }[] = [];
+    for (const floor of floorsData?.floors ?? []) {
+      for (const seat of floor.seats ?? []) {
+        seats.push({
+          id: seat.id,
+          name: seat.name,
+          status: seat.status,
+          floorName: floor.name,
+        });
+      }
+    }
+    return seats;
+  }, [floorsData]);
+  const seatsTakenByOthers = (seatName: string, selfIndex: number) =>
+    individuals.some(
+      (ind, i) => i !== selfIndex && (ind.seat ?? "").toLowerCase() === seatName.toLowerCase(),
+    );
+
+  const [allocateCustomerSeats] = useMutation(ALLOCATE_CUSTOMER_SEATS);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -176,7 +207,7 @@ export default function OnboardingWizardPage() {
   // Form State - Step 2
   const [employeeMode, setEmployeeMode] = useState<"bulk" | "individual">("bulk");
   const [individuals, setIndividuals] = useState([
-    { id: 1, name: "", phone: "", email: "", dept: "", seat: "Seat D11" },
+    { id: 1, name: "", phone: "", email: "", dept: "", seat: "" },
   ]);
 
   const addUserRole = () => {
@@ -460,6 +491,41 @@ export default function OnboardingWizardPage() {
         });
       });
 
+      // ── Seat allocation: book inventory seats for the new client so they
+      //    appear in the floor map / table view immediately. Named picks are
+      //    honored; everyone else is auto-assigned the next available seat.
+      const wantedSeats = Math.max(1, individuals.filter((i) => i.name?.trim()).length || 1);
+      let allocationToast = "";
+      try {
+        const allocResult = await allocateCustomerSeats({
+          variables: {
+            input: {
+              customerId,
+              seatType: planType === "Hot Desk" ? "HOT_DESK" : "ANY",
+              months: billingCycle === "Annually" ? 12 : billingCycle === "Quarterly" ? 3 : 1,
+              count: wantedSeats,
+              individuals: individuals
+                .filter((i) => i.name?.trim())
+                .map((i) => ({
+                  name: i.name.trim(),
+                  phone: i.phone?.trim() || undefined,
+                  email: i.email?.trim() || undefined,
+                  seatName: i.seat?.trim() || undefined,
+                })),
+            },
+          },
+        });
+        const alloc = allocResult.data?.allocateCustomerSeats;
+        if (alloc) {
+          allocationToast =
+            alloc.shortfall && alloc.shortfall > 0
+              ? `Seats booked: ${alloc.booked}/${alloc.requested} — not enough inventory (${alloc.shortfall} unassigned)`
+              : `Seats booked in inventory: ${alloc.booked}`;
+        }
+      } catch (err: any) {
+        allocationToast = `Seat allocation failed: ${err?.graphQLErrors?.[0]?.message ?? err?.message ?? "unknown error"}`;
+      }
+
       // ── Step 6 documents: upload each selected KYC file and attach it to
       //    the new customer. Non-fatal per file — the customer is already
       //    created; the admin is told which uploads need a retry.
@@ -517,6 +583,10 @@ export default function OnboardingWizardPage() {
         toast.warning(
           `Customer created, but these document uploads failed: ${docErrors.join(", ")}. You can upload them from the customer's Documents tab.`,
         );
+      }
+      if (allocationToast) {
+        if (/failed|not enough/i.test(allocationToast)) toast.warning(allocationToast);
+        else toast.success(allocationToast);
       }
 
       router.push(`/dashboard/crm/customers/${customerId}`);
@@ -1065,23 +1135,65 @@ export default function OnboardingWizardPage() {
                               {idx > 0 && <div className="h-px bg-gray-100 my-2" />}
                               <div>
                                 <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Full Name <span className="text-[#FF6A2F]">*</span></label>
-                                <input type="text" placeholder="John Doe" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="John Doe"
+                                  value={ind.name}
+                                  onChange={(e) =>
+                                    setIndividuals((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, name: e.target.value } : p)),
+                                    )
+                                  }
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400"
+                                />
                               </div>
                               <div>
                                 <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Phone Number <span className="text-[#FF6A2F]">*</span></label>
-                                <input type="text" placeholder="+91 9876543210" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="+91 9876543210"
+                                  value={ind.phone}
+                                  onChange={(e) =>
+                                    setIndividuals((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, phone: e.target.value } : p)),
+                                    )
+                                  }
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400"
+                                />
                               </div>
                               <div>
                                 <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Email Address <span className="text-[#FF6A2F]">*</span></label>
-                                <input type="email" placeholder="john.doe@gmail.com" className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                                <input
+                                  type="email"
+                                  placeholder="john.doe@gmail.com"
+                                  value={ind.email}
+                                  onChange={(e) =>
+                                    setIndividuals((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, email: e.target.value } : p)),
+                                    )
+                                  }
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400"
+                                />
                               </div>
                               <div>
                                 <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Department/Designation <span className="text-[#FF6A2F]">*</span></label>
                                 <div className="relative">
-                                  <select className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white">
+                                  <select
+                                    value={ind.dept}
+                                    onChange={(e) =>
+                                      setIndividuals((prev) =>
+                                        prev.map((p, i) => (i === idx ? { ...p, dept: e.target.value } : p)),
+                                      )
+                                    }
+                                    className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white"
+                                  >
+                                    <option value="">Select department</option>
                                     <option>HR</option>
                                     <option>IT</option>
                                     <option>Sales</option>
+                                    <option>Operations</option>
+                                    <option>Finance</option>
+                                    <option>Management</option>
                                   </select>
                                   <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -1089,10 +1201,37 @@ export default function OnboardingWizardPage() {
                                 </div>
                               </div>
                               <div>
-                                <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Assigned seat <span className="text-[#FF6A2F]">*</span></label>
-                                <div className="w-full h-12 bg-[#FF6A2F] rounded-lg flex items-center justify-center text-white font-semibold text-[14px] cursor-pointer hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">
-                                  {ind.seat || "Select Seat"}
-                                </div>
+                                <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Assigned seat</label>
+                                <select
+                                  value={ind.seat ?? ""}
+                                  onChange={(e) =>
+                                    setIndividuals((prev) =>
+                                      prev.map((p, i) => (i === idx ? { ...p, seat: e.target.value } : p)),
+                                    )
+                                  }
+                                  className="w-full h-12 px-3 border border-gray-200 rounded-lg text-[14px] text-gray-800 bg-white focus:outline-none focus:border-[#FF6A2F]"
+                                >
+                                  <option value="">Auto-assign later</option>
+                                  {centerSeats.map((seat) => {
+                                    const taken = seatsTakenByOthers(seat.name, idx);
+                                    const unavailable = seat.status !== "AVAILABLE";
+                                    return (
+                                      <option
+                                        key={seat.id}
+                                        value={seat.name}
+                                        disabled={taken || unavailable}
+                                      >
+                                        {seat.name} ({seat.floorName}){unavailable ? ` — ${seat.status.toLowerCase()}` : ""}
+                                        {taken ? " — chosen" : ""}
+                                      </option>
+                                    );
+                                  })}
+                                  {centerSeats.length === 0 && (
+                                    <option disabled value="">
+                                      No seats in inventory for this center
+                                    </option>
+                                  )}
+                                </select>
                               </div>
                             </div>
                           ))}

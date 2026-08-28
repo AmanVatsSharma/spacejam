@@ -7,7 +7,8 @@
  * Last-updated: 2026-07-02
  */
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsDate, IsOptional, IsUUID, IsInt } from 'class-validator';
+import { IsString, IsNotEmpty, IsDate, IsOptional, IsUUID, IsInt, IsEmail, Min, Max, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 @InputType()
 export class CreateBookingInput {
@@ -132,4 +133,64 @@ export class UpdateBookingInput {
   @IsString()
   @IsOptional()
   notes?: string;
+}
+/** One team member collected during onboarding; seatName is matched against
+ *  the center's inventory seat names (optional — unmatched people get
+ *  auto-assigned the next available seat). */
+@InputType()
+export class SeatAllocationIndividualInput {
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @Field({ nullable: true })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  seatName?: string;
+}
+
+@InputType()
+export class AllocateCustomerSeatsInput {
+  @Field(() => ID)
+  @IsUUID()
+  @IsNotEmpty()
+  customerId!: string;
+
+  /** HOT_DESK | DEDICATED | CABIN | MEETING_ROOM — omit/ANY for any type. */
+  @Field({ nullable: true })
+  @IsString()
+  @IsOptional()
+  seatType?: string;
+
+  /** Booking duration in months (default 1). */
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Max(36)
+  months?: number;
+
+  /** Total seats wanted (individuals may be fewer — extras are unnamed). */
+  @Field(() => Int)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  count!: number;
+
+  @Field(() => [SeatAllocationIndividualInput], { nullable: true })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => SeatAllocationIndividualInput)
+  individuals?: SeatAllocationIndividualInput[];
 }

@@ -1778,6 +1778,23 @@ export const CREATE_BOOKING = gql`
   }
 `;
 
+export const ALLOCATE_CUSTOMER_SEATS = gql`
+  mutation AllocateCustomerSeats($input: AllocateCustomerSeatsInput!) {
+    allocateCustomerSeats(input: $input) {
+      requested
+      booked
+      availableAtStart
+      shortfall
+      seats {
+        seatId
+        seatName
+        employeeName
+        bookingId
+      }
+    }
+  }
+`;
+
 export const CANCEL_BOOKING = gql`
   mutation CancelBooking($id: ID!) {
     cancelBooking(id: $id) {

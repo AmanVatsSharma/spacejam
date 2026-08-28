@@ -7,7 +7,7 @@
  * Last-updated: 2026-06-07
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID, ObjectType, Field } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID, ObjectType, Field, Int } from '@nestjs/graphql';
 import { UnauthorizedException, BadRequestException, NotFoundException, UseGuards } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,7 +17,14 @@ import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity'
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 import { PubSubService } from '../pubsub/pubsub.service';
-import { CreateBookingInput, BookingFiltersInput, UpdateBookingInput } from '../inputs/booking.input';
+import {
+  CreateBookingInput,
+  BookingFiltersInput,
+  UpdateBookingInput,
+  AllocateCustomerSeatsInput,
+} from '../inputs/booking.input';
+import { Customer as CustomerEntity } from '../../typeorm/entities/customer.entity';
+import { CustomerEmployee as CustomerEmployeeEntity } from '../../typeorm/entities/customer-employee.entity';
 import { Offer } from '../../typeorm/entities/offer.entity';
 import { OfferRedemption } from '../../typeorm/entities/offer.entity';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
@@ -51,6 +58,10 @@ export class BookingResolver {
     private bookingRepo: Repository<BookingEntity>,
     @InjectRepository(SeatEntity)
     private seatRepo: Repository<SeatEntity>,
+    @InjectRepository(CustomerEntity)
+    private customerRepo: Repository<CustomerEntity>,
+    @InjectRepository(CustomerEmployeeEntity)
+    private customerEmployeeRepo: Repository<CustomerEmployeeEntity>,
     @InjectRepository(PaymentEntity)
     private paymentRepo: Repository<PaymentEntity>,
     @InjectRepository(Offer)
@@ -504,4 +515,149 @@ export class BookingResolver {
     return updatedPayment!;
   }
 
+
+  // ── Onboarding seat allocation ────────────────────────────────────────────
+
+  /**
+   * Allocate inventory seats to a customer during onboarding: reserves the
+   * requested number of AVAILABLE seats in the customer's center (matching
+   * named seats first, then auto-assigning), books each for `months`,
+   * and persists team members as CustomerEmployees with their seat.
+   * Seats flip to RESERVED so they show up across inventory immediately.
+   */
+  @Mutation(() => SeatAllocationResult)
+  async allocateCustomerSeats(
+    @Args('input') input: AllocateCustomerSeatsInput,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<SeatAllocationResult> {
+    const customer = await this.customerRepo.findOne({ where: { id: input.customerId } });
+    if (!customer) throw new NotFoundException('Customer not found');
+
+    const scope = caller ? centerScope(caller) : undefined;
+    const centerId = scope ?? customer.centerId;
+    if (!centerId) {
+      throw new BadRequestException('Customer has no center assigned and caller is not center-scoped');
+    }
+
+    const where: any = { centerId, status: SeatStatus.AVAILABLE, active: true };
+    if (input.seatType && input.seatType !== 'ANY') where.seatType = input.seatType;
+    const available = await this.seatRepo.find({ where, order: { name: 'ASC' } });
+
+    const result = new SeatAllocationResult();
+    result.requested = input.count;
+    result.availableAtStart = available.length;
+
+    const claimed = new Set<string>();
+    const pick = (predicate: (s: SeatEntity) => boolean): SeatEntity | null => {
+      const seat = available.find((s) => !claimed.has(s.id) && predicate(s));
+      if (seat) claimed.add(seat.id);
+      return seat ?? null;
+    };
+
+    const individuals = input.individuals ?? [];
+    const now = new Date();
+    const end = new Date(now);
+    end.setMonth(end.getMonth() + (input.months ?? 1));
+
+    for (const ind of individuals) {
+      if (result.seats.length >= input.count) break;
+      // Named match first (case-insensitive), else next available.
+      const seat = ind.seatName
+        ? pick((s) => s.name.toLowerCase().trim() === ind.seatName!.toLowerCase().trim())
+        : null;
+      const chosen = seat ?? pick(() => true);
+      if (!chosen) break;
+
+      const booking = await this.bookingRepo.save(
+        this.bookingRepo.create({
+          userId: caller?.sub ?? null,
+          customerId: customer.id,
+          seatId: chosen.id,
+          centerId,
+          startDate: now,
+          endDate: end,
+          status: BookingStatus.CONFIRMED,
+          totalPrice: chosen.price,
+          notes: `Seat allocated during onboarding${ind.name ? ` — ${ind.name}` : ''}`,
+        } as any),
+      );
+      await this.seatRepo.update(chosen.id, { status: SeatStatus.RESERVED });
+
+      let employeeId: string | null = null;
+      if (ind.name && ind.email) {
+        const emp = await this.customerEmployeeRepo.save(
+          this.customerEmployeeRepo.create({
+            customerId: customer.id,
+            name: ind.name,
+            email: ind.email,
+            phone: ind.phone,
+            seatId: chosen.id,
+            seatNumber: chosen.name,
+          } as any),
+        );
+        employeeId = emp.id;
+      }
+
+      result.seats.push(
+        new AllocatedSeat(chosen.id, chosen.name, employeeId, ind.name ?? null, booking.id),
+      );
+    }
+
+    // Unnamed seats for the remaining count.
+    while (result.seats.length < input.count) {
+      const chosen = pick(() => true);
+      if (!chosen) break;
+      const booking = await this.bookingRepo.save(
+        this.bookingRepo.create({
+          userId: caller?.sub ?? null,
+          customerId: customer.id,
+          seatId: chosen.id,
+          centerId,
+          startDate: now,
+          endDate: end,
+          status: BookingStatus.CONFIRMED,
+          totalPrice: chosen.price,
+          notes: 'Seat allocated during onboarding',
+        } as any),
+      );
+      await this.seatRepo.update(chosen.id, { status: SeatStatus.RESERVED });
+      result.seats.push(new AllocatedSeat(chosen.id, chosen.name, null, null, booking.id));
+    }
+
+    result.booked = result.seats.length;
+    if (result.booked < result.requested) {
+      result.shortfall = result.requested - result.booked;
+    }
+
+    await this.cache.invalidatePattern(`center:${centerId}`);
+
+    return result;
+  }
+}
+
+/** Plain result classes (declared after use via hoisting-safe class syntax). */
+@ObjectType()
+class AllocatedSeat {
+  @Field(() => ID) seatId: string;
+  @Field() seatName: string;
+  @Field(() => ID, { nullable: true }) employeeId?: string | null;
+  @Field(() => String, { nullable: true }) employeeName?: string | null;
+  @Field(() => ID) bookingId: string;
+
+  constructor(seatId: string, seatName: string, employeeId: string | null, employeeName: string | null, bookingId: string) {
+    this.seatId = seatId;
+    this.seatName = seatName;
+    this.employeeId = employeeId;
+    this.employeeName = employeeName;
+    this.bookingId = bookingId;
+  }
+}
+
+@ObjectType()
+class SeatAllocationResult {
+  @Field(() => Int) requested: number = 0;
+  @Field(() => Int) booked: number = 0;
+  @Field(() => Int) availableAtStart: number = 0;
+  @Field(() => Int, { nullable: true }) shortfall?: number;
+  @Field(() => [AllocatedSeat]) seats: AllocatedSeat[] = [];
 }

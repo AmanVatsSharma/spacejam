@@ -11,6 +11,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '../cache/cache.module';
 import { BookingResolver } from '../graphql/resolvers/booking.resolver';
 import { Booking } from '../typeorm/entities/booking.entity';
+import { Customer } from '../typeorm/entities/customer.entity';
+import { CustomerEmployee } from '../typeorm/entities/customer-employee.entity';
 import { Seat } from '../typeorm/entities/seat.entity';
 import { Payment } from '../typeorm/entities/payment.entity';
 import { Offer, OfferRedemption } from '../typeorm/entities/offer.entity';
@@ -18,7 +20,7 @@ import { PubSubModule } from '../graphql/pubsub/pub-sub.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Seat, Payment, Offer, OfferRedemption]),
+    TypeOrmModule.forFeature([Booking, Seat, Payment, Offer, OfferRedemption, Customer, CustomerEmployee]),
     CacheModule,
     PubSubModule,
   ],
