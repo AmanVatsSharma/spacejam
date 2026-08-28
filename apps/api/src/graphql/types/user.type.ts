@@ -184,6 +184,7 @@ export enum PaymentMethod {
   CHEQUE = 'CHEQUE',
   NET_BANKING = 'NET_BANKING',
   ONLINE = 'ONLINE',
+  QR = 'QR',
 }
 
 export enum PaymentStatus {

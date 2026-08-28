@@ -12,6 +12,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getAccessToken } from '@/lib/apollo/token-storage';
 import { useQuery, useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import {
@@ -19,6 +20,7 @@ import {
   GET_INTEGRATION_SETTINGS,
   SAVE_SMS_CONFIG,
   SAVE_RAZORPAY_CONFIG,
+  SAVE_QR_PAYMENT_CONFIG,
   SAVE_EMAIL_CONFIG,
   SAVE_WHATSAPP_CONFIG,
   SEND_TEST_EMAIL,
@@ -181,6 +183,63 @@ export default function IntegrationsSettingsPage() {
     sendTestWa({ variables: { to: testWa.phone.trim(), message: testWa.message } });
   };
 
+  // ── Manual UPI QR payment config ─────────────────────────────────────────
+  const [qr, setQr] = useState({ upiId: '', payeeName: '', imagePath: '' });
+  const [qrUploading, setQrUploading] = useState(false);
+  const [saveQr, { loading: savingQr }] = useMutation(SAVE_QR_PAYMENT_CONFIG, {
+    refetchQueries: ['GetIntegrationStatus'],
+    onCompleted: () => toast.success('UPI QR settings saved'),
+    onError: (e) => toast.error(e.message || 'Could not save QR settings'),
+  });
+
+  // QR keys live in the same 'payment' group the Razorpay section loads.
+  useEffect(() => {
+    const entries = payData?.integrationSettings ?? [];
+    const getVal = (key: string) => entries.find((e: any) => e.key === key)?.value;
+    if (entries.length) {
+      setQr((prev) => ({
+        ...prev,
+        upiId: getVal('payment.qr.upiId') || prev.upiId,
+        payeeName: getVal('payment.qr.payeeName') || prev.payeeName,
+        imagePath: getVal('payment.qr.imagePath') || prev.imagePath,
+      }));
+    }
+  }, [payData]);
+
+  const handleQrImageUpload = async (file: File) => {
+    if (!/^\.(png|jpe?g|webp)$/i.test(file.name.slice(file.name.lastIndexOf('.')))) {
+      toast.error('QR image must be PNG, JPG or WEBP');
+      return;
+    }
+    setQrUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const token = getAccessToken();
+      const res = await fetch('/api/print/upload', {
+        method: 'POST',
+        body,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.path) throw new Error(json?.message || `Upload failed (${res.status})`);
+      setQr((prev) => ({ ...prev, imagePath: json.path }));
+      toast.success('QR image uploaded — remember to Save');
+    } catch (e: any) {
+      toast.error(e?.message || 'QR image upload failed');
+    } finally {
+      setQrUploading(false);
+    }
+  };
+
+  const handleSaveQr = () => {
+    if (!qr.upiId.trim() || !qr.upiId.includes('@')) {
+      toast.error('Enter a valid UPI ID, e.g. spacejam@upi');
+      return;
+    }
+    saveQr({ variables: { upiId: qr.upiId.trim(), imagePath: qr.imagePath || null, payeeName: qr.payeeName.trim() || null } });
+  };
+
   if (!isSuperAdmin) {
     return (
       <div className="rounded-[14px] border border-[#E5E7EB] bg-white p-8">
@@ -321,6 +380,84 @@ export default function IntegrationsSettingsPage() {
           className="rounded-[10px] bg-[#FF6A2F] px-4 py-2 text-sm font-medium text-white hover:bg-[#FE7A47] disabled:opacity-50"
         >
           {savingRzp ? 'Saving…' : 'Save Razorpay config'}
+        </button>
+      </section>
+
+      {/* Manual UPI QR Code */}
+      <section className="space-y-4 rounded-[14px] border border-[#E5E7EB] bg-white p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-[#1F1F1F]">UPI QR Code (manual payments)</h2>
+            <p className="text-xs text-[#6A7282]">
+              Upload your UPI QR image and ID — admins can then accept manual QR payments with an optional transaction reference as proof.
+            </p>
+          </div>
+          <StatusBadge ok={status?.qrConfigured} label="UPI QR" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 compact:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">UPI ID</span>
+            <input
+              value={qr.upiId}
+              onChange={(e) => setQr({ ...qr, upiId: e.target.value })}
+              placeholder="e.g. spacejam@upi"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Payee name (shown on the pay screen)</span>
+            <input
+              value={qr.payeeName}
+              onChange={(e) => setQr({ ...qr, payeeName: e.target.value })}
+              placeholder="e.g. SpaceJam Coworking"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          {qr.imagePath ? (
+            <img
+              src={qr.imagePath}
+              alt="UPI QR code"
+              className="h-32 w-32 rounded-[10px] border border-[#E5E7EB] object-contain"
+            />
+          ) : (
+            <div className="flex h-32 w-32 items-center justify-center rounded-[10px] border border-dashed border-[#E5E7EB] text-xs text-[#9CA3AF]">
+              No QR uploaded
+            </div>
+          )}
+          <div className="space-y-2">
+            <label className="inline-block cursor-pointer rounded-[10px] border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#374151] hover:bg-gray-50">
+              {qrUploading ? 'Uploading…' : 'Upload QR image'}
+              <input
+                type="file"
+                accept=".png,.jpg,.jpeg,.webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleQrImageUpload(f);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {qr.imagePath && (
+              <button
+                type="button"
+                onClick={() => setQr({ ...qr, imagePath: '' })}
+                className="block text-xs text-[#DC2626] hover:underline"
+              >
+                Remove image
+              </button>
+            )}
+            <p className="text-xs text-[#9CA3AF]">PNG / JPG · max 10 MB. Saved on the server, shown on the invoice pay screen.</p>
+          </div>
+        </div>
+        <button
+          onClick={handleSaveQr}
+          disabled={savingQr}
+          className="rounded-[10px] bg-[#FF6A2F] px-4 py-2 text-sm font-medium text-white hover:bg-[#FE7A47] disabled:opacity-50"
+        >
+          {savingQr ? 'Saving…' : 'Save UPI QR config'}
         </button>
       </section>
 

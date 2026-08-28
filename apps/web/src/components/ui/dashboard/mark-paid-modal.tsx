@@ -99,15 +99,24 @@ const formatINR = (n: number) =>
   }).format(n);
 
 export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModalProps) {
-  const [view, setView] = useState<"choose" | "online" | "offline">("choose");
+  const [view, setView] = useState<"choose" | "online" | "offline" | "qr">("choose");
   const [method, setMethod] = useState<string>("UPI");
   const [busy, setBusy] = useState(false);
+  const [paymentReference, setPaymentReference] = useState("");
 
   const { data: paymentConfigData } = useQuery(GET_PAYMENT_CONFIG, {
     skip: !isOpen,
   });
   const paymentConfig = paymentConfigData?.paymentConfig as
-    | { configured: boolean; keyId?: string | null; mode?: string | null }
+    | {
+        configured: boolean;
+        keyId?: string | null;
+        mode?: string | null;
+        qrConfigured?: boolean;
+        qrUpiId?: string | null;
+        qrImagePath?: string | null;
+        qrPayeeName?: string | null;
+      }
     | undefined;
 
   const [markInvoicePaid] = useMutation(MARK_INVOICE_PAID, {
@@ -123,6 +132,7 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
       setView("choose");
       setMethod("UPI");
       setBusy(false);
+      setPaymentReference("");
     }
   }, [isOpen]);
 
@@ -134,7 +144,13 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
   const handleOffline = async () => {
     setBusy(true);
     try {
-      await markInvoicePaid({ variables: { id: invoice.id, paymentMethod: method } });
+      await markInvoicePaid({
+        variables: {
+          id: invoice.id,
+          paymentMethod: method,
+          ...(paymentReference.trim() ? { paymentReference: paymentReference.trim() } : {}),
+        },
+      });
       const methodLabel = PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
       toast.success(`Invoice marked as paid via ${methodLabel}`);
       onPaid?.();
@@ -204,6 +220,26 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
     }
   };
 
+  const handleQrPaid = async () => {
+    setBusy(true);
+    try {
+      await markInvoicePaid({
+        variables: {
+          id: invoice.id,
+          paymentMethod: "QR",
+          ...(paymentReference.trim() ? { paymentReference: paymentReference.trim() } : {}),
+        },
+      });
+      toast.success("Invoice marked paid via UPI QR");
+      onPaid?.();
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to mark invoice as paid");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const primaryBtn =
     "flex items-center justify-center gap-2 rounded-xl bg-[#FF6A2F] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#FF6A3D] transition-all shadow-sm disabled:opacity-50";
   const backBtn = "self-start text-sm text-[#4A5565] hover:underline";
@@ -255,6 +291,13 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
                 <span className="text-sm font-medium text-[#101828]">Record Offline Payment</span>
                 <span className="text-xs text-[#6A7282]">Cash / Cheque / Transfer</span>
               </button>
+              <button
+                onClick={() => setView("qr")}
+                className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3.5 text-left transition-all hover:border-[#FF6A2F] hover:bg-[#FFF7EB]"
+              >
+                <span className="text-sm font-medium text-[#101828]">Pay via UPI QR Code</span>
+                <span className="text-xs text-[#6A7282]">Customer scans - manual confirm</span>
+              </button>
             </>
           )}
 
@@ -301,12 +344,96 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
                   ))}
                 </select>
               </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-[#4A5565]">
+                  Transaction reference <span className="text-xs text-[#9CA3AF]">(optional)</span>
+                </span>
+                <input
+                  type="text"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="UPI / cheque / transfer reference"
+                  maxLength={100}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]"
+                />
+              </label>
               <button onClick={handleOffline} disabled={busy} className={primaryBtn}>
                 {busy ? "Saving…" : "Mark as Paid"}
               </button>
               <button onClick={() => setView("choose")} className={backBtn}>
                 ← Back
               </button>
+            </>
+          )}
+
+          {view === "qr" && (
+            <>
+              {!paymentConfig?.qrConfigured ? (
+                <>
+                  <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-[#4A5565]">
+                    UPI QR payments are not configured yet. A super admin can upload the QR image
+                    and UPI ID in Settings &rarr; Integrations.
+                  </p>
+                  <button onClick={() => setView("choose")} className={backBtn}>
+                    ← Back
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                    {paymentConfig.qrImagePath ? (
+                      <img
+                        src={paymentConfig.qrImagePath}
+                        alt="UPI QR code"
+                        className="h-48 w-48 rounded-lg border border-gray-200 bg-white object-contain p-1"
+                      />
+                    ) : (
+                      <div className="flex h-48 w-48 items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-xs text-[#9CA3AF]">
+                        QR image not uploaded
+                      </div>
+                    )}
+                    <div className="text-center">
+                      {paymentConfig.qrPayeeName && (
+                        <p className="text-sm font-semibold text-[#101828]">{paymentConfig.qrPayeeName}</p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(paymentConfig.qrUpiId ?? "").then(
+                            () => toast.success("UPI ID copied"),
+                            () => toast.error("Could not copy"),
+                          );
+                        }}
+                        className="mt-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-[#FF6A2F] hover:bg-[#FFF7EB]"
+                      >
+                        {paymentConfig.qrUpiId} · copy
+                      </button>
+                      <p className="mt-2 text-xs text-[#6A7282]">
+                        Customer scans and pays {formatINR(dueAmount)}. Confirm once received.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-[#4A5565]">
+                      UPI transaction reference <span className="text-xs text-[#9CA3AF]">(optional proof)</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      placeholder="UPI ref from the customer payment app"
+                      maxLength={100}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FF6A2F]"
+                    />
+                  </label>
+                  <button onClick={handleQrPaid} disabled={busy} className={primaryBtn}>
+                    {busy ? "Saving…" : "Confirm Payment Received"}
+                  </button>
+                  <button onClick={() => setView("choose")} className={backBtn}>
+                    ← Back
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>

@@ -28,6 +28,10 @@ class PaymentConfigGql {
   @Field() configured!: boolean;
   @Field(() => String, { nullable: true }) keyId?: string | null;
   @Field(() => String, { nullable: true }) mode?: string | null;
+  @Field() qrConfigured!: boolean;
+  @Field(() => String, { nullable: true }) qrUpiId?: string | null;
+  @Field(() => String, { nullable: true }) qrImagePath?: string | null;
+  @Field(() => String, { nullable: true }) qrPayeeName?: string | null;
 }
 
 @InputType()
@@ -64,10 +68,15 @@ export class PaymentResolver {
   @UseGuards(GqlAuthGuard)
   async paymentConfig(): Promise<PaymentConfigGql> {
     const cfg = await this.settings.getRazorpayConfig();
+    const qr = await this.settings.getQrPaymentConfig();
     return {
       configured: !!cfg.keyId && !!cfg.keySecret,
       keyId: cfg.keyId || null,
       mode: cfg.mode || null,
+      qrConfigured: !!qr.upiId,
+      qrUpiId: qr.upiId || null,
+      qrImagePath: qr.imagePath || null,
+      qrPayeeName: qr.payeeName || null,
     };
   }
 

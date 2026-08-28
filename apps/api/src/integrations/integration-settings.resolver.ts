@@ -13,7 +13,7 @@
  */
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { Field, InputType, ObjectType, Int } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, BadRequestException } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { IsIn, IsOptional, IsString, IsInt, IsBoolean, Min } from 'class-validator';
 
@@ -46,6 +46,7 @@ class IntegrationStatus {
   @Field() razorpayMode!: string;
   @Field() emailConfigured!: boolean;
   @Field() whatsappConfigured!: boolean;
+  @Field() qrConfigured!: boolean;
 }
 
 @InputType()
@@ -180,6 +181,7 @@ export class IntegrationSettingsResolver {
       smsConfigured: sms,
       smsProvider: smsCfg.provider || 'console',
       razorpayConfigured: rzp,
+      qrConfigured: await this.settings.isQrPaymentConfigured(),
       razorpayMode: rzpCfg.mode || '',
       emailConfigured: email,
       whatsappConfigured: whatsapp,
@@ -216,6 +218,27 @@ export class IntegrationSettingsResolver {
       { key: 'razorpay.keySecret', value: keySecret, secret: true },
       { key: 'razorpay.webhookSecret', value: webhookSecret, secret: true },
       { key: 'razorpay.mode', value: input.mode ?? 'test' },
+    ]);
+    return true;
+  }
+
+  @Mutation(() => Boolean, { description: 'Save manual UPI QR payment config (super-admin/admin). The QR image is uploaded separately via /api/print/upload; only its public path is stored.' })
+  @UseGuards(GqlAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  async saveQrPaymentConfig(
+    @Args('upiId') upiId: string,
+    @Args('imagePath', { type: () => String, nullable: true }) imagePath: string | null,
+    @Args('payeeName', { type: () => String, nullable: true }) payeeName: string | null,
+  ): Promise<boolean> {
+    if (!upiId || !upiId.includes('@')) {
+      throw new BadRequestException('UPI ID must look like name@bank');
+    }
+    const existing = await this.settings.getQrPaymentConfig();
+    const image = imagePath && imagePath.startsWith('/uploads/') ? imagePath : existing.imagePath;
+    await this.settings.setMany('payment', [
+      { key: 'payment.qr.upiId', value: upiId },
+      { key: 'payment.qr.imagePath', value: image },
+      { key: 'payment.qr.payeeName', value: payeeName ?? '' },
     ]);
     return true;
   }

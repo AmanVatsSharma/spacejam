@@ -125,12 +125,15 @@ export class InvoiceResolver {
   async markInvoicePaid(
     @Args('id', { type: () => ID }) id: string,
     @Args('paymentMethod', { type: () => PaymentMethod, nullable: true }) paymentMethod?: PaymentMethod,
+    @Args('paymentReference', { nullable: true }) paymentReference?: string,
   ): Promise<InvoiceEntity> {
     await this.invoiceRepo.update(id, {
       status: InvoiceStatus.PAID,
       paidDate: new Date(),
       // Persist the supplied payment method (previously ignored).
       ...(paymentMethod ? { paymentMethod } : {}),
+      // UPI/bank transaction reference recorded as proof (e.g. manual QR).
+      ...(paymentReference?.trim() ? { paymentReference: paymentReference.trim().slice(0, 100) } : {}),
     });
     const invoice = await this.invoiceRepo.findOne({
       where: { id },

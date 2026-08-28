@@ -632,14 +632,13 @@ export const DELETE_INVOICE = gql`
 `;
 
 export const MARK_INVOICE_PAID = gql`
-  mutation MarkInvoicePaid($id: ID!, $paymentMethod: PaymentMethod) {
-    markInvoicePaid(id: $id, paymentMethod: $paymentMethod) {
+  mutation MarkInvoicePaid($id: ID!, $paymentMethod: PaymentMethod, $paymentReference: String) {
+    markInvoicePaid(id: $id, paymentMethod: $paymentMethod, paymentReference: $paymentReference) {
       id
-      invoiceNumber
       status
       paidDate
       paymentMethod
-      updatedAt
+      paymentReference
     }
   }
 `;
@@ -2481,7 +2480,7 @@ export const PROCESS_DUE_SUBSCRIPTIONS = gql`
 
 // ─── Integrations (super-admin: SMS + Email/SMTP + WhatsApp + Razorpay) ───
 export const GET_INTEGRATION_STATUS = gql`
-  query IntegrationStatus {
+  query GetIntegrationStatus {
     integrationStatus {
       smsConfigured
       smsProvider
@@ -2489,6 +2488,7 @@ export const GET_INTEGRATION_STATUS = gql`
       razorpayMode
       emailConfigured
       whatsappConfigured
+      qrConfigured
     }
   }
 `;
@@ -2512,6 +2512,12 @@ export const SAVE_SMS_CONFIG = gql`
 export const SAVE_RAZORPAY_CONFIG = gql`
   mutation SaveRazorpayConfig($input: SaveRazorpayConfigInput!) {
     saveRazorpayConfig(input: $input)
+  }
+`;
+
+export const SAVE_QR_PAYMENT_CONFIG = gql`
+  mutation SaveQrPaymentConfig($upiId: String!, $imagePath: String, $payeeName: String) {
+    saveQrPaymentConfig(upiId: $upiId, imagePath: $imagePath, payeeName: $payeeName)
   }
 `;
 
@@ -2541,11 +2547,15 @@ export const SEND_TEST_WHATSAPP = gql`
 
 // Payment gateway status for checkout flows (exposes key id + mode only).
 export const GET_PAYMENT_CONFIG = gql`
-  query PaymentConfig {
+  query GetPaymentConfig {
     paymentConfig {
       configured
       keyId
       mode
+      qrConfigured
+      qrUpiId
+      qrImagePath
+      qrPayeeName
     }
   }
 `;

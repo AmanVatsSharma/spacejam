@@ -84,6 +84,12 @@ export class Invoice {
   @Column({ type: 'enum', enum: PaymentMethod, nullable: true })
   paymentMethod?: PaymentMethod;
 
+  /** UPI/bank transaction reference attached as proof when a manual
+   *  payment (e.g. QR code) is recorded. */
+  @Field({ nullable: true })
+  @Column({ name: 'paymentReference', type: 'varchar', length: 100, nullable: true })
+  paymentReference?: string;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'text', nullable: true })
   notes?: string;

@@ -39,6 +39,13 @@ export interface RazorpayConfig {
   mode: 'test' | 'live' | '';
 }
 
+export interface QrPaymentConfig {
+  upiId: string;
+  /** Public path of the uploaded QR image, e.g. /uploads/...-qr.png */
+  imagePath: string;
+  payeeName: string;
+}
+
 export interface EmailConfig {
   host: string;
   port: number;
@@ -111,6 +118,20 @@ export class IntegrationSettingsService {
   async isRazorpayConfigured(): Promise<boolean> {
     const c = await this.getRazorpayConfig();
     return !!c.keyId && !!c.keySecret;
+  }
+
+  /** Manual UPI QR config (app_settings keys payment.qr.*). */
+  async getQrPaymentConfig(): Promise<QrPaymentConfig> {
+    return {
+      upiId: (await this.getRaw('payment.qr.upiId')) ?? '',
+      imagePath: (await this.getRaw('payment.qr.imagePath')) ?? '',
+      payeeName: (await this.getRaw('payment.qr.payeeName')) ?? '',
+    };
+  }
+
+  async isQrPaymentConfigured(): Promise<boolean> {
+    const c = await this.getQrPaymentConfig();
+    return !!c.upiId;
   }
 
   /** SMTP email config (app_settings keys email.*). Port defaults to 587. */
