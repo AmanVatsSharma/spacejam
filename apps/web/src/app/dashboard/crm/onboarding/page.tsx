@@ -321,8 +321,10 @@ export default function OnboardingWizardPage() {
       // Bank details are mandatory — they are required for refunds.
       if (!bankDetails.holderName?.trim()) return "Account holder name is required (needed for refunds)";
       if (!bankDetails.accountNumber?.trim()) return "Account number is required (needed for refunds)";
+      if (!/^\d{9,18}$/.test(bankDetails.accountNumber.replace(/\s/g, ""))) return "Account number must be 9-18 digits";
       if (!bankDetails.ifscCode?.trim()) return "IFSC code is required (needed for refunds)";
-      if (!bankDetails.bankName?.trim()) return "Bank name is required (needed for refunds)";
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode.trim().toUpperCase())) return "Enter a valid IFSC code (e.g. HDFC0001234)";
+      if (!bankDetails.bankName?.trim()) return "Select the bank (needed for refunds)";
     }
     // Steps 2-3 and 5-7 are optional
     return null;
@@ -1870,20 +1872,70 @@ export default function OnboardingWizardPage() {
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Linked Bank Account (For Refunds)</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name</label>
+                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name <span className="text-[#FF6A2F]">*</span></label>
                           <input type="text" placeholder="Enter full name as per bank" value={bankDetails.holderName} onChange={(e) => setBankDetails({ ...bankDetails, holderName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
-                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Number</label>
+                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Number <span className="text-[#FF6A2F]">*</span></label>
                           <input type="text" placeholder="Enter account number" value={bankDetails.accountNumber} onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
-                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">IFSC Code</label>
-                          <input type="text" placeholder="e.g., HDFC0001234" value={bankDetails.ifscCode} onChange={(e) => setBankDetails({ ...bankDetails, ifscCode: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">IFSC Code <span className="text-[#FF6A2F]">*</span></label>
+                          <input type="text" placeholder="e.g., HDFC0001234" maxLength={11} value={bankDetails.ifscCode} onChange={(e) => setBankDetails({ ...bankDetails, ifscCode: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
                         </div>
                         <div>
-                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Bank Name</label>
-                          <input type="text" placeholder="Enter bank name" value={bankDetails.bankName} onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] placeholder-gray-400" />
+                          <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Bank Name <span className="text-[#FF6A2F]">*</span></label>
+                          <select
+                            value={bankDetails.bankName}
+                            onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })}
+                            className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white"
+                          >
+                            <option value="">Select bank…</option>
+                            <option key="0" value="Airtel Payments Bank">Airtel Payments Bank</option>
+                            <option key="1" value="AU Small Finance Bank">AU Small Finance Bank</option>
+                            <option key="2" value="Axis Bank">Axis Bank</option>
+                            <option key="3" value="Bandhan Bank">Bandhan Bank</option>
+                            <option key="4" value="Bank of Baroda">Bank of Baroda</option>
+                            <option key="5" value="Bank of India">Bank of India</option>
+                            <option key="6" value="Bank of Maharashtra">Bank of Maharashtra</option>
+                            <option key="7" value="Canara Bank">Canara Bank</option>
+                            <option key="8" value="Capital Small Finance Bank">Capital Small Finance Bank</option>
+                            <option key="9" value="Central Bank of India">Central Bank of India</option>
+                            <option key="10" value="City Union Bank">City Union Bank</option>
+                            <option key="11" value="CSB Bank">CSB Bank</option>
+                            <option key="12" value="DCB Bank">DCB Bank</option>
+                            <option key="13" value="Dhanlaxmi Bank">Dhanlaxmi Bank</option>
+                            <option key="14" value="Equitas Small Finance Bank">Equitas Small Finance Bank</option>
+                            <option key="15" value="Federal Bank">Federal Bank</option>
+                            <option key="16" value="Fino Payments Bank">Fino Payments Bank</option>
+                            <option key="17" value="HDFC Bank">HDFC Bank</option>
+                            <option key="18" value="ICICI Bank">ICICI Bank</option>
+                            <option key="19" value="IDBI Bank">IDBI Bank</option>
+                            <option key="20" value="IDFC FIRST Bank">IDFC FIRST Bank</option>
+                            <option key="21" value="Indian Bank">Indian Bank</option>
+                            <option key="22" value="Indian Overseas Bank">Indian Overseas Bank</option>
+                            <option key="23" value="IndusInd Bank">IndusInd Bank</option>
+                            <option key="24" value="Jammu & Kashmir Bank">Jammu & Kashmir Bank</option>
+                            <option key="25" value="Karnataka Bank">Karnataka Bank</option>
+                            <option key="26" value="Karur Vysya Bank">Karur Vysya Bank</option>
+                            <option key="27" value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                            <option key="28" value="Lakshmi Vilas Bank">Lakshmi Vilas Bank</option>
+                            <option key="29" value="Nainital Bank">Nainital Bank</option>
+                            <option key="30" value="Paytm Payments Bank">Paytm Payments Bank</option>
+                            <option key="31" value="Punjab & Sind Bank">Punjab & Sind Bank</option>
+                            <option key="32" value="Punjab National Bank">Punjab National Bank</option>
+                            <option key="33" value="RBL Bank">RBL Bank</option>
+                            <option key="34" value="Saraswat Bank">Saraswat Bank</option>
+                            <option key="35" value="South Indian Bank">South Indian Bank</option>
+                            <option key="36" value="State Bank of India">State Bank of India</option>
+                            <option key="37" value="Suryoday Small Finance Bank">Suryoday Small Finance Bank</option>
+                            <option key="38" value="Tamilnad Mercantile Bank">Tamilnad Mercantile Bank</option>
+                            <option key="39" value="UCO Bank">UCO Bank</option>
+                            <option key="40" value="Union Bank of India">Union Bank of India</option>
+                            <option key="41" value="Utkarsh Small Finance Bank">Utkarsh Small Finance Bank</option>
+                            <option key="42" value="Yes Bank">Yes Bank</option>
+                            <option key="43" value="Other Bank">Other Bank</option>
+                          </select>
                         </div>
                       </div>
                     </div>
