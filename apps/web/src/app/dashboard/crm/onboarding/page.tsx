@@ -1613,13 +1613,35 @@ export default function OnboardingWizardPage() {
                         <div className="flex-1">
                           <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Lock-in Period</label>
                           <div className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 flex items-center">
-                            12 months
+                            {(() => {
+                              // Lock-in follows the deal: Customize Deal uses its
+                              // duration dropdown; Hot Desk follows billing cycle.
+                              if (planType === "Customize Deal") {
+                                return `${customDeal.durationMonths} month${customDeal.durationMonths === 1 ? "" : "s"}`;
+                              }
+                              const months =
+                                billingCycle === "Annually" ? 12
+                                : billingCycle === "Quarterly" ? 3
+                                : 1;
+                              return `${months} month${months === 1 ? "" : "s"}`;
+                            })()}
                           </div>
                         </div>
                         <div className="flex-1">
                           <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Security Deposit</label>
                           <div className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
-                            <span className="text-[13px] text-gray-800">₹ 18,000/-</span>
+                            <span className="text-[13px] text-gray-800">
+                              {(() => {
+                                // 2x the highest monthly rent across the contract:
+                                // for Customize Deal that is the revised rent (YoY
+                                // applied); for Hot Desk it is the seat price.
+                                const highest =
+                                  planType === "Customize Deal"
+                                    ? Math.round(customDeal.initialRent * (1 + customDeal.yoyPercent / 100))
+                                    : 6000; // default hot-desk monthly rate
+                                return `₹ ${(highest * 2).toLocaleString("en-IN")}/-`;
+                              })()}
+                            </span>
                             <span className="text-[11px] text-gray-400">(2x highest monthly rent)</span>
                           </div>
                         </div>
