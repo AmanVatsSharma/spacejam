@@ -326,6 +326,14 @@ export default function OnboardingWizardPage() {
       if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode.trim().toUpperCase())) return "Enter a valid IFSC code (e.g. HDFC0001234)";
       if (!bankDetails.bankName?.trim()) return "Select the bank (needed for refunds)";
     }
+    if (step === 6) {
+      // Terms acceptance is mandatory before proceeding.
+      if (!termsAgreed) return "You must accept the Terms & Conditions and Privacy Policy to continue";
+    }
+    if (step === 9) {
+      // Digital signature is mandatory — no one proceeds without signing.
+      if (!signatureSaved) return "Client signature is required — sign the agreement to continue";
+    }
     // Steps 2-3 and 5-7 are optional
     return null;
   };
@@ -2289,7 +2297,7 @@ export default function OnboardingWizardPage() {
                             className="w-5 h-5 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300"
                           />
                           <span className="text-[13px] text-gray-800 font-medium">
-                            I have read and agree to the <span className="text-[#FF6A2F] cursor-pointer">Terms & Conditions</span> and <span className="text-[#FF6A2F] cursor-pointer">Privacy Policy</span>
+                            <span className="text-[#FF6A2F]">* </span>I have read and agree to the <span className="text-[#FF6A2F] cursor-pointer">Terms & Conditions</span> and <span className="text-[#FF6A2F] cursor-pointer">Privacy Policy</span>
                           </span>
                         </label>
                       </div>
@@ -2779,7 +2787,7 @@ export default function OnboardingWizardPage() {
                       </div>
                       <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
                         <div>
-                          <p className="text-[14px] font-bold text-gray-900">Client Signature Required</p>
+                          <p className="text-[14px] font-bold text-gray-900">Client Signature Required <span className="text-[#FF6A2F]">*</span></p>
                           {signatureSaved ? (
                             <p className="text-[12px] text-[#21A366] flex items-center gap-1.5 mt-0.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#21A366]"></span>
