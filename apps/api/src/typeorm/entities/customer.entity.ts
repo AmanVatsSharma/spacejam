@@ -153,6 +153,20 @@ export class Customer {
     @Column({ type: 'varchar', length: 50, nullable: true })
     communicationChannel?: string;
 
+    /** Token-wallet auto-recharge preferences (set during onboarding). */
+    @Field({ nullable: true })
+    @Column({ name: 'autoRechargeEnabled', type: 'boolean', default: false })
+    autoRechargeEnabled?: boolean;
+
+    @Field(() => String, { nullable: true })
+    @Column({ name: 'autoRechargeContact', type: 'varchar', length: 120, nullable: true })
+    autoRechargeContact?: string | null;
+
+    @Field(() => Int, { nullable: true })
+    @Column({ name: 'autoRechargeThreshold', type: 'int', nullable: true })
+    autoRechargeThreshold?: number | null;
+
+
     // Relations
     @Field(() => Center, { nullable: true })
     @ManyToOne(() => Center, { eager: false })

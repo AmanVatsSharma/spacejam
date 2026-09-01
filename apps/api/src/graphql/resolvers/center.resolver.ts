@@ -140,7 +140,7 @@ export class CenterResolver {
   }
 
   @Mutation(() => CenterEntity)
-  @Roles(UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CENTER_OWNER, UserRole.CENTER_MANAGER)
   async createCenter(
     @Args('input') input: CreateCenterInput,
     @Context() context: any
@@ -167,6 +167,21 @@ export class CenterResolver {
     });
     const center = await this.centerRepo.save(newCenter);
     await this.cache.invalidatePattern('centers:*');
+    // A center manager creating a center is setting up their own workspace —
+    // point their account at it so scoped queries (myCenters, seats,
+    // settings) see the new center.
+    const caller = context.req?.user;
+    if (caller?.role === UserRole.CENTER_MANAGER && caller?.sub) {
+      try {
+        await this.centerRepo.manager.update(
+          'User',
+          { id: caller.sub },
+          { centerId: center.id } as any,
+        );
+      } catch (err) {
+        this.logger.warn(`could not re-assign manager to new center: ${String(err)}`);
+      }
+    }
     this.audit.record({
       action: 'CENTER_CREATE',
       userId: context.req.user?.sub ?? context.req.user?.id ?? null,

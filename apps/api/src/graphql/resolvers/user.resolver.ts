@@ -183,8 +183,8 @@ export class UserResolver {
     return !!updated;
   }
 
-  @Mutation(() => UserEntity, { description: 'Provision a new dashboard admin (SUPER_ADMIN only)' })
-  @Roles(EntityUserRole.SUPER_ADMIN)
+  @Mutation(() => UserEntity, { description: 'Provision a new dashboard admin (SUPER_ADMIN/ADMIN only)' })
+  @Roles(EntityUserRole.SUPER_ADMIN, EntityUserRole.ADMIN)
   async createAdminUser(
     @Args('input') input: CreateAdminInput,
     @CurrentUser() current: JwtPayload,

@@ -16,6 +16,7 @@ import {
     IsEnum,
     IsInt,
     IsDate,
+    IsBoolean,
 } from 'class-validator';
 
 @InputType()
@@ -49,6 +50,22 @@ export class CreateCustomerInput {
     @IsString()
     @IsOptional()
     centerId?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsBoolean()
+    autoRechargeEnabled?: boolean;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    autoRechargeContact?: string;
+
+    @Field(() => Int, { nullable: true })
+    @IsOptional()
+    @IsInt()
+    autoRechargeThreshold?: number;
+
 
     @Field({ nullable: true })
     @IsString()

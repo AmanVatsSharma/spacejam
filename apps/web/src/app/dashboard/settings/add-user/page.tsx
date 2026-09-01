@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@apollo/client';
-import { CREATE_ADMIN_USER } from '@/lib/apollo/operations';
+import { useMutation, useQuery } from '@apollo/client';
+import { toast } from 'sonner';
+import { CREATE_ADMIN_USER, GET_CENTERS } from '@/lib/apollo/operations';
 import styles from './add-user.module.css';
 
 const Icons = {
@@ -155,6 +156,12 @@ export default function AddUserPage() {
   };
 
   const [roleMode, setRoleMode] = useState('Super Admin');
+
+  // Center picker source (replaces the raw-UUID text input).
+  const { data: centersData } = useQuery(GET_CENTERS, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+  });
   const [perms, setPerms] = useState({
     manageLeads: true,
     approveBookings: true,
@@ -177,6 +184,7 @@ export default function AddUserPage() {
     },
     onError: (err) => {
       setErrorMsg(err.message || 'Failed to create user');
+      toast.error(err.message || 'Failed to create user');
     }
   });
 
@@ -186,9 +194,32 @@ export default function AddUserPage() {
 
   const handleSubmit = async () => {
     setErrorMsg('');
-    let role = 'ADMIN'; // Default to admin (center manager)
+    let role = 'CENTER_MANAGER'; // "Admin" in the UI = center manager
     if (roleMode === 'Super Admin') role = 'SUPER_ADMIN';
     if (roleMode === 'Admin') role = 'CENTER_MANAGER';
+
+    // Client-side validation so failures are visible immediately (the old
+    // error banner lived above the fold and was never seen).
+    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error('Enter a valid email address');
+      setActiveStep(1);
+      return;
+    }
+    if (!formData.name?.trim()) {
+      toast.error('Enter the user name');
+      setActiveStep(1);
+      return;
+    }
+    if (!formData.password || formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      setActiveStep(1);
+      return;
+    }
+    if (role === 'CENTER_MANAGER' && !formData.centerId) {
+      toast.error('Select the center this manager belongs to');
+      setActiveStep(3);
+      return;
+    }
 
     try {
       await createAdminUser({
@@ -203,8 +234,9 @@ export default function AddUserPage() {
           }
         }
       });
+      toast.success('User created');
     } catch (err) {
-      // handled by onError
+      // handled by onError (which also toasts below)
     }
   };
 
@@ -292,7 +324,12 @@ export default function AddUserPage() {
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Assign Center <span className={styles.required}>*</span></label>
-                  <input type="text" name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput} placeholder="e.g. uuid" />
+                  <select name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput}>
+                    <option value="">Select a center…</option>
+                    {(centersData?.centers ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Profile Photo</label>
@@ -433,7 +470,12 @@ export default function AddUserPage() {
             <div className={styles.accordionContent}>
               <div className={styles.formGroupFull}>
                 <label className={styles.formLabel}>Select Center(s) <span className={styles.required}>*</span></label>
-                <input type="text" name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput} placeholder="" />
+                <select name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput}>
+                    <option value="">Select a center…</option>
+                    {(centersData?.centers ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
               </div>
               <div className={styles.formGroupFull} style={{ marginTop: '16px' }}>
                 <label className={styles.formLabel}>Floor Access</label>
@@ -634,7 +676,9 @@ export default function AddUserPage() {
                   <div className={styles.reviewGrid}>
                     <div className={styles.reviewItem}>
                       <span className={styles.reviewLabel}>Assigned Center</span>
-                      <span className={styles.reviewValue}>{formData.centerId || '-'}</span>
+                      <span className={styles.reviewValue}>
+                      {(centersData?.centers ?? []).find((c) => c.id === formData.centerId)?.name || '-'}
+                    </span>
                     </div>
                   </div>
                 </div>

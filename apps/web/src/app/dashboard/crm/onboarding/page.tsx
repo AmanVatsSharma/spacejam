@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@apollo/client";
 import { toast } from "sonner";
@@ -231,6 +231,16 @@ export default function OnboardingWizardPage() {
   const [showRoomBooking, setShowRoomBooking] = useState(false);
   const [showInteractiveMap, setShowInteractiveMap] = useState(false);
 
+  // Form State - Step 3 (Customize Deal) — bound, dynamic values.
+  const [customDeal, setCustomDeal] = useState({
+    openSeats: 0,
+    cabins: 0,
+    durationMonths: 12,
+    initialRent: 40000,
+    yoyPercent: 5,
+    startDate: "" as string,
+  });
+
   // Form State - Step 4
   const [paymentMode, setPaymentMode] = useState<"UPI" | "Bank Transfer" | "Card" | "Cheque">("UPI");
   const [billingCycle, setBillingCycle] = useState<"Monthly" | "Quarterly" | "Annually">("Monthly");
@@ -251,10 +261,20 @@ export default function OnboardingWizardPage() {
     tokenWallet: true,
   });
   const [walletDetails, setWalletDetails] = useState({
-    holderName: "Joe",
-    accountNumber: "532888499456",
+    contactMethod: "phone" as "phone" | "email",
+    contactValue: "",
+    threshold: "100",
     autoRecharge: true,
   });
+
+  // Prefill the recharge contact from step 1 once it is available.
+  useEffect(() => {
+    setWalletDetails((w) => {
+      if (w.contactValue) return w;
+      const initial = w.contactMethod === "phone" ? basicInfo.phone : basicInfo.email;
+      return initial ? { ...w, contactValue: initial } : w;
+    });
+  }, [basicInfo.phone, basicInfo.email]);
   // Form State - Step 6
   const [termsAgreed, setTermsAgreed] = useState(false);
 
@@ -269,6 +289,10 @@ export default function OnboardingWizardPage() {
   const [signatureSaved, setSignatureSaved] = useState(false);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signatureMode, setSignatureMode] = useState<"Draw" | "Upload">("Draw");
+  const signatureCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const sigDrawing = useRef(false);
+  // Captured signature (data URL) — uploaded as an agreement document on submit.
+  const [signatureData, setSignatureData] = useState<string | null>(null);
 
   const validateStep = (step: number): string | null => {
     if (step === 1) {
@@ -277,8 +301,58 @@ export default function OnboardingWizardPage() {
       if (!basicInfo.email?.trim()) return "Email address is required";
       if (!basicInfo.company?.trim()) return "Company name is required";
     }
-    // Steps 2-7 are optional for now (complex nested forms)
+    if (step === 4) {
+      // Bank details are mandatory — they are required for refunds.
+      if (!bankDetails.holderName?.trim()) return "Account holder name is required (needed for refunds)";
+      if (!bankDetails.accountNumber?.trim()) return "Account number is required (needed for refunds)";
+      if (!bankDetails.ifscCode?.trim()) return "IFSC code is required (needed for refunds)";
+      if (!bankDetails.bankName?.trim()) return "Bank name is required (needed for refunds)";
+    }
+    // Steps 2-3 and 5-7 are optional
     return null;
+  };
+
+  /**
+   * Bulk employee upload: parse a simple CSV (name, phone, email, dept)
+   * into the individuals state so the same allocation pipeline runs.
+   * Only shows the success screen when a file actually parsed.
+   */
+  const handleBulkEmployeeCsv = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result ?? "");
+        const rows = text
+          .split(String.fromCharCode(10))
+          .map((r) => r.split(",").map((c) => c.trim()))
+          .filter((cells) => cells.some((c) => c));
+        // Drop a header row if it looks like one.
+        if (rows.length && /name/i.test(rows[0][0] ?? "") && !/@/.test(rows[0].join(""))) {
+          rows.shift();
+        }
+        const parsed = rows.slice(0, 50).map((cells, i) => ({
+          id: Date.now() + i,
+          name: cells[0] ?? "",
+          phone: cells[1] ?? "",
+          email: cells[2] ?? "",
+          dept: cells[3] ?? "",
+          seat: "",
+        }));
+        if (parsed.length === 0) {
+          toast.error("No employee rows found in the CSV");
+          return;
+        }
+        setIndividuals(parsed);
+        setUploadSuccess(true);
+        toast.success(`Loaded ${parsed.length} employee${parsed.length === 1 ? "" : "s"} from CSV`);
+      } catch {
+        toast.error("Could not parse the CSV file");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleNext = () => {
@@ -287,11 +361,13 @@ export default function OnboardingWizardPage() {
       toast.error(error);
       return;
     }
-    if (currentStep === 2 && employeeMode === "bulk" && !uploadSuccess) {
-      setUploadSuccess(true);
+    // Bulk mode: Continue advances directly — the "file uploaded" screen only
+    // appears after a REAL file is chosen (which parses employees).
+    if (uploadSuccess) {
+      setUploadSuccess(false);
+      setCurrentStep((p) => p + 1);
       return;
     }
-    if (uploadSuccess) setUploadSuccess(false);
     if (currentStep < 10) setCurrentStep((p) => p + 1);
   };
 
@@ -413,6 +489,16 @@ export default function OnboardingWizardPage() {
               // Attribute the customer to the active center so they appear
               // in the center-scoped client report.
               centerId: activeCenter?.id,
+              // Token-wallet auto-recharge preferences (step 5).
+              ...(additionalServices.tokenWallet
+                ? {
+                    autoRechargeEnabled: walletDetails.autoRecharge,
+                    autoRechargeContact: walletDetails.contactValue?.trim() || undefined,
+                    ...(Number(walletDetails.threshold) > 0
+                      ? { autoRechargeThreshold: Number(walletDetails.threshold) }
+                      : {}),
+                  }
+                : {}),
             },
           },
         });
@@ -524,6 +610,29 @@ export default function OnboardingWizardPage() {
         }
       } catch (err: any) {
         allocationToast = `Seat allocation failed: ${err?.graphQLErrors?.[0]?.message ?? err?.message ?? "unknown error"}`;
+      }
+
+      // ── Signed agreement image (step 9): upload as an agreement document.
+      if (signatureData?.startsWith("data:")) {
+        try {
+          const blob = await (await fetch(signatureData)).blob();
+          const file = new File([blob], "signed-agreement.png", { type: "image/png" });
+          const fileUrl = await uploadDocumentFile(file);
+          await createCustomerDocument({
+            variables: {
+              input: {
+                customerId,
+                name: "Signed Agreement",
+                documentType: "agreement",
+                fileUrl,
+                fileSize: String(blob.size),
+                mimeType: "image/png",
+              },
+            },
+          });
+        } catch {
+          toast.warning("Could not save the signed agreement image — collect it from the customer later.");
+        }
       }
 
       // ── Step 6 documents: upload each selected KYC file and attach it to
@@ -1016,12 +1125,13 @@ export default function OnboardingWizardPage() {
                         </div>
                         <div>
                           <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Date of Birth <span className="text-[#FF6A2F]">*</span></label>
-                          <div className="relative">
-                            <input type="text" value={basicInfo.dob} onChange={(e) => setBasicInfo({ ...basicInfo, dob: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" />
-                            <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
+                          <input
+                            type="date"
+                            value={basicInfo.dob}
+                            max={new Date().toISOString().slice(0, 10)}
+                            onChange={(e) => setBasicInfo({ ...basicInfo, dob: e.target.value })}
+                            className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1114,17 +1224,24 @@ export default function OnboardingWizardPage() {
                       </div>
 
                       {employeeMode === "bulk" && (
-                        <div className="border border-dashed border-gray-300 rounded-xl bg-white p-10 flex flex-col items-center justify-center relative min-h-[300px] hover:bg-gray-50 transition-colors cursor-pointer group">
-                          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 transition-all active:scale-[0.97]">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                          {/* Excel Icon Mock */}
-                          <div className="w-16 h-16 bg-[#21A366] rounded-xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="border border-dashed border-gray-300 rounded-xl bg-white p-10 flex flex-col items-center justify-center relative min-h-[300px] hover:bg-gray-50 transition-colors group">
+                          <div className="w-16 h-16 bg-[#21A366] rounded-xl flex items-center justify-center text-white font-bold text-3xl mb-4 shadow-sm">
                             X
                           </div>
-                          <p className="text-[14px] font-bold text-gray-800">Employee Details</p>
+                          <p className="text-[14px] font-bold text-gray-800 mb-1">Employee Details</p>
+                          <p className="text-[12px] text-gray-500 mb-4 text-center">
+                            Upload a CSV with columns: name, phone, email, department (one employee per row).
+                            Or skip this and press Continue — you can add employees anytime.
+                          </p>
+                          <label className="px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold cursor-pointer hover:bg-[#E55A20] transition-all active:scale-[0.97]">
+                            Choose CSV file
+                            <input
+                              type="file"
+                              accept=".csv,text/csv"
+                              className="hidden"
+                              onChange={handleBulkEmployeeCsv}
+                            />
+                          </label>
                         </div>
                       )}
 
@@ -1334,23 +1451,35 @@ export default function OnboardingWizardPage() {
                       <div className="flex gap-4 mb-4">
                         <div className="flex-1">
                           <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Open Seats</label>
-                          <select className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none">
-                            <option>0</option>
-                            <option>1</option>
-                            <option>2</option>
+                          <select
+                            value={customDeal.openSeats}
+                            onChange={(e) => setCustomDeal({ ...customDeal, openSeats: Number(e.target.value) })}
+                            className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none"
+                          >
+                            {Array.from({ length: 31 }, (_, i) => i).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
                           </select>
                         </div>
                         <div className="flex-1">
                           <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Cabins</label>
-                          <select className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none">
-                            <option>Select Cabin</option>
-                            <option>Cabin 1A</option>
-                            <option>Cabin 2B</option>
+                          <select
+                            value={customDeal.cabins}
+                            onChange={(e) => setCustomDeal({ ...customDeal, cabins: Number(e.target.value) })}
+                            className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none"
+                          >
+                            {Array.from({ length: 16 }, (_, i) => i).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
                           </select>
                         </div>
                       </div>
                       <div className="w-full p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-[13px] font-medium text-gray-800">Total Allocation : {planType === 'Customize Deal' ? '10 seats, cabins - 3C, 4B' : '0'}</p>
+                        <p className="text-[13px] font-medium text-gray-800">
+                          Total Allocation : {customDeal.openSeats + customDeal.cabins === 0
+                            ? "0"
+                            : `${customDeal.openSeats} seat${customDeal.openSeats === 1 ? "" : "s"}${customDeal.cabins > 0 ? `, ${customDeal.cabins} cabin${customDeal.cabins === 1 ? "" : "s"}` : ""}`}
+                        </p>
                       </div>
                     </div>
 
@@ -1363,22 +1492,45 @@ export default function OnboardingWizardPage() {
                         <div className="flex gap-4 mb-4">
                           <div className="flex-1">
                             <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Start Date</label>
-                            <input type="date" defaultValue="2026-04-10" className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]" />
+                            <input
+                              type="date"
+                              value={customDeal.startDate ?? ""}
+                              onChange={(e) => setCustomDeal({ ...customDeal, startDate: e.target.value })}
+                              className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]"
+                            />
                           </div>
                           <div className="flex-1">
-                            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Initial Monthly Rent</label>
-                            <input type="text" defaultValue="₹ 40,000/-" className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]" />
+                            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Initial Monthly Rent (INR)</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={customDeal.initialRent}
+                              onChange={(e) => setCustomDeal({ ...customDeal, initialRent: Number(e.target.value) || 0 })}
+                              className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]"
+                            />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Duration</label>
-                            <select className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none">
-                              <option>For [X] months</option>
+                            <select
+                              value={customDeal.durationMonths}
+                              onChange={(e) => setCustomDeal({ ...customDeal, durationMonths: Number(e.target.value) })}
+                              className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none"
+                            >
+                              {Array.from({ length: 36 }, (_, i) => i + 1).map((m) => (
+                                <option key={m} value={m}>For {m} month{m === 1 ? "" : "s"}</option>
+                              ))}
                             </select>
                           </div>
                           <div className="flex-1">
                             <label className="block text-[12px] font-medium text-[#D92D20] mb-1.5">Year-on-Year Increase *</label>
-                            <select className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none">
-                              <option>5%</option>
+                            <select
+                              value={customDeal.yoyPercent}
+                              onChange={(e) => setCustomDeal({ ...customDeal, yoyPercent: Number(e.target.value) })}
+                              className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none"
+                            >
+                              {[0, 5, 10, 15, 20].map((pct) => (
+                                <option key={pct} value={pct}>{pct}%</option>
+                              ))}
                             </select>
                           </div>
                         </div>
@@ -1386,23 +1538,24 @@ export default function OnboardingWizardPage() {
                         <div className="flex gap-4 mb-4">
                           <div className="flex-1 opacity-0 pointer-events-none"></div>
                           <div className="flex-1">
-                            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Revised Monthly Rent</label>
-                            <input type="text" defaultValue="₹ 50,000/-" className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]" />
+                            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Revised Monthly Rent (after 12 months)</label>
+                            <div className="w-full h-10 px-3 bg-gray-100 border border-gray-200 rounded-lg text-[13px] text-gray-700 flex items-center">
+                              INR {Math.round(customDeal.initialRent * (1 + customDeal.yoyPercent / 100)).toLocaleString("en-IN")}
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <label className="block text-[12px] font-medium text-gray-700 mb-1.5">Duration</label>
-                            <select className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-[13px] text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#FF6A2F] appearance-none">
-                              <option>For [X] months</option>
-                            </select>
-                          </div>
+                          <div className="flex-1 opacity-0 pointer-events-none"></div>
                           <div className="flex-1 opacity-0 pointer-events-none"></div>
                         </div>
 
                         <div className="p-3 bg-[#FFF8F6] rounded-lg mb-2">
-                          <p className="text-[12px] text-[#FF6A2F] font-medium">Deal Price: 10,000/- + 30,000/- + GST% = 50,000/-</p>
+                          <p className="text-[12px] text-[#FF6A2F] font-medium">
+                            Total contract value: INR {Math.round(customDeal.initialRent * customDeal.durationMonths).toLocaleString("en-IN")} (+GST) over {customDeal.durationMonths} month{customDeal.durationMonths === 1 ? "" : "s"}
+                          </p>
                         </div>
                         <div className="p-3 bg-[#FFF8F6] rounded-lg">
-                          <p className="text-[12px] text-[#FF6A2F] font-medium">Deal: Jan-Mar 50k/mo, Apr-Dec 60k/mo.</p>
+                          <p className="text-[12px] text-[#FF6A2F] font-medium">
+                            First 12 months INR {customDeal.initialRent.toLocaleString("en-IN")}/mo, then INR {Math.round(customDeal.initialRent * (1 + customDeal.yoyPercent / 100)).toLocaleString("en-IN")}/mo ({customDeal.yoyPercent}% YoY).
+                          </p>
                         </div>
                       </div>
                     )}
@@ -1757,18 +1910,55 @@ export default function OnboardingWizardPage() {
                           <div className="p-5 pt-0">
                             <div className="grid grid-cols-2 gap-4 mb-4">
                               <div>
-                                <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name</label>
-                                <input type="text" value={walletDetails.holderName} onChange={(e) => setWalletDetails({ ...walletDetails, holderName: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
+                                <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Recharge via</label>
+                                <select
+                                  value={walletDetails.contactMethod}
+                                  onChange={(e) => {
+                                    const method = e.target.value as "phone" | "email";
+                                    setWalletDetails({
+                                      ...walletDetails,
+                                      contactMethod: method,
+                                      contactValue: method === "phone" ? basicInfo.phone : basicInfo.email,
+                                    });
+                                  }}
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white"
+                                >
+                                  <option value="phone">Phone number</option>
+                                  <option value="email">Email</option>
+                                </select>
                               </div>
                               <div>
-                                <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Number</label>
-                                <input type="text" value={walletDetails.accountNumber} onChange={(e) => setWalletDetails({ ...walletDetails, accountNumber: e.target.value })} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white" />
+                                <label className="block text-[12px] text-gray-700 font-medium mb-1.5">
+                                  {walletDetails.contactMethod === "phone" ? "Phone number" : "Email"}
+                                </label>
+                                <input
+                                  type={walletDetails.contactMethod === "phone" ? "tel" : "email"}
+                                  value={walletDetails.contactValue}
+                                  onChange={(e) => setWalletDetails({ ...walletDetails, contactValue: e.target.value })}
+                                  placeholder={walletDetails.contactMethod === "phone" ? "+91 9876543210" : "name@example.com"}
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white"
+                                />
                               </div>
                             </div>
-                            <label className="flex items-center gap-2 cursor-pointer">
+                            <label className="flex items-center gap-2 cursor-pointer mb-3">
                               <input type="checkbox" checked={walletDetails.autoRecharge} onChange={(e) => setWalletDetails({ ...walletDetails, autoRecharge: e.target.checked })} className="w-4 h-4 text-[#FF6A2F] focus:ring-[#FF6A2F] accent-[#FF6A2F] rounded border-gray-300" />
                               <span className="text-[13px] text-gray-800 font-medium">Enable auto-recharge when balance is low</span>
                             </label>
+                            {walletDetails.autoRecharge && (
+                              <div className="max-w-[240px]">
+                                <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Auto-recharge below (tokens)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={walletDetails.threshold}
+                                  onChange={(e) => setWalletDetails({ ...walletDetails, threshold: e.target.value })}
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] bg-white"
+                                />
+                                <p className="text-[11px] text-gray-500 mt-1">
+                                  Recharge request is sent to the {walletDetails.contactMethod === "phone" ? "phone" : "email"} above when the balance drops below this level.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2669,21 +2859,57 @@ export default function OnboardingWizardPage() {
               {signatureMode === "Draw" ? (
                 <div>
                   <p className="text-[13px] text-gray-500 mb-3">Draw your signature in the box below</p>
-                  <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-white flex flex-col relative overflow-hidden mb-3 group">
-                    {/* Simulated drawing canvas */}
-                    {signatureSaved ? (
-                      <div className="absolute inset-0 flex items-center justify-center p-8 pointer-events-none">
-                        <svg viewBox="0 0 200 100" className="w-full h-full opacity-80" style={{ stroke: '#1f2937', strokeWidth: 2, fill: 'none' }}>
-                          <path d="M40 50 C 40 20, 60 20, 60 50 C 60 80, 80 80, 80 50 C 80 20, 100 20, 100 50" strokeLinecap="round" />
-                          <path d="M100 50 C 100 20, 120 20, 120 50 C 120 80, 140 80, 140 50 C 140 20, 160 20, 160 50" strokeLinecap="round" />
-                        </svg>
-                      </div>
+                  <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-white relative overflow-hidden mb-3">
+                    {signatureData ? (
+                      <img src={signatureData} alt="Signature" className="absolute inset-0 w-full h-full object-contain" />
                     ) : (
-                      <div className="w-full h-full cursor-crosshair"></div>
+                      <canvas
+                        ref={signatureCanvasRef}
+                        width={560}
+                        height={200}
+                        className="w-full h-full cursor-crosshair touch-none"
+                        onPointerDown={(e) => {
+                          const canvas = signatureCanvasRef.current;
+                          if (!canvas) return;
+                          const ctx = canvas.getContext("2d");
+                          if (!ctx) return;
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                          const rect = canvas.getBoundingClientRect();
+                          sigDrawing.current = true;
+                          ctx.strokeStyle = "#1f2937";
+                          ctx.lineWidth = 2.5;
+                          ctx.lineCap = "round";
+                          ctx.beginPath();
+                          ctx.moveTo(
+                            ((e.clientX - rect.left) / rect.width) * canvas.width,
+                            ((e.clientY - rect.top) / rect.height) * canvas.height,
+                          );
+                        }}
+                        onPointerMove={(e) => {
+                          if (!sigDrawing.current) return;
+                          const canvas = signatureCanvasRef.current;
+                          const ctx = canvas?.getContext("2d");
+                          if (!canvas || !ctx) return;
+                          const rect = canvas.getBoundingClientRect();
+                          ctx.lineTo(
+                            ((e.clientX - rect.left) / rect.width) * canvas.width,
+                            ((e.clientY - rect.top) / rect.height) * canvas.height,
+                          );
+                          ctx.stroke();
+                        }}
+                        onPointerUp={() => {
+                          sigDrawing.current = false;
+                        }}
+                      />
                     )}
                   </div>
                   <button
-                    onClick={() => setSignatureSaved(false)}
+                    onClick={() => {
+                      setSignatureData(null);
+                      const canvas = signatureCanvasRef.current;
+                      const ctx = canvas?.getContext("2d");
+                      if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }}
                     className="flex items-center gap-1.5 text-[13px] text-gray-500 hover:text-gray-700 font-medium"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -2693,13 +2919,36 @@ export default function OnboardingWizardPage() {
               ) : (
                 <div>
                   <p className="text-[13px] text-gray-500 mb-3">Upload an image of your signature</p>
-                  <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-gray-50/50 flex flex-col items-center justify-center relative overflow-hidden mb-3">
-                    <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                  {signatureData ? (
+                    <div className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-white relative overflow-hidden mb-3">
+                      <img src={signatureData} alt="Signature" className="absolute inset-0 w-full h-full object-contain" />
                     </div>
-                    <p className="text-[14px] font-medium text-gray-900 mb-1">Drag & drop or choose</p>
-                    <p className="text-[12px] text-gray-500">JPG, PNG (max 5MB)</p>
-                  </div>
+                  ) : (
+                    <label className="border border-dashed border-gray-300 rounded-xl h-[200px] bg-gray-50/50 flex flex-col items-center justify-center relative overflow-hidden mb-3 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <div className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                      </div>
+                      <p className="text-[14px] font-medium text-gray-900 mb-1">Choose an image</p>
+                      <p className="text-[12px] text-gray-500">JPG, PNG (max 5MB)</p>
+                      <input
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error("Signature image must be under 5MB");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => setSignatureData(String(reader.result ?? ""));
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
               )}
             </div>
@@ -2712,6 +2961,23 @@ export default function OnboardingWizardPage() {
               </button>
               <button
                 onClick={() => {
+                  if (signatureMode === "Draw" && !signatureData) {
+                    const canvas = signatureCanvasRef.current;
+                    if (!canvas) return;
+                    const ctx = canvas.getContext("2d");
+                    // Require some ink before saving.
+                    const data = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+                    const hasInk = data?.data.some((v, i) => i % 4 === 3 && v !== 0);
+                    if (!hasInk) {
+                      toast.error("Draw your signature first");
+                      return;
+                    }
+                    setSignatureData(canvas.toDataURL("image/png"));
+                  }
+                  if (!signatureData && signatureMode === "Upload") {
+                    toast.error("Choose a signature image first");
+                    return;
+                  }
                   setSignatureSaved(true);
                   setShowSignatureModal(false);
                 }}

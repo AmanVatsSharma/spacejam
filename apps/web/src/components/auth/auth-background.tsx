@@ -21,7 +21,7 @@ function randomChoice<T>(arr: T[]): T {
 const colors = ["#FFC4A6", "#FFA782", "#FF946B", "#FFD7C4"];
 
 // Generate 120 geometric shapes with true 3D depth and parallax physics
-const SHAPES = Array.from({ length: 120 }).map(() => {
+const SHAPES = Array.from({ length: 15 }).map(() => {
   let x = 0;
   let y = 0;
   
@@ -45,7 +45,7 @@ const SHAPES = Array.from({ length: 120 }).map(() => {
   const color = randomChoice(colors);
   
   // Depth of field physics
-  const blur = (1 - z) * 10; // Items far away are blurry (up to 10px blur)
+  const blur = (1 - z) * 3; // Items far away are blurry (up to 10px blur)
   const opacity = (z * 0.5) + 0.15; // Far away = 15% opacity, close = 65% opacity
   const zIndex = Math.floor(z * 40); // Layering based on depth
   
@@ -93,8 +93,7 @@ export function AuthBackground() {
             boxShadow: s.shadow,
             opacity: s.op,
             filter: `blur(${s.blur}px)`,
-            backdropFilter: s.isGlass ? "blur(8px)" : "none",
-            zIndex: s.zIdx,
+                      zIndex: s.zIdx,
             animationDuration: `${s.d}s`,
             animationDelay: `${s.delay}s`,
           } as React.CSSProperties}
