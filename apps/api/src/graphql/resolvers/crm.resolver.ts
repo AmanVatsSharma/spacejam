@@ -288,6 +288,9 @@ export class CrmResolver {
     @Args('agreementUrl', { nullable: true }) agreementUrl?: string,
     @Args('notes', { nullable: true }) notes?: string,
     @Args('provisionLogin', { nullable: true, defaultValue: true }) provisionLogin?: boolean,
+    @Args('autoRechargeEnabled', { type: () => Boolean, nullable: true }) autoRechargeEnabled?: boolean,
+    @Args('autoRechargeContact', { nullable: true }) autoRechargeContact?: string,
+    @Args('autoRechargeThreshold', { type: () => Int, nullable: true }) autoRechargeThreshold?: number,
     @CurrentUser() caller?: JwtPayload,
   ): Promise<ConvertLeadResult> {
     const lead = await this.leadRepo.findOne({
@@ -409,6 +412,9 @@ export class CrmResolver {
           emergencyContactName: emergencyContact,
           emergencyContactPhone: emergencyPhone,
           communicationChannel,
+          ...(autoRechargeEnabled !== undefined ? { autoRechargeEnabled } : {}),
+          ...(autoRechargeContact ? { autoRechargeContact } : {}),
+          ...(autoRechargeThreshold != null ? { autoRechargeThreshold } : {}),
           userId: linkedUserId,
         } as any);
         const savedCustomer = await manager.save(newCustomer);

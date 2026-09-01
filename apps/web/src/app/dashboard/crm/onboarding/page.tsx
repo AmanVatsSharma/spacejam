@@ -179,6 +179,22 @@ export default function OnboardingWizardPage() {
       }
       if (draft?.paymentMode) setPaymentMode(draft.paymentMode);
       if (draft?.billingCycle) setBillingCycle(draft.billingCycle);
+      if (Array.isArray(draft?.individuals) && draft.individuals.length > 0) {
+        setIndividuals(draft.individuals);
+      }
+      if (draft?.planType === 'Hot Desk' || draft?.planType === 'Customize Deal') setPlanType(draft.planType);
+      if (draft?.bankDetails && typeof draft.bankDetails === 'object') {
+        setBankDetails((prev) => ({ ...prev, ...draft.bankDetails }));
+      }
+      if (draft?.customDeal && typeof draft.customDeal === 'object') {
+        setCustomDeal((prev) => ({ ...prev, ...draft.customDeal }));
+      }
+      if (draft?.walletDetails && typeof draft.walletDetails === 'object') {
+        setWalletDetails((prev) => ({ ...prev, ...draft.walletDetails }));
+      }
+      if (draft?.additionalServices && typeof draft.additionalServices === 'object') {
+        setAdditionalServices((prev) => ({ ...prev, ...draft.additionalServices }));
+      }
     } catch {
       // corrupt draft — ignore
     }
@@ -386,13 +402,23 @@ export default function OnboardingWizardPage() {
   const resetWizard = () => {
     setBasicInfo({ name: "", phone: "", email: "", altContact: "", dob: "", company: "", gst: "" });
     setIndividuals([{ id: Date.now(), name: "", phone: "", email: "", dept: "", seat: "" }]);
+    setEmployeeMode("bulk");
     setPlanType("Hot Desk");
     setBookingType("Open Seating");
+    setCustomDeal({ openSeats: 0, cabins: 0, durationMonths: 12, initialRent: 40000, yoyPercent: 5, startDate: "" });
     setSecurityDepositAmount("₹ 50,000");
     setBillingCycle("Monthly");
     setPaymentMode("UPI");
+    setBankDetails({ holderName: "", accountNumber: "", ifscCode: "", bankName: "" });
+    setAdditionalServices({ meetingRoom: true, printing: true, valetParking: true, tokenWallet: true });
+    setWalletDetails({ contactMethod: "phone", contactValue: "", threshold: "100", autoRecharge: true });
+    setCommunicationChannel("WhatsApp");
     setKycDocs({ pan: null, aadhaarFront: null, aadhaarBack: null, gst: null });
+    setSignatureData(null);
+    setSignatureSaved(false);
     setCurrentStep(1);
+    setLeadId(null);
+    setLeadPrefilled(false);
     try {
       localStorage.removeItem("onboarding_draft");
     } catch {
@@ -459,6 +485,15 @@ export default function OnboardingWizardPage() {
             communicationChannel: communicationChannelVal,
             notes: undefined,
             provisionLogin: true,
+            ...(additionalServices.tokenWallet
+              ? {
+                  autoRechargeEnabled: walletDetails.autoRecharge,
+                  autoRechargeContact: walletDetails.contactValue?.trim() || undefined,
+                  ...(Number(walletDetails.threshold) > 0
+                    ? { autoRechargeThreshold: Number(walletDetails.threshold) }
+                    : {}),
+                }
+              : {}),
           },
         });
         customerId = result.data.convertLeadWithOnboarding.customer.id;
@@ -719,7 +754,18 @@ export default function OnboardingWizardPage() {
     try {
       localStorage.setItem(
         "onboarding_draft",
-        JSON.stringify({ basicInfo, currentStep, paymentMode, billingCycle })
+        JSON.stringify({
+          basicInfo,
+          currentStep,
+          paymentMode,
+          billingCycle,
+          individuals,
+          planType,
+          bankDetails,
+          customDeal,
+          walletDetails,
+          additionalServices,
+        })
       );
       toast.success("Draft saved");
     } catch (err) {
