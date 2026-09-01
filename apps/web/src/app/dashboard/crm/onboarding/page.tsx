@@ -2647,54 +2647,38 @@ export default function OnboardingWizardPage() {
                           </button>
                         </div>
                         <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          {([
+                            { label: "PAN Card", file: kycDocs.pan },
+                            { label: "Aadhaar Front", file: kycDocs.aadhaarFront },
+                            { label: "Aadhaar Back", file: kycDocs.aadhaarBack },
+                            { label: "GST Certificate", file: kycDocs.gst },
+                            { label: "Signed Agreement", file: signatureData ? ({ name: "signed-agreement.png", size: 0 } as File) : null },
+                          ] as { label: string; file: File | null }[]).map((doc) => (
+                            <div key={doc.label} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${doc.file ? "bg-[#E5F7ED] text-[#21A366]" : "bg-gray-100 text-gray-400"}`}>
+                                  {doc.file ? (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                  ) : (
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-[13px] font-bold text-gray-900">{doc.label}</p>
+                                  <p className={`text-[11px] ${doc.file ? "text-green-600" : "text-gray-400"}`}>
+                                    {doc.file ? doc.file.name : "Not uploaded"}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-[13px] font-bold text-gray-900">Aadhaar Card</p>
-                                <p className="text-[11px] text-gray-500">aadhaar_john_doe.pdf</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
-                              <span className="text-gray-300">|</span>
-                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                              </div>
-                              <div>
-                                <p className="text-[13px] font-bold text-gray-900">PAN Card</p>
-                                <p className="text-[11px] text-gray-500">pan_john_doe.pdf</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
-                              <span className="text-gray-300">|</span>
-                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#E5F7ED] text-[#21A366] flex items-center justify-center shrink-0">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                              </div>
-                              <div>
-                                <p className="text-[13px] font-bold text-gray-900">GST Certificate</p>
-                                <p className="text-[11px] text-gray-500">gst_tech_solutions.pdf</p>
+                              <div className="flex gap-2">
+                                {doc.file ? (
+                                  <button onClick={() => setCurrentStep(6)} className="text-[12px] font-medium text-[#FF6A2F]">Replace</button>
+                                ) : (
+                                  <button onClick={() => setCurrentStep(6)} className="text-[12px] font-medium text-[#FF6A2F]">Upload</button>
+                                )}
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <button className="text-[12px] font-medium text-[#FF6A2F]">View</button>
-                              <span className="text-gray-300">|</span>
-                              <button className="text-[12px] font-medium text-gray-500">Replace</button>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
 
