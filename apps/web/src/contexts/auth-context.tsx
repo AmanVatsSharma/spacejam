@@ -99,7 +99,7 @@ export interface AuthContextValue {
    * Dev-only: install a fake auth session without contacting the backend.
    * Hidden behind NEXT_PUBLIC_ENABLE_DEV_LOGIN so it never ships to production.
    */
-  devSignIn: (role?: UserRole) => void;
+  quickSignIn: (email: string, password: string) => Promise<void>;
   isDevLoginAvailable: boolean;
 }
 
@@ -125,7 +125,7 @@ const SSR_AUTH_DEFAULT: AuthContextValue = {
   recoveryCodesRemaining: async () => 0,
   regenerateRecoveryCodes: async () => [],
   refresh: async () => {},
-  devSignIn: () => {},
+  quickSignIn: async () => { throw new Error('AuthProvider not mounted'); },
   isDevLoginAvailable: false,
 };
 
@@ -170,46 +170,17 @@ const applyAuthPayload = (payload: AuthPayloadResult) => {
 
 // ---- dev-mode helpers --------------------------------------------------------
 
-const DEV_USERS: Record<UserRole, AuthUser> = {
-  SUPER_ADMIN: {
-    id: 'dev-super-admin', email: 'superadmin@dev.local', name: 'Dev Super Admin',
-    role: 'SUPER_ADMIN', active: true, emailVerified: true,
-    createdAt: new Date().toISOString(),
-  },
-  ADMIN: {
-    id: 'dev-admin', email: 'admin@dev.local', name: 'Dev Admin',
-    role: 'ADMIN', active: true, emailVerified: true,
-    createdAt: new Date().toISOString(),
-  },
-  CENTER_MANAGER: {
-    id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Center Manager',
-    role: 'CENTER_MANAGER', active: true, emailVerified: true,
-    createdAt: new Date().toISOString(),
-  },
-  MEMBER: {
-    id: 'dev-member', email: 'member@dev.local', name: 'Dev Member',
-    role: 'MEMBER', active: true, emailVerified: true,
-    createdAt: new Date().toISOString(),
-  },
-};
-
-const DEV_TOKEN = 'dev-mode-fake-token';
-
-const installDevAuth = (role: UserRole = 'ADMIN') => {
-  localStorage.setItem('spacejam_dev_auth', JSON.stringify(DEV_USERS[role]));
-  // Use the same keys as token-storage.ts so getAccessToken() finds them.
-  const accessExpiry = new Date(Date.now() + 86400000).toISOString();
-  const refreshExpiry = new Date(Date.now() + 86400000).toISOString();
-  localStorage.setItem('spacejam.access', DEV_TOKEN);
-  localStorage.setItem('spacejam.refresh', DEV_TOKEN);
-  localStorage.setItem('spacejam.access.exp', accessExpiry);
-  localStorage.setItem('spacejam.refresh.exp', refreshExpiry);
-  // Also write cookies so the Next.js proxy middleware allows dashboard access.
-  const maxAge = 86400;
-  document.cookie = `spacejam_access=${DEV_TOKEN}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
-  document.cookie = `spacejam_refresh=${DEV_TOKEN}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
-};
-
+/**
+ * Seeded test accounts for the dev quick-login buttons. These call the REAL
+ * signin mutation — a real JWT is issued, every API call works, and the
+ * role-based UI/data is authentic. Only visible on localhost/dev.
+ */
+export const QUICK_ACCOUNTS = [
+  { label: 'Super Admin', email: 'admin@spacejam.com', password: 'Admin@123' },
+  { label: 'Admin', email: 'admin@spacejam.test', password: 'Admin@123' },
+  { label: 'Center Manager', email: 'manager@spacejam.com', password: 'Manager@123' },
+  { label: 'Member', email: 'test@test.com', password: 'Member@123' },
+] as const;
 
 // ---- deferred Apollo hooks ---------------------------------------------------
 
@@ -318,7 +289,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // - If there's no token, we're done immediately (not loading).
   // - If dev-login is available, MeQueryClient intentionally skips the
   //   ME_QUERY, so clear loading here — dev users are restored via the
-  //   devSignIn flow / persisted dev auth, not the network query.
+  //   quickSignIn flow (real tokens), not the network query.
   // - Otherwise (real token), stay loading until the ME_QUERY resolves;
   //   the 'me-queried' event listener above clears it on completion.
   // The previous implementation flipped isLoading to false after an
@@ -479,12 +450,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [apolloClient]);
 
-  const devSignIn = useCallback((role: UserRole = 'ADMIN') => {
-    if (!isDevLoginAvailable) return;
-    installDevAuth(role);
-    setUser(DEV_USERS[role]);
-    setHasToken(true);
-  }, [isDevLoginAvailable]);
+  /**
+   * Dev quick-login: signs in with a REAL seeded test account. Issues a real
+   * JWT so all API calls, role checks, and data fetching work authentically.
+   */
+  const quickSignIn = useCallback(
+    async (email: string, password: string) => {
+      if (!apolloClient) throw new Error('Apollo not ready');
+      const res = await apolloClient.mutate({
+        mutation: SIGNIN_MUTATION,
+        variables: { input: { email, password, rememberMe: true } },
+      });
+      const payload = res.data?.signin;
+      if (!payload) throw new Error('Signin failed');
+      const result = applyAuthPayload(payload);
+      if (result.user) setUser(result.user);
+      setHasToken(true);
+    },
+    [apolloClient],
+  );
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
@@ -503,7 +487,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     recoveryCodesRemaining,
     regenerateRecoveryCodes,
     refresh,
-    devSignIn,
+    quickSignIn,
     isDevLoginAvailable,
   }), [
     user, hasToken, isLoading,
@@ -511,7 +495,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     requestPasswordReset, resetPassword, changePassword,
     requestMagicLink, verifyMagicLink,
     recoveryCodesRemaining, regenerateRecoveryCodes, refresh,
-    devSignIn, isDevLoginAvailable,
+    quickSignIn, isDevLoginAvailable,
   ]);
 
   return (

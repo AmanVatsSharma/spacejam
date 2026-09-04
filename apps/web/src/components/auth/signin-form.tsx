@@ -222,49 +222,32 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
       {mounted && auth.isDevLoginAvailable && (
         <div className="mt-1 rounded-xl border border-dashed border-[#FF7847]/40 bg-[#FFF7F2] p-3">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#FF7847]">
-            Dev login (no DB — UI preview only, no real API calls)
+            Quick login (seeded test accounts)
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                auth.devSignIn('SUPER_ADMIN');
-                router.push(target);
-              }}
-              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
-            >
-              Super Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                auth.devSignIn('ADMIN');
-                router.push(target);
-              }}
-              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                auth.devSignIn('CENTER_MANAGER');
-                router.push(target);
-              }}
-              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
-            >
-              Center Manager
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                auth.devSignIn('MEMBER');
-                router.push(target);
-              }}
-              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
-            >
-              Member
-            </button>
+            {[
+              { label: 'Super Admin', email: 'admin@spacejam.com', password: 'Admin@123' },
+              { label: 'Admin', email: 'admin@spacejam.test', password: 'Admin@123' },
+              { label: 'Center Manager', email: 'manager@spacejam.com', password: 'Manager@123' },
+              { label: 'Member', email: 'test@test.com', password: 'Member@123' },
+            ].map((acct) => (
+              <button
+                key={acct.label}
+                type="button"
+                disabled={auth.isLoading}
+                onClick={async () => {
+                  try {
+                    await auth.quickSignIn(acct.email, acct.password);
+                    router.push(target);
+                  } catch {
+                    // error toast is handled by the auth context
+                  }
+                }}
+                className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white disabled:opacity-50"
+              >
+                {acct.label}
+              </button>
+            ))}
           </div>
         </div>
       )}

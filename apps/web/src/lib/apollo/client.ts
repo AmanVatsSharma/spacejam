@@ -73,7 +73,7 @@ async function refreshTokensOnce(): Promise<string | null> {
   }
   isRefreshing = true;
   const refreshToken = getRefreshToken();
-  if (!refreshToken || refreshToken === 'dev-mode-fake-token') {
+  if (!refreshToken) {
     // Dev-mode fake token: don't try to refresh it — the 401 link already
     // skips auth-error dispatch for dev sessions.
     isRefreshing = false;
@@ -154,9 +154,7 @@ const refreshLink = onError(({ graphQLErrors, operation, forward }) => {
   );
   if (!unauth) return;
   if (operation.operationName === 'Refresh') return;
-  // Dev-mode fake token: never attempt a real refresh or logout redirect.
-  const currentToken = memoryAccessToken ?? getAccessToken();
-  if (currentToken === 'dev-mode-fake-token') return;
+
 
   return new Observable((observer) => {
     void (async () => {
