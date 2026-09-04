@@ -778,18 +778,64 @@
 }
 .editorTitle { font-size: 13px; font-weight: 700; color: #1F2937; margin-right: 6px; }
 .editorBtn {
+  display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid #E5E7EB; background: #FFFFFF; color: #374151;
   border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
-.editorBtn:hover { background: #F9FAFB; }
-.editorBtnDanger { border-color: #FECACA; background: #FEF2F2; color: #DC2626; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.editorBtn:hover:not(:disabled) { background: #F9FAFB; border-color: #D1D5DB; }
+.editorBtn:active:not(:disabled) { transform: scale(0.97); }
+.editorBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.editorBtn svg { flex-shrink: 0; }
+.editorBtnActive { background: #FFF3ED; border-color: #FFCDB4; color: #C2410C; }
+.editorBtnActive:hover:not(:disabled) { background: #FFEBE0; border-color: #FFB596; }
+.editorSelect {
+  border: 1px solid #E5E7EB; background: #FFFFFF; color: #374151;
+  border-radius: 8px; padding: 6px 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.editorSelect:hover { border-color: #D1D5DB; }
+.editorSelect:focus { outline: none; border-color: #FF6A2F; box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.12); }
+.editorIconBtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid #E5E7EB;
+  background: #FFFFFF; color: #4B5563; cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+.editorIconBtn:hover { background: #F9FAFB; color: #111827; }
+.editorIconBtn:active { transform: scale(0.94); }
+.editorIconBtnActive { background: #FFF3ED; border-color: #FFCDB4; color: #C2410C; }
+.editorToolbarGroup {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding-left: 10px; border-left: 1px solid #F3F4F6;
+}
+.editorSelectedInfo {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
+  background: #FFF3ED; border: 1px solid #FFD3BE; color: #C2410C;
+  border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700;
+}
+.editorSelectedInfoName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selectedInfoDot { width: 6px; height: 6px; border-radius: 50%; background: #FF6A2F; flex-shrink: 0; }
+.editorBtnDanger {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid #FECACA; background: #FEF2F2; color: #DC2626;
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.editorBtnDanger:hover:not(:disabled) { background: #FEE2E2; }
+.editorBtnDanger:active:not(:disabled) { transform: scale(0.97); }
+.editorBtnDanger:disabled { opacity: 0.45; cursor: not-allowed; }
+.editorBtnDanger svg { flex-shrink: 0; }
 .editorZoom { font-size: 12px; color: #6B7280; min-width: 38px; text-align: center; }
 .editorDirty { font-size: 11px; color: #D97706; font-weight: 600; }
 .editorToolbarRight { margin-left: auto; }
 .editorSave {
   background: #FF6A2F; color: #FFFFFF; border: none; border-radius: 8px;
   padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
 }
+.editorSave:hover:not(:disabled) { background: #E55A20; }
+.editorSave:active:not(:disabled) { transform: scale(0.97); }
 .editorSave:disabled { background: #F3F4F6; color: #9CA3AF; cursor: not-allowed; }
 .editorBody { display: flex; gap: 12px; align-items: flex-start; }
 .editorTray { width: 220px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px; padding: 12px; }
@@ -799,7 +845,9 @@
   border: 1px dashed #FF6A2F; color: #C2410C; background: #FFF7ED;
   border-radius: 8px; padding: 6px 8px; font-size: 12px; font-weight: 600;
   cursor: grab; user-select: none; touch-action: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
+.trayChip:hover { background: #FFEFD9; box-shadow: 0 1px 3px rgba(194, 65, 12, 0.15); }
 .trayEmpty { font-size: 12px; color: #059669; font-weight: 600; }
 .trayHint { font-size: 11px; color: #9CA3AF; margin-top: 8px; }
 .editorCanvasOuter { flex: 1; overflow: auto; }
@@ -811,15 +859,28 @@
 .editorZone {
   position: absolute; border: 2px solid #93C5FD; background: rgba(191, 219, 254, 0.35);
   border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between;
-  padding: 6px 8px; cursor: move; touch-action: none;
+  padding: 6px 8px; cursor: move; touch-action: none; overflow: hidden;
+  transition: left 0.08s ease-out, top 0.08s ease-out, width 0.08s ease-out,
+    height 0.08s ease-out, box-shadow 0.15s ease-out, border-color 0.15s;
 }
+.zone_CABIN_1 { border-color: #FDBA74; background: rgba(255, 237, 213, 0.5); }
+.zone_CABIN_2 { border-color: #FB923C; background: rgba(255, 231, 204, 0.5); }
+.zone_CABIN_4 { border-color: #F97316; background: rgba(254, 231, 210, 0.55); }
+.zone_CABIN_6 { border-color: #EA580C; background: rgba(254, 226, 210, 0.55); }
 .zone_MEETING_ROOM { border-color: #93C5FD; background: rgba(191, 219, 254, 0.35); }
 .zone_PANTRY { border-color: #86EFAC; background: rgba(187, 247, 208, 0.4); }
 .zone_WASHROOM { border-color: #A5B4FC; background: rgba(199, 210, 254, 0.4); }
 .zone_RECEPTION { border-color: #FCA5A5; background: rgba(254, 205, 211, 0.4); }
+/* Legacy kind kept so previously saved CUSTOM zones still render. */
 .zone_CUSTOM { border-color: #D1D5DB; background: rgba(229, 231, 235, 0.4); }
 .zoneLabel { font-weight: 700; color: #1F2937; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .zoneKind { font-size: 10px; color: #6B7280; pointer-events: none; }
+.zoneCapacity {
+  display: inline-flex; align-items: center; gap: 3px; align-self: flex-start;
+  background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 999px; padding: 1px 7px; font-size: 10px; font-weight: 700; color: #374151;
+  pointer-events: none;
+}
 .zoneResizeHandle {
   position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
   background: #FF6A2F; border: 2px solid #FFFFFF; border-radius: 50%; cursor: nwse-resize;
@@ -829,15 +890,54 @@
   position: absolute; font-weight: 600; color: #1F2937;
   background: rgba(255, 255, 255, 0.85); padding: 2px 6px; border-radius: 6px;
   cursor: move; touch-action: none; white-space: nowrap;
+  transition: left 0.08s ease-out, top 0.08s ease-out, box-shadow 0.15s ease-out;
 }
 .editorSeat {
   position: absolute; background: #ECFDF5; border: 2px solid #34D399;
   border-radius: 8px; display: flex; align-items: center; justify-content: center;
   cursor: move; touch-action: none;
+  transition: left 0.08s ease-out, top 0.08s ease-out, width 0.08s ease-out,
+    height 0.08s ease-out, box-shadow 0.15s ease-out;
 }
 .editorSeat .seatName { color: #065F46; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
-.editorSelected { outline: 2px solid #FF6A2F; outline-offset: 2px; }
+.editorSelected {
+  outline: 2px solid #FF6A2F; outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(255, 106, 47, 0.14);
+  z-index: 4;
+}
+.selectedBadge {
+  position: absolute; top: -24px; left: -2px; z-index: 5;
+  background: #FF6A2F; color: #FFFFFF; border-radius: 5px;
+  padding: 1px 7px; font-size: 10px; font-weight: 700; white-space: nowrap;
+  pointer-events: none; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+}
 .editorFooterHint { font-size: 11px; color: #9CA3AF; }
+
+/* ---------------- Bulk Seat Creation Panel ---------------- */
+.bulkPanel {
+  display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px;
+  background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 12px 14px; animation: fadeInUp 0.2s ease-out;
+}
+.bulkField { display: flex; flex-direction: column; gap: 4px; }
+.bulkFieldLabel {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; color: #6B7280;
+}
+.bulkInput, .bulkSelect {
+  border: 1px solid #D1D5DB; border-radius: 8px; padding: 6px 8px;
+  font-size: 13px; background: #FFFFFF; color: #111827; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.bulkInput:focus, .bulkSelect:focus {
+  border-color: #FF6A2F; box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.12);
+}
+.bulkPreview {
+  font-size: 12px; color: #6B7280; align-self: center; margin-left: auto;
+  max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bulkActions { display: inline-flex; gap: 8px; }
 
 /* ---------------- Custom Map View ---------------- */
 .customMapWrap { display: flex; flex-direction: column; gap: 10px; }
@@ -878,4 +978,356 @@
 .rotateHandle::after {
   content: ""; position: absolute; left: 50%; top: 14px; height: 8px;
   width: 1px; background: #FF6A2F;
+}
+
+/* ---------------- Seat Detail Panel (right of the map canvas) ---------------- */
+/* Flex row inside the map container card: map canvas flexes, panel is a fixed
+   320px sidebar that scrolls independently. */
+.mapBodyRow {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-width: 0;
+}
+.mapBodyMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sdpPanel {
+  width: 320px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  max-height: 640px;
+  animation: fadeInUp 0.25s ease-out;
+}
+
+.sdpHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #F3F4F6;
+}
+.sdpHeaderTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sdpHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.sdpTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sdpTypeBadge {
+  align-self: flex-start;
+  background: #FFF3ED;
+  color: #FF6A2F;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sdpCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.sdpCloseBtn:hover {
+  background: #F9FAFB;
+  color: #111827;
+}
+
+/* Badges */
+.sdpBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  align-self: flex-start;
+  white-space: nowrap;
+}
+.sdpBadgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.sdpSeatAvailable {
+  background: #ECFDF5;
+  color: #059669;
+}
+.sdpSeatOccupied {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+.sdpSeatMaintenance {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+.sdpBadgePending {
+  background: #FFFBEB;
+  color: #D97706;
+}
+.sdpBadgeConfirmed {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+.sdpBadgeCheckedIn {
+  background: #ECFDF5;
+  color: #059669;
+}
+.sdpBadgeDone {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+.sdpBadgeCancelled {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+/* Sections */
+.sdpSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sdpSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Booking cards */
+.sdpCard {
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sdpCardActive {
+  background: #FFF9F6;
+  border-color: #FFD6C2;
+}
+.sdpCardRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sdpCardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sdpCardDates {
+  font-size: 13px;
+  color: #6B7280;
+}
+.sdpCardPrice {
+  font-size: 13px;
+  font-weight: 600;
+  color: #FF6A2F;
+}
+.sdpCardEmpty {
+  font-size: 14px;
+  color: #059669;
+  font-weight: 600;
+}
+
+/* History tabs + list */
+.sdpTabs {
+  display: flex;
+  gap: 6px;
+  background: #F3F4F6;
+  border-radius: 10px;
+  padding: 4px;
+}
+.sdpTab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sdpTab:hover {
+  color: #374151;
+}
+.sdpTabActive {
+  background: #FFFFFF;
+  color: #FF6A2F;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.06);
+}
+.sdpList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sdpEmpty {
+  font-size: 13px;
+  color: #9CA3AF;
+  background: #F9FAFB;
+  border: 1px dashed #E5E7EB;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+/* Actions */
+.sdpActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #F3F4F6;
+}
+.sdpBookBtn {
+  background: #FF6A2F;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sdpBookBtn:hover {
+  background: #E55A20;
+}
+.sdpBookBtn:active {
+  transform: scale(0.98);
+}
+.sdpWalkInBtn {
+  background: #FFFFFF;
+  color: #FF6A2F;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #FFD6C2;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sdpWalkInBtn:hover {
+  background: #FFF9F6;
+}
+
+/* Walk-in mini form */
+.sdpWalkInForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #F9FAFB;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 16px;
+}
+.sdpField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sdpField label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4B5563;
+}
+.sdpField input {
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.sdpField input:focus {
+  border-color: #FF6A2F;
+}
+.sdpWalkInFormActions {
+  display: flex;
+  gap: 8px;
+}
+.sdpWalkInCancel {
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  color: #4B5563;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sdpWalkInCancel:hover {
+  background: #F3F4F6;
+}
+.sdpWalkInSubmit {
+  flex: 1.5;
+  background: #FF6A2F;
+  border: none;
+  color: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sdpWalkInSubmit:hover {
+  background: #E55A20;
+}
+.sdpWalkInSubmit:disabled,
+.sdpWalkInCancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

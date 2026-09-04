@@ -1637,6 +1637,12 @@ export const GET_BOOKINGS = gql`
         email
         phone
       }
+      customer {
+        id
+        name
+        email
+        phone
+      }
       seat {
         id
         name

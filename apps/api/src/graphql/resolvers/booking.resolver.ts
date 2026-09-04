@@ -82,6 +82,7 @@ export class BookingResolver {
     const effectiveCenterId = scope ?? filters?.centerId;
     if (effectiveCenterId) where.centerId = effectiveCenterId;
     if (filters) {
+      if (filters.seatId) where.seatId = filters.seatId;
       if (filters.userId) where.userId = filters.userId;
       if (filters.customerId) where.customerId = filters.customerId;
       if (filters.status) where.status = filters.status;
@@ -93,6 +94,8 @@ export class BookingResolver {
       where,
       relations: ['user', 'seat', 'seat.floor', 'center', 'payment', 'customer', 'meetingRoom'],
       order: { createdAt: 'desc' },
+      take: filters?.limit ?? 50,
+      skip: filters?.offset ?? 0,
     });
 
     return bookings as unknown as BookingEntity[];

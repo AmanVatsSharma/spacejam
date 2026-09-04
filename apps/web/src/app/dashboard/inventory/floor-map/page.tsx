@@ -15,6 +15,7 @@ import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import { ContextMenu } from "@/components/ui/context-menu";
 import { SeatBookModal } from "@/app/dashboard/inventory/table-view/seat-book-modal";
+import { SeatDetailPanel } from "./SeatDetailPanel";
 import { useAuth } from "@/contexts/auth-context";
 import { UPDATE_FLOOR_LAYOUT } from "@/lib/apollo/operations";
 import {
@@ -22,6 +23,7 @@ import {
   GRID,
   CANVAS_COLS,
   CANVAS_ROWS,
+  zoneDisplayTitle,
   type EditorLayout,
   type SeatGeometry,
 } from "./FloorMapEditor";
@@ -182,7 +184,7 @@ function CustomMapView({
               transform: z.rotation ? `rotate(${z.rotation}deg)` : undefined,
             }}
           >
-            <span className={styles.zoneLabel}>{z.label}</span>
+            <span className={styles.zoneLabel}>{zoneDisplayTitle(z)}</span>
           </div>
         ))}
         {(layout?.labels ?? []).map((l) => (
@@ -254,6 +256,10 @@ export default function FloorMapPage() {
 
   // Book seat modal state
   const [bookModal, setBookModal] = useState<{ seatId: string; seatName: string } | null>(null);
+
+  // Seat detail panel (view mode) — tracks the clicked seat id; live seat data
+  // is derived from GET_SEATS below so the panel reflects status changes.
+  const [detailSeatId, setDetailSeatId] = useState<string | null>(null);
 
   // Load centers to populate floor tabs
   const {
@@ -371,6 +377,85 @@ export default function FloorMapPage() {
     }
   };
 
+  // ── Seat CRUD from the layout editor ─────────────────────────────────────
+  const handleCreateSeat = useCallback(
+    async (name: string, seatType: string) => {
+      if (!activeFloorId) {
+        toast.error("Select a floor first");
+        return;
+      }
+      try {
+        await createSeat({
+          variables: {
+            input: { floorId: activeFloorId, name, seatType, status: "AVAILABLE" },
+          },
+        });
+        toast.success(`Seat "${name}" created`);
+        await refetchSeats();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create seat");
+      }
+    },
+    [activeFloorId, createSeat, refetchSeats],
+  );
+
+  const handleDeleteSeatById = useCallback(
+    async (seatId: string) => {
+      try {
+        await deleteSeat({ variables: { id: seatId } });
+        toast.success("Seat deleted");
+        await refetchSeats();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to delete seat");
+      }
+    },
+    [deleteSeat, refetchSeats],
+  );
+
+  const handleBulkCreateSeats = useCallback(
+    async (list: { name: string; seatType: string }[]) => {
+      if (!activeFloorId) {
+        toast.error("Select a floor first");
+        return;
+      }
+      try {
+        await Promise.all(
+          list.map((s) =>
+            createSeat({
+              variables: {
+                input: {
+                  floorId: activeFloorId,
+                  name: s.name,
+                  seatType: s.seatType,
+                  status: "AVAILABLE",
+                },
+              },
+            }),
+          ),
+        );
+        toast.success(`${list.length} seat${list.length === 1 ? "" : "s"} created`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to create seats");
+      } finally {
+        await refetchSeats();
+      }
+    },
+    [activeFloorId, createSeat, refetchSeats],
+  );
+
+  const handleRenameSeat = useCallback(
+    async (seatId: string, name: string) => {
+      try {
+        await updateSeat({ variables: { id: seatId, input: { name } } });
+        toast.success("Seat renamed");
+        await refetchSeats();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to rename seat");
+      }
+    },
+    [updateSeat, refetchSeats],
+  );
+
   // Derived data
   const floors = floorsData?.floors ?? [];
   const seats = seatsData?.seats ?? [];
@@ -477,6 +562,32 @@ export default function FloorMapPage() {
   const selectedSeat = useMemo(
     () => seats.find((s: any) => s.id === selectedSeatId) ?? null,
     [seats, selectedSeatId]
+  );
+
+  // Live seat row for the detail panel — null once the seat disappears from
+  // the current floor's list (deleted, or the floor switched).
+  const detailSeat = useMemo(
+    () => (detailSeatId ? seats.find((s: any) => s.id === detailSeatId) ?? null : null),
+    [seats, detailSeatId]
+  );
+
+  // Close the detail panel when the floor changes — the clicked seat may not
+  // exist on the new floor.
+  useEffect(() => {
+    setDetailSeatId(null);
+  }, [activeFloorId]);
+
+  // Open the booking modal for a seat (detail panel "Book This Seat" /
+  // "Walk-in Guest" and other book entry points).
+  const handleBookSeat = useCallback(
+    (seatId: string, seatName: string) => {
+      const s = seats.find((x: any) => x.id === seatId);
+      setBookModal({
+        seatId,
+        seatName: s ? `${seatTypeLabel(s.seatType)} ${s.name ?? ""}` : seatName,
+      });
+    },
+    [seats],
   );
 
   // Legend counts from filtered view
@@ -872,6 +983,9 @@ export default function FloorMapPage() {
             </div>
           </div>
 
+          {/* Map body: canvas flexes, SeatDetailPanel (view mode) sits right */}
+          <div className={styles.mapBodyRow}>
+          <div className={styles.mapBodyMain}>
           {/* Map Canvas — manual editor, custom saved map, or legacy auto-grid */}
           {editMode && activeFloorId ? (
             <FloorMapEditor
@@ -883,21 +997,16 @@ export default function FloorMapPage() {
               seats={seats}
               onSaveLayout={handleSaveLayout}
               saving={savingLayout}
+              onCreateSeat={handleCreateSeat}
+              onDeleteSeat={handleDeleteSeatById}
+              onBulkCreateSeats={handleBulkCreateSeats}
+              onRenameSeat={handleRenameSeat}
             />
           ) : hasCustomMap && activeFloorId ? (
             <CustomMapView
               layout={activeFloorLayout}
               seats={seats}
-              onSeatClick={(seat: any) => {
-                if (normalizeStatus(seat.status) === "AVAILABLE") {
-                  setBookModal({
-                    seatId: seat.id,
-                    seatName: `${seatTypeLabel(seat.seatType)} ${seat.name ?? `Seat ${seat.id}`}`,
-                  });
-                } else {
-                  setSelectedSeatId(seat.id);
-                }
-              }}
+              onSeatClick={(seat: any) => setDetailSeatId(seat.id)}
               canEdit={canEditLayout}
               onEdit={() => setEditMode(true)}
             />
@@ -962,13 +1071,7 @@ export default function FloorMapPage() {
                     <div
                       key={seat.id}
                       className={`${styles.roomBlock} ${colorClass} ${seat.id === selectedSeatId ? styles.roomActive : ''} active:scale-[0.95] transition-all duration-200`}
-                      onClick={() => {
-                        if (normalizeStatus(seat.status) === "AVAILABLE") {
-                          setBookModal({ seatId: seat.id, seatName: `${seatTypeLabel(seat.seatType)} ${seat.name ?? `Seat ${seat.id}`}` });
-                        } else {
-                          setSelectedSeatId(seat.id);
-                        }
-                      }}
+                      onClick={() => setDetailSeatId(seat.id)}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setSeatMenu({ seatId: seat.id, x: e.clientX, y: e.clientY });
@@ -1007,6 +1110,26 @@ export default function FloorMapPage() {
             </div>
           </div>
           )}
+          </div>
+
+            {/* Seat Detail Panel — shown in view mode when a seat is clicked */}
+            {!editMode && detailSeat && (
+              <SeatDetailPanel
+                seat={{
+                  id: detailSeat.id,
+                  name: detailSeat.name ?? `Seat ${detailSeat.id}`,
+                  seatType: detailSeat.seatType ?? "",
+                  status: detailSeat.status ?? "",
+                  price: detailSeat.price ?? 0,
+                  x: detailSeat.x,
+                  y: detailSeat.y,
+                }}
+                centerId={activeCenterId ?? undefined}
+                onClose={() => setDetailSeatId(null)}
+                onBookSeat={handleBookSeat}
+              />
+            )}
+          </div>
 
         </div>
 
