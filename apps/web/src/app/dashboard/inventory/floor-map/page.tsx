@@ -1113,25 +1113,6 @@ export default function FloorMapPage() {
           </div>
 
           </div>
-
-          {/* Seat Detail Panel — full-width card below the map (view mode) */}
-          {!editMode && detailSeat && (
-            <SeatDetailPanel
-              seat={{
-                id: detailSeat.id,
-                name: detailSeat.name ?? `Seat ${detailSeat.id}`,
-                seatType: detailSeat.seatType ?? "",
-                status: detailSeat.status ?? "",
-                price: detailSeat.price ?? 0,
-                x: detailSeat.x,
-                y: detailSeat.y,
-              }}
-              centerId={activeCenterId ?? undefined}
-              onClose={() => setDetailSeatId(null)}
-              onBookSeat={handleBookSeat}
-            />
-          )}
-
         </div>
 
       </div>
@@ -1139,111 +1120,21 @@ export default function FloorMapPage() {
       {/* RIGHT COLUMN */}
       <div className={styles.rightCol}>
 
-        {selectedSeat ? (
-          <>
-            <div className={styles.panelHeader}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <h2 className={styles.panelTitle}>
-                  {seatTypeLabel(selectedSeat.seatType)} {selectedSeat.name ?? ""}
-                </h2>
-                <span className={styles.panelSubtitle}>{seatTypeLabel(selectedSeat.seatType)}</span>
-              </div>
-              <div className={styles.statusBadge}>
-                <div className={styles.statusDot}></div>
-                {normalizeStatus(selectedSeat.status) === "AVAILABLE"
-                  ? "Available"
-                  : normalizeStatus(selectedSeat.status) === "OCCUPIED"
-                  ? "Occupied"
-                  : "Maintenance"}
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <span className={styles.sectionTitle}>Capacity</span>
-              <span className={styles.sectionText}>
-                {selectedSeat.features?.length ?? 1} seats
-              </span>
-            </div>
-
-            {selectedSeat.price != null && (
-              <div className={styles.sectionBlock}>
-                <span className={styles.sectionTitle}>Pricing</span>
-                <div className={styles.priceWrap}>
-                  <span className={styles.priceText}>
-                    {typeof selectedSeat.price === "number"
-                      ? `₹${selectedSeat.price.toLocaleString("en-IN")}/month`
-                      : selectedSeat.price}
-                  </span>
-                  <span className={styles.priceGst}>GST: 18%</span>
-                </div>
-              </div>
-            )}
-
-            {selectedSeat.amenities && selectedSeat.amenities.length > 0 && (
-              <div className={styles.sectionBlock}>
-                <span className={styles.sectionTitle}>Amenities</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {(selectedSeat.amenities || []).map((feature: string, i: number) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-[12px]">
-                      {feature}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedSeat.location && (
-              <div className={styles.sectionBlock}>
-                <span className={styles.sectionTitle}>Location</span>
-                <span className={styles.sectionText}>{selectedSeat.location}</span>
-              </div>
-            )}
-
-            <div className={styles.panelActions}>
-              <button
-                className={styles.btnSecondary}
-                onClick={() => handleViewDetails(selectedSeat.id)}
-              >View Details</button>
-              {normalizeStatus(selectedSeat.status) === "AVAILABLE" && (
-                <button
-                  className={styles.btnPrimary}
-                  onClick={() => setBookModal({ seatId: selectedSeat.id, seatName: `${seatTypeLabel(selectedSeat.seatType)} ${selectedSeat.name ?? ""}` })}
-                >
-                  Book
-                </button>
-              )}
-              {normalizeStatus(selectedSeat.status) !== "AVAILABLE" && (
-                <button
-                  className={styles.btnPrimary}
-                  onClick={() => handleVacate(selectedSeat.id)}
-                >
-                  Vacate
-                </button>
-              )}
-            </div>
-
-            {/* Quick status changer */}
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Change Status:</span>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-                {["AVAILABLE", "OCCUPIED", "MAINTENANCE"].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => handleStatusChange(selectedSeat.id, s)}
-                    style={{
-                      padding: '6px 4px', borderRadius: '8px', fontSize: '12px', fontWeight: 500,
-                      border: normalizeStatus(selectedSeat.status) === s ? '1.5px solid #FF6A2F' : '1px solid #E5E7EB',
-                      background: normalizeStatus(selectedSeat.status) === s ? '#FFF5F1' : '#fff',
-                      color: normalizeStatus(selectedSeat.status) === s ? '#FF6A2F' : '#6B7280',
-                      cursor: 'pointer', transition: 'all 0.2s',
-                    }}
-                  >
-                    {s === "AVAILABLE" ? "Available" : s === "OCCUPIED" ? "Occupied" : "Maint."}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
+        {detailSeat && !editMode ? (
+          <SeatDetailPanel
+            seat={{
+              id: detailSeat.id,
+              name: detailSeat.name ?? `Seat ${detailSeat.id}`,
+              seatType: detailSeat.seatType ?? "",
+              status: detailSeat.status ?? "",
+              price: detailSeat.price ?? 0,
+              x: detailSeat.x,
+              y: detailSeat.y,
+            }}
+            centerId={activeCenterId ?? undefined}
+            onClose={() => setDetailSeatId(null)}
+            onBookSeat={handleBookSeat}
+          />
         ) : (
           <>
             <div className={styles.panelHeader}>
