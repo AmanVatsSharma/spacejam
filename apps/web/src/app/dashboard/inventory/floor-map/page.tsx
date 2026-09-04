@@ -1112,24 +1112,25 @@ export default function FloorMapPage() {
           )}
           </div>
 
-            {/* Seat Detail Panel — shown in view mode when a seat is clicked */}
-            {!editMode && detailSeat && (
-              <SeatDetailPanel
-                seat={{
-                  id: detailSeat.id,
-                  name: detailSeat.name ?? `Seat ${detailSeat.id}`,
-                  seatType: detailSeat.seatType ?? "",
-                  status: detailSeat.status ?? "",
-                  price: detailSeat.price ?? 0,
-                  x: detailSeat.x,
-                  y: detailSeat.y,
-                }}
-                centerId={activeCenterId ?? undefined}
-                onClose={() => setDetailSeatId(null)}
-                onBookSeat={handleBookSeat}
-              />
-            )}
           </div>
+
+          {/* Seat Detail Panel — full-width card below the map (view mode) */}
+          {!editMode && detailSeat && (
+            <SeatDetailPanel
+              seat={{
+                id: detailSeat.id,
+                name: detailSeat.name ?? `Seat ${detailSeat.id}`,
+                seatType: detailSeat.seatType ?? "",
+                status: detailSeat.status ?? "",
+                price: detailSeat.price ?? 0,
+                x: detailSeat.x,
+                y: detailSeat.y,
+              }}
+              centerId={activeCenterId ?? undefined}
+              onClose={() => setDetailSeatId(null)}
+              onBookSeat={handleBookSeat}
+            />
+          )}
 
         </div>
 

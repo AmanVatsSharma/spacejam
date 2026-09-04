@@ -997,7 +997,7 @@
 }
 
 .sdpPanel {
-  width: 320px;
+  width: 100%;
   flex-shrink: 0;
   background: #FFFFFF;
   border: 1px solid #F3F4F6;
