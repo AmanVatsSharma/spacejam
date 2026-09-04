@@ -222,16 +222,26 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
       {mounted && auth.isDevLoginAvailable && (
         <div className="mt-1 rounded-xl border border-dashed border-[#FF7847]/40 bg-[#FFF7F2] p-3">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#FF7847]">
-            Dev login (no DB)
+            Dev login (no DB — UI preview only, no real API calls)
           </p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                auth.devSignIn('SUPER_ADMIN');
+                router.push(target);
+              }}
+              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
+            >
+              Super Admin
+            </button>
             <button
               type="button"
               onClick={() => {
                 auth.devSignIn('ADMIN');
                 router.push(target);
               }}
-              className="flex-1 rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
+              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
             >
               Admin
             </button>
@@ -241,9 +251,9 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
                 auth.devSignIn('CENTER_MANAGER');
                 router.push(target);
               }}
-              className="flex-1 rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
+              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
             >
-              Center Mgr
+              Center Manager
             </button>
             <button
               type="button"
@@ -251,7 +261,7 @@ export function SigninForm({ nextHref, defaultEmail }: SigninFormProps) {
                 auth.devSignIn('MEMBER');
                 router.push(target);
               }}
-              className="flex-1 rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
+              className="rounded-lg border border-[#FF7847] bg-white px-3 py-2 text-xs font-medium text-[#FF7847] transition hover:bg-[#FF7847] hover:text-white"
             >
               Member
             </button>

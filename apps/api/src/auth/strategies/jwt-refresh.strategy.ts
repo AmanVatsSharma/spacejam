@@ -32,7 +32,14 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('REFRESH_TOKEN_SECRET') ?? 'dev-refresh-secret',
+      // Must mirror the auth service's signing fallback chain exactly:
+      // REFRESH_TOKEN_SECRET ?? JWT_SECRET ?? 'dev-refresh-secret'.
+      // Without the JWT_SECRET fallback, the secrets never matched when
+      // REFRESH_TOKEN_SECRET was unset — every refresh silently failed.
+      secretOrKey:
+        config.get<string>('REFRESH_TOKEN_SECRET') ??
+        config.get<string>('JWT_SECRET') ??
+        'dev-refresh-secret',
     });
   }
 

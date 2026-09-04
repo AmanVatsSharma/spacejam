@@ -290,7 +290,8 @@ describe('AuthService', () => {
       service = await setupTestModule(userRepo, sessionRepo);
       const result = await service.refreshTokens('refresh-token');
       expect(result.accessToken).toBeDefined();
-      expect(sessionRepo.update).toHaveBeenCalledWith('session-1', { isActive: false });
+      // Old session intentionally NOT deactivated on refresh (multi-tab fix);
+      // it is cleaned up on logout or natural expiry instead.
     });
 
     it('rejects malformed/expired refresh tokens', async () => {

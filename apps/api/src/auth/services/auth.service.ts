@@ -40,7 +40,7 @@ import { EnableTwoFactorInput } from '../dto/enable-two-factor.input';
 import { VerifyTwoFactorInput } from '../dto/verify-two-factor.input';
 
 const BCRYPT_COST = 12;
-const ACCESS_TOKEN_TTL = '15m';
+const ACCESS_TOKEN_TTL = '30m';
 const REFRESH_TOKEN_TTL_DEFAULT = '7d';
 const REFRESH_TOKEN_TTL_REMEMBER = '30d';
 
@@ -157,9 +157,10 @@ export class AuthService {
     if (!user || !user.active) {
       throw new UnauthorizedException('User no longer active');
     }
-    if (payload.sid) {
-      await this.sessionRepo.update(payload.sid, { isActive: false } as never);
-    }
+    // NOTE: the old session is intentionally NOT deactivated here.
+    // Deactivating it broke multi-tab refresh (tab A refreshes → old session
+    // dies → tab B's refresh token points at the dead session → "Session
+    // revoked" → logout). Sessions are cleaned up on logout or expiry.
     return this.issueTokensForImpl(user, ctx, true);
   }
 

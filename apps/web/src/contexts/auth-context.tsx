@@ -13,6 +13,7 @@ import { createContext, useContext, useState, useMemo, useEffect, useCallback, R
 import {
   getApolloClient,
   setMemoryAccessToken,
+  scheduleProactiveRefresh,
 } from '@/lib/apollo/client';
 import {
   clearTokens,
@@ -161,19 +162,27 @@ const applyAuthPayload = (payload: AuthPayloadResult) => {
     refreshTokenExpiresAt: payload.refreshTokenExpiresAt,
   });
   setMemoryAccessToken(payload.accessToken);
+  // Keep the session alive: refresh 5 minutes before the access token
+  // expires so the user never hits a 401 mid-session.
+  scheduleProactiveRefresh();
   return payload;
 };
 
 // ---- dev-mode helpers --------------------------------------------------------
 
 const DEV_USERS: Record<UserRole, AuthUser> = {
+  SUPER_ADMIN: {
+    id: 'dev-super-admin', email: 'superadmin@dev.local', name: 'Dev Super Admin',
+    role: 'SUPER_ADMIN', active: true, emailVerified: true,
+    createdAt: new Date().toISOString(),
+  },
   ADMIN: {
     id: 'dev-admin', email: 'admin@dev.local', name: 'Dev Admin',
     role: 'ADMIN', active: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
   CENTER_MANAGER: {
-    id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Manager',
+    id: 'dev-manager', email: 'manager@dev.local', name: 'Dev Center Manager',
     role: 'CENTER_MANAGER', active: true, emailVerified: true,
     createdAt: new Date().toISOString(),
   },
@@ -220,6 +229,11 @@ function MeQueryClient({ client, hasToken, isDevLoginAvailable }: {
   // only ADDS the dev sign-in buttons — it must not disable real session
   // restore, otherwise every reload renders "Guest" and role-aware UI
   // (settings tabs, page variants) silently falls back to the wrong role.
+  // Schedule the proactive refresh whenever a session is (re)detected.
+  useEffect(() => {
+    if (hasToken) scheduleProactiveRefresh();
+  }, [hasToken]);
+
   useEffect(() => {
     if (!mounted || !client || !hasToken) return;
 
