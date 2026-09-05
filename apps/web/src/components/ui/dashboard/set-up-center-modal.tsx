@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useMutation } from "@apollo/client";
 import { toast } from "sonner";
 import {
@@ -10,6 +10,7 @@ import {
   GET_FLOORS,
   GET_MY_CENTERS,
   GET_SEATS,
+  UPDATE_SEAT,
 } from "@/lib/apollo/operations";
 
 interface SetUpCenterModalProps {
@@ -31,6 +32,8 @@ interface CreatedSeat {
   number: string;
   seatType: SeatType;
   price: number | null;
+  x?: number | null;
+  y?: number | null;
 }
 
 // Simple icons
@@ -65,8 +68,22 @@ const SEAT_TYPE_LABEL: Record<SeatType, string> = {
   MEETING_ROOM: "Meeting Room",
 };
 
+// Visual identity per seat type on the mini-map (fill / border / text).
+const SEAT_TYPE_STYLE: Record<SeatType, { bg: string; ring: string; dot: string }> = {
+  HOT_DESK: { bg: "bg-[#E6F4EA]", ring: "border-[#9CCFAD]", dot: "bg-[#1E7B34]" },
+  DEDICATED: { bg: "bg-[#EAF1FD]", ring: "border-[#A8C4EE]", dot: "bg-[#2559B0]" },
+  CABIN: { bg: "bg-[#F3EAFD]", ring: "border-[#CBB0EE]", dot: "bg-[#6B2FB3]" },
+  MEETING_ROOM: { bg: "bg-[#FFF1E6]", ring: "border-[#F3C49E]", dot: "bg-[#C25517]" },
+};
+
 export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
+  // Mini-map: auto-placed seat positions, draggable for arrangement.
+  const MAP_GRID = 44;
+  const MAP_COLS = 10;
+  const MAP_ROWS = 8;
+  const mapDragRef = useRef<{ seatId: string; offX: number; offY: number } | null>(null);
+  const [dirtyPositions, setDirtyPositions] = useState<Set<string>>(new Set());
 
   // Step 1 — Center form (collected for CREATE_CENTER)
   const [centerForm, setCenterForm] = useState({
@@ -103,6 +120,7 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
   });
   const [createFloor] = useMutation(CREATE_FLOOR);
   const [createSeat] = useMutation(CREATE_SEAT);
+  const [updateSeat] = useMutation(UPDATE_SEAT);
 
   // Close animation effect
   const [show, setShow] = useState(false);
@@ -240,6 +258,25 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
       toast.error("Enter a space number / name");
       return;
     }
+    // Auto-place at the next free grid cell (skipping cells already taken
+    // by seats of this floor, including any that were dragged around).
+    const taken = new Set(
+      (seatsByFloor[selectedFloorId] ?? [])
+        .filter((sp) => sp.x != null && sp.y != null)
+        .map((sp) => `${sp.x}:${sp.y}`),
+    );
+    let px: number | null = null;
+    let py: number | null = null;
+    for (let r = 0; r < MAP_ROWS && px === null; r++) {
+      for (let c = 0; c < MAP_COLS; c++) {
+        if (!taken.has(`${c}:${r}`)) {
+          px = c;
+          py = r;
+          break;
+        }
+      }
+    }
+
     const input: Record<string, unknown> = {
       // CreateSeatInput requires `name` (not `number`) — backend rejects
       // inputs missing name (@IsNotEmpty). Keep the local `number` var for
@@ -248,6 +285,12 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
       floorId: selectedFloorId,
       seatType,
     };
+    // Persist the map position with the seat itself so the arrangement
+    // survives even if the wizard is closed without clicking Finish.
+    if (px != null && py != null) {
+      input.x = px;
+      input.y = py;
+    }
     const trimmedPrice = seatPrice.trim();
     if (trimmedPrice) {
       const parsed = Number(trimmedPrice);
@@ -276,6 +319,8 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
         number,
         seatType,
         price: typeof input.price === "number" ? input.price : null,
+        x: px,
+        y: py,
       };
       setSeatsByFloor((prev) => ({
         ...prev,
@@ -290,6 +335,94 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
     }
   };
 
+  // -------------------------------------------------------------
+  // Step 3 — visual mini-map helpers (drag-to-arrange floor plan)
+  // -------------------------------------------------------------
+  const cellKey = (x: number, y: number) => `${x}:${y}`;
+
+  /** Move a seat chip on the grid; marks the seat dirty for persistence. */
+  const moveSeatTo = (floorId: string, seatId: string, x: number, y: number) => {
+    setSeatsByFloor((prev) => {
+      const list = prev[floorId];
+      if (!list) return prev;
+      return {
+        ...prev,
+        [floorId]: list.map((sp) => (sp.id === seatId ? { ...sp, x, y } : sp)),
+      };
+    });
+    setDirtyPositions((prev) => new Set(prev).add(seatId));
+  };
+
+  /** Flush unsaved positions for a floor via UPDATE_SEAT (x/y columns). */
+  // NOTE: plain function (not useCallback) — it must run before the
+  // `if (!isOpen && !show) return null` early return would skip a hook.
+  const persistPositions = async (floorId: string | null) => {
+    if (!floorId) return;
+    const dirty = (seatsByFloor[floorId] ?? []).filter(
+      (sp) => dirtyPositions.has(sp.id) && sp.x != null && sp.y != null,
+    );
+    if (dirty.length === 0) return;
+    setDirtyPositions((prev) => {
+      const next = new Set(prev);
+      dirty.forEach((d) => next.delete(d.id));
+      return next;
+    });
+    try {
+      await Promise.all(
+        dirty.map((sp) =>
+          updateSeat({ variables: { id: sp.id, input: { x: sp.x, y: sp.y } } }),
+        ),
+      );
+      toast.success(`Floor plan saved (${dirty.length} space${dirty.length === 1 ? "" : "s"} arranged)`);
+    } catch {
+      toast.error("Could not save the floor arrangement — you can fix it later in Inventory → Floor Map");
+    }
+  };
+
+  /** Re-layout every seat of the floor into tidy rows (left→right, top→bottom). */
+  const autoArrangeFloor = (floorId: string) => {
+    const list = seatsByFloor[floorId] ?? [];
+    if (list.length === 0) return;
+    const next = list.map((sp, i) => ({ ...sp, x: i % MAP_COLS, y: Math.floor(i / MAP_COLS) }));
+    setSeatsByFloor((prev) => ({ ...prev, [floorId]: next }));
+    setDirtyPositions((prev) => {
+      const n = new Set(prev);
+      list.forEach((sp) => n.add(sp.id));
+      return n;
+    });
+  };
+
+  /** Pointer-drag a seat chip with snap-to-grid; drops onto occupied cells are rejected. */
+  const handleChipPointerDown = (e: React.PointerEvent<HTMLDivElement>, floorId: string, seat: CreatedSeat) => {
+    if (seat.x == null || seat.y == null) return;
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    mapDragRef.current = {
+      seatId: seat.id,
+      offX: e.clientX - seat.x * MAP_GRID,
+      offY: e.clientY - seat.y * MAP_GRID,
+    };
+  };
+
+  const handleChipPointerMove = (e: React.PointerEvent<HTMLDivElement>, floorId: string) => {
+    const drag = mapDragRef.current;
+    if (!drag) return;
+    const col = Math.round((e.clientX - drag.offX) / MAP_GRID);
+    const row = Math.round((e.clientY - drag.offY) / MAP_GRID);
+    const x = Math.max(0, Math.min(MAP_COLS - 1, col));
+    const y = Math.max(0, Math.min(MAP_ROWS - 1, row));
+    const seats = seatsByFloor[floorId] ?? [];
+    const seat = seats.find((sp) => sp.id === drag.seatId);
+    if (!seat || seat.x === x && seat.y === y) return;
+    const occupied = seats.some((sp) => sp.id !== drag.seatId && sp.x === x && sp.y === y);
+    if (!occupied) moveSeatTo(floorId, drag.seatId, x, y);
+  };
+
+  const handleChipPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    mapDragRef.current = null;
+  };
+
   const handleBack = () => {
     if (currentStep > 1) setCurrentStep((c) => c - 1);
   };
@@ -300,8 +433,10 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
     } else if (currentStep === 2) {
       setCurrentStep(3);
     } else {
-      // Step 3 — finish
-      onClose();
+      // Step 3 — save any pending floor-plan arrangement, then finish.
+      void persistPositions(selectedFloorId ?? createdFloors[0]?.id ?? null).finally(() => {
+        onClose();
+      });
     }
   };
 
@@ -492,29 +627,39 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
   );
 
   // -------------------------------------------------------------
-  // STEP 3: Space Setup
+  // STEP 3: Space Setup (form + visual draggable floor map)
   // -------------------------------------------------------------
   const renderStep3 = () => {
     const activeFloorId = selectedFloorId ?? createdFloors[0]?.id ?? null;
     const activeSeats = activeFloorId ? seatsByFloor[activeFloorId] ?? [] : [];
+    const activeFloorName = createdFloors.find((f) => f.id === activeFloorId)?.name ?? "";
 
     return (
       <div className="flex flex-col bg-[#F9FAFB] flex-1 overflow-y-auto">
         <div className="p-6 pb-0 flex-shrink-0">
           <h2 className="text-[18px] font-semibold text-gray-900">Space Setup</h2>
-          <p className="text-[14px] text-gray-500">Add desks, dedicated seats, and cabins to each floor.</p>
+          <p className="text-[14px] text-gray-500">
+            Add desks and cabins, then drag them on the floor map to arrange your real layout.
+          </p>
 
           {createdFloors.length > 0 ? (
             <div className="flex items-center gap-6 border-b border-gray-200 mt-6 overflow-x-auto">
               {createdFloors.map((floor) => {
-                const isActive = (selectedFloorId ?? createdFloors[0]?.id) === floor.id;
+                const isActive = activeFloorId === floor.id;
+                const count = seatsByFloor[floor.id]?.length ?? 0;
                 return (
                   <button
                     key={floor.id}
-                    onClick={() => setSelectedFloorId(floor.id)}
+                    onClick={() => {
+                      if (activeFloorId && activeFloorId !== floor.id) void persistPositions(activeFloorId);
+                      setSelectedFloorId(floor.id);
+                    }}
                     className={`pb-3 text-[14px] font-semibold border-b-2 transition-all duration-200 active:scale-[0.97] whitespace-nowrap ${isActive ? 'border-[#FF6A2F] text-[#FF6A2F]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                   >
                     {floor.name}
+                    <span className={`ml-1.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? 'bg-[#FFE8DF] text-[#FF6A2F]' : 'bg-gray-100 text-gray-400'}`}>
+                      {count}
+                    </span>
                   </button>
                 );
               })}
@@ -536,120 +681,250 @@ export function SetUpCenterModal({ isOpen, onClose, onCreated }: SetUpCenterModa
             </div>
           </div>
         ) : (
-          <div className="p-6 flex flex-col gap-4">
-            {/* Add seat form */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <h4 className="text-[14px] font-semibold text-gray-900 mb-3">
-                Add a space to {createdFloors.find((f) => f.id === activeFloorId)?.name ?? "this floor"}
-              </h4>
-              <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_auto] gap-3 items-end">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-medium text-gray-700">Number / Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., A1"
-                    value={seatNumber}
-                    onChange={(e) => setSeatNumber(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddSeat(); } }}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-medium text-gray-700">Type</label>
-                  <div className="relative">
-                    <select
-                      value={seatType}
-                      onChange={(e) => setSeatType(e.target.value as SeatType)}
-                      className="w-full appearance-none border border-gray-200 rounded-lg py-2 px-3 text-[14px] text-gray-700 bg-white focus:outline-none focus:border-[#FF6A2F]"
-                    >
-                      <option value="HOT_DESK">Hot Desk</option>
-                      <option value="DEDICATED">Dedicated Desk</option>
-                      <option value="CABIN">Cabin</option>
-                      <option value="MEETING_ROOM">Meeting Room</option>
-                    </select>
-                    <div className="absolute right-3 top-2.5 pointer-events-none text-gray-400">
-                      <ChevronDownIcon />
+          <div className="p-6 grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-4 items-start">
+            {/* ── LEFT: add form + quick add + spaces list ──────── */}
+            <div className="flex flex-col gap-4 min-w-0">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h4 className="text-[14px] font-semibold text-gray-900 mb-3">
+                  Add a space to {activeFloorName || "this floor"}
+                </h4>
+                <div className="grid grid-cols-2 gap-3 items-end">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-gray-700">Number / Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., A1"
+                      value={seatNumber}
+                      onChange={(e) => setSeatNumber(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddSeat(); } }}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-gray-700">Type</label>
+                    <div className="relative">
+                      <select
+                        value={seatType}
+                        onChange={(e) => setSeatType(e.target.value as SeatType)}
+                        className="w-full appearance-none border border-gray-200 rounded-lg py-2 pl-3 pr-9 text-[14px] text-gray-700 bg-white focus:outline-none focus:border-[#FF6A2F]"
+                      >
+                        <option value="HOT_DESK">Hot Desk</option>
+                        <option value="DEDICATED">Dedicated Desk</option>
+                        <option value="CABIN">Cabin</option>
+                        <option value="MEETING_ROOM">Meeting Room</option>
+                      </select>
+                      <div className="absolute right-3 top-2.5 pointer-events-none text-gray-400">
+                        <ChevronDownIcon />
+                      </div>
                     </div>
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-medium text-gray-700">Price (₹)</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="optional"
+                      value={seatPrice}
+                      onChange={(e) => setSeatPrice(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddSeat(); } }}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
+                    />
+                  </div>
+                  <button
+                    onClick={() => void handleAddSeat()}
+                    disabled={addingSeat || !activeFloorId}
+                    className="h-[38px] px-4 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold flex items-center gap-1.5 active:scale-[0.97] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {addingSeat ? "Adding..." : (<><PlusIcon /> Add</>)}
+                  </button>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-medium text-gray-700">Price (₹)</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="optional"
-                    value={seatPrice}
-                    onChange={(e) => setSeatPrice(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void handleAddSeat(); } }}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-[#FF6A2F]"
-                  />
+                <p className="text-[12px] text-gray-400 mt-2.5">
+                  New spaces are auto-placed on the map → drag them to match your real floor.
+                </p>
+              </div>
+
+              {/* Quick-add chips: prefill the form for the common types */}
+              <div className="bg-white border border-gray-200 rounded-xl p-4">
+                <h4 className="text-[13px] font-semibold text-gray-900 mb-2.5">Quick add</h4>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSeatType("HOT_DESK");
+                      setSeatNumber(`HD-${activeSeats.filter((sp) => sp.seatType === "HOT_DESK").length + 1}`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-[#9CCFAD] bg-[#E6F4EA] text-[#1E7B34] text-[12px] font-semibold active:scale-[0.97] transition-transform"
+                  >
+                    + Hot Desk
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSeatType("DEDICATED");
+                      setSeatNumber(`DD-${activeSeats.filter((sp) => sp.seatType === "DEDICATED").length + 1}`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-[#A8C4EE] bg-[#EAF1FD] text-[#2559B0] text-[12px] font-semibold active:scale-[0.97] transition-transform"
+                  >
+                    + Dedicated Desk
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSeatType("CABIN");
+                      setSeatNumber(`CB-${activeSeats.filter((sp) => sp.seatType === "CABIN").length + 1}`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-[#CBB0EE] bg-[#F3EAFD] text-[#6B2FB3] text-[12px] font-semibold active:scale-[0.97] transition-transform"
+                  >
+                    + Cabin
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSeatType("MEETING_ROOM");
+                      setSeatNumber(`MR-${activeSeats.filter((sp) => sp.seatType === "MEETING_ROOM").length + 1}`);
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-[#F3C49E] bg-[#FFF1E6] text-[#C25517] text-[12px] font-semibold active:scale-[0.97] transition-transform"
+                  >
+                    + Meeting Room
+                  </button>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-medium text-gray-700">Status</label>
-                  <input
-                    type="text"
-                    defaultValue="Available"
-                    readOnly
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-[14px] bg-gray-50 text-gray-500"
-                  />
+              </div>
+
+              {/* Spaces table for the active floor */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <span className="font-semibold text-gray-900 text-[14px]">
+                    Spaces on {activeFloorName}
+                  </span>
+                  <span className="text-[13px] text-gray-500">{activeSeats.length} created</span>
                 </div>
-                <button
-                  onClick={() => void handleAddSeat()}
-                  disabled={addingSeat || !activeFloorId}
-                  className="h-[38px] px-4 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold flex items-center gap-1.5 active:scale-[0.97] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  {addingSeat ? "Adding..." : (<><PlusIcon /> Add</>)}
-                </button>
+                <div className="max-h-[240px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0">
+                      <tr className="bg-gray-50 border-b border-gray-200 text-[13px] font-semibold text-gray-700">
+                        <th className="py-2.5 px-4">Number / Name</th>
+                        <th className="py-2.5 px-4">Type</th>
+                        <th className="py-2.5 px-4">Price</th>
+                        <th className="py-2.5 px-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeSeats.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-gray-500 text-[14px]">
+                            No spaces yet — add one above or use Quick add.
+                          </td>
+                        </tr>
+                      ) : (
+                        activeSeats.map((seat) => (
+                          <tr key={seat.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                            <td className="py-2.5 px-4 font-medium text-gray-900">
+                              <span className="inline-flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${SEAT_TYPE_STYLE[seat.seatType].dot}`} />
+                                {seat.number}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-4 text-gray-600">{SEAT_TYPE_LABEL[seat.seatType]}</td>
+                            <td className="py-2.5 px-4 text-gray-600">{seat.price != null ? `₹${seat.price}` : "—"}</td>
+                            <td className="py-2.5 px-4">
+                              <span className="inline-flex items-center text-[12px] font-semibold text-[#1E7B34] bg-[#E6F4EA] px-2 py-0.5 rounded-md">
+                                Available
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            {/* Seats table for the active floor */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <span className="font-semibold text-gray-900 text-[14px]">
-                  Spaces on {createdFloors.find((f) => f.id === activeFloorId)?.name ?? ""}
-                </span>
-                <span className="text-[13px] text-gray-500">{activeSeats.length} created</span>
+            {/* ── RIGHT: visual floor map (drag to arrange) ─────── */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-3 xl:sticky xl:top-0">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-[14px] font-semibold text-gray-900 flex items-center gap-2">
+                    Floor Map
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-[#FFE8DF] text-[#FF6A2F] uppercase">
+                      {activeFloorName}
+                    </span>
+                  </h4>
+                  <p className="text-[12px] text-gray-400 mt-0.5">Drag seats to arrange · saved on Finish</p>
+                </div>
+                <button
+                  onClick={() => activeFloorId && autoArrangeFloor(activeFloorId)}
+                  disabled={activeSeats.length === 0}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-[12px] font-semibold text-gray-600 hover:border-[#FF6A2F] hover:text-[#FF6A2F] active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  Auto Arrange
+                </button>
               </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-[13px] font-semibold text-gray-700">
-                    <th className="py-3 px-4">Number / Name</th>
-                    <th className="py-3 px-4">Type</th>
-                    <th className="py-3 px-4">Price</th>
-                    <th className="py-3 px-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeSeats.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-10 text-center text-gray-500 text-[14px]">
-                        No spaces added yet. Use the form above to add one.
-                      </td>
-                    </tr>
-                  ) : (
-                    activeSeats.map((seat) => (
-                      <tr key={seat.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                        <td className="py-3 px-4 font-medium text-gray-900">{seat.number}</td>
-                        <td className="py-3 px-4 text-gray-600">{SEAT_TYPE_LABEL[seat.seatType]}</td>
-                        <td className="py-3 px-4 text-gray-600">{seat.price != null ? `₹${seat.price}` : "—"}</td>
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center text-[12px] font-semibold text-[#1E7B34] bg-[#E6F4EA] px-2 py-0.5 rounded-md">
-                            Available
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+
+              {/* Canvas: snap grid with draggable seat chips */}
+              <div className="rounded-xl border border-gray-200 bg-[#FBFCFD] p-2 overflow-x-auto">
+                <div
+                  className="relative mx-auto touch-none select-none"
+                  style={{
+                    width: MAP_COLS * MAP_GRID,
+                    height: MAP_ROWS * MAP_GRID,
+                    backgroundImage:
+                      "linear-gradient(to right, #EEF1F4 1px, transparent 1px), linear-gradient(to bottom, #EEF1F4 1px, transparent 1px)",
+                    backgroundSize: `${MAP_GRID}px ${MAP_GRID}px`,
+                  }}
+                >
+                  {activeSeats.map((seat) => {
+                    const st = SEAT_TYPE_STYLE[seat.seatType];
+                    const unplaced = seat.x == null || seat.y == null;
+                    return (
+                      <div
+                        key={seat.id}
+                        onPointerDown={(e) => activeFloorId && handleChipPointerDown(e, activeFloorId, seat)}
+                        onPointerMove={(e) => activeFloorId && handleChipPointerMove(e, activeFloorId)}
+                        onPointerUp={handleChipPointerUp}
+                        onPointerCancel={handleChipPointerUp}
+                        className={`absolute flex flex-col items-center justify-center rounded-lg border-2 ${st.bg} ${st.ring} cursor-grab active:cursor-grabbing active:scale-[1.06] hover:shadow-md transition-shadow`}
+                        style={{
+                          left: (seat.x ?? 0) * MAP_GRID + 3,
+                          top: (seat.y ?? 0) * MAP_GRID + 3,
+                          width: MAP_GRID - 6,
+                          height: MAP_GRID - 6,
+                          opacity: unplaced ? 0.45 : 1,
+                        }}
+                        title={`${seat.number} · ${SEAT_TYPE_LABEL[seat.seatType]}${seat.price != null ? ` · ₹${seat.price}` : ""}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                        <span className="text-[10px] font-bold text-gray-700 leading-tight mt-0.5 max-w-full truncate px-0.5">
+                          {seat.number}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {activeSeats.length === 0 && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                      <span className="text-[13px] font-medium text-gray-400">Map preview</span>
+                      <span className="text-[12px] text-gray-300">Add spaces — they'll appear here</span>
+                    </div>
                   )}
-                </tbody>
-              </table>
+                </div>
+              </div>
+
+              {/* Legend + unsaved indicator */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                {(Object.keys(SEAT_TYPE_STYLE) as SeatType[]).map((t) => (
+                  <span key={t} className="inline-flex items-center gap-1.5 text-[12px] text-gray-500">
+                    <span className={`w-2.5 h-2.5 rounded ${SEAT_TYPE_STYLE[t].dot}`} />
+                    {SEAT_TYPE_LABEL[t]}
+                  </span>
+                ))}
+                {dirtyPositions.size > 0 && (
+                  <span className="ml-auto text-[12px] font-semibold text-[#FF6A2F]">
+                    ● {dirtyPositions.size} unsaved move{dirtyPositions.size === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
       </div>
     );
   };
-
   // Primary button label / disabled state per step
   const primaryLabel = (() => {
     if (currentStep === 1) return createdCenterId ? "Continue" : creatingCenter ? "Creating..." : "Create Center & Continue";

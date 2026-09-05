@@ -18,6 +18,7 @@ import {
   ALLOCATE_CUSTOMER_SEATS,
 } from "@/lib/apollo/operations";
 import { useActiveCenter } from "@/contexts/active-center-context";
+import { useMeetingRooms, useBookRoom } from "@/hooks/use-operations";
 import { getAccessToken } from "@/lib/apollo/token-storage";
 
 /** Document slots collected in step 6 (Legal & Compliance). */
@@ -104,7 +105,10 @@ export default function OnboardingWizardPage() {
     errorPolicy: "all",
   });
   const centerSeats = useMemo(() => {
-    const seats: { id: string; name: string; status: string; floorName: string }[] = [];
+    const seats: {
+      id: string; name: string; status: string; floorName: string;
+      x: number | null; y: number | null; seatType: string; price: number | null;
+    }[] = [];
     for (const floor of floorsData?.floors ?? []) {
       for (const seat of floor.seats ?? []) {
         seats.push({
@@ -112,6 +116,10 @@ export default function OnboardingWizardPage() {
           name: seat.name,
           status: seat.status,
           floorName: floor.name,
+          x: seat.x ?? null,
+          y: seat.y ?? null,
+          seatType: seat.seatType,
+          price: seat.price ?? null,
         });
       }
     }
@@ -245,7 +253,26 @@ export default function OnboardingWizardPage() {
   const [bookingType, setBookingType] = useState<"Open Seating" | "Meeting Room Access">("Open Seating");
   const [recurringBooking, setRecurringBooking] = useState(false);
   const [showRoomBooking, setShowRoomBooking] = useState(false);
+  // Meeting-room booking (real inventory + real book mutation).
+  const { rooms: meetingRooms } = useMeetingRooms(
+    activeCenter?.id ? { centerId: activeCenter.id } : undefined,
+  );
+  const { book: bookMeetingRoom, loading: bookingRoom } = useBookRoom();
+  const [roomBooking, setRoomBooking] = useState({
+    roomId: "",
+    eventDate: new Date().toISOString().slice(0, 10),
+    startTime: "10:00",
+    durationHours: 1,
+    attendees: 1,
+  });
+  const selectedRoom = meetingRooms.find(
+    (r: { id: string; name: string; capacity?: number }) => r.id === roomBooking.roomId,
+  ) as { id: string; name: string; capacity?: number } | undefined;
   const [showInteractiveMap, setShowInteractiveMap] = useState(false);
+  // Interactive seat picker state — real inventory selection.
+  const [mapSelectedSeatIds, setMapSelectedSeatIds] = useState<string[]>([]);
+  const [seatSearch, setSeatSearch] = useState("");
+  const [seatFilter, setSeatFilter] = useState<"ALL" | "AVAILABLE" | "OCCUPIED" | "MAINTENANCE">("ALL");
 
   // Form State - Step 3 (Customize Deal) — bound, dynamic values.
   const [customDeal, setCustomDeal] = useState({
@@ -760,6 +787,91 @@ export default function OnboardingWizardPage() {
     }
   };
 
+  // ── Interactive seat picker handlers (real inventory) ──────────────
+  const toggleSeatSelection = (seat: { id: string; status: string }) => {
+    if (seat.status !== "AVAILABLE") return;
+    setMapSelectedSeatIds((prev) =>
+      prev.includes(seat.id) ? prev.filter((x) => x !== seat.id) : [...prev, seat.id],
+    );
+  };
+
+  /** Assign picked seats to team members: fill empty seat fields first,
+   *  then append new member rows for the remainder. */
+  const applySelectedSeats = () => {
+    const selected = centerSeats.filter((s) => mapSelectedSeatIds.includes(s.id));
+    if (selected.length === 0) {
+      toast.error("Select at least one seat on the map");
+      return;
+    }
+    setIndividuals((prev) => {
+      const next = prev.map((p) => ({ ...p }));
+      let idx = 0;
+      for (const person of next) {
+        if (idx >= selected.length) break;
+        if (!person.seat?.trim()) {
+          person.seat = selected[idx++].name;
+        }
+      }
+      const extra = selected.slice(idx).map((seat, i) => ({
+        id: Date.now() + i,
+        name: "",
+        phone: "",
+        email: "",
+        dept: "",
+        seat: seat.name,
+      }));
+      return [...next, ...extra];
+    });
+    toast.success(`${selected.length} seat${selected.length === 1 ? "" : "s"} assigned to team members`);
+    setShowInteractiveMap(false);
+  };
+
+  // Pre-select seats already assigned in step 2 when the map opens.
+  useEffect(() => {
+    if (!showInteractiveMap) return;
+    const assigned = new Set(
+      individuals.map((i) => (i.seat ?? "").trim().toLowerCase()).filter(Boolean),
+    );
+    setMapSelectedSeatIds(
+      centerSeats.filter((s) => assigned.has(s.name.toLowerCase())).map((s) => s.id),
+    );
+    setSeatSearch("");
+    setSeatFilter("ALL");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showInteractiveMap]);
+
+  /** Book the selected meeting room via the real BOOK_ROOM mutation. */
+  const confirmRoomBooking = async () => {
+    if (!roomBooking.roomId) {
+      toast.error("Select a meeting room first");
+      return;
+    }
+    if (!selectedRoom) {
+      toast.error("Selected room is no longer available");
+      return;
+    }
+    const startMins = Number(roomBooking.startTime.slice(0, 2)) * 60 + Number(roomBooking.startTime.slice(3));
+    const endMins = startMins + roomBooking.durationHours * 60;
+    const endTime = `${String(Math.floor(endMins / 60) % 24).padStart(2, "0")}:${String(endMins % 60).padStart(2, "0")}`;
+    try {
+      await bookMeetingRoom({
+        roomId: roomBooking.roomId,
+        centerId: activeCenter?.id ?? "",
+        eventDate: roomBooking.eventDate,
+        startTime: roomBooking.startTime,
+        endTime,
+        title: `${basicInfo.name?.trim() || "New client"} — ${selectedRoom.name}`,
+        // requestedBy must be a USER id (token-balance holder); the new
+        // client has no user yet, so book without token deduction.
+        attendeesCount: roomBooking.attendees,
+      });
+      toast.success(`${selectedRoom.name} booked · ${roomBooking.eventDate} ${roomBooking.startTime}–${endTime}`);
+      setShowRoomBooking(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not book the room");
+    }
+  };
+
   const handleSaveDraft = () => {
     try {
       localStorage.setItem(
@@ -784,226 +896,206 @@ export default function OnboardingWizardPage() {
     }
   };
 
+  // ── Review-step derived values (real data, no placeholders) ────────
+  const formatDob = (iso?: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  };
+  const assignedSeatNames = individuals
+    .map((i) => (i.seat ?? "").trim())
+    .filter(Boolean);
+  const seatsSummaryText = (() => {
+    const parts: string[] = [];
+    if (assignedSeatNames.length > 0) parts.push(`${assignedSeatNames.length} assigned seat${assignedSeatNames.length === 1 ? "" : "s"}`);
+    if (customDeal.openSeats > 0) parts.push(`${customDeal.openSeats} open seat${customDeal.openSeats === 1 ? "" : "s"}`);
+    if (customDeal.cabins > 0) parts.push(`${customDeal.cabins} cabin${customDeal.cabins === 1 ? "" : "s"}`);
+    return parts.length > 0 ? parts.join(", ") : "—";
+  })();
+
   if (showInteractiveMap) {
+    const SEAT_GRID = 44;
+    const statusMeta: Record<string, { label: string; dot: string; chip: string; disabled: boolean }> = {
+      AVAILABLE: { label: "Available", dot: "bg-[#21A366]", chip: "border-[#B7E2C6] bg-[#F2FBF5] hover:border-[#21A366]", disabled: false },
+      OCCUPIED: { label: "Occupied", dot: "bg-[#D92D20]", chip: "border-[#F3B9B3] bg-[#FFF5F5] opacity-70 cursor-not-allowed", disabled: true },
+      RESERVED: { label: "Reserved", dot: "bg-[#D92D20]", chip: "border-[#F3B9B3] bg-[#FFF5F5] opacity-70 cursor-not-allowed", disabled: true },
+      MAINTENANCE: { label: "Maintenance", dot: "bg-gray-400", chip: "border-gray-300 bg-gray-100 opacity-70 cursor-not-allowed", disabled: true },
+    };
+    const meta = (s: string) => statusMeta[s] ?? statusMeta.MAINTENANCE;
+
+    const q = seatSearch.trim().toLowerCase();
+    const seatMatches = (s: (typeof centerSeats)[number]) =>
+      (seatFilter === "ALL" || s.status === seatFilter) && (!q || s.name.toLowerCase().includes(q));
+
+    const counts = {
+      ALL: centerSeats.length,
+      AVAILABLE: centerSeats.filter((s) => s.status === "AVAILABLE").length,
+      OCCUPIED: centerSeats.filter((s) => s.status === "OCCUPIED" || s.status === "RESERVED").length,
+      MAINTENANCE: centerSeats.filter((s) => s.status === "MAINTENANCE").length,
+    };
+
+    // Seats with a saved (x, y) render positioned on a grid; the rest flow
+    // into a compact auto-grid below the canvas so nothing is unreachable.
+    type MapSeat = { id: string; name: string; status: string; x?: number | null; y?: number | null; seatType?: string; price?: number | null };
+    type FloorForMap = { floor: { id: string; name: string }; seats: MapSeat[]; positioned: MapSeat[]; unpositioned: MapSeat[]; cols: number; rows: number };
+    const floorsForMap: FloorForMap[] = (floorsData?.floors ?? [])
+      .map((floor: { id: string; name: string; seats?: MapSeat[] | null }): FloorForMap => {
+        const seats = (floor.seats ?? []).filter((s) => seatMatches(s as (typeof centerSeats)[number]));
+        const positioned = seats.filter((s) => s.x != null && s.y != null);
+        const unpositioned = seats.filter((s) => s.x == null || s.y == null);
+        const cols = Math.min(24, Math.max(10, ...positioned.map((s) => (s.x ?? 0) + 1)));
+        const rows = Math.max(6, ...positioned.map((s) => (s.y ?? 0) + 1));
+        return { floor, seats, positioned, unpositioned, cols, rows };
+      })
+      .filter((f: FloorForMap) => f.seats.length > 0 || seatFilter === "ALL");
+
+    const selectedSeatObjs = centerSeats.filter((s) => mapSelectedSeatIds.includes(s.id));
+
     return (
       <div className="w-full min-h-screen bg-gray-50 flex flex-col font-sans relative z-50">
-        {/* Top bar */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0 shadow-sm sticky top-0 z-10">
-          <div className="flex items-center gap-4">
+        {/* Top bar — real search + real status filters + selection summary */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-200 bg-white shrink-0 shadow-sm sticky top-0 z-10">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
               <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input type="text" placeholder="cabin 18" className="w-[200px] h-10 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]" />
+              <input
+                type="text"
+                placeholder="Search seat / cabin…"
+                value={seatSearch}
+                onChange={(e) => setSeatSearch(e.target.value)}
+                className="w-[220px] h-10 pl-9 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#FF6A2F]"
+              />
             </div>
-            <button className="p-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg></button>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 bg-[#FF6A2F] text-white rounded-md text-[13px] font-medium flex items-center gap-2">All <span className="bg-white/20 px-1.5 py-0.5 rounded text-[11px]">42</span></button>
-              <button className="px-3 py-1.5 text-gray-700 border border-gray-200 rounded-md text-[13px] font-medium flex items-center gap-2 bg-white"><span className="w-2 h-2 rounded-full bg-[#21A366]"></span> Available <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600">28</span></button>
-              <button className="px-3 py-1.5 text-gray-700 border border-gray-200 rounded-md text-[13px] font-medium flex items-center gap-2 bg-white"><span className="w-2 h-2 rounded-full bg-[#D92D20]"></span> Occupied <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600">12</span></button>
-              <button className="px-3 py-1.5 text-gray-700 border border-gray-200 rounded-md text-[13px] font-medium flex items-center gap-2 bg-white"><span className="w-2 h-2 rounded-full bg-gray-400"></span> Under Maintenance <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600">2</span></button>
-              <button className="px-3 py-1.5 text-gray-700 border border-gray-200 rounded-md text-[13px] font-medium flex items-center gap-2 bg-white"><span className="w-2 h-2 rounded-full bg-[#FF6A2F]"></span> Upcoming <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[11px] text-gray-600">12</span></button>
-            </div>
+            {([
+              { key: "ALL", label: "All", dot: "bg-[#FF6A2F]" },
+              { key: "AVAILABLE", label: "Available", dot: "bg-[#21A366]" },
+              { key: "OCCUPIED", label: "Occupied", dot: "bg-[#D92D20]" },
+              { key: "MAINTENANCE", label: "Maintenance", dot: "bg-gray-400" },
+            ] as const).map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setSeatFilter(f.key)}
+                className={`px-3 py-1.5 rounded-md text-[13px] font-medium flex items-center gap-2 transition-all ${seatFilter === f.key ? "bg-[#FF6A2F] text-white" : "text-gray-700 border border-gray-200 bg-white hover:bg-gray-50"}`}
+              >
+                {seatFilter !== f.key && <span className={`w-2 h-2 rounded-full ${f.dot}`} />}
+                {f.label}
+                <span className={`px-1.5 py-0.5 rounded text-[11px] ${seatFilter === f.key ? "bg-white/20" : "bg-gray-100 text-gray-600"}`}>{counts[f.key]}</span>
+              </button>
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-[13px] font-medium text-gray-700 bg-white">
-              <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-              Apr 4, 2026
+          <div className="flex items-center gap-3">
+            <div className="text-[13px] font-semibold text-gray-700 px-3 py-2 bg-[#FFF8F6] border border-[#FFE7DE] rounded-lg">
+              {mapSelectedSeatIds.length} selected
             </div>
-            <button onClick={() => setShowInteractiveMap(false)} className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">Continue</button>
-          </div>
-        </div>
-
-        {/* Map Area */}
-        <div className="flex-1 bg-white overflow-auto p-4 flex items-center justify-center">
-          {/* Main map container */}
-          <div className="relative w-[1100px] h-[580px] border-2 border-gray-400 bg-white shadow-sm shrink-0">
-            {/* Top row */}
-            <div className="absolute top-0 left-0 w-[160px] h-[140px] bg-[#00BCD4] border-r-2 border-b-2 border-gray-400 p-3 flex flex-col justify-between cursor-pointer">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-white font-bold text-[15px]">Cabin 1A</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#21A366]"></span>
-                </div>
-                <div className="flex items-center gap-1 text-white/90 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>5</div>
-              </div>
-              <div className="bg-white text-[#00BCD4] font-bold text-[12px] py-1.5 px-2 rounded w-max">Available Now</div>
-            </div>
-
-            <div className="absolute top-0 left-[160px] w-[160px] h-[140px] bg-[#FFF5F5] border-r-2 border-b-2 border-gray-400 p-3 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-[#D92D20] font-bold text-[15px]">Cabin 1B</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#D92D20] opacity-50"></span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>5</div>
-              </div>
-              <div className="text-[#D92D20] font-bold text-[12px] text-center mt-2 bg-white rounded py-1 border border-red-100">4 months left</div>
-            </div>
-
-            <div className="absolute top-0 left-[320px] w-[160px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-3 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-[#FF6A2F] font-bold text-[15px]">Cabin 1C</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6A2F]"></span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>5</div>
-              </div>
-              <div className="text-[#FF6A2F] text-[12px] text-center mt-2 bg-white rounded py-1 border border-orange-100 font-medium">Next In 30 m</div>
-            </div>
-
-            <div className="absolute top-0 left-[480px] w-[160px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-3 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-[#FF6A2F] font-bold text-[15px]">Cabin 1D</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6A2F]"></span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>5</div>
-              </div>
-              <div className="text-[#FF6A2F] text-[12px] text-center mt-2 bg-white rounded py-1 border border-orange-100 font-medium">Next In 45 m</div>
-            </div>
-
-            {/* Small cabins 3A 3B */}
-            <div className="absolute top-0 left-[640px] w-[75px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-2 flex flex-col justify-between text-center">
-              <div>
-                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br />3A</h3>
-                <div className="flex items-center justify-center gap-1 text-gray-500 text-[11px] mt-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
-              </div>
-              <div className="text-[#FF6A2F] text-[10px]">Next In<br />45 m</div>
-            </div>
-            <div className="absolute top-0 left-[715px] w-[75px] h-[140px] bg-[#FFF8F6] border-r-2 border-b-2 border-gray-400 p-2 flex flex-col justify-between text-center">
-              <div>
-                <h3 className="text-[#FF6A2F] font-bold text-[13px]">Cabin<br />3B</h3>
-                <div className="flex items-center justify-center gap-1 text-gray-500 text-[11px] mt-1"><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
-              </div>
-              <div className="text-[#FF6A2F] text-[10px]">Next In<br />45 m</div>
-            </div>
-
-            {/* Cabin 3C */}
-            <div className="absolute top-0 left-[790px] w-[140px] h-[140px] bg-[#FFF5F5] border-r-2 border-b-2 border-gray-400 p-3 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-[#D92D20] font-bold text-[15px]">Cabin 3C</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#D92D20] opacity-50"></span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>5</div>
-              </div>
-              <div className="text-[#D92D20] font-bold text-[12px] text-center mt-2 bg-white rounded py-1 border border-red-100">1h 30m left</div>
-            </div>
-
-            {/* Meeting Room */}
-            <div className="absolute top-0 left-[930px] w-[168px] h-[220px] bg-[#FFF5F5] border-b-2 border-gray-400 p-3 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-[#D92D20] font-bold text-[15px]">Meeting Room</h3>
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#D92D20] opacity-50"></span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>7</div>
-              </div>
-              <div className="text-[#D92D20] font-bold text-[12px] text-center mt-2 bg-white rounded py-1 border border-red-100">2h 30m left</div>
-            </div>
-
-            {/* Hexagons Area */}
-            <div className="absolute top-[140px] left-0 w-[240px] h-[438px] border-r-2 border-gray-400 flex flex-col items-center pt-4">
-              <h4 className="text-[14px] font-medium text-gray-800 mb-6">8 Hexagon</h4>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-3 -ml-4">
-                <div className="w-[70px] h-[80px] bg-[#00BCD4] border-2 border-gray-800 transform skew-x-[-15deg]"></div>
-                <div className="w-[70px] h-[80px] bg-[#00BCD4] border-2 border-gray-800 transform skew-x-[-15deg] -mt-6"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg]"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg] -mt-6"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg]"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg] -mt-6"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg]"></div>
-                <div className="w-[70px] h-[80px] bg-[#F2FBF5] border-2 border-gray-800 transform skew-x-[-15deg] -mt-6"></div>
-              </div>
-            </div>
-
-            {/* 10 Open Seats */}
-            <div className="absolute top-[140px] left-[240px] w-[200px] h-[438px] flex flex-col items-center pt-24 border-r-2 border-gray-400">
-              <h4 className="text-[14px] font-medium text-gray-800 mb-4">10 Open Seats</h4>
-              <div className="w-[90px] h-[240px] bg-[#F2FBF5] border-2 border-gray-400 flex items-center justify-center">
-                <span className="text-[#21A366] font-bold text-[14px] text-center">Open<br />Seats</span>
-              </div>
-            </div>
-
-            {/* Cabin 2A & 2B */}
-            <div className="absolute top-[340px] left-[440px] w-[200px] h-[238px]">
-              <div className="w-full h-[120px] bg-[#FFF8F6] border-t-2 border-l-2 border-r-2 border-gray-400 p-4 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-[#FF6A2F] font-bold text-[15px]">Cabin 2A</h3>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF6A2F]"></span>
-                  </div>
-                  <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>4</div>
-                </div>
-                <div className="text-[#FF6A2F] text-[12px] text-center mt-2 bg-white rounded py-1 border border-orange-100 font-medium">Next In 45 m</div>
-              </div>
-              <div className="w-full h-[118px] bg-[#EEF2F6] border-2 border-gray-400 p-4 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-gray-900 font-bold text-[15px]">Cabin 2B</h3>
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-900"></span>
-                  </div>
-                  <div className="flex items-center gap-1 text-gray-500 text-[13px] mt-1"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>4</div>
-                </div>
-                <div className="text-gray-900 text-[12px] font-bold text-center mt-2 bg-white rounded py-1 border border-gray-200">Unavailable</div>
-              </div>
-            </div>
-
-            {/* Washroom Area */}
-            <div className="absolute top-[340px] left-[640px] w-[200px] h-[238px] bg-[#F2FBF5] border-t-2 border-l-2 border-gray-400 p-4 flex justify-center pt-8">
-              <span className="text-[#21A366] font-bold text-[15px]">Washroom Area</span>
-            </div>
-
-            {/* Sofa Area / Pantry */}
-            <div className="absolute top-[220px] left-[840px] w-[258px] h-[358px] border-l-2 border-t-2 border-gray-400 flex flex-col items-center">
-              <span className="text-gray-800 font-medium text-[15px] absolute top-[40px] left-[20px]">Sofa<br />Area</span>
-
-              {/* Small cabins 4A 4B */}
-              <div className="absolute top-[0px] left-[130px] flex">
-                <div className="w-[50px] h-[100px] bg-[#FFF8F6] border-2 border-gray-400 p-1 flex flex-col justify-between text-center">
-                  <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br />4A</h3>
-                    <div className="flex items-center justify-center gap-1 text-gray-500 text-[9px] mt-0.5"><svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
-                  </div>
-                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br />45 m</div>
-                </div>
-                <div className="w-[50px] h-[100px] bg-[#FFF8F6] border-t-2 border-r-2 border-b-2 border-gray-400 p-1 flex flex-col justify-between text-center -ml-[2px]">
-                  <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin<br />4B</h3>
-                    <div className="flex items-center justify-center gap-1 text-gray-500 text-[9px] mt-0.5"><svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>2</div>
-                  </div>
-                  <div className="text-[#FF6A2F] font-medium text-[8px]">Next In<br />45 m</div>
-                </div>
-              </div>
-
-              <span className="text-gray-800 font-medium text-[16px] absolute top-[80px] right-[40px]">Pantry</span>
-
-              {/* Bottom right cabins 5A 5B */}
-              <div className="absolute bottom-[-2px] right-[-2px] flex">
-                <div className="w-[60px] h-[80px] bg-[#FFF8F6] border-t-2 border-l-2 border-gray-400 p-1 flex flex-col justify-between text-center">
-                  <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin 5A</h3>
-                  </div>
-                  <div className="text-[#FF6A2F] text-[7px] bg-white rounded border border-orange-100 mt-1">Next In 45 m</div>
-                </div>
-                <div className="w-[60px] h-[80px] bg-[#FFF8F6] border-t-2 border-l-2 border-gray-400 p-1 flex flex-col justify-between text-center relative -ml-[2px]">
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#FF6A2F]"></span>
-                  <div>
-                    <h3 className="text-[#FF6A2F] font-bold text-[10px]">Cabin 5B</h3>
-                  </div>
-                  <div className="text-[#FF6A2F] text-[7px] bg-white rounded border border-orange-100 mt-1">Next In 45 m</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Door paths */}
-            <div className="absolute bottom-[80px] left-[840px] w-[50px] h-[50px] border-b-2 border-l-2 border-gray-300 rounded-bl-full"></div>
-            <div className="absolute bottom-[40px] left-[890px] w-[148px] h-[2px] bg-gray-400"></div>
+            <button onClick={() => setShowInteractiveMap(false)} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-all">
+              Back
+            </button>
+            <button onClick={applySelectedSeats} className="px-5 py-2 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm">
+              Continue
+            </button>
           </div>
         </div>
+
+        {/* Map area — real floors & seats from inventory */}
+        <div className="flex-1 bg-gray-50 overflow-auto p-6 flex flex-col gap-6 items-center">
+          {centerSeats.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-12 flex flex-col items-center text-center max-w-md mt-16">
+              <p className="text-gray-600 font-semibold mb-1">No seats in inventory yet</p>
+              <p className="text-gray-400 text-[14px]">Add floors and seats in Inventory → Set Up Center first. Allocation will auto-assign seats once inventory exists.</p>
+            </div>
+          ) : floorsForMap.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-12 flex flex-col items-center text-center max-w-md mt-16">
+              <p className="text-gray-600 font-semibold mb-1">No seats match your search</p>
+              <p className="text-gray-400 text-[14px]">Try a different name or clear the status filter.</p>
+            </div>
+          ) : (
+            floorsForMap.map(({ floor, positioned, unpositioned, cols, rows }) => (
+              <div key={floor.id} className="bg-white border border-gray-200 rounded-xl shadow-sm w-full max-w-[1200px] overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="text-[15px] font-bold text-gray-900">{floor.name}</h3>
+                  <span className="text-[12px] text-gray-500">{positioned.length + unpositioned.length} seat{(positioned.length + unpositioned.length) === 1 ? "" : "s"}</span>
+                </div>
+                <div className="p-4 overflow-x-auto">
+                  {positioned.length > 0 && (
+                    <div
+                      className="relative mx-auto touch-none select-none mb-4"
+                      style={{
+                        width: cols * SEAT_GRID,
+                        height: rows * SEAT_GRID,
+                        backgroundImage: "linear-gradient(to right, #EEF1F4 1px, transparent 1px), linear-gradient(to bottom, #EEF1F4 1px, transparent 1px)",
+                        backgroundSize: `${SEAT_GRID}px ${SEAT_GRID}px`,
+                      }}
+                    >
+                      {positioned.map((seat) => {
+                        const m = meta(seat.status);
+                        const selected = mapSelectedSeatIds.includes(seat.id);
+                        return (
+                          <button
+                            key={seat.id}
+                            type="button"
+                            disabled={m.disabled}
+                            onClick={() => toggleSeatSelection(seat)}
+                            title={`${seat.name} · ${seat.seatType} · ${m.label}${seat.price != null ? ` · ₹${seat.price}` : ""}`}
+                            className={`absolute flex flex-col items-center justify-center rounded-lg border-2 text-[10px] font-bold transition-all ${m.chip} ${selected ? "border-[#FF6A2F] bg-[#FFF8F6] ring-2 ring-[#FF6A2F] ring-offset-1" : ""} ${!m.disabled ? "cursor-pointer active:scale-[1.06]" : ""}`}
+                            style={{
+                              left: (seat.x ?? 0) * SEAT_GRID + 3,
+                              top: (seat.y ?? 0) * SEAT_GRID + 3,
+                              width: SEAT_GRID - 6,
+                              height: SEAT_GRID - 6,
+                            }}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${selected ? "bg-[#FF6A2F]" : m.dot}`} />
+                            <span className="text-gray-700 leading-tight mt-0.5 max-w-full truncate px-0.5">{seat.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {unpositioned.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {unpositioned.map((seat) => {
+                        const m = meta(seat.status);
+                        const selected = mapSelectedSeatIds.includes(seat.id);
+                        return (
+                          <button
+                            key={seat.id}
+                            type="button"
+                            disabled={m.disabled}
+                            onClick={() => toggleSeatSelection(seat)}
+                            title={`${seat.name} · ${seat.seatType} · ${m.label}`}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 text-[12px] font-semibold transition-all ${m.chip} ${selected ? "border-[#FF6A2F] bg-[#FFF8F6] ring-2 ring-[#FF6A2F] ring-offset-1" : ""} ${!m.disabled ? "cursor-pointer active:scale-[0.97]" : ""}`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${selected ? "bg-[#FF6A2F]" : m.dot}`} />
+                            {seat.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Selection footer */}
+        {selectedSeatObjs.length > 0 && (
+          <div className="border-t border-gray-200 bg-white px-6 py-3 flex items-center gap-3 flex-wrap shrink-0">
+            <span className="text-[13px] font-bold text-gray-700">Selected seats:</span>
+            {selectedSeatObjs.map((s) => (
+              <span key={s.id} className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-[#FFF8F6] border border-[#FFE7DE] text-[#FF6A2F] rounded-lg text-[12px] font-semibold">
+                {s.name}
+                <span className="text-gray-400 font-normal">{s.floorName}</span>
+                <button type="button" onClick={() => toggleSeatSelection(s)} className="w-4 h-4 rounded-full bg-[#FFE7DE] hover:bg-[#FF6A2F] hover:text-white flex items-center justify-center text-[10px] leading-none transition-colors">×</button>
+              </span>
+            ))}
+            <span className="ml-auto text-[12px] text-gray-400">Seats are assigned to team members on Continue</span>
+          </div>
+        )}
       </div>
     );
   }
-
   return (
     <div className="flex flex-col gap-6 w-full max-w-[1440px] mx-auto pb-10">
       {/* Header */}
@@ -1706,78 +1798,116 @@ export default function OnboardingWizardPage() {
                       </div>
                     </div>
 
-                    {/* Room Selection Details */}
+                    {/* Room Selection — real inventory meeting rooms */}
                     <div>
-                      <h2 className="text-[24px] font-bold text-[#101828] mb-1">Cabin 1A</h2>
+                      <h3 className="text-[14px] font-bold text-[#101828] mb-3">Select Meeting Room</h3>
+                      {meetingRooms.length === 0 ? (
+                        <div className="p-4 bg-[#FFFAEB] border border-[#FEF0C7] rounded-xl text-[13px] text-[#B54708]">
+                          No meeting rooms in this center yet — add them in Inventory (seat type “Meeting Room”).
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-3 mb-4">
+                          {meetingRooms.map((room: { id: string; name: string; capacity?: number; status?: string }) => {
+                            const active = roomBooking.roomId === room.id;
+                            return (
+                              <button
+                                key={room.id}
+                                onClick={() => setRoomBooking((prev) => ({ ...prev, roomId: room.id, attendees: Math.min(prev.attendees, room.capacity || 20) }))}
+                                className={`px-4 py-3 rounded-xl border text-left transition-all ${active ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 hover:bg-gray-50"}`}
+                              >
+                                <p className={`text-[14px] font-bold ${active ? "text-[#FF6A2F]" : "text-gray-900"}`}>{room.name}</p>
+                                <p className="text-[12px] text-gray-500">Capacity: {room.capacity ?? "—"}{room.status ? ` · ${room.status.toLowerCase()}` : ""}</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-4 text-[13px] text-gray-500 mb-6">
-                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round" /></svg> Capacity: 5</span>
-                        <span className="flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" /></svg> Saturday, Apr 4, 2026</span>
+                        <span className="flex items-center gap-1.5">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          Capacity: {selectedRoom?.capacity ?? "—"}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          <input
+                            type="date"
+                            value={roomBooking.eventDate}
+                            onChange={(e) => setRoomBooking((prev) => ({ ...prev, eventDate: e.target.value }))}
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-[13px] focus:outline-none focus:border-[#FF6A2F]"
+                          />
+                        </span>
                       </div>
 
-                      {/* Currently Occupied card */}
-                      <div className="bg-[#FFF8F6] border border-[#FFEAE0] rounded-xl p-5 mb-8 relative overflow-hidden">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-2 h-2 rounded-full bg-[#FF6A2F]"></div>
-                          <span className="text-[13px] font-bold text-[#FF6A2F]">Currently Occupied</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-[13px]">
-                          <div className="text-gray-500">Booked by</div>
-                          <div className="text-right font-semibold text-[#FF6A2F]">Sarah Johnson</div>
-                          <div className="text-gray-500">Company</div>
-                          <div className="text-right font-semibold text-[#FF6A2F]">TechCorp</div>
-                          <div className="text-gray-500">Time</div>
-                          <div className="text-right font-semibold text-[#FF6A2F]">10:00 AM - 2:00 PM</div>
-                          <div className="text-gray-500">Ends in</div>
-                          <div className="text-right font-semibold text-[#FF6A2F]">1h 30m</div>
-                        </div>
+                      <h3 className="text-[14px] font-bold text-[#101828] mb-4">Make New Booking</h3>
+
+                      <h3 className="text-[13px] font-medium text-gray-700 mb-3">Duration</h3>
+                      <div className="flex gap-3 mb-6">
+                        {[1, 2, 4, 9].map((h) => (
+                          <button
+                            key={h}
+                            onClick={() => setRoomBooking((prev) => ({ ...prev, durationHours: h }))}
+                            className={`flex-1 py-2.5 rounded-lg text-[13px] transition-all active:scale-[0.97] ${roomBooking.durationHours === h ? "bg-[#FF6A2F] text-white font-semibold shadow-sm" : "bg-gray-100 text-gray-600 font-medium hover:bg-gray-200"}`}
+                          >
+                            {h === 9 ? "Full Day" : `${h} Hour${h > 1 ? "s" : ""}`}
+                          </button>
+                        ))}
                       </div>
 
-                      <div>
-                        <h3 className="text-[14px] font-bold text-[#101828] mb-4">Make New Booking</h3>
-
-                        <h3 className="text-[13px] font-medium text-gray-700 mb-3">Duration</h3>
-                        <div className="flex gap-3 mb-6">
-                          <button className="flex-1 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shadow-sm">1 Hour</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">2 Hours</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">4 Hours</button>
-                          <button className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">Full Day</button>
-                        </div>
-
-                        <h3 className="text-[13px] font-medium text-gray-700 mb-3">Select Start Time</h3>
-                        <div className="grid grid-cols-4 gap-3 mb-8">
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">09:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">10:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">11:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">12:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">13:00</button>
-                          <button className="py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[13px] font-semibold shadow-sm">14:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">15:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">16:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">17:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">18:00</button>
-                          <button className="py-2.5 bg-gray-100 text-gray-600 rounded-lg text-[13px] font-medium hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">19:00</button>
-                        </div>
-
-                        <h3 className="text-[13px] font-medium text-gray-700 mb-3">Number of People</h3>
-                        <div className="flex gap-3 items-center">
-                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">-</button>
-                          <div className="flex-1 h-12 border border-gray-200 rounded-lg flex items-center px-4 justify-between">
-                            <span className="font-semibold text-[14px] text-gray-800">1</span>
-                          </div>
-                          <button className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all duration-200 active:scale-[0.97]">+</button>
-                        </div>
-                        <p className="text-center text-[11px] text-gray-400 mt-3">Maximum capacity: 5 people</p>
+                      <h3 className="text-[13px] font-medium text-gray-700 mb-3">Select Start Time</h3>
+                      <div className="grid grid-cols-6 sm:grid-cols-11 gap-2 mb-8">
+                        {Array.from({ length: 11 }, (_, i) => {
+                          const hh = 9 + i;
+                          const label = `${String(hh).padStart(2, "0")}:00`;
+                          const active = roomBooking.startTime === label;
+                          return (
+                            <button
+                              key={label}
+                              onClick={() => setRoomBooking((prev) => ({ ...prev, startTime: label }))}
+                              className={`py-2.5 rounded-lg text-[13px] transition-all active:scale-[0.97] ${active ? "bg-[#FF6A2F] text-white font-semibold shadow-sm" : "bg-gray-100 text-gray-600 font-medium hover:bg-gray-200"}`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
                       </div>
 
-                      <div className="flex gap-4 mt-10">
-                        <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-all active:scale-[0.97] shadow-sm">
-                          Cancel
-                        </button>
-                        <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold shadow-sm hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                          Confirm Booking
-                        </button>
+                      <h3 className="text-[13px] font-medium text-gray-700 mb-3">Number of People</h3>
+                      <div className="flex gap-3 items-center">
+                        <button
+                          onClick={() => setRoomBooking((prev) => ({ ...prev, attendees: Math.max(1, prev.attendees - 1) }))}
+                          className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all active:scale-[0.97]"
+                        >-</button>
+                        <div className="flex-1 h-12 border border-gray-200 rounded-lg flex items-center px-4 justify-between">
+                          <span className="font-semibold text-[14px] text-gray-800">{roomBooking.attendees}</span>
+                        </div>
+                        <button
+                          onClick={() => setRoomBooking((prev) => ({ ...prev, attendees: prev.attendees + 1 }))}
+                          disabled={selectedRoom?.capacity != null && roomBooking.attendees >= selectedRoom.capacity}
+                          className="w-12 h-12 bg-gray-100 text-gray-600 rounded-lg font-bold text-lg flex items-center justify-center hover:bg-gray-200 transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+                        >+</button>
                       </div>
+                      <p className="text-center text-[11px] text-gray-400 mt-3">
+                        Maximum capacity: {selectedRoom?.capacity ?? "—"} people
+                      </p>
+                    </div>
+
+                    <div className="flex gap-4 mt-6">
+                      <button onClick={() => setShowRoomBooking(false)} className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[14px] font-semibold hover:bg-gray-50 transition-all active:scale-[0.97] shadow-sm">
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => void confirmRoomBooking()}
+                        disabled={bookingRoom || !roomBooking.roomId}
+                        className="flex-1 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold shadow-sm hover:bg-[#E55A20] transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {bookingRoom ? "Booking…" : (
+                          <>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            Confirm Booking
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -2498,23 +2628,27 @@ export default function OnboardingWizardPage() {
                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Name</p>
-                            <p className="text-[14px] font-medium text-gray-900">John Doe</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.name?.trim() || "—"}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Phone</p>
-                            <p className="text-[14px] font-medium text-gray-900">+91 9876543210</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.phone?.trim() || "—"}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Email</p>
-                            <p className="text-[14px] font-medium text-gray-900">john.doe@gmail.com</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.email?.trim() || "—"}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Date of Birth</p>
-                            <p className="text-[14px] font-medium text-gray-900">15 Jan 1990</p>
+                            <p className="text-[14px] font-medium text-gray-900">{formatDob(basicInfo.dob)}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Company Name</p>
-                            <p className="text-[14px] font-medium text-gray-900">Tech Solutions Inc.</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.company?.trim() || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">GSTIN</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.gst?.trim() || "—"}</p>
                           </div>
                         </div>
                       </div>
@@ -2539,21 +2673,38 @@ export default function OnboardingWizardPage() {
                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Plan Type</p>
-                            <p className="text-[14px] font-medium text-gray-900">Premium - Hot Desk</p>
+                            <p className="text-[14px] font-medium text-gray-900">{planType}{bookingType ? ` · ${bookingType}` : ""}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Seats and Cabins</p>
-                            <p className="text-[14px] font-medium text-gray-900">5 Hot Desks, 2 Cabins</p>
+                            <p className="text-[14px] font-medium text-gray-900">{seatsSummaryText}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Seat Assignment Method</p>
-                            <p className="text-[14px] font-medium text-gray-900">Fixed Allocation</p>
+                            <p className="text-[14px] font-medium text-gray-900">{assignedSeatNames.length > 0 ? "Picked on floor map" : "Auto-assign from inventory"}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Start Date</p>
-                            <p className="text-[14px] font-medium text-gray-900">1 April 2026</p>
+                            <p className="text-[14px] font-medium text-gray-900">{formatDob(customDeal.startDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Duration</p>
+                            <p className="text-[14px] font-medium text-gray-900">{customDeal.durationMonths} month{customDeal.durationMonths === 1 ? "" : "s"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Monthly Rent</p>
+                            <p className="text-[14px] font-medium text-gray-900">₹{customDeal.initialRent.toLocaleString("en-IN")}{customDeal.yoyPercent > 0 ? ` (+${customDeal.yoyPercent}% YoY)` : ""}</p>
                           </div>
                         </div>
+                        {assignedSeatNames.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {assignedSeatNames.map((seatName) => (
+                              <span key={seatName} className="px-2.5 py-1 bg-[#F2FBF5] border border-[#B7E2C6] text-[#1E7B34] rounded-lg text-[12px] font-semibold">
+                                {seatName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Finance & Deposits */}
@@ -2586,6 +2737,14 @@ export default function OnboardingWizardPage() {
                             <p className="text-[12px] text-gray-500 mb-0.5">Payment Mode</p>
                             <p className="text-[14px] font-medium text-gray-900">{paymentMode}</p>
                           </div>
+                          {bankDetails.bankName && (
+                            <div>
+                              <p className="text-[12px] text-gray-500 mb-0.5">Linked Bank (Refunds)</p>
+                              <p className="text-[14px] font-medium text-gray-900">
+                                {bankDetails.bankName} · {bankDetails.accountNumber ? `••••${bankDetails.accountNumber.slice(-4)}` : "—"}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -2727,11 +2886,11 @@ export default function OnboardingWizardPage() {
                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Primary Email</p>
-                            <p className="text-[14px] font-medium text-gray-900">john.doe@gmail.com</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.email?.trim() || "—"}</p>
                           </div>
                           <div>
                             <p className="text-[12px] text-gray-500 mb-0.5">Phone Number</p>
-                            <p className="text-[14px] font-medium text-gray-900">+91 9876543210</p>
+                            <p className="text-[14px] font-medium text-gray-900">{basicInfo.phone?.trim() || "—"}</p>
                           </div>
                           {referralCode && (
                             <div>

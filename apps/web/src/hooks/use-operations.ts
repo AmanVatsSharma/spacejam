@@ -275,7 +275,7 @@ const BOOK_ROOM = gql`
     $title: String!
     $requestedBy: String
     $description: String
-    $attendeesCount: Int
+    $attendeesCount: Float
   ) {
     bookRoom(
       roomId: $roomId
@@ -847,7 +847,9 @@ export function useBookRoom() {
           startTime: input.startTime,
           endTime: input.endTime,
           title: input.title,
-          requestedBy: input.requestedBy ?? '',
+          // requestedBy is a USER uuid — omit when not provided so the
+          // backend doesn't try to parse ""/names as uuid.
+          requestedBy: input.requestedBy?.trim() ? input.requestedBy.trim() : null,
           description: input.description,
           attendeesCount: input.attendeesCount,
         },

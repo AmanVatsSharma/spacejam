@@ -23,6 +23,7 @@ import { Plan } from '../../typeorm/entities/plan.entity';
 import { Subscription } from '../../typeorm/entities/subscription.entity';
 import { Customer } from '../../typeorm/entities/customer.entity';
 import { CacheService } from '../../cache/cache.service';
+import { BillingService } from '../../subscription/billing.service';
 import { BillingCycle, PlanStatus, SeatType, SubscriptionStatus } from '../types/user.type';
 
 describe('PlanResolver (M2)', () => {
@@ -60,6 +61,7 @@ describe('PlanResolver (M2)', () => {
         { provide: getRepositoryToken(Subscription), useValue: subscriptionRepo },
         { provide: getRepositoryToken(Customer), useValue: customerRepo },
         { provide: CacheService, useValue: cache },
+        { provide: BillingService, useValue: {} },
       ],
     }).compile();
 

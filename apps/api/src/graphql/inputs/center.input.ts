@@ -273,6 +273,16 @@ export class CreateSeatInput {
   @IsEnum(SeatStatus)
   @IsOptional()
   status?: SeatStatus;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  x?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  y?: number;
 }
 
 @InputType()

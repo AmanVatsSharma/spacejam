@@ -253,6 +253,7 @@ export class MeetingRoomResolver {
     @Args('requestedBy', { nullable: true }) requestedBy?: string,
     @Args('description', { nullable: true }) description?: string,
     @Args('attendeesCount', { nullable: true }) attendeesCount?: number,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<MeetingRoom> {
     const { start, end } = this.buildBookingWindow(
       eventDate,
@@ -299,22 +300,31 @@ export class MeetingRoomResolver {
 
     const cost = ((room.hourlyRate ?? 0) * duration) / 60;
 
-    if (requestedBy) {
-      const user = await this.userRepo.findOne({ where: { id: requestedBy } });
+    // events.requestedById is NOT NULL — resolve an owner for the booking:
+    // an explicit valid user id wins (with token deduction), otherwise the
+    // calling staff member books on behalf of the client (no deduction).
+    let requesterId: string | null = requestedBy?.trim() || null;
+    if (requesterId) {
+      const user = await this.userRepo.findOne({ where: { id: requesterId } });
       if (user) {
         if ((user.tokenBalance || 0) < cost) {
           throw new Error('Insufficient tokens to book this room.');
         }
         user.tokenBalance = (user.tokenBalance || 0) - cost;
         await this.userRepo.save(user);
+      } else {
+        requesterId = null; // not a user id (e.g. a display name) — ignore
       }
+    }
+    if (!requesterId && caller?.sub) {
+      requesterId = caller.sub;
     }
 
     // Create an Event — this is the unified meeting room booking record.
     const event = this.eventRepo.create({
       centerId,
       meetingRoomId: roomId,
-      requestedById: requestedBy,
+      requestedById: requesterId as string,
       title,
       description: description ?? null,
       eventDate: eventDateObj,
@@ -339,7 +349,7 @@ export class MeetingRoomResolver {
     });
     if (bookedRoom) {
       const notif = this.notifRepo.create({
-        userId: requestedBy,
+        userId: requesterId as string,
         centerId: bookedRoom.centerId,
         title: `Room "${bookedRoom.name}" booked`,
         message: `You have booked ${bookedRoom.name} on ${eventDate} from ${startTime} to ${endTime}.`,

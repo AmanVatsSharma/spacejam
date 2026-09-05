@@ -104,6 +104,7 @@ function buildMockRepo(seeds: Lead[] = []) {
 function buildMockCache() {
   return {
     invalidatePattern: vi.fn(async () => {}),
+    del: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {}),
   };
 }
@@ -254,7 +255,7 @@ describe('CrmResolver', () => {
     it('should invalidate cache on update', async () => {
       await resolver.updateLead('lead-1', { name: 'X' } as UpdateLeadInput);
       expect(cache.invalidatePattern).toHaveBeenCalledWith('leads:*');
-      expect(cache.invalidate).toHaveBeenCalledWith('lead:lead-1');
+      expect(cache.del).toHaveBeenCalledWith('lead:lead-1');
     });
   });
 
@@ -281,7 +282,7 @@ describe('CrmResolver', () => {
     it('should invalidate cache on delete', async () => {
       await resolver.deleteLead('lead-1');
       expect(cache.invalidatePattern).toHaveBeenCalledWith('leads:*');
-      expect(cache.invalidate).toHaveBeenCalledWith('lead:lead-1');
+      expect(cache.del).toHaveBeenCalledWith('lead:lead-1');
     });
 
     it('should return true even for nonexistent ID', async () => {
