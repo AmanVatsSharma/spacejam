@@ -10,7 +10,7 @@
 import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, ConflictException } from '@nestjs/common';
 import { CustomerEmployee } from '../../typeorm/entities/customer-employee.entity';
 import { Customer } from '../../typeorm/entities/customer.entity';
 import {
@@ -68,8 +68,21 @@ export class CustomerEmployeeResolver {
   ): Promise<CustomerEmployee> {
     // Center managers can only add employees to customers in their center.
     await this.assertCenterAccess(input.customerId, caller);
+
+    // One seat in the team per email — double-clicks / retries must not
+    // create duplicate members.
+    const existing = await this.employeeRepo.findOne({
+      where: { customerId: input.customerId, email: input.email.toLowerCase() },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `${input.email} is already a team member of this customer.`,
+      );
+    }
+
     const created = this.employeeRepo.create({
       ...input,
+      email: input.email.toLowerCase(),
       role: input.role ?? 'Member',
       status: input.status ?? 'invited',
       invitedAt: new Date(),

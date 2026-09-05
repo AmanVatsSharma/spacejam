@@ -10,7 +10,7 @@
  */
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation } from "@apollo/client";
 import { toast } from "sonner";
@@ -41,6 +41,7 @@ import {
   useDeleteCustomerDocument,
 } from "@/hooks/use-customer-team";
 import styles from "./customer-detail.module.css";
+import { SeatAssignModal } from "./seat-assign-modal";
 
 type Tab = "overview" | "employees" | "activity" | "documents";
 
@@ -1091,6 +1092,7 @@ export default function CustomerDetailPage() {
           {activeTab === "employees" && (
             <EmployeesList
               employees={customer?.employees ?? []}
+              customer={customer}
               customerId={customerId}
             />
           )}
@@ -1293,35 +1295,50 @@ function ActionButton({
   );
 }
 
-/* ----- Employees tab (real CRUD backed by CustomerEmployee resolver) ----- */
-function EmployeesList({ employees, customerId }: { employees: any[]; customerId: string }) {
+/* ----- Employees tab (enterprise CRUD + visual seat assignment) ----- */
+function EmployeesList({
+  employees,
+  customer,
+  customerId,
+}: {
+  employees: any[];
+  customer: any;
+  customerId: string;
+}) {
   const { create: createEmp, loading: creating } = useCreateCustomerEmployee(customerId);
   const { update: updateEmp, loading: updating } = useUpdateCustomerEmployee(customerId);
   const { remove: removeEmp } = useDeleteCustomerEmployee(customerId);
 
-  // Inline add/edit form state
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", phone: "", role: "Member", department: "", seatId: "",
   });
+  // Display name of the seat held in form.seatId (new seats aren't in
+  // `employees` yet, so the name must be captured from the picker).
+  const [formSeatName, setFormSeatName] = useState("");
+  // Seat picker — one modal instance serves both the form and row-level
+  // assignment; "target" decides where the picked seat lands.
+  const [seatPicker, setSeatPicker] = useState<
+    | { mode: "form" }
+    | { mode: "row"; empId: string; empName: string; seatId: string | null }
+    | null
+  >(null);
 
-  // Seat picker — fetch seats for the customer's center so the assign dropdown
-  // pulls from the real Inventory module.
-  const { data: seatsData } = useQuery<{ seats: any[] }>(GET_SEATS, {
-    fetchPolicy: "cache-first",
-    errorPolicy: "all",
-  });
-  const seats = seatsData?.seats ?? [];
+  // Search + department filter
+  const [query, setQuery] = useState("");
+  const [deptFilter, setDeptFilter] = useState("ALL");
 
   const resetForm = () => {
     setForm({ name: "", email: "", phone: "", role: "Member", department: "", seatId: "" });
+    setFormSeatName("");
     setEditingId(null);
     setShowForm(false);
   };
 
   const openAdd = () => {
     setForm({ name: "", email: "", phone: "", role: "Member", department: "", seatId: "" });
+    setFormSeatName("");
     setEditingId(null);
     setShowForm(true);
   };
@@ -1335,6 +1352,7 @@ function EmployeesList({ employees, customerId }: { employees: any[]; customerId
       department: emp.department ?? "",
       seatId: emp.seatId ?? "",
     });
+    setFormSeatName(emp.seat?.name ?? "");
     setEditingId(emp.id);
     setShowForm(true);
   };
@@ -1365,7 +1383,7 @@ function EmployeesList({ employees, customerId }: { employees: any[]; customerId
   };
 
   const handleRemove = async (id: string) => {
-    if (!window.confirm("Remove this team member?")) return;
+    if (!window.confirm("Remove this team member? Their seat is released back to inventory.")) return;
     try {
       await removeEmp(id);
     } catch {
@@ -1373,40 +1391,140 @@ function EmployeesList({ employees, customerId }: { employees: any[]; customerId
     }
   };
 
-  const seatLabel = (emp: any) =>
-    emp.seat?.name ?? emp.seatNumber ?? "Unassigned";
+  const handleSeatPicked = async (seatId: string | null, seatName?: string) => {
+    if (!seatPicker) return;
+    if (seatPicker.mode === "form") {
+      setForm((f) => ({ ...f, seatId: seatId ?? "" }));
+      setFormSeatName(seatName ?? "");
+      setSeatPicker(null);
+      return;
+    }
+    // Row-level assignment: persist immediately.
+    try {
+      await updateEmp(seatPicker.empId, { seatId });
+      setSeatPicker(null);
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  const setStatus = async (emp: any, status: string) => {
+    try {
+      await updateEmp(emp.id, { status });
+    } catch {
+      /* hook already toasted */
+    }
+  };
+
+  // ── Derived: stats, departments, filtered list ──
+  const seated = employees.filter((e) => e.seatId).length;
+  const departments = useMemo(
+    () =>
+      Array.from(
+        new Set(employees.map((e) => (e.department ?? "").trim()).filter(Boolean)),
+      ).sort(),
+    [employees],
+  );
+  const q = query.trim().toLowerCase();
+  const visible = employees.filter((e) => {
+    if (deptFilter !== "ALL" && (e.department ?? "").trim() !== deptFilter) return false;
+    if (!q) return true;
+    return (
+      (e.name ?? "").toLowerCase().includes(q) ||
+      (e.email ?? "").toLowerCase().includes(q) ||
+      ((e.seat?.name ?? "") as string).toLowerCase().includes(q)
+    );
+  });
+
+  const seatLabel = (emp: any) => emp.seat?.name ?? emp.seatNumber ?? null;
 
   return (
     <section className={styles.employeesCard}>
       <header className={styles.employeesHeader}>
         <h2 className={styles.employeesTitle}>Team Members ({employees.length})</h2>
-        <button
-          type="button"
-          className={styles.addEmployeeBtn}
-          onClick={openAdd}
-          disabled={creating || updating}
-        >
+        <button type="button" className={styles.addEmployeeBtn} onClick={openAdd} disabled={creating || updating}>
           {Icons.userPlus}
           <span>Add Employee</span>
         </button>
       </header>
 
-      {showForm && (
-        <div className={styles.empForm} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "16px", background: "#F9FAFB", borderRadius: "12px", marginBottom: "16px" }}>
-          <input placeholder="Full name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-          <input placeholder="Email *" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} style={inputStyle} />
-          <input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={inputStyle} />
-          <input placeholder="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} style={inputStyle} />
-          <input placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} style={inputStyle} />
-          <select value={form.seatId} onChange={(e) => setForm({ ...form, seatId: e.target.value })} style={inputStyle}>
-            <option value="">No seat assigned</option>
-            {seats.map((s: any) => (
-              <option key={s.id} value={s.id}>{s.name} ({s.seatType})</option>
+      {/* Stats strip */}
+      <div className={styles.empStats}>
+        <div className={styles.empStat}>
+          <span className={styles.empStatNum}>{employees.length}</span>
+          <span className={styles.empStatLabel}>Total members</span>
+        </div>
+        <div className={styles.empStat}>
+          <span className={`${styles.empStatNum} ${styles.empStatNumGreen}`}>{seated}</span>
+          <span className={styles.empStatLabel}>Seated</span>
+        </div>
+        <div className={styles.empStat}>
+          <span className={`${styles.empStatNum} ${styles.empStatNumOrange}`}>{employees.length - seated}</span>
+          <span className={styles.empStatLabel}>Unassigned</span>
+        </div>
+        <div className={styles.empStatTools}>
+          <input
+            className={styles.empSearch}
+            placeholder="Search name, email or seat…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <select
+            className={styles.empDeptFilter}
+            value={deptFilter}
+            onChange={(e) => setDeptFilter(e.target.value)}
+          >
+            <option value="ALL">All departments</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{d}</option>
             ))}
           </select>
-          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-            <button type="button" onClick={resetForm} style={btnSecondary}>Cancel</button>
-            <button type="button" onClick={submit} disabled={creating || updating} style={btnPrimary}>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className={styles.empForm}>
+          <div className={styles.empFormGrid}>
+            <label className={styles.empField}>
+              <span>Full name *</span>
+              <input placeholder="e.g., Priya Sharma" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </label>
+            <label className={styles.empField}>
+              <span>Email *</span>
+              <input placeholder="name@company.com" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </label>
+            <label className={styles.empField}>
+              <span>Phone</span>
+              <input placeholder="+91…" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </label>
+            <label className={styles.empField}>
+              <span>Role</span>
+              <input placeholder="Member / Manager / Lead" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} />
+            </label>
+            <label className={styles.empField}>
+              <span>Department</span>
+              <input placeholder="e.g., Engineering" list="emp-departments" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+              <datalist id="emp-departments">
+                {departments.map((d) => <option key={d} value={d} />)}
+              </datalist>
+            </label>
+            <div className={styles.empField}>
+              <span>Assigned seat</span>
+              <button type="button" className={styles.empSeatPickBtn} onClick={() => setSeatPicker({ mode: "form" })}>
+                {form.seatId
+                  ? (formSeatName ?? `Seat ${form.seatId.slice(0, 8)}`)
+                  : "Pick seat on floor map"}
+              </button>
+            </div>
+          </div>
+          <div className={styles.empFormActions}>
+            {form.seatId ? (
+              <button type="button" className={styles.empSeatClear} onClick={() => { setForm({ ...form, seatId: "" }); setFormSeatName(""); }}>
+                Clear seat
+              </button>
+            ) : null}
+            <button type="button" onClick={resetForm}>Cancel</button>
+            <button type="button" className={styles.empFormSubmit} onClick={submit} disabled={creating || updating}>
               {creating || updating ? "Saving…" : editingId ? "Update Member" : "Add Member"}
             </button>
           </div>
@@ -1415,51 +1533,115 @@ function EmployeesList({ employees, customerId }: { employees: any[]; customerId
 
       {employees.length === 0 ? (
         <EmptyState title="No team members" body="No team members have been added for this customer yet." />
+      ) : visible.length === 0 ? (
+        <EmptyState title="No matches" body="No team members match your search or department filter." />
       ) : (
         <div className={styles.empTable} role="table" aria-label="Team members">
           <div className={styles.empHeaderRow} role="row">
-            <div className={styles.empHeaderCell} role="columnheader">Name</div>
-            <div className={styles.empHeaderCell} role="columnheader">Role</div>
+            <div className={styles.empHeaderCell} role="columnheader">Member</div>
+            <div className={styles.empHeaderCell} role="columnheader">Role / Dept</div>
             <div className={styles.empHeaderCell} role="columnheader">Assigned Seat</div>
             <div className={styles.empHeaderCell} role="columnheader">Status</div>
             <div className={`${styles.empHeaderCell} ${styles.empHeaderCellActions}`} role="columnheader">Actions</div>
           </div>
 
           <div className={styles.empBody} role="rowgroup">
-            {employees.map((emp: any) => (
-              <div key={emp.id ?? emp.email} className={styles.empRow} role="row">
-                <div className={styles.empCell} role="cell">
-                  <div className={styles.empName}>{emp.name}</div>
-                  <div className={styles.empEmail}>{emp.email}</div>
-                </div>
-                <div className={styles.empCell} role="cell">
-                  <span className={styles.empRole}>{emp.role ?? "Member"}</span>
-                </div>
-                <div className={styles.empCell} role="cell">
-                  <span className={styles.empSeatBadge}>{seatLabel(emp)}</span>
-                </div>
-                <div className={styles.empCell} role="cell">
-                  <span className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}>
-                    {emp.status ?? "active"}
-                  </span>
-                </div>
-                <div className={styles.empCell} role="cell">
-                  <div className={styles.empActions}>
-                    <button type="button" className={styles.empActionBtn} onClick={() => openEdit(emp)}>
-                      {Icons.edit}
-                      <span>Edit</span>
-                    </button>
-                    <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`} onClick={() => handleRemove(emp.id)}>
-                      {Icons.trash}
-                      <span>Remove</span>
-                    </button>
+            {visible.map((emp: any) => {
+              const seat = seatLabel(emp);
+              return (
+                <div key={emp.id ?? emp.email} className={styles.empRow} role="row">
+                  <div className={styles.empCell} role="cell">
+                    <div className={styles.empName}>{emp.name}</div>
+                    <div className={styles.empEmail}>{emp.email}{emp.phone ? ` · ${emp.phone}` : ""}</div>
+                  </div>
+                  <div className={styles.empCell} role="cell">
+                    <span className={styles.empRole}>{emp.role ?? "Member"}</span>
+                    {emp.department ? <div className={styles.empDept}>{emp.department}</div> : null}
+                  </div>
+                  <div className={styles.empCell} role="cell">
+                    {seat ? (
+                      <span
+                        className={styles.empSeatBadge}
+                        title={emp.seat?.seatType ? String(emp.seat.seatType).replace(/_/g, " ").toLowerCase() : ""}
+                      >
+                        <span className={styles.empSeatDot} />
+                        {seat}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.empAssignBtn}
+                        onClick={() =>
+                          setSeatPicker({
+                            mode: "row",
+                            empId: emp.id,
+                            empName: emp.name,
+                            seatId: emp.seatId ?? null,
+                          })
+                        }
+                      >
+                        + Assign Seat
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.empCell} role="cell">
+                    <select
+                      className={`${styles.empStatusBadge} ${styles[`empStatus_${emp.status}`] ?? ""}`}
+                      value={emp.status ?? "active"}
+                      onChange={(e) => void setStatus(emp, e.target.value)}
+                      title="Change status"
+                    >
+                      <option value="invited">invited</option>
+                      <option value="active">active</option>
+                      <option value="inactive">inactive</option>
+                    </select>
+                  </div>
+                  <div className={styles.empCell} role="cell">
+                    <div className={styles.empActions}>
+                      {seat ? (
+                        <button
+                          type="button"
+                          className={styles.empActionBtn}
+                          onClick={() =>
+                            setSeatPicker({
+                              mode: "row",
+                              empId: emp.id,
+                              empName: emp.name,
+                              seatId: emp.seatId ?? null,
+                            })
+                          }
+                        >
+                          {Icons.edit}
+                          <span>Change Seat</span>
+                        </button>
+                      ) : null}
+                      <button type="button" className={styles.empActionBtn} onClick={() => openEdit(emp)}>
+                        {Icons.edit}
+                        <span>Edit</span>
+                      </button>
+                      <button type="button" className={`${styles.empActionBtn} ${styles.empActionBtnDanger}`} onClick={() => handleRemove(emp.id)}>
+                        {Icons.trash}
+                        <span>Remove</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
+
+      {seatPicker ? (
+        <SeatAssignModal
+          centerId={customer?.centerId ?? null}
+          employees={employees}
+          currentSeatId={seatPicker.mode === "row" ? seatPicker.seatId : form.seatId || null}
+          memberName={seatPicker.mode === "row" ? seatPicker.empName : form.name || undefined}
+          onClose={() => setSeatPicker(null)}
+          onPick={handleSeatPicked}
+        />
+      ) : null}
     </section>
   );
 }

@@ -63,7 +63,7 @@ export class CustomerResolver {
 
         return this.customerRepo.find({
             where,
-            relations: ['center', 'deposits', 'contracts', 'invoices'],
+            relations: { center: true, deposits: true, contracts: true, invoices: true, employees: { seat: true } },
             order: { createdAt: 'DESC' },
             take: filters?.limit ?? 50,
             skip: filters?.offset ?? 0,
@@ -74,7 +74,7 @@ export class CustomerResolver {
     async customer(@Args('id', { type: () => ID }) id: string): Promise<CustomerEntity | null> {
         return this.customerRepo.findOne({
             where: { id },
-            relations: ['center', 'deposits', 'contracts', 'invoices'],
+            relations: { center: true, deposits: true, contracts: true, invoices: true, employees: { seat: true } },
         });
     }
 
