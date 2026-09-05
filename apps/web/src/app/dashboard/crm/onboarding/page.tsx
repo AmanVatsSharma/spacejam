@@ -398,7 +398,31 @@ export default function OnboardingWizardPage() {
           toast.error("No employee rows found in the CSV");
           return;
         }
-        setIndividuals(parsed);
+        // Preserve seat assignments picked on the floor map: distribute the
+        // previously picked seats over the uploaded rows (then append rows
+        // for any leftover seats) instead of silently wiping them.
+        const pickedSeats = individuals
+          .map((i) => (i.seat ?? "").trim())
+          .filter(Boolean);
+        if (pickedSeats.length > 0) {
+          const merged = parsed.map((row) => ({ ...row }));
+          let seatIdx = 0;
+          for (const row of merged) {
+            if (seatIdx >= pickedSeats.length) break;
+            row.seat = pickedSeats[seatIdx++];
+          }
+          const extraSeats = pickedSeats.slice(seatIdx).map((seat, i) => ({
+            id: Date.now() + 1000 + i,
+            name: "",
+            phone: "",
+            email: "",
+            dept: "",
+            seat,
+          }));
+          setIndividuals([...merged, ...extraSeats]);
+        } else {
+          setIndividuals(parsed);
+        }
         setUploadSuccess(true);
         toast.success(`Loaded ${parsed.length} employee${parsed.length === 1 ? "" : "s"} from CSV`);
       } catch {
@@ -795,6 +819,16 @@ export default function OnboardingWizardPage() {
     );
   };
 
+  /** Remove one picked seat: clears it from its member row and drops
+   *  auto-created empty rows that existed only to hold that seat. */
+  const unassignSeat = (seatName: string) => {
+    setIndividuals((prev) =>
+      prev
+        .map((p) => ((p.seat ?? "").toLowerCase() === seatName.toLowerCase() ? { ...p, seat: "" } : p))
+        .filter((p) => p.name?.trim() || p.phone?.trim() || p.email?.trim() || p.dept?.trim() || p.seat?.trim()),
+    );
+  };
+
   /** Assign picked seats to team members: fill empty seat fields first,
    *  then append new member rows for the remainder. */
   const applySelectedSeats = () => {
@@ -1118,7 +1152,14 @@ export default function OnboardingWizardPage() {
               const isPast = step.id < currentStep;
 
               return (
-                <div key={step.id} className="flex gap-4 relative group cursor-pointer transition-all duration-200 hover:-translate-y-0.5" onClick={() => setCurrentStep(step.id)}>
+                <div
+                  key={step.id}
+                  className="flex gap-4 relative group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                  onClick={() => {
+                    setUploadSuccess(false);
+                    setCurrentStep(step.id);
+                  }}
+                >
                   {/* Line connecting steps */}
                   {index !== STEPS.length - 1 && (
                     <div
@@ -1217,7 +1258,10 @@ export default function OnboardingWizardPage() {
 
           {/* Form Card */}
           <div className="bg-white rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col flex-1">
-            {uploadSuccess ? (
+            {/* The upload-success screen belongs to step 2 only — without the
+                step gate it stayed mounted when the user jumped to another
+                step via the sidebar and hid that step's entire form. */}
+            {currentStep === 2 && uploadSuccess ? (
               <div className="flex flex-col items-center justify-center flex-1 p-10 text-center min-h-[500px]">
                 {/* Success Image Mock */}
                 <div className="relative w-40 h-40 mb-6">
@@ -1240,12 +1284,20 @@ export default function OnboardingWizardPage() {
                 <p className="text-[14px] text-gray-500 mb-8 max-w-[300px] leading-relaxed">
                   Your employee details have been uploaded successfully.<br />You can now proceed to the next step.
                 </p>
-                <button
-                  onClick={handleNext}
-                  className="px-8 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[15px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
-                >
-                  Go to next Step
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setUploadSuccess(false)}
+                    className="px-6 py-3.5 border border-gray-200 text-gray-700 rounded-lg text-[15px] font-semibold hover:bg-gray-50 transition-all active:scale-[0.97]"
+                  >
+                    View / Edit Team
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="px-8 py-3.5 bg-[#FF6A2F] text-white rounded-lg text-[15px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
+                  >
+                    Go to next Step
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-8 flex-1 flex flex-col gap-8">
@@ -1587,9 +1639,46 @@ export default function OnboardingWizardPage() {
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Seat Assignment</h3>
                       <button onClick={() => setShowInteractiveMap(true)} className="w-full py-4 rounded-xl border border-[#FF6A2F] bg-[#FFF8F6] hover:bg-[#FFEAE0] transition-colors flex flex-col items-center justify-center gap-1">
-                        <span className="text-[14px] font-bold text-gray-900">Select Seats</span>
-                        <span className="text-[12px] text-gray-500">Select seats from interactive map</span>
+                        <span className="text-[14px] font-bold text-gray-900">
+                          {assignedSeatNames.length > 0 ? `Change Seats (${assignedSeatNames.length} picked)` : "Select Seats"}
+                        </span>
+                        <span className="text-[12px] text-gray-500">
+                          {assignedSeatNames.length > 0 ? "Tap to add or change seats on the map" : "Select seats from interactive map"}
+                        </span>
                       </button>
+
+                      {assignedSeatNames.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {assignedSeatNames.map((seatName) => {
+                            const seat = centerSeats.find(
+                              (cs) => cs.name.toLowerCase() === seatName.toLowerCase(),
+                            );
+                            return (
+                              <span
+                                key={seatName}
+                                className="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 bg-[#F2FBF5] border border-[#B7E2C6] rounded-lg text-[12px] font-semibold text-[#1E7B34]"
+                              >
+                                {seatName}
+                                {seat?.floorName && (
+                                  <span className="text-[11px] font-normal text-gray-400">{seat.floorName}</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => unassignSeat(seatName)}
+                                  title="Remove seat"
+                                  className="w-4 h-4 rounded-full bg-[#DFF2E5] hover:bg-[#D92D20] hover:text-white flex items-center justify-center text-[10px] leading-none transition-colors"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[12px] text-gray-400 mt-2">
+                          No seats picked yet — seats will be auto-assigned from inventory at the end.
+                        </p>
+                      )}
                     </div>
 
                     {/* Seat Allocation */}
@@ -3057,7 +3146,7 @@ export default function OnboardingWizardPage() {
             )}
 
             {/* Footer */}
-            {!uploadSuccess && currentStep < 10 && (
+            {!(currentStep === 2 && uploadSuccess) && currentStep < 10 && (
               <div className="px-8 py-5 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
                 <button
                   onClick={handlePrev}
