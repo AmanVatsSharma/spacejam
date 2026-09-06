@@ -3,17 +3,18 @@
 /**
  * File:        apps/web/src/app/dashboard/crm/customers/[id]/seat-assign-modal.tsx
  * Module:      Web · CRM · Customer Detail · Seat Assign Modal
- * Purpose:     Enterprise seat picker for team members — renders the real
- *              floor map (seats positioned by x/y) with live occupancy:
- *              free seats are pickable, seats taken by teammates show the
- *              sitter, occupied/maintenance seats are blocked. Includes
- *              search, status filters with counts, and a floor selector.
+ * Purpose:     Enterprise seat picker for team members. One floor visible at
+ *              a time (floor tabs), canvas sized responsively to the modal
+ *              width so chips stay large and easy to click. Live occupancy:
+ *              free seats pickable, teammate seats show the sitter and are
+ *              blocked, occupied/maintenance blocked. Search + status
+ *              filters with counts, legend, confirm/unassign footer.
  *
  * Author:      ZCode
- * Last-updated: 2026-09-05
+ * Last-updated: 2026-09-06
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import { GET_FLOORS } from "@/lib/apollo/operations";
 import "./seat-assign-modal.css";
@@ -41,14 +42,15 @@ interface SeatAssignModalProps {
   onPick: (seatId: string | null, seatName?: string) => void;
 }
 
-const GRID = 44;
-
 const TYPE_LABEL: Record<string, string> = {
   HOT_DESK: "Hot Desk",
   DEDICATED: "Dedicated",
   CABIN: "Cabin",
   MEETING_ROOM: "Meeting Room",
 };
+
+const MIN_CELL = 46;
+const MAX_CELL = 84;
 
 export function SeatAssignModal({
   centerId,
@@ -61,6 +63,20 @@ export function SeatAssignModal({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"ALL" | "FREE" | "TAKEN" | "BLOCKED">("ALL");
   const [pickedId, setPickedId] = useState<string | null>(currentSeatId ?? null);
+  const [activeFloorId, setActiveFloorId] = useState<string | null>(null);
+
+  // Measure the canvas container so the grid scales with the modal width.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [wrapWidth, setWrapWidth] = useState(880);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setWrapWidth(el.clientWidth || 880);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const { data: floorsData, loading } = useQuery(GET_FLOORS, {
     variables: centerId ? { centerId } : undefined,
@@ -69,8 +85,7 @@ export function SeatAssignModal({
     errorPolicy: "all",
   });
 
-  // seatId → teammate sitting there (excluding the member being edited
-  // via currentSeatId comparison at render time).
+  // seatId → teammate sitting there (the member being edited keeps their seat).
   const takenBy = useMemo(() => {
     const map = new Map<string, string>();
     for (const emp of employees) {
@@ -81,25 +96,27 @@ export function SeatAssignModal({
     return map;
   }, [employees, currentSeatId]);
 
-  const allSeats: SeatAssignSeat[] = useMemo(() => {
-    const list: SeatAssignSeat[] = [];
-    for (const floor of floorsData?.floors ?? []) {
-      for (const seat of floor.seats ?? []) {
-        list.push({
-          id: seat.id,
-          name: seat.name,
-          seatType: seat.seatType,
-          status: seat.status,
-          price: seat.price ?? null,
+  const floors = useMemo<{ id: string; name: string; seats: SeatAssignSeat[] }[]>
+    (() =>
+      (floorsData?.floors ?? []).map((floor: any) => ({
+        id: floor.id as string,
+        name: floor.name as string,
+        seats: (floor.seats ?? []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          seatType: s.seatType,
+          status: s.status,
+          price: s.price ?? null,
           floorId: floor.id,
           floorName: floor.name,
-          x: seat.x ?? null,
-          y: seat.y ?? null,
-        });
-      }
-    }
-    return list;
-  }, [floorsData]);
+          x: s.x ?? null,
+          y: s.y ?? null,
+        })) as SeatAssignSeat[],
+      })),
+    [floorsData],
+  );
+
+  const allSeats = useMemo(() => floors.flatMap((f: { seats: SeatAssignSeat[] }) => f.seats), [floors]);
 
   const seatState = (seat: SeatAssignSeat): "FREE" | "TAKEN" | "OCCUPIED" | "MAINTENANCE" | "MINE" => {
     if (currentSeatId && seat.id === currentSeatId) return "MINE";
@@ -121,12 +138,19 @@ export function SeatAssignModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allSeats, takenBy, currentSeatId]);
 
+  // Default floor: the one holding the member's current seat, else the first.
+  useEffect(() => {
+    if (activeFloorId) return;
+    if (floors.length === 0) return;
+    const own = currentSeatId
+      ? floors.find((f: any) => f.seats.some((s: SeatAssignSeat) => s.id === currentSeatId))
+      : undefined;
+    setActiveFloorId((own ?? floors[0]).id);
+  }, [floors, currentSeatId, activeFloorId]);
+
   const q = search.trim().toLowerCase();
-  const matches = (seat: SeatAssignSeat) => {
-    if (!q) return true;
-    return seat.name.toLowerCase().includes(q);
-  };
-  const passesFilter = (seat: SeatAssignSeat) => {
+  const visibleInFloor = (seat: SeatAssignSeat) => {
+    if (q && !seat.name.toLowerCase().includes(q)) return false;
     if (filter === "ALL") return true;
     const st = seatState(seat);
     if (filter === "FREE") return st === "FREE" || st === "MINE";
@@ -135,13 +159,63 @@ export function SeatAssignModal({
   };
 
   const pickedSeat = allSeats.find((s) => s.id === pickedId);
+  const activeFloor = floors.find((f: any) => f.id === activeFloorId) as
+    | { id: string; name: string; seats: SeatAssignSeat[] }
+    | undefined;
 
-  const chipVisual: Record<string, { cls: string; label: string }> = {
-    FREE: { cls: "sam-chip sam-free", label: "Free" },
-    MINE: { cls: "sam-chip sam-mine", label: "Current" },
-    TAKEN: { cls: "sam-chip sam-taken", label: "Teammate" },
-    OCCUPIED: { cls: "sam-chip sam-occupied", label: "Occupied" },
-    MAINTENANCE: { cls: "sam-chip sam-maintenance", label: "Maintenance" },
+  const activeVisible = useMemo(
+    () => (activeFloor?.seats ?? []).filter(visibleInFloor),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeFloor, q, filter, takenBy, currentSeatId],
+  );
+  const positioned = activeVisible.filter((s) => s.x != null && s.y != null);
+  const unpositioned = activeVisible.filter((s) => s.x == null || s.y == null);
+  const cols = Math.max(6, ...positioned.map((s) => (s.x ?? 0) + 1));
+  const rows = Math.max(4, ...positioned.map((s) => (s.y ?? 0) + 1));
+  // Responsive cell: fill the modal width, clamped for readability.
+  const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, Math.floor((wrapWidth - 24) / cols)));
+
+  const stateVisual: Record<string, { cls: string; label: string }> = {
+    FREE: { cls: "sam-free", label: "Free" },
+    MINE: { cls: "sam-mine", label: "Current seat" },
+    TAKEN: { cls: "sam-taken", label: "Teammate" },
+    OCCUPIED: { cls: "sam-occupied", label: "Occupied" },
+    MAINTENANCE: { cls: "sam-maintenance", label: "Maintenance" },
+  };
+
+  const renderSeat = (seat: SeatAssignSeat, flow: boolean) => {
+    const st = seatState(seat);
+    const v = stateVisual[st];
+    const picked = pickedId === seat.id;
+    const clickable = st === "FREE" || st === "MINE";
+    const sitter = st === "TAKEN" ? takenBy.get(seat.id) : undefined;
+    return (
+      <button
+        key={seat.id}
+        type="button"
+        disabled={!clickable}
+        className={[
+          "sam-chip",
+          flow ? "sam-chip-flow" : "sam-chip-grid",
+          v.cls,
+          picked ? "sam-picked" : "",
+          clickable ? "sam-clickable" : "",
+        ].join(" ")}
+        style={
+          flow
+            ? undefined
+            : { left: (seat.x ?? 0) * cell + 4, top: (seat.y ?? 0) * cell + 4, width: cell - 8, height: cell - 8 }
+        }
+        onClick={() => clickable && setPickedId(seat.id)}
+        title={`${seat.name} · ${TYPE_LABEL[seat.seatType] ?? seat.seatType} · ${v.label}${sitter ? ` (${sitter})` : ""}${seat.price != null ? ` · ₹${seat.price}` : ""}`}
+      >
+        <span className={`sam-dot sam-dot-${st.toLowerCase()}`} />
+        <span className="sam-seat-name">{seat.name}</span>
+        {sitter && !flow && cell >= 62 ? <span className="sam-sitter">{sitter.split(" ")[0]}</span> : null}
+        {sitter && flow ? <span className="sam-sitter">{sitter.split(" ")[0]}</span> : null}
+        {picked && <span className="sam-check" aria-hidden>✓</span>}
+      </button>
+    );
   };
 
   return (
@@ -153,11 +227,12 @@ export function SeatAssignModal({
               Assign Seat
               {memberName ? <span className="sam-subtitle"> · {memberName}</span> : null}
             </h2>
-            <p className="sam-hint">Pick a free seat on the floor map — taken & blocked seats can&apos;t be selected</p>
+            <p className="sam-hint">Pick a free seat — teammate &amp; blocked seats can&apos;t be selected</p>
           </div>
           <button type="button" className="sam-close" onClick={onClose} aria-label="Close">×</button>
         </header>
 
+        {/* Search + status filters */}
         <div className="sam-toolbar">
           <input
             className="sam-search"
@@ -182,102 +257,72 @@ export function SeatAssignModal({
           ))}
         </div>
 
-        <div className="sam-body">
+        {/* Floor tabs */}
+        {floors.length > 0 && (
+          <div className="sam-floortabs" role="tablist">
+            {floors.map((f: any) => {
+              const active = f.id === activeFloorId;
+              const free = f.seats.filter((s: SeatAssignSeat) => {
+                const st = seatState(s);
+                return st === "FREE" || st === "MINE";
+              }).length;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`sam-floortab ${active ? "sam-floortab-active" : ""}`}
+                  onClick={() => setActiveFloorId(f.id)}
+                >
+                  {f.name}
+                  <span className={`sam-floortab-count ${free === 0 ? "sam-floortab-zero" : ""}`}>{free} free</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="sam-body" ref={wrapRef}>
           {loading ? (
             <div className="sam-empty">Loading floor map…</div>
           ) : allSeats.length === 0 ? (
             <div className="sam-empty">
               <p className="sam-empty-title">No seats in inventory</p>
-              <p className="sam-empty-body">
-                This center has no seats yet. Add floors &amp; seats in Inventory first.
-              </p>
+              <p className="sam-empty-body">This center has no seats yet. Add floors &amp; seats in Inventory first.</p>
+            </div>
+          ) : activeVisible.length === 0 ? (
+            <div className="sam-empty">
+              <p className="sam-empty-title">No seats match</p>
+              <p className="sam-empty-body">Try another name or clear the status filter.</p>
             </div>
           ) : (
-            (floorsData?.floors ?? []).map((floor: any) => {
-              const seats: SeatAssignSeat[] = (floor.seats ?? [])
-                .map((s: any) => allSeats.find((a) => a.id === s.id)!)
-                .filter(Boolean)
-                .filter(matches)
-                .filter(passesFilter);
-              if (seats.length === 0) return null;
-              const positioned = seats.filter((s) => s.x != null && s.y != null);
-              const unpositioned = seats.filter((s) => s.x == null || s.y == null);
-              const cols = Math.min(24, Math.max(10, ...positioned.map((s) => (s.x ?? 0) + 1)));
-              const rows = Math.max(6, ...positioned.map((s) => (s.y ?? 0) + 1));
-              return (
-                <section key={floor.id} className="sam-floor">
-                  <div className="sam-floor-head">
-                    <h3 className="sam-floor-name">{floor.name}</h3>
-                    <span className="sam-floor-count">{seats.length} seats</span>
-                  </div>
-                  <div className="sam-canvas-wrap">
-                    {positioned.length > 0 && (
-                      <div
-                        className="sam-canvas"
-                        style={{
-                          width: cols * GRID,
-                          height: rows * GRID,
-                          backgroundSize: `${GRID}px ${GRID}px`,
-                        }}
-                      >
-                        {positioned.map((seat) => {
-                          const st = seatState(seat);
-                          const v = chipVisual[st];
-                          const picked = pickedId === seat.id;
-                          const clickable = st === "FREE" || st === "MINE";
-                          const sitter = st === "TAKEN" ? takenBy.get(seat.id) : undefined;
-                          return (
-                            <button
-                              key={seat.id}
-                              type="button"
-                              disabled={!clickable}
-                              className={`${v.cls} ${picked ? "sam-picked" : ""} ${clickable ? "sam-clickable" : ""}`}
-                              style={{ left: (seat.x ?? 0) * GRID + 3, top: (seat.y ?? 0) * GRID + 3 }}
-                              onClick={() => setPickedId(clickable ? seat.id : null)}
-                              title={`${seat.name} · ${TYPE_LABEL[seat.seatType] ?? seat.seatType} · ${v.label}${sitter ? ` (${sitter})` : ""}${seat.price != null ? ` · ₹${seat.price}` : ""}`}
-                            >
-                              <span className="sam-dot" />
-                              <span className="sam-seat-name">{seat.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {unpositioned.length > 0 && (
-                      <div className="sam-flow">
-                        {unpositioned.map((seat) => {
-                          const st = seatState(seat);
-                          const v = chipVisual[st];
-                          const picked = pickedId === seat.id;
-                          const clickable = st === "FREE" || st === "MINE";
-                          const sitter = st === "TAKEN" ? takenBy.get(seat.id) : undefined;
-                          return (
-                            <button
-                              key={seat.id}
-                              type="button"
-                              disabled={!clickable}
-                              className={`${v.cls} ${v.cls}-flow ${picked ? "sam-picked" : ""} ${clickable ? "sam-clickable" : ""}`}
-                              onClick={() => setPickedId(clickable ? seat.id : null)}
-                              title={`${seat.name} · ${TYPE_LABEL[seat.seatType] ?? seat.seatType} · ${v.label}${sitter ? ` (${sitter})` : ""}`}
-                            >
-                              <span className="sam-dot" />
-                              {seat.name}
-                              {sitter ? <span className="sam-sitter">· {sitter.split(" ")[0]}</span> : null}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </section>
-              );
-            })
+            <>
+              {positioned.length > 0 && (
+                <div
+                  className="sam-canvas"
+                  style={{
+                    width: cols * cell,
+                    height: rows * cell,
+                    backgroundSize: `${cell}px ${cell}px`,
+                  }}
+                >
+                  {positioned.map((s) => renderSeat(s, false))}
+                </div>
+              )}
+              {unpositioned.length > 0 && (
+                <div className="sam-flow">
+                  <span className="sam-flow-label">Unplaced seats:</span>
+                  {unpositioned.map((s) => renderSeat(s, true))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="sam-legend">
           <span className="sam-legend-item"><span className="sam-dot sam-dot-free" /> Free</span>
-          <span className="sam-legend-item"><span className="sam-dot sam-dot-mine" /> Current seat</span>
+          <span className="sam-legend-item"><span className="sam-dot sam-dot-mine" /> Current</span>
           <span className="sam-legend-item"><span className="sam-dot sam-dot-taken" /> Teammate</span>
           <span className="sam-legend-item"><span className="sam-dot sam-dot-occupied" /> Occupied</span>
           <span className="sam-legend-item"><span className="sam-dot sam-dot-maintenance" /> Maintenance</span>
@@ -293,7 +338,7 @@ export function SeatAssignModal({
                 </span>
               </>
             ) : (
-              <span className="sam-picked-meta">No seat selected</span>
+              <span className="sam-picked-meta">No seat selected — click a green seat</span>
             )}
           </div>
           <div className="sam-footer-actions">

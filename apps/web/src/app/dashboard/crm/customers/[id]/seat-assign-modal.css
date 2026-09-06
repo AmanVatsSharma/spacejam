@@ -1,4 +1,6 @@
-/* Seat Assign Modal — enterprise floor-map seat picker */
+/* Seat Assign Modal — enterprise floor-map seat picker
+   Layout: header / toolbar (search+filters) / floor tabs / map body /
+   legend / footer. The canvas scales its cell size to the modal width. */
 
 .sam-backdrop {
   position: fixed;
@@ -9,13 +11,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
 }
 
 .sam-modal {
   width: 100%;
-  max-width: 980px;
-  max-height: 90vh;
+  max-width: 1020px;
+  max-height: 92vh;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 24px 64px rgba(16, 24, 40, 0.22);
@@ -24,13 +26,16 @@
   overflow: hidden;
 }
 
+/* ─── Header ─────────────────────────────────────────────────── */
+
 .sam-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 24px 14px;
+  padding: 18px 22px 12px;
   border-bottom: 1px solid #f2f4f7;
+  flex-shrink: 0;
 }
 
 .sam-title {
@@ -52,8 +57,8 @@
 }
 
 .sam-close {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 8px;
   border: none;
   background: #f2f4f7;
@@ -61,22 +66,26 @@
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
 }
 .sam-close:hover { background: #ffeae0; color: #ff6a2f; }
+
+/* ─── Toolbar: search + status filters ───────────────────────── */
 
 .sam-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 12px 24px;
+  gap: 8px;
+  padding: 10px 22px;
   border-bottom: 1px solid #f2f4f7;
+  flex-shrink: 0;
 }
 
 .sam-search {
-  width: 220px;
-  height: 36px;
+  width: 210px;
+  height: 34px;
   padding: 0 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -90,7 +99,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
+  height: 34px;
   padding: 0 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -118,145 +127,199 @@
   font-weight: 700;
 }
 
+/* ─── Floor tabs ─────────────────────────────────────────────── */
+
+.sam-floortabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px 0;
+  border-bottom: 1px solid #f2f4f7;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.sam-floortab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  background: none;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sam-floortab:hover { color: #344054; }
+.sam-floortab-active {
+  color: #ff6a2f;
+  border-bottom-color: #ff6a2f;
+}
+
+.sam-floortab-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2fbf5;
+  color: #1e7b34;
+  font-size: 11px;
+  font-weight: 700;
+}
+.sam-floortab-zero {
+  background: #f2f4f7;
+  color: #98a2b3;
+}
+
+/* ─── Map body ───────────────────────────────────────────────── */
+
 .sam-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 16px 24px;
+  min-height: 240px;
+  overflow: auto;
+  padding: 16px 22px;
   background: #f9fafb;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
 }
 
-.sam-floor {
-  background: #fff;
-  border: 1px solid #eef0f3;
-  border-radius: 12px;
-  overflow: hidden;
+.sam-empty {
+  padding: 48px 24px;
+  text-align: center;
 }
-
-.sam-floor-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-bottom: 1px solid #f5f6f8;
-}
-
-.sam-floor-name { margin: 0; font-size: 14px; font-weight: 700; color: #101828; }
-.sam-floor-count { font-size: 12px; color: #98a2b3; font-weight: 600; }
-
-.sam-canvas-wrap { padding: 14px; overflow-x: auto; }
+.sam-empty-title { font-size: 15px; font-weight: 700; color: #475467; margin: 0 0 4px; }
+.sam-empty-body { font-size: 13px; color: #98a2b3; margin: 0; }
 
 .sam-canvas {
   position: relative;
   margin: 0 auto;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   background-image:
     linear-gradient(to right, #eef1f4 1px, transparent 1px),
     linear-gradient(to bottom, #eef1f4 1px, transparent 1px);
+  border-radius: 8px;
 }
 
 /* ─── Seat chips ─────────────────────────────────────────────── */
 
 .sam-chip {
-  position: absolute;
-  width: 38px;
-  height: 38px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  border-radius: 9px;
+  gap: 5px;
+  border-radius: 10px;
   border: 2px solid transparent;
-  font-size: 10px;
   font-weight: 700;
   color: #475467;
   cursor: default;
+  padding: 0;
   transition: transform 0.12s, box-shadow 0.12s;
 }
 
-.sam-chip-flow {
-  position: static;
-  width: auto;
-  height: auto;
-  flex-direction: row;
-  gap: 6px;
-  padding: 7px 12px;
+.sam-chip-grid {
+  position: absolute;
+  flex-direction: column;
+  gap: 2px;
   font-size: 12px;
+  overflow: hidden;
+}
+
+.sam-chip-flow {
+  height: 38px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 .sam-flow {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
-.sam-canvas + .sam-flow { margin-top: 0; padding-top: 12px; border-top: 1px dashed #eef0f3; }
+
+.sam-flow-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #98a2b3;
+  margin-right: 2px;
+}
 
 .sam-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   flex-shrink: 0;
 }
-.sam-chip-flow .sam-dot { width: 8px; height: 8px; }
 
 .sam-seat-name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.1;
-  padding: 0 1px;
+  line-height: 1.15;
+  padding: 0 2px;
 }
 
+.sam-sitter {
+  font-size: 10px;
+  font-weight: 600;
+  color: #b54a10;
+  line-height: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* state colors */
 .sam-free { background: #f2fbf5; border-color: #b7e2c6; }
-.sam-free .sam-dot { background: #21a366; }
-
 .sam-mine { background: #fff8f6; border-color: #ffb48f; }
-.sam-mine .sam-dot { background: #ff6a2f; }
+.sam-taken { background: #fff4ec; border-color: #ffd9c4; }
+.sam-occupied { background: #fff5f5; border-color: #f3b9b3; opacity: 0.62; }
+.sam-maintenance { background: #f2f4f7; border-color: #d0d5dd; opacity: 0.62; }
 
-.sam-taken { background: #fff8f6; border-color: #ffd9c4; opacity: 0.9; }
-.sam-taken .sam-dot { background: #ff8f4d; }
-
-.sam-occupied { background: #fff5f5; border-color: #f3b9b3; opacity: 0.65; }
-.sam-occupied .sam-dot { background: #d92d20; }
-
-.sam-maintenance { background: #f2f4f7; border-color: #d0d5dd; opacity: 0.65; }
-.sam-maintenance .sam-dot { background: #98a2b3; }
+.sam-dot-free { background: #21a366; }
+.sam-dot-mine { background: #ff6a2f; }
+.sam-dot-taken { background: #ff8f4d; }
+.sam-dot-occupied { background: #d92d20; }
+.sam-dot-maintenance { background: #98a2b3; }
 
 .sam-clickable { cursor: pointer; }
-.sam-clickable:hover { transform: scale(1.07); box-shadow: 0 4px 12px rgba(16, 24, 40, 0.14); z-index: 2; }
+.sam-clickable:hover {
+  transform: scale(1.06);
+  box-shadow: 0 5px 14px rgba(16, 24, 40, 0.16);
+  z-index: 2;
+}
 .sam-clickable:active { transform: scale(0.97); }
 .sam-chip:disabled { cursor: not-allowed; }
 
 .sam-picked {
   border-color: #ff6a2f !important;
-  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.25);
+  box-shadow: 0 0 0 3px rgba(255, 106, 47, 0.3);
   z-index: 3;
 }
 
-.sam-sitter { font-weight: 500; color: #98a2b3; font-size: 11px; }
-
-.sam-empty {
-  padding: 56px 24px;
-  text-align: center;
+.sam-check {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 11px;
+  color: #ff6a2f;
+  font-weight: 900;
+  line-height: 1;
 }
-.sam-empty-title { font-size: 15px; font-weight: 700; color: #475467; margin: 0 0 4px; }
-.sam-empty-body { font-size: 13px; color: #98a2b3; margin: 0; }
 
 /* ─── Legend & footer ────────────────────────────────────────── */
 
 .sam-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
-  padding: 10px 24px;
+  gap: 14px;
+  padding: 9px 22px;
   border-top: 1px solid #f2f4f7;
   background: #fff;
+  flex-shrink: 0;
 }
 
 .sam-legend-item {
@@ -268,24 +331,18 @@
   font-weight: 600;
 }
 
-.sam-dot-free { background: #21a366; }
-.sam-dot-mine { background: #ff6a2f; }
-.sam-dot-taken { background: #ff8f4d; }
-.sam-dot-occupied { background: #d92d20; }
-.sam-dot-maintenance { background: #98a2b3; }
-.sam-legend .sam-dot { width: 9px; height: 9px; }
-
 .sam-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 24px;
+  padding: 12px 22px;
   border-top: 1px solid #f2f4f7;
   background: #fff;
+  flex-shrink: 0;
 }
 
-.sam-picked-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sam-picked-info { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
 
 .sam-picked-chip {
   display: inline-flex;
@@ -301,7 +358,7 @@
 
 .sam-picked-meta { font-size: 12px; color: #98a2b3; font-weight: 600; }
 
-.sam-footer-actions { display: flex; align-items: center; gap: 10px; }
+.sam-footer-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
 .sam-btn {
   height: 40px;
