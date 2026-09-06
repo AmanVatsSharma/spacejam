@@ -82,3 +82,4 @@ npm-debug.*
 web-build/
 cache/
 nul
+uploads/

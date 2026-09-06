@@ -80,6 +80,9 @@ export default function OnboardingWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set only after the FULL save succeeds — the completion screen's
+  // actions navigate with it, so it can't render without a real customer.
+  const [savedCustomerId, setSavedCustomerId] = useState<string | null>(null);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [leadPrefilled, setLeadPrefilled] = useState(false);
 
@@ -182,7 +185,9 @@ export default function OnboardingWizardPage() {
       if (draft?.basicInfo && typeof draft.basicInfo === "object") {
         setBasicInfo((prev) => ({ ...prev, ...draft.basicInfo }));
       }
-      if (typeof draft?.currentStep === "number" && draft.currentStep >= 1 && draft.currentStep <= 10) {
+      // Clamp to 9: step 10 is the completion screen and must only ever be
+      // reached through a successful save (savedCustomerId), never a draft.
+      if (typeof draft?.currentStep === "number" && draft.currentStep >= 1 && draft.currentStep <= 9) {
         setCurrentStep(draft.currentStep);
       }
       if (draft?.paymentMode) setPaymentMode(draft.paymentMode);
@@ -341,8 +346,15 @@ export default function OnboardingWizardPage() {
     if (step === 1) {
       if (!basicInfo.name?.trim()) return "Super User name is required";
       if (!basicInfo.phone?.trim()) return "Phone number is required";
+      if (!basicInfo.phone.replace(/\D/g, "").match(/^\d{10,15}$/)) return "Enter a valid phone number (10-15 digits)";
       if (!basicInfo.email?.trim()) return "Email address is required";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(basicInfo.email.trim())) return `"${basicInfo.email.trim()}" is not a valid email address`;
       if (!basicInfo.company?.trim()) return "Company name is required";
+      const dobTrim = basicInfo.dob?.trim();
+      if (!dobTrim) return "Date of birth is required";
+      const dobDate = new Date(dobTrim);
+      if (Number.isNaN(dobDate.getTime())) return "Enter a valid date of birth";
+      if (dobDate > new Date()) return "Date of birth cannot be in the future";
     }
     if (step === 4) {
       // Bank details are mandatory — they are required for refunds.
@@ -445,7 +457,14 @@ export default function OnboardingWizardPage() {
       setCurrentStep((p) => p + 1);
       return;
     }
-    if (currentStep < 10) setCurrentStep((p) => p + 1);
+    // Step 9 → the REAL save. The completion screen must only appear
+    // after the customer is actually created — it used to render before
+    // any save, so a failed save surfaced only when leaving the screen.
+    if (currentStep === 9) {
+      void handleSubmit();
+      return;
+    }
+    if (currentStep < 9) setCurrentStep((p) => p + 1);
   };
 
   const handlePrev = () => {
@@ -461,6 +480,7 @@ export default function OnboardingWizardPage() {
    * state so the wizard starts fresh without a page reload.
    */
   const resetWizard = () => {
+    setSavedCustomerId(null);
     setBasicInfo({ name: "", phone: "", email: "", altContact: "", dob: "", company: "", gst: "" });
     setIndividuals([{ id: Date.now(), name: "", phone: "", email: "", dept: "", seat: "" }]);
     setEmployeeMode("bulk");
@@ -489,6 +509,16 @@ export default function OnboardingWizardPage() {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+    // Pre-flight: surface every required-field problem BEFORE any network
+    // call, and jump the wizard to the offending step so the fix is obvious.
+    for (const st of [1, 4, 6, 9]) {
+      const err = validateStep(st);
+      if (err) {
+        toast.error(`Step ${st}: ${err}`);
+        setCurrentStep(st);
+        return;
+      }
+    }
     setIsSubmitting(true);
     try {
       // ── Collect the full onboarding payload from every step's state so
@@ -794,7 +824,8 @@ export default function OnboardingWizardPage() {
         else toast.success(allocationToast);
       }
 
-      router.push(`/dashboard/crm/customers/${customerId}`);
+      setSavedCustomerId(customerId);
+      setCurrentStep(10);
     } catch (err: any) {
       console.error(err);
       const detail =
@@ -1156,6 +1187,19 @@ export default function OnboardingWizardPage() {
                   key={step.id}
                   className="flex gap-4 relative group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   onClick={() => {
+                    if (step.id > currentStep) {
+                      // Forward jumps must satisfy every required step in
+                      // between — the sidebar used to bypass validation,
+                      // letting empty required fields reach the final save.
+                      for (let st = currentStep; st < step.id; st++) {
+                        const err = validateStep(st);
+                        if (err) {
+                          toast.error(`Step ${st}: ${err}`);
+                          setCurrentStep(st);
+                          return;
+                        }
+                      }
+                    }
                     setUploadSuccess(false);
                     setCurrentStep(step.id);
                   }}
@@ -3059,7 +3103,7 @@ export default function OnboardingWizardPage() {
                   </div>
                 )}
 
-                {currentStep === 10 && (
+                {currentStep === 10 && savedCustomerId && (
                   <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative z-10 overflow-y-auto">
                     <div className="max-w-md w-full flex flex-col items-center text-center">
                       <div className="relative mb-6 mt-12">
@@ -3080,18 +3124,16 @@ export default function OnboardingWizardPage() {
                       </p>
 
                       <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm disabled:opacity-50"
+                        onClick={() => router.push(`/dashboard/crm/customers/${savedCustomerId}`)}
+                        className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm"
                       >
-                        {isSubmitting ? "Creating..." : "Go to client Dashboard"}
+                        Go to client Dashboard
                       </button>
 
                       <div className="flex items-center gap-3 w-full mb-8">
                         <button
-                          onClick={handleSubmit}
-                          disabled={isSubmitting}
-                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50"
+                          onClick={() => router.push(`/dashboard/crm/customers/${savedCustomerId}`)}
+                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                           View Client Profile
@@ -3171,9 +3213,10 @@ export default function OnboardingWizardPage() {
                   </button>
                   <button
                     onClick={handleNext}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm"
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {currentStep === 9 ? "Next" : "Continue"}
+                    {currentStep === 9 ? (isSubmitting ? "Completing…" : "Complete Onboarding") : "Continue"}
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
