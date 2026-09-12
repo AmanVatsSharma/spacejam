@@ -251,7 +251,11 @@ export default function LoginScreen() {
   const handleSendOtp = async () => {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 8) {
-      ToastAndroid.show('Please enter a valid phone number', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert('Please enter a valid phone number');
+      } else {
+        ToastAndroid.show('Please enter a valid phone number', ToastAndroid.SHORT);
+      }
       return;
     }
 
@@ -264,7 +268,11 @@ export default function LoginScreen() {
 
       const result = data?.requestOtp;
       if (!result?.ok) {
-        ToastAndroid.show('Could not send OTP', ToastAndroid.SHORT);
+        if (Platform.OS === 'web') {
+          alert('Could not send OTP');
+        } else {
+          ToastAndroid.show('Could not send OTP', ToastAndroid.SHORT);
+        }
         return;
       }
 
@@ -280,7 +288,11 @@ export default function LoginScreen() {
 
       transitionToOtp();
     } catch (error: any) {
-      ToastAndroid.show(error?.message || 'Could not send OTP', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'Could not send OTP');
+      } else {
+        ToastAndroid.show(error?.message || 'Could not send OTP', ToastAndroid.SHORT);
+      }
     } finally {
       setLoading(false);
     }
@@ -290,7 +302,11 @@ export default function LoginScreen() {
     const code = otp.join('');
 
     if (code.length !== 6) {
-      ToastAndroid.show('Please enter the full 6-digit code', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert('Please enter the full 6-digit code');
+      } else {
+        ToastAndroid.show('Please enter the full 6-digit code', ToastAndroid.SHORT);
+      }
       return;
     }
 
@@ -303,7 +319,11 @@ export default function LoginScreen() {
 
       const result = data?.verifyOtp;
       if (!result || !result.accessToken) {
-        ToastAndroid.show('Invalid OTP code', ToastAndroid.SHORT);
+        if (Platform.OS === 'web') {
+          alert('Invalid OTP code');
+        } else {
+          ToastAndroid.show('Invalid OTP code', ToastAndroid.SHORT);
+        }
         setLoading(false);
         return;
       }
@@ -319,9 +339,13 @@ export default function LoginScreen() {
         result.accessToken,
         result.refreshToken,
       );
-      navigation.navigate('HomeTab' as never);
+      navigation.navigate('MainTabs' as never);
     } catch (error: any) {
-      ToastAndroid.show(error?.message || 'OTP verification failed', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'OTP verification failed');
+      } else {
+        ToastAndroid.show(error?.message || 'OTP verification failed', ToastAndroid.SHORT);
+      }
     } finally {
       setLoading(false);
     }
@@ -332,7 +356,11 @@ export default function LoginScreen() {
   const handleDevBypass = async () => {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 8) {
-      ToastAndroid.show('Enter a phone number first', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert('Enter a phone number first');
+      } else {
+        ToastAndroid.show('Enter a phone number first', ToastAndroid.SHORT);
+      }
       return;
     }
     setLoading(true);
@@ -343,7 +371,11 @@ export default function LoginScreen() {
       });
       const devCode = req.data?.requestOtp?.devCode;
       if (!devCode) {
-        ToastAndroid.show('Dev bypass unavailable (server not in OTP_DEV_BYPASS mode)', ToastAndroid.SHORT);
+        if (Platform.OS === 'web') {
+          alert('Dev bypass unavailable (server not in OTP_DEV_BYPASS mode)');
+        } else {
+          ToastAndroid.show('Dev bypass unavailable (server not in OTP_DEV_BYPASS mode)', ToastAndroid.SHORT);
+        }
         return;
       }
       const ver = await apolloClient.mutate({
@@ -352,7 +384,11 @@ export default function LoginScreen() {
       });
       const result = ver.data?.verifyOtp;
       if (!result?.accessToken) {
-        ToastAndroid.show('Dev bypass failed', ToastAndroid.SHORT);
+        if (Platform.OS === 'web') {
+          alert('Dev bypass failed');
+        } else {
+          ToastAndroid.show('Dev bypass failed', ToastAndroid.SHORT);
+        }
         return;
       }
       const user = result.user;
@@ -361,9 +397,13 @@ export default function LoginScreen() {
         result.accessToken,
         result.refreshToken,
       );
-      navigation.navigate('HomeTab' as never);
+      navigation.navigate('MainTabs' as never);
     } catch (error: any) {
-      ToastAndroid.show(error?.message || 'Dev bypass failed', ToastAndroid.SHORT);
+      if (Platform.OS === 'web') {
+        alert(error?.message || 'Dev bypass failed');
+      } else {
+        ToastAndroid.show(error?.message || 'Dev bypass failed', ToastAndroid.SHORT);
+      }
     } finally {
       setLoading(false);
     }

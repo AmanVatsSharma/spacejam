@@ -6,7 +6,7 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-08-07
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useMutation, useQuery } from '@apollo/client';
 import { CREATE_BOOKING, GET_SEATS, GET_ME, GET_SEAT_AVAILABILITY } from '../lib/apollo/operations';
@@ -30,15 +30,6 @@ const DARK = '#1A1D1F';
 const MUTED = '#6F767E';
 const BORDER = '#F3F4F6';
 const BG_GRAY = '#F9FAFB';
-
-const DATES = [
-  { day: 'M', num: '5' },
-  { day: 'T', num: '6' },
-  { day: 'W', num: '7' },
-  { day: 'T', num: '8' },
-  { day: 'F', num: '9' },
-  { day: 'S', num: '10' },
-];
 
 const TIME_SLOTS = [
   { time: '9:00 AM', status: 'available' },
@@ -103,12 +94,31 @@ export default function BookingDetailsScreen() {
   const seat = (seatsData?.seats)?.find((s: any) => s.id === seatId) || {};
   const userTokenBalance = meData?.me?.tokenBalance ?? 0;
 
-  const [selectedDate, setSelectedDate] = useState('5');
+  const [selectedDate, setSelectedDate] = useState(() => String(new Date().getDate()));
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
   const [participants, setParticipants] = useState(8);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [hasSufficientBalance, setHasSufficientBalance] = useState(true);
+  // Wire calendar modal callback — when user confirms a date, update selectedDate
+  const handleCalendarSelect = (dateNum: string) => {
+    setSelectedDate(dateNum);
+    setSelectedStart(null);
+    setSelectedEnd(null);
+  };
+
+  // Dynamic dates: next 7 days from today (replaces hardcoded placeholder)
+  const dynamicDates = useMemo(() => {
+    const days: { day: string; num: string }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      days.push({
+        day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        num: String(d.getDate()),
+      });
+    }
+    return days;
+  }, []);
+  const hasSufficientBalance = userTokenBalance >= bookingCost;
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Compute booking cost from seat price × selected hours
@@ -225,7 +235,7 @@ export default function BookingDetailsScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
-            {DATES.map((d, i) => {
+            {dynamicDates.map((d, i) => {
               const isActive = selectedDate === d.num;
               return (
                 <TouchableOpacity
@@ -409,7 +419,7 @@ export default function BookingDetailsScreen() {
         </TouchableOpacity>
       </View>
 
-      <CalendarModal visible={showCalendar} onClose={() => setShowCalendar(false)} />
+      <CalendarModal visible={showCalendar} onClose={() => setShowCalendar(false)} onSelectDate={handleCalendarSelect} />
       <ConfirmBookingModal
         visible={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}

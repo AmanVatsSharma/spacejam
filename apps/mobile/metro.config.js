@@ -23,6 +23,12 @@ module.exports = withNxMetro(
             filePath: path.join(projectRoot, 'index.js'),
           };
         }
+        if (moduleName === '../../App') {
+          return {
+            type: 'sourceFile',
+            filePath: path.join(projectRoot, 'src', 'screens', 'App.tsx'),
+          };
+        }
         const { resolveRequest: baseResolve } = context;
         return baseResolve(context, moduleName, platform);
       },
