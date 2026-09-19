@@ -67,7 +67,7 @@ const TabNavigator = () => {
 
   return (
     <Tab.Navigator
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, unmountOnBlur: true }}
       tabBar={(props) => (
         <FloatingNavBar
           activeTab={props.state.routes[props.state.index].name.toLowerCase().replace('tab', '') as any}

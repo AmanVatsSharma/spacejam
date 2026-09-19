@@ -38,6 +38,21 @@ export interface FloorLayout {
 }
 
 const ZONE_KINDS = new Set<ZoneKind>(['MEETING_ROOM', 'PANTRY', 'WASHROOM', 'RECEPTION', 'CUSTOM', 'CABIN_1', 'CABIN_2', 'CABIN_4', 'CABIN_6']);
+
+/** Minimum footprint (w × h grid cells) required by each kind so capacity can't be bypassed. */
+interface ZoneSizeSpec { minW: number; minH: number; }
+const ZONE_KIND_SPECS: Record<string, ZoneSizeSpec> = {
+  CABIN_1:        { minW: 1, minH: 1 },
+  CABIN_2:        { minW: 2, minH: 1 },
+  CABIN_4:        { minW: 2, minH: 2 },
+  CABIN_6:        { minW: 3, minH: 2 },
+  MEETING_ROOM:   { minW: 4, minH: 3 },
+  PANTRY:         { minW: 3, minH: 2 },
+  WASHROOM:       { minW: 3, minH: 2 },
+  RECEPTION:      { minW: 3, minH: 2 },
+  CUSTOM:         { minW: 1, minH: 1 },
+};
+
 const MAX_ITEMS = 100;
 const MAX_TEXT = 80;
 const MAX_POS = 500;
@@ -80,7 +95,15 @@ export function sanitizeFloorLayout(incoming: unknown): FloorLayout {
     if (z.w < 1 || z.h < 1 || z.w > MAX_SIZE || z.h > MAX_SIZE) {
       throw new BadRequestException(`zones[${i}] size out of bounds (1..${MAX_SIZE})`);
     }
-    // Rotation is optional (legacy layouts) and normalized to [0, 360).
+    // Enforce kind-appropriate minimum footprint so capacity can't be bypassed
+    // by shrinking a CABIN_4 to 1×1, etc.
+    const minSpec = ZONE_KIND_SPECS[kind];
+    if (minSpec && (z.w < minSpec.minW || z.h < minSpec.minH)) {
+      throw new BadRequestException(
+        `zones[${i}].kind "${kind}" requires at least ${minSpec.minW}×${minSpec.minH} (got ${z.w}×${z.h})`,
+      );
+    }
+    // Rotation is optional
     let rotation = 0;
     if (z.rotation !== undefined && z.rotation !== null) {
       if (!isNum(z.rotation)) throw new BadRequestException(`zones[${i}].rotation must be a number`);

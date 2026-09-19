@@ -53,14 +53,14 @@ function to24h(time12: string): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 }
 
-/** Build an ISO datetime string from selected day + 24h time */
+/** Build an ISO datetime string from selected day + 24h time (local, no UTC shift) */
 function buildIsoDate(dayNum: string, time12: string): string {
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth(); // 0-indexed
-  const date = new Date(year, month, parseInt(dayNum, 10), 0, 0, 0);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(parseInt(dayNum, 10)).padStart(2, '0');
   const time24 = to24h(time12);
-  return `${date.toISOString().split('T')[0]}T${time24}`;
+  return `${year}-${month}-${day}T${time24}`;
 }
 
 export default function BookingDetailsScreen() {
@@ -369,7 +369,7 @@ export default function BookingDetailsScreen() {
               </View>
               <View style={styles.warningInfo}>
                 <Text style={styles.warningTitle}>Insufficient Tokens</Text>
-                <Text style={styles.warningSub}>You need 500 tokens but you have only 250. Please recharge to continue.</Text>
+                <Text style={styles.warningSub}>You need {bookingCost > 0 ? `${bookingCost} tokens` : 'tokens'} but have only {userTokenBalance}. Please recharge to continue.</Text>
               </View>
             </View>
             <TouchableOpacity style={styles.warningBtn}>

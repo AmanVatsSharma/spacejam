@@ -23,7 +23,7 @@ import Svg, { Path, Polyline, Line, Rect, Circle } from 'react-native-svg';
 import { PolishedCard } from '../components/PolishedCard';
 import { StatusPill } from '../components/StatusPill';
 
-import { palette, space, radius, elevation } from '../theme/tokens';
+import { palette, space, radius, elevation, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback, useSpringEntrance } from '../theme/animations';
 import StatementModal from './StatementModal';
 

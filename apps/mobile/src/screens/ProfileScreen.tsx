@@ -23,7 +23,7 @@ import { PolishedCard } from '../components/PolishedCard';
 import { FloatingNavBar, type NavTab } from '../components/FloatingNavBar';
 import { StatusPill } from '../components/StatusPill';
 
-import { palette, space, radius, elevation, type as typeScale } from '../theme/tokens';
+import { palette, space, radius, elevation, type as typeScale, duration } from '../theme/tokens';
 import { useFadeIn, useSlideIn, staggerDelay, usePressFeedback } from '../theme/animations';
 
 export default function ProfileScreen() {

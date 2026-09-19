@@ -13,15 +13,13 @@ import { REFRESH_TOKENS_MUTATION } from './operations';
 // apps/web/src/app/api/[...graphql]/route.ts which forwards to
 // `${API_SERVER_URL}/graphql`. The previous `/api/graphql` paths 404'd every
 // mobile GraphQL call.
-const SPACEJAM_API_URL = __DEV__
-  ? 'http://localhost:3100/graphql'
-  : 'https://spacejam.vedpragya.com/graphql';
+const SPACEJAM_API_URL =
+  process.env.EXPO_PUBLIC_GRAPHQL_HTTP_URL ||
+  (__DEV__ ? 'http://localhost:3100/graphql' : 'https://spacejam.vedpragya.com/graphql');
 
-// Base URL for non-GraphQL REST endpoints (e.g. /print/upload file uploads).
-// The REST API uses the `api` global prefix.
-export const SPACEJAM_REST_BASE = __DEV__
-  ? 'http://localhost:3100'
-  : 'https://spacejam.vedpragya.com';
+export const SPACEJAM_REST_BASE =
+  process.env.EXPO_PUBLIC_REST_BASE ||
+  (__DEV__ ? 'http://localhost:3100' : 'https://spacejam.vedpragya.com');
 
 const httpLink = new HttpLink({ uri: SPACEJAM_API_URL });
 

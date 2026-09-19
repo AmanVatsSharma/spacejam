@@ -64,6 +64,27 @@ describe('sanitizeFloorLayout', () => {
     expect(() => sanitizeFloorLayout({ zones: [zone({ rotation: 'abc' as any })] })).toThrow(BadRequestException);
   });
 
+  it('rejects a zone smaller than its kind requires', () => {
+    expect(() => sanitizeFloorLayout({ zones: [zone({ kind: 'CABIN_4', w: 1, h: 1 })] }))
+      .toThrow(/CABIN_4.*requires at least 2×2/);
+    expect(() => sanitizeFloorLayout({ zones: [zone({ kind: 'CABIN_2', w: 1, h: 1 })] }))
+      .toThrow(/CABIN_2.*requires at least 2.*1/);
+    expect(() => sanitizeFloorLayout({ zones: [zone({ kind: 'CABIN_1', w: 1, h: 1 })] }))
+      .not.toThrow();
+  });
+
+  it('accepts a cabin zone at exactly its minimum footprint', () => {
+    const out = sanitizeFloorLayout({ zones: [zone({ kind: 'CABIN_4', w: 2, h: 2 })] });
+    expect(out.zones[0].w).toBe(2);
+    expect(out.zones[0].h).toBe(2);
+  });
+
+  it('accepts a cabin zone larger than its minimum footprint', () => {
+    const out = sanitizeFloorLayout({ zones: [zone({ kind: 'CABIN_4', w: 3, h: 3 })] });
+    expect(out.zones[0].w).toBe(3);
+    expect(out.zones[0].h).toBe(3);
+  });
+
   it('rejects NaN coordinates', () => {
     expect(() => sanitizeFloorLayout({ zones: [zone({ x: 'abc' as any })] })).toThrow(BadRequestException);
   });

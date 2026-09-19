@@ -21,6 +21,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
+import { RecoveryCodeRepository } from '../../typeorm/repositories/recovery-code.repository';
 import { UserRole } from '../roles.enum';
 import {
   ChallengeTokenPayload,
@@ -65,6 +66,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
     private readonly twoFactorService: TwoFactorService,
+    private readonly recoveryCodeRepo: RecoveryCodeRepository,
   ) {}
 
   async signup(input: SignupInput, ctx: AuthContext = {}): Promise<AuthPayload> {
@@ -310,6 +312,24 @@ export class AuthService {
 
   async disableTwoFactor(userId: string, code: string): Promise<boolean> {
     throw new BadRequestException('Two-factor authentication is temporarily disabled');
+  }
+
+  async recoveryCodesRemaining(userId: string): Promise<number> {
+    return this.recoveryCodeRepo.countUnused(userId);
+  }
+
+  async regenerateRecoveryCodes(userId: string): Promise<string[]> {
+    const codes: string[] = [];
+    const hashed: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const raw = crypto.randomBytes(6).toString('hex').toUpperCase();
+      const formatted = raw.match(/.{1,4}/g)!.join('-');
+      codes.push(formatted);
+      hashed.push(crypto.createHash('sha256').update(formatted).digest('hex'));
+    }
+    await this.recoveryCodeRepo.deleteAllForUser(userId);
+    await this.recoveryCodeRepo.bulkInsert(userId, hashed);
+    return codes;
   }
 
   private async signChallengeToken(user: User): Promise<string> {

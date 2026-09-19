@@ -4,23 +4,16 @@
  * Purpose:     Shared floating bottom navigation with micro-animations
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-07-30
+ * Last-updated: 2026-09-18
  */
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableWithoutFeedback, Animated } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import Svg, { Path, Polyline, Rect, Circle, Line } from 'react-native-svg';
-import { palette, type as typeScale, elevation, pressScale, duration, easing } from '../theme/tokens';
+import { palette, elevation, pressScale } from '../theme/tokens';
 import { usePressFeedback, usePulse } from '../theme/animations';
 
 export type NavTab = 'home' | 'events' | 'bookings' | 'profile';
-
-export interface NavTabConfig {
-  key: NavTab;
-  label: string;
-  icon: (props: IconProps) => React.ReactNode;
-  activeIcon: (props: IconProps) => React.ReactNode;
-}
 
 export interface IconProps {
   color: string;
@@ -65,7 +58,7 @@ export const icons: Record<string, (p: IconProps) => React.ReactNode> = {
 
 // ─── Tab Configs ───────────────────────────────────────────────────────────────
 
-const TABS: NavTabConfig[] = [
+const TABS: { key: NavTab; label: string; icon: (p: IconProps) => React.ReactNode; activeIcon: (p: IconProps) => React.ReactNode }[] = [
   {
     key: 'home',
     label: 'Home',
@@ -122,7 +115,7 @@ export const FloatingNavBar: React.FC<FloatingNavBarProps> = ({
 // ─── Nav Tab Item ─────────────────────────────────────────────────────────────
 
 interface NavTabItemProps {
-  tab: NavTabConfig;
+  tab: { key: NavTab; label: string; icon: (p: IconProps) => React.ReactNode; activeIcon: (p: IconProps) => React.ReactNode };
   isActive: boolean;
   onPress: () => void;
 }
@@ -136,29 +129,39 @@ const NavTabItem: React.FC<NavTabItemProps> = ({ tab, isActive, onPress }) => {
   // Pulse animation on active indicator dot
   const pulse = usePulse({ minScale: 0.7, maxScale: 1, duration: 2000 });
 
+  const handlePress = useCallback(() => {
+    onPress();
+  }, [onPress]);
+
   return (
-    <TouchableWithoutFeedback onPressIn={pressIn} onPressOut={pressOut} onPress={onPress}>
-      <Animated.View style={[styles.tabItem, { transform: [{ scale: scaleAnim }] }]}>
-        <View style={styles.iconBox}>
-          <Animated.View style={isActive ? { transform: [{ scale: pulse.scale }] } : undefined}>
-            {isActive ? tab.activeIcon({ color: palette.ink, filled: true }) : tab.icon({ color: palette.mutedSoft })}
-          </Animated.View>
-        </View>
+    <Pressable
+      onPress={handlePress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      style={({ pressed }) => [
+        styles.tabItem,
+        { transform: [{ scale: pressed ? pressScale.light : 1 }] },
+      ]}
+    >
+      <View style={styles.iconBox}>
+        <Animated.View style={isActive ? { transform: [{ scale: pulse.scale }] } : undefined}>
+          {isActive ? tab.activeIcon({ color: palette.ink, filled: true }) : tab.icon({ color: palette.mutedSoft })}
+        </Animated.View>
+      </View>
 
-        <Animated.Text
-          style={[
-            styles.label,
-            isActive ? styles.labelActive : styles.labelInactive,
-          ]}
-        >
-          {tab.label}
-        </Animated.Text>
+      <Animated.Text
+        style={[
+          styles.label,
+          isActive ? styles.labelActive : styles.labelInactive,
+        ]}
+      >
+        {tab.label}
+      </Animated.Text>
 
-        {isActive && (
-          <Animated.View style={[styles.indicator, { transform: [{ scale: pulse.scale }] }]} />
-        )}
-      </Animated.View>
-    </TouchableWithoutFeedback>
+      {isActive && (
+        <Animated.View style={[styles.indicator, { transform: [{ scale: pulse.scale }] }]} />
+      )}
+    </Pressable>
   );
 };
 

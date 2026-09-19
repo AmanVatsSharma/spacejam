@@ -473,6 +473,7 @@ export default function LoginScreen() {
             <View style={styles.card}>
               {/* LOGIN VIEW */}
               <Animated.View
+                pointerEvents={showOtp ? 'none' : 'auto'}
                 style={{
                   flex: 1,
                   opacity: loginViewAnim,
@@ -491,8 +492,13 @@ export default function LoginScreen() {
                 )}
               </Animated.View>
 
-              {/* OTP VIEW */}
-              <Animated.View style={{ flex: 1, opacity: otpViewAnim, position: 'absolute', inset: 0, padding: 20 }}>
+              {/* OTP VIEW — always in the tree so the fade animation works,
+                  but pointerEvents='none' when invisible to avoid blocking
+                  the phone input underneath. */}
+              <Animated.View
+                pointerEvents={showOtp ? 'auto' : 'none'}
+                style={{ flex: 1, opacity: otpViewAnim, position: 'absolute', inset: 0, padding: 20 }}
+              >
                 {showOtp && (
                   <OtpContent
                     otp={otp}
@@ -888,7 +894,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
     overflow: 'hidden',
-    transitionProperty: 'border-color, background-color',
   },
 
   input: {

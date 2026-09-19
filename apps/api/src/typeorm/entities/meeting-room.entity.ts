@@ -98,6 +98,7 @@ export class MeetingRoom {
   @OneToMany(() => Booking, (booking) => booking.meetingRoom)
   bookings!: Booking[];
 
+  @Field(() => [Event])
   @OneToMany(() => Event, (event) => event.meetingRoom)
   events!: Event[];
 }

@@ -3,6 +3,21 @@ import { getAccessToken, clearTokens, saveTokens } from './storage';
 import { apolloClient } from '../apollo/client';
 import { GET_ME } from '../apollo/operations';
 
+// ─── Demo Mode ────────────────────────────────────────────────────────────────
+// Set to `true` to skip login entirely and boot directly to the dashboard.
+// Only active in __DEV__ builds — has zero effect in production.
+// Remember to set back to `false` before a real release.
+const DEMO_MODE = true;
+
+const DEMO_USER: User = {
+  id: 'demo-001',
+  email: 'demo@spacejam.com',
+  name: 'Demo User',
+  role: 'MEMBER',
+};
+// ──────────────────────────────────────────────────────────────────────────────
+
+
 export type User = {
   id: string;
   email: string;
@@ -23,8 +38,9 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // In demo mode, boot straight to the dashboard with a fake user.
+  const [user, setUser] = useState<User | null>(__DEV__ && DEMO_MODE ? DEMO_USER : null);
+  const [isLoading, setIsLoading] = useState(!(__DEV__ && DEMO_MODE));
 
   const loadUser = async () => {
     try {
@@ -52,6 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Skip the network check entirely in demo mode.
+    if (__DEV__ && DEMO_MODE) return;
     loadUser();
   }, []);
 

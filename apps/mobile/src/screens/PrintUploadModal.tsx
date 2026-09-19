@@ -9,6 +9,9 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { useMutation } from '@apollo/client';
+import { CREATE_PRINT_JOB } from '../lib/apollo/operations';
+import Toast from 'react-native-toast-message';
 import Svg, { Path, Rect, Circle, Line, Polyline } from 'react-native-svg';
 
 const BRAND = '#FE7A47';
@@ -21,6 +24,18 @@ export default function PrintUploadModal({ visible, onClose, onUploadComplete }:
   const navigation = useNavigation<any>();
 
   const [isUploading, setIsUploading] = useState(false);
+  const [createPrintJob] = useMutation(CREATE_PRINT_JOB, {
+    onCompleted: (data) => {
+      setIsUploading(false);
+      Toast.show({ type: 'success', text1: 'Print request submitted!' });
+      onUploadComplete(data.createPrintJob.fileUrl);
+      onClose();
+    },
+    onError: (err) => {
+      Toast.show({ type: 'error', text1: 'Upload failed', text2: err.message });
+      setIsUploading(false);
+    },
+  });
 
   // Reset state when modal becomes visible
   useEffect(() => {
@@ -43,33 +58,28 @@ export default function PrintUploadModal({ visible, onClose, onUploadComplete }:
       setIsUploading(true);
 
       const fileToUpload = res.assets[0];
-      const formData = new FormData();
-      formData.append('file', {
-        uri: fileToUpload.uri,
-        name: fileToUpload.name,
-        type: fileToUpload.mimeType || 'application/octet-stream',
-      } as any);
 
-      // In production, use your actual API URL here
-      // const response = await fetch('https://spacejam.vedpragya.com/api/print/upload', {
-      //   method: 'POST',
-      //   body: formData,
-      //   headers: {
-      //     'Content-Type': 'multipart/form-data',
-      //   },
-      // });
-      
-      // const data = await response.json();
-      
-      // Simulate network request for now
-      setTimeout(() => {
-        setIsUploading(false);
-        onUploadComplete('/uploads/' + fileToUpload.name);
-      }, 2000);
-      
+      // Extract pages from filename if available, default to 1
+      const fileName = fileToUpload.name;
+
+      createPrintJob({
+        variables: {
+          input: {
+            fileName,
+            fileUrl: fileToUpload.uri,
+            pages: 1,
+            copies: 1,
+            color: false,
+            paperSize: 'A4',
+            sides: 'single',
+          },
+        },
+      });
+
     } catch (err) {
       console.error(err);
       setIsUploading(false);
+      Toast.show({ type: 'error', text1: 'Upload failed', text2: String(err) });
     }
   };
 

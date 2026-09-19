@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@apollo/client';
-import { GET_SEATS, GET_MY_CENTERS } from '../lib/apollo/operations';
+import { GET_AVAILABLE_ROOMS, GET_MY_CENTERS } from '../lib/apollo/operations';
 import {
   StyleSheet,
   View,
@@ -41,12 +41,18 @@ export default function AvailableRoomsScreen() {
   const [showLocation, setShowLocation] = useState(false);
   const [showDateTime, setShowDateTime] = useState(false);
 
-  const { data, loading } = useQuery(GET_SEATS);
-  const { data: centersData } = useQuery(GET_MY_CENTERS);
-  const centerName = centersData?.myCenters?.[0]?.name ?? 'Your Center';
+  const { data: centerData } = useQuery(GET_MY_CENTERS);
+  const centerId = centerData?.myCenters?.[0]?.id;
+
+  const { data: roomsData, loading } = useQuery(GET_AVAILABLE_ROOMS, {
+    variables: { centerId },
+  });
+  const centerName = centerData?.myCenters?.[0]?.name ?? 'Your Center';
 
   const headerSlide = useSlideIn('down', 0, 20, duration.slow);
   const filterSlide = useSlideIn('down', 100, 16, duration.slow);
+
+  const rooms = roomsData?.availableRooms ?? [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -103,18 +109,18 @@ export default function AvailableRoomsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {loading ? (
           <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>Loading rooms...</Text>
-        ) : !data?.seats || data.seats.length === 0 ? (
+        ) : !rooms || rooms.length === 0 ? (
           <Text style={{ textAlign: 'center', padding: 20, color: '#666' }}>No rooms available</Text>
         ) : (
-          data.seats.map((seat: any, i: number) => (
+          rooms.map((room: any, i: number) => (
             <RoomCard
-              key={seat.id}
+              key={room.id}
               image={i % 2 === 0 ? ROOM_IMAGE_1 : ROOM_IMAGE_2}
-              name={seat.floor?.center?.name || 'Center'}
-              details={`${seat.name} • ${seat.seatType}`}
-              status="Available"
-              features={['WiFi', 'Display', 'Whiteboard']}
-              onPress={() => navigation.navigate('BookingDetails', { seatId: seat.id })}
+              name={room.name}
+              details={`${room.roomType} • Capacity: ${room.capacity}`}
+              status={room.status}
+              features={room.amenities?.slice(0, 3) ?? ['WiFi']}
+              onPress={() => navigation.navigate('BookingDetails', { roomId: room.id })}
               onCalendarPress={() => setShowDateTime(true)}
               index={i}
             />

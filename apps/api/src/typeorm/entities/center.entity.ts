@@ -86,6 +86,7 @@ export class Center {
   @OneToMany(() => RevenueAnalytics, (analytics) => analytics.center)
   analytics!: RevenueAnalytics[];
 
+  @Field(() => [Event])
   @OneToMany(() => Event, (event) => event.center)
   events!: Event[];
 

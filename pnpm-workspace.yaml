@@ -3,17 +3,17 @@ packages:
   - 'libs/*'
 
 allowBuilds:
-  '@apollo/protobufjs': set this to true or false
+  '@apollo/protobufjs': true
   '@parcel/watcher': true
   '@swc/core': true
-  bcrypt: set this to true or false
-  better-sqlite3: set this to true or false
+  bcrypt: true
+  better-sqlite3: true
   detox: false
   dtrace-provider: false
-  esbuild: set this to true or false
+  esbuild: true
   less: true
   nx: true
-  protobufjs: set this to true or false
+  protobufjs: true
   sharp: true
   sqlite3: true
   unrs-resolver: true

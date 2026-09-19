@@ -43,9 +43,11 @@ export class CalendarSyncService {
     }
   }
 
-  /** Stub — returns empty list. Real impl would call provider API. */
+  /** Stub — throws when called so callers know the integration is incomplete. */
   private async fetchExternal(_conn: CalendarConnection): Promise<any[]> {
-    return [];
+    throw new Error(
+      'Calendar sync is not yet implemented. Configure a provider (Google/Outlook) and implement fetchExternal to enable external event import.',
+    );
   }
 
   /** Stub — no-op until fetchExternal returns data. */

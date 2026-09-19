@@ -15,10 +15,24 @@ import { ScheduledReport, ReportFrequency, ReportType } from '../typeorm/entitie
 
 @Injectable()
 export class ScheduledReportsService {
+  private intervalHandle: NodeJS.Timeout | null = null;
+
   constructor(
     @InjectRepository(ScheduledReport)
     private repo: Repository<ScheduledReport>,
-  ) {}
+  ) {
+    // Auto-run due reports every 60 minutes. The "Run all due cycles" button
+    // in the admin panel triggers the same method for immediate runs.
+    this.intervalHandle = setInterval(() => {
+      this.runDueReports().catch((err) =>
+        console.error('[ScheduledReports] cron tick failed:', err),
+      );
+    }, 60 * 60 * 1000);
+  }
+
+  onModuleDestroy() {
+    if (this.intervalHandle) clearInterval(this.intervalHandle);
+  }
 
   async runReport(id: string): Promise<boolean> {
     const report = await this.repo.findOne({ where: { id }, relations: ['user', 'center'] });
