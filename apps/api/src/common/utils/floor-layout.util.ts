@@ -10,7 +10,7 @@
  */
 import { BadRequestException } from '@nestjs/common';
 
-export type ZoneKind = 'MEETING_ROOM' | 'PANTRY' | 'WASHROOM' | 'RECEPTION' | 'CUSTOM';
+export type ZoneKind = 'CABIN_1' | 'CABIN_2' | 'CABIN_4' | 'CABIN_6' | 'MEETING_ROOM' | 'PANTRY' | 'WASHROOM' | 'RECEPTION' | 'CUSTOM';
 
 export interface FloorZone {
   id: string;
@@ -37,7 +37,7 @@ export interface FloorLayout {
   labels: FloorLabel[];
 }
 
-const ZONE_KINDS = new Set<ZoneKind>(['MEETING_ROOM', 'PANTRY', 'WASHROOM', 'RECEPTION', 'CUSTOM']);
+const ZONE_KINDS = new Set<ZoneKind>(['MEETING_ROOM', 'PANTRY', 'WASHROOM', 'RECEPTION', 'CUSTOM', 'CABIN_1', 'CABIN_2', 'CABIN_4', 'CABIN_6']);
 const MAX_ITEMS = 100;
 const MAX_TEXT = 80;
 const MAX_POS = 500;
