@@ -18,6 +18,7 @@ import { GET_MY_CENTERS } from "@/lib/apollo/operations";
 import { QueryLoading, QueryError, QueryEmpty } from "@/components/ui/query-status";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth-context";
 
 const REPORT_TYPES = ["REVENUE", "OCCUPANCY", "BOOKINGS", "AUDIT", "PAYMENTS"];
 const FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY"] as const;
@@ -108,7 +109,8 @@ export default function ScheduledReportsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const userId = (window as any).__CURRENT_USER_ID__;
+      const { user } = useAuth();
+      const userId = user?.id;
       if (!userId) {
         toast.error("User not identified");
         return;

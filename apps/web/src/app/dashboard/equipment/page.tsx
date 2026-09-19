@@ -434,7 +434,7 @@ export default function EquipmentPage() {
                         <div className="flex gap-2 justify-end flex-wrap">
                           {item.status !== "ASSIGNED" && item.status !== "MAINTENANCE" && item.status !== "RETIRED" && (
                             <button
-                              onClick={() => assign(item.id, currentUserId || (window as any).__CURRENT_USER_ID__)}
+                              onClick={() => assign(item.id, currentUserId)}
                               className="text-xs text-blue-600 hover:underline"
                             >
                               Assign

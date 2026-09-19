@@ -17,7 +17,9 @@ import { UserSession } from '../typeorm/entities/user-session.entity';
 import { Customer } from '../typeorm/entities/customer.entity';
 import { CustomerEmployee } from '../typeorm/entities/customer-employee.entity';
 import { OtpRequest } from '../typeorm/entities/otp-request.entity';
+import { RecoveryCode } from '../typeorm/entities/recovery-code.entity';
 import { UserRepositoryModule } from '../typeorm/repositories/user.repository.module';
+import { RecoveryCodeRepository } from '../typeorm/repositories/recovery-code.repository';
 
 import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
@@ -42,7 +44,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
         signOptions: { expiresIn: '15m' },
       }),
     }),
-    TypeOrmModule.forFeature([User, UserSession, Customer, CustomerEmployee, OtpRequest]),
+    TypeOrmModule.forFeature([User, UserSession, Customer, CustomerEmployee, OtpRequest, RecoveryCode]),
     UserRepositoryModule,
     // AuditModule provides + exports AuditService (TypeORM-only, no auth dep,
     // so no DI cycle). Imported here so legacy auth consumers keep resolving.
@@ -59,6 +61,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     OtpService,
     JwtStrategy,
     JwtRefreshStrategy,
+    RecoveryCodeRepository,
   ],
   // Re-export AuditModule (not AuditService directly). In this NestJS version
   // the DI validator (Module.validateExportedProvider) only accepts a provider

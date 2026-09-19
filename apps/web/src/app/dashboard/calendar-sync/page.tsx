@@ -15,6 +15,7 @@ import { useCalendarConnections, useCalendarSyncMutations, CalendarProvider } fr
 import { QueryLoading, QueryError } from "@/components/ui/query-status";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth-context";
 
 // ─── Provider config ────────────────────────────────────────────
 const PROVIDER_CONFIG: Record<
@@ -73,8 +74,8 @@ function getSyncStatus(conn: {
 
 // ─── Component ──────────────────────────────────────────────────
 export default function CalendarSyncPage() {
-  const userId =
-    (typeof window !== "undefined" && (window as any).__CURRENT_USER_ID__) || "";
+  const { user } = useAuth();
+  const userId = user?.id ?? "";
   const { connections, loading, error, refetch } = useCalendarConnections(userId);
   const { connect, disconnect, sync, toggle } = useCalendarSyncMutations();
 

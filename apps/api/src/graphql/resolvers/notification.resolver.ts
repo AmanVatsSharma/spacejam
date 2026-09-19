@@ -8,7 +8,7 @@
  * Last-updated: 2026-07-11
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID, Int } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID, Int, UseGuards } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../../typeorm/entities/notification.entity';
@@ -26,8 +26,10 @@ import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 
 @Resolver(() => Notification)
+@UseGuards(GqlAuthGuard)
 export class NotificationResolver {
   constructor(
     private cache: CacheService,
@@ -132,12 +134,13 @@ export class NotificationResolver {
 
   @Mutation(() => Notification)
   async createNotification(
+    @CurrentUser() caller: JwtPayload,
     @Args('input') input: CreateNotificationInput,
   ): Promise<Notification> {
     const metadata = this.parseMetadata(input.metadata);
 
     const notif = this.notifRepo.create({
-      userId: input.userId ?? null,
+      userId: input.userId ?? caller.sub,
       centerId: input.centerId ?? null,
       title: input.title,
       message: input.message,
