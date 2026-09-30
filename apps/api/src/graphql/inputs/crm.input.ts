@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-02
  */
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { LeadStatus, LeadSource } from '../../common/enums.ts';
+import { LeadStatus, LeadSource } from '@enums';
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum, IsInt } from 'class-validator';
 
 @InputType()

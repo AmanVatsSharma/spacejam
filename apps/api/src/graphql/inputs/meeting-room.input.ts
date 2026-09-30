@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-02
  */
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { RoomType, RoomStatus } from '../../common/enums.ts';
+import { RoomType, RoomStatus } from '@enums';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsArray, IsNumber } from 'class-validator';
 
 @InputType()

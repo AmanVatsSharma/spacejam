@@ -8,7 +8,7 @@
  */
 
 import { ObjectType, Field, InputType, Int, Float } from '@nestjs/graphql';
-import { EventType, EventStatus } from '../../common/enums.ts';
+import { EventType, EventStatus } from '@enums';
 import { Event } from '../../typeorm/entities/event.entity';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsNumber, IsArray } from 'class-validator';
 

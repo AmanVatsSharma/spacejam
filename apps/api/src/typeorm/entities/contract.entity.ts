@@ -16,7 +16,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { ContractStatus, PaymentFrequency } from '../../common/enums.ts';
+import { ContractStatus, PaymentFrequency } from '@enums';
 import { Center } from './center.entity';
 import { Customer } from './customer.entity';
 

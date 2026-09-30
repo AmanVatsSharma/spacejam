@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, LessThanOrEqual, Between, In } from 'typeorm';
 import { Event } from '../../typeorm/entities/event.entity';
 import { MeetingRoom } from '../../typeorm/entities/meeting-room.entity';
-import { EventStatus } from '../../common/enums.ts';
+import { EventStatus } from '@enums';
 import {
   CreateEventInput,
   UpdateEventInput,

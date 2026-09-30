@@ -13,7 +13,7 @@ import { Repository, Like, DataSource } from 'typeorm';
 // @ts-ignore
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { CustomerStatus, OnboardingStatus, UserRole } from '../../common/enums.ts';
+import { CustomerStatus, OnboardingStatus, UserRole } from '@enums';
 import { Customer as CustomerEntity } from '../../typeorm/entities/customer.entity';
 import { Onboarding as OnboardingEntity } from '../../typeorm/entities/onboarding.entity';
 import { User as UserEntity } from '../../typeorm/entities/user.entity';

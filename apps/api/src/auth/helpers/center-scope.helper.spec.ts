@@ -1,5 +1,5 @@
 import { centerScope } from './center-scope.helper';
-import { UserRole } from '../common/enums.ts';
+import { UserRole } from '@enums';
 
 describe('centerScope', () => {
   it('returns the centerId for a CENTER_MANAGER with one assigned', () => {

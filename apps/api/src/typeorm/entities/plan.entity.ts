@@ -24,7 +24,7 @@ import {
   BillingCycle,
   PlanStatus,
   SeatType,
-} from '../../common/enums.ts';
+} from '@enums';
 import { Center } from './center.entity';
 import { Subscription } from './subscription.entity';
 

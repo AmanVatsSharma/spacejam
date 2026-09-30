@@ -12,7 +12,7 @@ import { Resolver, Query, Args, Mutation, ID, Int } from '@nestjs/graphql';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { OnboardingStatus } from '../../common/enums.ts';
+import { OnboardingStatus } from '@enums';
 import { Onboarding } from '../../typeorm/entities/onboarding.entity';
 import {
     CreateOnboardingInput,

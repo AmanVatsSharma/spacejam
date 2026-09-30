@@ -10,7 +10,7 @@
 import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
 import { UseGuards, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
-import { CenterStatus, UserRole } from '../../common/enums.ts';
+import { CenterStatus, UserRole } from '@enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Center as CenterEntity } from '../../typeorm/entities/center.entity';

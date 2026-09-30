@@ -11,7 +11,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { addMonths, computeNextBilling, computeAmount } from './billing';
-import { BillingCycle } from '../common/enums.ts';
+import { BillingCycle } from '@enums';
 
 describe('computeAmount', () => {
   it('multiplies seatCount by unitPrice', () => {

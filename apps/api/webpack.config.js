@@ -10,9 +10,6 @@ module.exports = {
       devtoolModuleFilenameTemplate: '[absolute-resource-path]',
     }),
   },
-  resolve: {
-    extensions: ['.ts', '.js', '.json'],
-  },
   experiments: {
     outputModule: false,
   },

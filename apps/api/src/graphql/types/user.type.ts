@@ -41,7 +41,7 @@ import {
   DepositType,
   OnboardingStatus,
   CustomerStatus,
-} from '../../common/enums.ts';
+} from '@enums';
 
 // NOTE: User entity is resolved lazily (not a static top-level import) to
 // avoid the TS-hoist circular import that would leave enums undefined at

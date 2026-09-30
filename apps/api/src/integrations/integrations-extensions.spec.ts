@@ -27,7 +27,7 @@ import { AppSetting } from '../typeorm/entities/app-setting.entity';
 import { Invoice } from '../typeorm/entities/invoice.entity';
 import { InvoiceResolver } from '../graphql/resolvers/revenue.resolver';
 import { CacheService } from '../cache/cache.service';
-import { InvoiceStatus } from '../common/enums.ts';
+import { InvoiceStatus } from '@enums';
 
 /** Build a fake AppSetting repo backed by an in-memory map so the real
  *  IntegrationSettingsService cache + setMany/readGroup logic runs. */

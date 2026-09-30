@@ -14,7 +14,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { UserRole } from '../../common/enums.ts';
+import { UserRole } from '@enums';
 
 @Entity('invitations')
 @ObjectType()

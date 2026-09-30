@@ -11,7 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Center } from '../entities/center.entity';
-import { CenterStatus } from '../../common/enums.ts';
+import { CenterStatus } from '@enums';
 
 export interface CenterFilters {
   status?: CenterStatus;

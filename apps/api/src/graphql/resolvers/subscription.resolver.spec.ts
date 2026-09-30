@@ -24,7 +24,7 @@ import { Subscription } from '../../typeorm/entities/subscription.entity';
 import { Customer } from '../../typeorm/entities/customer.entity';
 import { CacheService } from '../../cache/cache.service';
 import { BillingService } from '../../subscription/billing.service';
-import { BillingCycle, PlanStatus, SeatType, SubscriptionStatus } from '../../common/enums.ts';
+import { BillingCycle, PlanStatus, SeatType, SubscriptionStatus } from '@enums';
 
 describe('PlanResolver (M2)', () => {
   let resolver: PlanResolver;

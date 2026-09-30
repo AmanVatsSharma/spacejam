@@ -11,7 +11,7 @@ import {
   BillingCycle,
   PlanStatus,
   SeatType,
-} from '../../common/enums.ts';
+} from '@enums';
 import {
   IsEnum,
   IsInt,

@@ -8,7 +8,7 @@
  */
 
 import { ObjectType, Field, InputType, Int, Float } from '@nestjs/graphql';
-import { RequestType, RequestStatus } from '../../common/enums.ts';
+import { RequestType, RequestStatus } from '@enums';
 import { Request as RequestEntity } from '../../typeorm/entities/request.entity';
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsNumber, IsBoolean } from 'class-validator';
 

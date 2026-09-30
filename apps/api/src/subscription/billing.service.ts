@@ -29,7 +29,7 @@ import {
   InvoiceStatus,
   SeatStatus,
   SubscriptionStatus,
-} from '../common/enums.ts';
+} from '@enums';
 import { computeNextBilling } from './billing';
 
 export interface BillingCycleResult {

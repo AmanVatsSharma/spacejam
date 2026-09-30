@@ -8,4 +8,4 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-06-20
  */
-export { UserRole } from '../common/enums.ts';
+export { UserRole } from '@enums';

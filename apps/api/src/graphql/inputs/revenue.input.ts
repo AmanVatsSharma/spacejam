@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-02
  */
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { InvoiceStatus, PaymentMethod } from '../../common/enums.ts';
+import { InvoiceStatus, PaymentMethod } from '@enums';
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsInt, IsEnum, IsBoolean, IsDate } from 'class-validator';
 
 @InputType()

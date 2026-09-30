@@ -17,7 +17,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { UserRole } from '../../common/enums.ts';
+import { UserRole } from '@enums';
 import { JsonScalar } from '../../graphql/scalars/json.scalar';
 import { Center } from './center.entity';
 
