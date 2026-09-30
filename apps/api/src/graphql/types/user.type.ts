@@ -102,22 +102,11 @@ registerEnumType(NotificationType, { name: 'NotificationType' });
 registerEnumType(NotificationPriority, { name: 'NotificationPriority' });
 
 // Object Types
-// UserRole is a single source of truth — `apps/api/src/auth/roles.enum.ts`
-// just re-exports it. New values (EMPLOYEE, COMPANY_ADMIN) power OTP-driven
-// logins: an onboarded company employee resolves to EMPLOYEE, a customer's
-// billing contact resolves to COMPANY_ADMIN.
-export enum UserRole {
-  ADMIN = 'ADMIN',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  CENTER_OWNER = 'CENTER_OWNER',
-  CENTER_MANAGER = 'CENTER_MANAGER',
-  MEMBER = 'MEMBER',
-  STAFF = 'STAFF',
-  FINANCE = 'FINANCE',
-  SUPPORT = 'SUPPORT',
-  EMPLOYEE = 'EMPLOYEE',
-  COMPANY_ADMIN = 'COMPANY_ADMIN',
-}
+// UserRole is defined in auth/user-role.enum.ts (a leaf module with no
+// circular dependencies) and re-exported here so existing imports keep
+// working. The canonical import path for non-GraphQL code is
+// `auth/user-role.enum.ts` or the `auth/roles.enum.ts` re-export.
+import { UserRole } from '../../auth/user-role.enum';
 
 export enum CenterStatus {
   ACTIVE = 'ACTIVE',
