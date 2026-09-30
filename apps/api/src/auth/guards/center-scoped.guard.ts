@@ -16,7 +16,7 @@ import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
 import { CENTER_SCOPED_KEY } from '../decorators/center-scoped.decorator';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 
 @Injectable()
 export class CenterScopedGuard implements CanActivate {

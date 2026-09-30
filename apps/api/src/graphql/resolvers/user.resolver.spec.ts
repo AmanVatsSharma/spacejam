@@ -18,7 +18,7 @@ import { UserResolver } from './user.resolver';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 import { AuditService } from '../../auth/services/audit.service';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 import { Customer } from '../../typeorm/entities/customer.entity';
 import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.entity';
 

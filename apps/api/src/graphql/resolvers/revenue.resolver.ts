@@ -11,7 +11,7 @@ import { NotFoundException, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { InvoiceStatus, DepositStatus, ContractStatus, PaymentMethod } from '../common/enums';
+import { InvoiceStatus, DepositStatus, ContractStatus, PaymentMethod } from '../common/enums.ts';
 import { Invoice as InvoiceEntity } from '../../typeorm/entities/invoice.entity';
 import { Deposit as DepositEntity } from '../../typeorm/entities/deposit.entity';
 import { Contract as ContractEntity } from '../../typeorm/entities/contract.entity';

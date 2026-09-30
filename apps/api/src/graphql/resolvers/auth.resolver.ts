@@ -11,7 +11,7 @@ import { UseGuards } from '@nestjs/common';
 
 import { AuthService } from '../../auth/services/auth.service';
 import { OtpService } from '../../auth/services/otp.service';
-import { AuthPayload, GenericActionResult, RequestOtpResult } from '../common/enums';
+import { AuthPayload, GenericActionResult, RequestOtpResult } from '../common/enums.ts';
 import { Public } from '../../auth/decorators/public.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';

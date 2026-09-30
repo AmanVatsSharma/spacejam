@@ -12,7 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 // @ts-ignore
 import * as bcrypt from 'bcryptjs';
 import { CacheService } from '../cache/cache.service';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User as UserEntity } from '../typeorm/entities/user.entity';

@@ -22,7 +22,7 @@ import { WhatsAppService } from './whatsapp.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 import { EmailService } from '../auth/services/email.service';
 
 /** Masked secrets come back from the UI as '••••1234'; treat that (and an

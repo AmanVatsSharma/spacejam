@@ -22,7 +22,7 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { AuditService } from '../../auth/services/audit.service';
 import { CacheService } from '../../cache/cache.service';
 import { PubSubService } from '../pubsub/pubsub.service';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 import { Center } from '../../typeorm/entities/center.entity';
 import { Location } from '../../typeorm/entities/location.entity';
 

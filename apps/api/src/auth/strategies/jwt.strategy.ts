@@ -13,7 +13,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { UserRepository } from '../../typeorm/repositories/user.repository';
-import { UserRole } from '../common/enums';
+import { UserRole } from '../common/enums.ts';
 
 export interface JwtPayload {
   sub: string;

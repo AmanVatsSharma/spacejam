@@ -21,7 +21,7 @@ import { RazorpayService } from './razorpay.service';
 import { IntegrationSettingsService } from './integration-settings.service';
 import { GqlAuthGuard } from '../auth/guards/gql-auth.guard';
 import { Invoice } from '../typeorm/entities/invoice.entity';
-import { InvoiceStatus, PaymentMethod } from '../common/enums';
+import { InvoiceStatus, PaymentMethod } from '../common/enums.ts';
 
 @ObjectType()
 class PaymentConfigGql {

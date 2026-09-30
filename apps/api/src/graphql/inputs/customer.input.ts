@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-06
  */
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { CustomerStatus } from '../common/enums';
+import { CustomerStatus } from '../common/enums.ts';
 import {
     IsString,
     IsNotEmpty,
