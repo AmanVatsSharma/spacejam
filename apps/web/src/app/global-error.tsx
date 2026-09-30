@@ -1,3 +1,14 @@
+/**
+ * File:        apps/web/src/app/global-error.tsx
+ * Module:      Web · Root · Global Error Boundary
+ * Purpose:     Next.js App Router global error boundary. Replaces the root
+ *              layout entirely — must include <html> and <body> tags.
+ *              This file is NOT a route; Next.js renders it automatically
+ *              when an uncaught error bubbles past all segment error.tsx files.
+ *
+ * Author:      AmanVatsSharma
+ * Last-updated: 2026-09-30
+ */
 'use client';
 
 export default function GlobalError({

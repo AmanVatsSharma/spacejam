@@ -67,7 +67,7 @@ export class Floor {
   @JoinColumn({ name: 'centerId' })
   center!: Center;
 
-  @Field(() => [Seat])
+  @Field(() => [Seat], { nullable: true })
   @OneToMany(() => Seat, (seat) => seat.floor)
   seats!: Seat[];
 }

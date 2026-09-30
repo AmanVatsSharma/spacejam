@@ -114,7 +114,7 @@ export class CenterResolver {
     if (scope) {
       return this.centerRepo.find({
         where: { id: scope } as any,
-        relations: ['location', 'floors', 'floors.seats'],
+        relations: ['location', 'floors'],
       });
     }
     if (!userId) {
@@ -123,12 +123,12 @@ export class CenterResolver {
 
     const centers = await this.centerRepo.find({
       where: { owner: userId } as any,
-      relations: ['location', 'floors', 'floors.seats'],
+      relations: ['location', 'floors'],
     });
     // Super admins with no owned centers still see everything.
     return centers.length
       ? centers
-      : this.centerRepo.find({ relations: ['location', 'floors', 'floors.seats'] });
+      : this.centerRepo.find({ relations: ['location', 'floors'] });
   }
 
   @Mutation(() => CenterEntity)
@@ -158,6 +158,11 @@ export class CenterResolver {
       owner: userId,
     });
     const center = await this.centerRepo.save(newCenter);
+    // Reload with relation so GraphQL can resolve non-nullable location field
+    center = await this.centerRepo.findOne({
+      where: { id: center.id },
+      relations: ['location'],
+    });
     await this.cache.invalidatePattern('centers:*');
     // A center manager creating a center is setting up their own workspace —
     // point their account at it so scoped queries (myCenters, seats,

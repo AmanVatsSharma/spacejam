@@ -150,10 +150,25 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { tabs, activeId } = getTabsForPath(pathname);
-  // The middleware blocks unauthenticated access, but reading the auth context
-  // here keeps the user object available for child components that render the
-  // role badge or surface account actions (logout, profile menu).
-  const { user, logout } = useAuth();
+  // The proxy cannot gate dashboard access (it runs at the Edge and has no
+  // access to localStorage tokens), and the auth-context does not redirect
+  // on its own, so this effect is the actual gate: once the ME_QUERY
+  // resolves (or proves there is no token), bounce anyone who isn't
+  // authenticated. Render nothing while loading to suppress the flash of
+  // dashboard shell that ships in the SSR HTML.
+  const { user, isLoading, logout } = useAuth();
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      router.replace('/signin');
+    }
+  }, [user, isLoading, router]);
+
+  // Don't render the dashboard shell until auth has resolved. The initial
+  // SSR HTML contains the full dashboard layout; without this guard the
+  // user would see a flash of sidebar/header before the redirect commits.
+  if (isLoading) return null;
+  if (!user) return null;
 
   let settingsTabs = SECTION_TABS['settings'];
   if (user?.role === 'CENTER_MANAGER') {

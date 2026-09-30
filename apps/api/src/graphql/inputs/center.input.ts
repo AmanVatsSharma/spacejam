@@ -283,6 +283,21 @@ export class CreateSeatInput {
   @IsNumber()
   @IsOptional()
   y?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  w?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  h?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @IsOptional()
+  rotation?: number;
 }
 
 @InputType()
