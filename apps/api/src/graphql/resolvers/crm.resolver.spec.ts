@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CrmResolver } from './crm.resolver';
-import { LeadStatus, LeadSource } from '../common/enums.ts';
+import { LeadStatus, LeadSource } from '../../common/enums.ts';
 
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 

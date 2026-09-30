@@ -18,7 +18,7 @@ import { Customer } from '../../typeorm/entities/customer.entity';
 import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.entity';
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
-import { UserRole } from '../common/enums.ts';
+import { UserRole } from '../../common/enums.ts';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 describe('UserResolver per-user settings', () => {

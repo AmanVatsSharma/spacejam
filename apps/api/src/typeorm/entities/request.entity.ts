@@ -19,7 +19,7 @@ import {
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
-import { RequestType, RequestStatus } from '../../common/enums';
+import { RequestType, RequestStatus } from '../../common/enums.ts';
 
 @ObjectType()
 @Entity('requests')

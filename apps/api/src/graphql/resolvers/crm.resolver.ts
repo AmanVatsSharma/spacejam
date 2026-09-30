@@ -13,12 +13,12 @@ import { Repository, DataSource } from 'typeorm';
 // @ts-ignore
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { LeadStatus, OnboardingStatus, UserRole } from '../common/enums.ts';
+import { LeadStatus, OnboardingStatus, UserRole } from '../../common/enums.ts';
 import { Lead as LeadEntity } from '../../typeorm/entities/lead.entity';
 import { Customer as CustomerEntity } from '../../typeorm/entities/customer.entity';
 import { Onboarding as OnboardingEntity } from '../../typeorm/entities/onboarding.entity';
 import { User as UserEntity } from '../../typeorm/entities/user.entity';
-import { CustomerStatus } from '../common/enums.ts';
+import { CustomerStatus } from '../../common/enums.ts';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';

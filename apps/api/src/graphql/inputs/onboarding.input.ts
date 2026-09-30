@@ -14,7 +14,7 @@ import {
     IsEnum,
     IsInt,
 } from 'class-validator';
-import { OnboardingStatus } from '../common/enums.ts';
+import { OnboardingStatus } from '../../common/enums.ts';
 
 @InputType()
 export class CreateOnboardingInput {

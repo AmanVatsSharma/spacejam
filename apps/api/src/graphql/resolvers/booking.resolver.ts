@@ -12,7 +12,7 @@ import { UnauthorizedException, BadRequestException, NotFoundException, UseGuard
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BookingStatus, PaymentStatus, SeatStatus } from '../common/enums.ts';
+import { BookingStatus, PaymentStatus, SeatStatus } from '../../common/enums.ts';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';

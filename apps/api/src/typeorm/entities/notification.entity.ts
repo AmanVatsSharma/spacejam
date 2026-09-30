@@ -21,7 +21,7 @@ import {
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { User } from './user.entity';
 import { Center } from './center.entity';
-import { NotificationType, NotificationPriority } from '../../common/enums';
+import { NotificationType, NotificationPriority } from '../../common/enums.ts';
 
 @ObjectType()
 @Entity('notifications')

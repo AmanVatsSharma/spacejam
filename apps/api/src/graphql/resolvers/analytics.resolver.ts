@@ -21,7 +21,7 @@ import {
   PaymentStatus,
   SeatStatus,
   SeatType,
-} from '../common/enums.ts';
+} from '../../common/enums.ts';
 import { DashboardMetrics, MetricTrend, OccupancyDay, OccupancyReport, RevenueReport, SeatTypeOccupancy, TimePeriod } from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';

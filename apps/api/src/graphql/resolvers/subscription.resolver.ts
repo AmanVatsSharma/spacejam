@@ -26,7 +26,7 @@ import {
   BillingCycle,
   PlanStatus,
   SubscriptionStatus,
-} from '../common/enums.ts';
+} from '../../common/enums.ts';
 import {
   CreatePlanInput,
   UpdatePlanInput,
