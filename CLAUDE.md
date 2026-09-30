@@ -21,13 +21,88 @@ Package manager: npm workspaces (a `pnpm-lock.yaml` exists but `pnpm` may not be
 
 See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integration) — load it for any task that touches Nx config, generators, or `nx-workspace` / `nx-generate` skills.
 
+## Server
+
+| Field | Value |
+|-------|-------|
+| IP | `145.223.22.72` |
+| Hostname | `srv2009485` (Hostinger VPS) |
+| SSH user | `root` |
+| SSH key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
+| OS | Ubuntu 26.04.1 LTS |
+| Node | v20.20.2 |
+| npm | 10.8.2 |
+| Domain | `admin.spacejam.in` |
+| SSL | Let's Encrypt |
+
+### Running processes (PM2, running as root)
+
+| Process | Path | Port |
+|---------|------|------|
+| `spacejam-web` | `/home/ubuntu/spacejam/apps/web` | 3000 |
+| `spacejam-api` | `/home/ubuntu/spacejam/apps/api/dist/main.js` | 4000 |
+
+### Nginx
+
+- Port 80/443 → `admin.spacejam.in`
+- `/` → port 3000 (Next.js)
+- `/api/graphql` → port 4000/graphql (NestJS)
+
+### Deployment
+
+Production deploys from the local repo to the server:
+
+```bash
+# 1. Package the repo (from local machine)
+cd C:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam
+tar -czf deploy.tar.gz --exclude=node_modules --exclude=dist --exclude=.next --exclude=.git .
+
+# 2. Upload and extract on server
+scp -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' deploy.tar.gz root@145.223.22.72:/root/
+ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
+  "rm -rf /home/ubuntu/spacejam && mkdir -p /home/ubuntu/spacejam && tar -xzf /root/deploy.tar.gz -C /home/ubuntu/spacejam"
+
+# 3. Install deps and build API on server
+ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
+  "cd /home/ubuntu/spacejam && npm install && NX_DAEMON=false npx nx build api"
+
+# 4. Write .env and restart via PM2
+ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
+  "cat > /home/ubuntu/spacejam/apps/api/.env << 'EOF'
+NODE_ENV=production
+PORT=4000
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=spacejam
+DATABASE_PASSWORD=spacejam
+DATABASE_NAME=spacejam
+DATABASE_URL=postgresql://spacejam:spacejam@localhost:5432/spacejam
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=<SECRET_c5b91ab9>uction-jwt-key-change-me
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+REFRESH_TOKEN_SECRET=<SECRET_9d81af2c>uction-refresh-key-change-me
+CORS_ORIGIN=https://admin.spacejam.in
+FRONTEND_URL=https://admin.spacejam.in
+EOF
+pm2 restart spacejam-api --update-env
+pm2 restart spacejam-web"
+```
+
+Nx is installed as a devDependency (not globally); on the server use `npx nx` with `NX_DAEMON=false`. The Nx Cloud cache is not connected (workspace >3 days old) — that warning is harmless.
+
+### Old/dead paths (do NOT use)
+
+- `/home/ubuntu/deploy/` — stale web build artifacts, no longer used by any deploy script; current repo lives at `/home/ubuntu/spacejam`
+- `/root/spacejam/` — does not exist on the server
+
 ## Development Commands
 
 ### Running Apps
 
 ```sh
 npx nx dev web          # Next.js dev server (port 3000)
-npx nx serve api        # NestJS dev server (port from apps/api/.env, currently 3100 dev / 4000 prod)
+npx nx serve api        # NestJS dev server (port 3100)
 npx nx start mobile     # Expo dev server
 ```
 
@@ -212,16 +287,15 @@ The current migration set (in `apps/api/src/typeorm/migrations/`):
 ### SSH Access
 
 ```sh
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" root@145.223.22.72
 ```
 
 | Field | Value |
 |---|---|
-| Region | `ap-south-2` |
-| Public DNS | `ec2-18-60-107-5.ap-south-2.compute.amazonaws.com` |
-| SSH user | `ubuntu` |
-| Key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
-| Production URL | `https://spacejam.vedpragya.com` |
+| SSH user | `root` |
+| SSH key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
+| SSH key fingerprint | `SHA256:JA4HxvzAvWmbfhPDFxGFAJIk9gIcEy9OU41/PjNw57c` |
+| Production URL | `https://admin.spacejam.in` |
 
 Security group: inbound **22, 80, 443**. Outbound: default.
 
@@ -234,16 +308,16 @@ Security group: inbound **22, 80, 443**. Outbound: default.
 | Node version | v20.20.2 (NVM managed, path: `~/.nvm/versions/node/v20.20.2/`) |
 | Repo path | `/home/ubuntu/spacejam` |
 | Next.js binary | **Hoisted** to `/home/ubuntu/spacejam/node_modules/next/dist/bin/next` (NOT `apps/web/node_modules/next/...`) |
-| Disk usage | **92% full** — clean before big uploads |
+| Disk usage | **15% used** — ample free space |
 
 ### PM2 Quirks (non-interactive SSH)
 
 1. **Always prefix remote commands with `bash -lc`** — `pm2` and `node` are only on `$PATH` in a login shell that sources `~/.profile`:
    ```sh
-   ssh -i "..." ubuntu@ec2-... 'bash -lc "pm2 status"'
+   ssh -i "..." root@145.223.22.72 'bash -lc "pm2 status"'
    ```
 
-2. **PM2 v7 PID file** — The auto-generated `pm2-ubuntu.service` uses `Type=forking` but PM2 v7 doesn't write the PID file. A drop-in override at `/etc/systemd/system/pm2-ubuntu.service.d/override.conf` fixes this (`Type=oneshot`, `PIDFile=` cleared). If you ever re-run `pm2 startup`, the override survives — verify with `systemctl cat pm2-ubuntu`.
+2. **PM2 v7 PID file** — The auto-generated `pm2-root.service` uses `Type=forking` but PM2 v7 doesn't write the PID file. A drop-in override at `/etc/systemd/system/pm2-root.service.d/override.conf` fixes this (`Type=oneshot`, `PIDFile=` cleared). If you ever re-run `pm2 startup`, the override survives — verify with `systemctl cat pm2-root`.
 
 3. **Hoisted `next` binary** — The correct path is `/home/ubuntu/spacejam/node_modules/next/dist/bin/next`. The PM2 process is launched with `--cwd /home/ubuntu/spacejam/apps/web` so Next's own resolution works. Do NOT use `apps/web/node_modules/next/dist/bin/next`.
 
@@ -258,12 +332,12 @@ npx nx build web && npx nx build api
 # 2. Archive and copy
 cd <repo root>
 git archive --format=tar.gz HEAD -o update.tar.gz
-scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com:/home/ubuntu/
+scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz root@145.223.22.72:/root/
 
 # 3. SSH in and deploy
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" ubuntu@ec2-18-60-107-5.ap-south-2.compute.amazonaws.com
+ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" root@145.223.22.72
 # Then run:
-bash /home/ubuntu/deploy.sh   # uses /home/ubuntu/deploy.sh, NOT scripts/deploy.sh (that path is broken in npm scripts)
+bash /home/ubuntu/spacejam/deploy.sh   # lives at `/home/ubuntu/spacejam/deploy.sh`; the npm script path `scripts/deploy.sh` is broken
 
 # 4. Apply new schema (one-off) — boot the API once with synchronize on so the
 #    new tables/columns are created, then restart normally:
@@ -290,9 +364,7 @@ The `deploy.sh` script:
 
 ### Production Runtime Facts (2026-07-12)
 
-- API listens on **port 4000** (not 3001 — `deploy.sh` writes `PORT=3001` to `.env` but the app ignores `PORT` or defaults to 4000).
-- GraphQL endpoint: `http://localhost:4000/graphql` (NOT `/api/graphql`; that path 404s on the API — `/api/*` is the Next.js REST global prefix, which rewrites `/api/graphql` to the backend).
-- Web listens on port 3000. nginx on :80/:443 proxies to both.
+- API listens on **port 4000**. `deploy.sh` writes `PORT=4000` to `.env`; `main.ts` defaults to 4000 if unset. nginx on :80/:443 proxies to both.
 
 ### Environment Variables (Production)
 

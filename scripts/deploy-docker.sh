@@ -14,7 +14,7 @@
 set -euo pipefail
 
 SSH_KEY="${SSH_KEY:-C:\\Users\\ASUS TUF A15\\Desktop\\DevOPS\\AWS_Key_Pairs\\Ap-south-2.pem}"
-HOST="ubuntu@ec2-98-130-45-181.ap-south-2.compute.amazonaws.com"
+HOST="root@145.223.22.72"
 REMOTE_DIR="/home/ubuntu/spacejam"
 
 echo "▶ 1/5  Creating source archive..."
@@ -69,7 +69,7 @@ echo ""
 echo "═══════════════════════════════════════════"
 echo "✓ Deploy complete!"
 echo "  Container: spacejam-web"
-echo "  URL: https://spacejam.vedpragya.com"
+echo "  URL: https://admin.spacejam.in"
 echo "  Logs: docker logs -f spacejam-web"
 echo "  Stop: docker stop spacejam-web && pm2 restart spacejam-web"
 echo "═══════════════════════════════════════════"

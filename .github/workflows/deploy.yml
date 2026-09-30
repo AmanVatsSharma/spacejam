@@ -25,4 +25,4 @@ jobs:
       - name: Verify live
         run: |
           sleep 5
-          curl -fsS -I https://spacejam.vedpragya.com
+          curl -fsS -I https://admin.spacejam.in

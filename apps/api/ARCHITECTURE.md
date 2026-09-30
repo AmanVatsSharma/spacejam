@@ -125,7 +125,7 @@ npx nx serve api
 
 ### GraphQL Playground
 
-Access at: `http://localhost:3001/api/graphql`
+Access at: `http://localhost:4000/api/graphql`
 
 ## Key Features
 

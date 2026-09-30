@@ -14,7 +14,7 @@
 const GRAPHQL_URL =
   typeof window !== 'undefined'
     ? '/api/graphql'
-    : process.env.NEXT_PUBLIC_GRAPHQL_HTTP_URL || 'http://localhost:3001/graphql';
+    : process.env.NEXT_PUBLIC_GRAPHQL_HTTP_URL || 'http://localhost:4000/graphql';
 
 export interface GraphQLResponse<T> {
   data?: T;

@@ -1,16 +1,6 @@
 module.exports = {
   apps: [
     {
-      name: "spacejam-api",
-      script: "node",
-      args: "dist/main.js",
-      cwd: "/home/ubuntu/spacejam",
-      env: {
-        PORT: 4000,
-        NODE_ENV: "production"
-      }
-    },
-    {
       name: "spacejam-web",
       script: "node",
       args: "apps/web/server.js",

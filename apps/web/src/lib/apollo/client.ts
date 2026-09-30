@@ -184,6 +184,9 @@ const httpLink = new HttpLink({
   credentials: 'include',
 });
 
+// In production (served behind nginx), the API is proxied at /api/graphql.
+// Use a relative path so the browser sends requests to the same origin.
+
 const link = from([refreshLink, authLink, httpLink]);
 
 let browserClient: ApolloClient<unknown> | undefined;

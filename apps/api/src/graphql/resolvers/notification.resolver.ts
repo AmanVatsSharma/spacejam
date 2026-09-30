@@ -8,7 +8,8 @@
  * Last-updated: 2026-07-11
  */
 
-import { Resolver, Query, Args, Mutation, Context, ID, Int, UseGuards } from '@nestjs/graphql';
+import { Resolver, Query, Args, Mutation, Context, ID, Int } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../../typeorm/entities/notification.entity';

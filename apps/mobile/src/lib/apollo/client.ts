@@ -15,11 +15,11 @@ import { REFRESH_TOKENS_MUTATION } from './operations';
 // mobile GraphQL call.
 const SPACEJAM_API_URL =
   process.env.EXPO_PUBLIC_GRAPHQL_HTTP_URL ||
-  (__DEV__ ? 'http://localhost:3100/graphql' : 'https://spacejam.vedpragya.com/graphql');
+  (__DEV__ ? 'http://localhost:3100/graphql' : 'https://admin.spacejam.in/graphql');
 
 export const SPACEJAM_REST_BASE =
   process.env.EXPO_PUBLIC_REST_BASE ||
-  (__DEV__ ? 'http://localhost:3100' : 'https://spacejam.vedpragya.com');
+  (__DEV__ ? 'http://localhost:3100' : 'https://admin.spacejam.in');
 
 const httpLink = new HttpLink({ uri: SPACEJAM_API_URL });
 

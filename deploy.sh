@@ -19,10 +19,10 @@ echo "=== [2/6] Writing production .env files ==="
 # Frontend .env
 cat > /home/ubuntu/spacejam/apps/web/.env << 'ENVEOF'
 # Internal URL used by Next.js API route handler to reach NestJS backend
-INTERNAL_API_URL=http://localhost:3001
+INTERNAL_API_URL=http://localhost:4000
 # Public GraphQL URLs (used by Apollo client in browser)
-NEXT_PUBLIC_GRAPHQL_HTTP_URL=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com/api/graphql
-NEXT_PUBLIC_GRAPHQL_WS_URL=ws://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com/api/graphql
+NEXT_PUBLIC_GRAPHQL_HTTP_URL=https://admin.spacejam.in/api/graphql
+NEXT_PUBLIC_GRAPHQL_WS_URL=wss://admin.spacejam.in/api/graphql
 NEXT_PUBLIC_ENABLE_DEV_LOGIN=false
 ENVEOF
 echo "Frontend .env written"
@@ -30,7 +30,7 @@ echo "Frontend .env written"
 # API .env — NOTE: TypeORM uses individual DATABASE_* vars, not DATABASE_URL
 cat > /home/ubuntu/spacejam/apps/api/.env << 'ENVEOF'
 NODE_ENV=production
-PORT=3001
+PORT=4000
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=spacejam
@@ -42,8 +42,8 @@ JWT_SECRET=super-secret-production-jwt-key-change-me
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 REFRESH_TOKEN_SECRET=super-secret-production-refresh-key-change-me
-CORS_ORIGIN=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
-FRONTEND_URL=http://ec2-98-130-45-181.ap-south-2.compute.amazonaws.com
+CORS_ORIGIN=https://admin.spacejam.in
+FRONTEND_URL=https://admin.spacejam.in
 ENVEOF
 echo "API .env written"
 

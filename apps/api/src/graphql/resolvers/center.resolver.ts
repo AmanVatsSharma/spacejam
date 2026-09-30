@@ -8,15 +8,7 @@
  */
 
 import { Resolver, Query, Args, Mutation, Context, Subscription, ID } from '@nestjs/graphql';
-import {
-  NotFoundException,
-  UnauthorizedException,
-  UseGuards,
-  Logger,
-  ConflictException,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { UseGuards, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common';
 import { CacheService } from '../../cache/cache.service';
 import { CenterStatus, UserRole } from '../types/user.type';
 import { InjectRepository } from '@nestjs/typeorm';
