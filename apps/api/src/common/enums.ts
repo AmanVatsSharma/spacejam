@@ -1,9 +1,9 @@
 /**
  * File:        common/enums.ts
  * Module:      Api · Common
- * Purpose:     Canonical enum definitions for the entire NestJS app.
- *              Import from here (not from graphql/types/user.type.ts) to
- *              avoid circular dependencies in the webpack bundle.
+ * Purpose:     Canonical enum definitions shared across the API.
+ *              Owned here (not in auth/roles.enum.ts or graphql/types)
+ *              to break the circular dependency with user.type.ts.
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-09-30
@@ -11,23 +11,17 @@
 
 // User roles and auth state
 export enum UserRole {
-  ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
-  CENTER_OWNER = 'CENTER_OWNER',
   CENTER_MANAGER = 'CENTER_MANAGER',
-  MEMBER = 'MEMBER',
-  STAFF = 'STAFF',
-  FINANCE = 'FINANCE',
-  SUPPORT = 'SUPPORT',
   EMPLOYEE = 'EMPLOYEE',
   COMPANY_ADMIN = 'COMPANY_ADMIN',
+  MEMBER = 'MEMBER',
 }
 
 export enum CenterStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
-  FULL = 'FULL',
-  MAINTENANCE = 'MAINTENANCE',
+  PENDING = 'PENDING',
 }
 
 export enum CustomerStatus {
