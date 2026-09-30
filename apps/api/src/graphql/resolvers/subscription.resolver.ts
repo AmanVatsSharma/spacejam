@@ -26,7 +26,7 @@ import {
   BillingCycle,
   PlanStatus,
   SubscriptionStatus,
-} from '../types/user.type';
+} from '../common/enums';
 import {
   CreatePlanInput,
   UpdatePlanInput,

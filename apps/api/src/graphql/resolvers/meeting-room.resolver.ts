@@ -23,14 +23,14 @@ import {
   NotificationPriority,
   EventStatus,
   EventType,
-} from '../types/user.type';
+} from '../common/enums';
 import {
   RoomFiltersInput,
   CreateMeetingRoomInput,
   UpdateMeetingRoomInput,
 } from '../inputs/meeting-room.input';
 import { CacheService } from '../../cache/cache.service';
-import { RoomStatus } from '../types/user.type';
+import { RoomStatus } from '../common/enums';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';

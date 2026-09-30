@@ -26,7 +26,7 @@ import { WalletTransaction } from '../../typeorm/entities/wallet-transaction.ent
 import { UserRepository } from '../../typeorm/repositories/user.repository';
 import { UserSessionRepository } from '../../typeorm/repositories/user-session.repository';
 
-import { UserRole } from '../types/user.type';
+import { UserRole } from '../common/enums';
 import { CreateAdminInput, DashboardAdminRole } from '../../auth/dto/create-admin.input';
 import * as bcrypt from 'bcryptjs';
 import { centerScope } from '../../auth/helpers/center-scope.helper';

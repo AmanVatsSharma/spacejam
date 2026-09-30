@@ -16,7 +16,7 @@ import { Notification } from '../../typeorm/entities/notification.entity';
 import {
   NotificationType,
   NotificationPriority,
-} from '../types/user.type';
+} from '../common/enums';
 import {
   CreateNotificationInput,
   SendNotificationInput,

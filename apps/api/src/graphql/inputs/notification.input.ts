@@ -8,7 +8,7 @@
  */
 
 import { ObjectType, Field, InputType, Int, ID } from '@nestjs/graphql';
-import { NotificationType, NotificationPriority } from '../types/user.type';
+import { NotificationType, NotificationPriority } from '../common/enums';
 import {
   IsString,
   IsNotEmpty,

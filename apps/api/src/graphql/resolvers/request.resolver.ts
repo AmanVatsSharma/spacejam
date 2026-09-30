@@ -11,7 +11,7 @@ import { Resolver, Query, Args, Mutation, Context, ID, Int } from '@nestjs/graph
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request } from '../../typeorm/entities/request.entity';
-import { RequestStatus, RequestType } from '../types/user.type';
+import { RequestStatus, RequestType } from '../common/enums';
 import { CreateRequestInput, UpdateRequestInput, RequestFiltersInput, RequestStatistics } from '../inputs/request.input';
 import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';

@@ -8,7 +8,7 @@
  */
 import { Field, Float, ID, InputType, Int } from '@nestjs/graphql';
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsInt, IsEnum } from 'class-validator';
-import { SeatType, SeatStatus } from '../types/user.type';
+import { SeatType, SeatStatus } from '../common/enums';
 
 @InputType()
 export class CreateCenterInput {

@@ -14,7 +14,7 @@ import {
     IsEnum,
     IsInt,
 } from 'class-validator';
-import { OnboardingStatus } from '../types/user.type';
+import { OnboardingStatus } from '../common/enums';
 
 @InputType()
 export class CreateOnboardingInput {

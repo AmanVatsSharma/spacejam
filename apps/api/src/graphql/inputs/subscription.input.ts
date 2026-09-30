@@ -7,7 +7,7 @@
  * Last-updated: 2026-08-09
  */
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
-import { SubscriptionStatus } from '../types/user.type';
+import { SubscriptionStatus } from '../common/enums';
 import {
   IsDateString,
   IsEnum,

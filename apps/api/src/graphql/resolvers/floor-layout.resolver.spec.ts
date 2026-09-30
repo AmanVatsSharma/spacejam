@@ -20,7 +20,7 @@ import { AuditService } from '../../auth/services/audit.service';
 import { CacheService } from '../../cache/cache.service';
 import { PubSubService } from '../pubsub/pubsub.service';
 import { Floor } from '../../typeorm/entities/floor.entity';
-import { UserRole } from '../types/user.type';
+import { UserRole } from '../common/enums';
 
 describe('FloorResolver.updateFloorLayout', () => {
   let resolver: FloorResolver;

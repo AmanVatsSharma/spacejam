@@ -15,7 +15,7 @@ import { BadRequestException, UnauthorizedException, UseGuards } from '@nestjs/c
 import { RecurringBooking } from '../../typeorm/entities/recurring-booking.entity';
 import { RecurrencePatternEnum } from '../../graphql/enums/recurrence-pattern.enum';
 import { Event } from '../../typeorm/entities/event.entity';
-import { EventStatus, EventType } from '../types/user.type';
+import { EventStatus, EventType } from '../common/enums';
 import { CreateRecurringBookingInput } from '../inputs/recurring-booking.input';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
