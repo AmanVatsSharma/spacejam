@@ -83,10 +83,12 @@
   align-items: center;
   gap: 16px;
   background: #FFFFFF;
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
-  padding: 16px 24px;
-  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 12px 16px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.2s;
+  flex-wrap: wrap;
 }
 .searchBox {
   display: flex;
@@ -98,6 +100,7 @@
   background: #FFFFFF;
   width: 240px;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .searchBox:focus-within {
   border-color: #FF7847;
@@ -105,12 +108,15 @@
 }
 .searchBoxIcon {
   color: #9CA3AF;
+  flex-shrink: 0;
 }
 .searchBox input {
   border: none;
   outline: none;
   font-size: 14px;
   width: 100%;
+  background: transparent;
+  min-width: 0;
 }
 .searchBox input::placeholder {
   color: #9CA3AF;
@@ -119,24 +125,33 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .filterPill {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
   background: #F3F4F6;
   color: #4B5563;
   cursor: pointer;
-  transition: all 0.2s;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 .filterPill:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  background: #E5E7EB;
+  border-color: #D1D5DB;
 }
 .filterPillActive {
   background: #FF7847;
   color: #FFFFFF;
+  border-color: #FF7847;
+}
+.filterPillActive:hover {
+  background: #E66A3D;
+  border-color: #E66A3D;
 }
 
 /* ---------------- Stats Row ---------------- */
@@ -233,12 +248,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 .mapToolbarLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 .mapSearch {
   display: flex;
@@ -246,50 +270,80 @@
   gap: 8px;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   width: 160px;
+  background: #FFFFFF;
+  flex-shrink: 0;
 }
 .mapSearch input {
   border: none;
   outline: none;
   width: 100%;
+  font-size: 13px;
+  background: transparent;
 }
 .mapFilterIcon {
   color: #6B7280;
-  padding: 6px;
+  padding: 7px;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 .mapFilterIcon:hover {
-  background: #F9FAFB;
+  background: #F3F4F6;
   border-color: #D1D5DB;
 }
 .mapLegend {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #4B5563;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 .legendItem {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4B5563;
+  white-space: nowrap;
+  transition: all 0.15s;
+  cursor: default;
+  line-height: 1.4;
+}
+.legendItem:hover {
+  border-color: #D1D5DB;
+  background: #F9FAFB;
 }
 .legendDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 .legendCount {
   background: #F3F4F6;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #4B5563;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6B7280;
+  min-width: 20px;
+  text-align: center;
+  line-height: 16px;
 }
 .legendCountActive {
   background: #FF7847;
@@ -299,27 +353,34 @@
 .mapToolbarRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .mapDatePicker {
   display: flex;
   align-items: center;
   gap: 6px;
   border: 1px solid #E5E7EB;
-  padding: 6px 12px;
+  padding: 7px 12px;
   border-radius: 8px;
   font-size: 13px;
   color: #4B5563;
+  background: #FFFFFF;
+  white-space: nowrap;
 }
 .mapContinueBtn {
   background: #FF7847;
   color: white;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  border: none;
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .mapContinueBtn:hover {
   background: #E66A3D;
@@ -960,9 +1021,12 @@
 .customMapSeat .seatName { font-size: 10px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
 .editLayoutBtn {
   background: #FFFFFF; border: 1px solid #E5E7EB; color: #C2410C;
-  border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+  border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+  white-space: nowrap; transition: all 0.15s; line-height: 1.4;
 }
-.editLayoutBtn:hover { background: #FFF7ED; }
+.editLayoutBtn:hover {
+  background: #FFF7ED; border-color: #FDBA74;
+}
 
 /* Sizing + rotation handles */
 .seatResizeHandle {
