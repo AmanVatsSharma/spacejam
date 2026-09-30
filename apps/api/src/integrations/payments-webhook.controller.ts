@@ -28,7 +28,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import { IntegrationSettingsService } from './integration-settings.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { Invoice } from '../typeorm/entities/invoice.entity';
-import { InvoiceStatus, PaymentMethod } from '../graphql/types/user.type';
+import { InvoiceStatus, PaymentMethod } from '../common/enums';
 
 @Controller('payments')
 export class PaymentsWebhookController {

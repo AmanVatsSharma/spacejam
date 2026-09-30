@@ -29,7 +29,7 @@ import { UserRole } from '../roles.enum';
 import { AuthService, AuthContext } from './auth.service';
 import { SMS_PROVIDER } from './sms-provider.interface';
 import type { SmsProvider } from './sms-provider.interface';
-import { AuthPayload, RequestOtpResult } from '../../graphql/types/user.type';
+import { AuthPayload, RequestOtpResult } from '../graphql/types/user.type';
 
 const CODE_TTL_SECONDS = 5 * 60; // 5-minute OTP expiry
 const CODE_TTL_MS = CODE_TTL_SECONDS * 1000;

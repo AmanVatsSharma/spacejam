@@ -10,7 +10,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
-import { UserRole } from '../../graphql/types/user.type';
+import { UserRole } from '../common/enums';
 
 export interface AuthenticatedUser {
   /** Canonical subject id (matches JWT `sub`). */

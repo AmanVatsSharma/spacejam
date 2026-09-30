@@ -16,7 +16,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { LeadStatus, LeadSource } from '../../graphql/types/user.type';
+import { LeadStatus, LeadSource } from '../../common/enums';
 import { User } from './user.entity';
 import { Center } from './center.entity';
 

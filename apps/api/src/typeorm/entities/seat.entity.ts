@@ -18,7 +18,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
-import { SeatType, SeatStatus } from '../../graphql/types/user.type';
+import { SeatType, SeatStatus } from '../../common/enums';
 import { Floor } from './floor.entity';
 import { Center } from './center.entity';
 import { Booking } from './booking.entity';

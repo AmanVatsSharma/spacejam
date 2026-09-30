@@ -1,5 +1,5 @@
 import { centerScope } from './center-scope.helper';
-import { UserRole } from '../../graphql/types/user.type';
+import { UserRole } from '../common/enums';
 
 describe('centerScope', () => {
   it('returns the centerId for a CENTER_MANAGER with one assigned', () => {

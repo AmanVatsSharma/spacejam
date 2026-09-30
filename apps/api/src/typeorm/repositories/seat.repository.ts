@@ -11,7 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Seat } from '../entities/seat.entity';
-import { SeatStatus, SeatType } from '../../graphql/types/user.type';
+import { SeatStatus, SeatType } from '../common/enums';
 
 export interface SeatFilters {
   floorId?: string;

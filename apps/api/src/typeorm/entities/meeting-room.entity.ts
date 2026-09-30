@@ -19,7 +19,7 @@ import {
 } from 'typeorm';
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { Center } from './center.entity';
-import { RoomType, RoomStatus } from '../../graphql/types/user.type';
+import { RoomType, RoomStatus } from '../../common/enums';
 import { Booking } from './booking.entity';
 import { Event } from './event.entity';
 

@@ -8,7 +8,7 @@
  * Author:      ZCode
  * Last-updated: 2026-08-09
  */
-import { BillingCycle } from '../graphql/types/user.type';
+import { BillingCycle } from '../common/enums';
 
 /** Add `months` to `date`, clamping the day to the target month's length. */
 export function addMonths(date: Date, months: number): Date {

@@ -11,7 +11,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { UserRole } from '../../graphql/types/user.type';
+import { UserRole } from '../common/enums';
 
 export interface UserFilters {
   role?: UserRole;

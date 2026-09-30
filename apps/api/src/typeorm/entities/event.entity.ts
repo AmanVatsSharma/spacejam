@@ -23,7 +23,7 @@ import { MeetingRoom } from './meeting-room.entity';
 import { Center } from './center.entity';
 import { RecurringBooking } from './recurring-booking.entity';
 import { EventAttendee } from './event-attendee.entity';
-import { EventType, EventStatus } from '../../graphql/types/user.type';
+import { EventType, EventStatus } from '../../common/enums';
 
 @ObjectType()
 @Entity('events')

@@ -24,7 +24,7 @@ import {
   BillingCycle,
   PlanStatus,
   SeatType,
-} from '../../graphql/types/user.type';
+} from '../../common/enums';
 import { Center } from './center.entity';
 import { Subscription } from './subscription.entity';
 

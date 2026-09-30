@@ -23,7 +23,7 @@ import { Booking } from '../typeorm/entities/booking.entity';
 import { Seat } from '../typeorm/entities/seat.entity';
 import { CustomerEmployee } from '../typeorm/entities/customer-employee.entity';
 import { Invoice } from '../typeorm/entities/invoice.entity';
-import { SubscriptionStatus } from '../graphql/types/user.type';
+import { SubscriptionStatus } from '../common/enums';
 
 // Fake EntityManager that records writes and returns canned reads.
 function buildTx(opts: {

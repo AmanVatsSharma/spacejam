@@ -20,7 +20,7 @@ import {
     Index,
 } from 'typeorm';
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
-import { OnboardingStatus } from '../../graphql/types/user.type';
+import { OnboardingStatus } from '../../common/enums';
 import { Lead } from './lead.entity';
 import { Customer } from './customer.entity';
 import { User } from './user.entity';

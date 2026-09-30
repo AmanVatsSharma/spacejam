@@ -1,97 +1,56 @@
 /**
  * File:        apps/api/src/graphql/types/user.type.ts
  * Module:      API · GraphQL Types
- * Purpose:     GraphQL object types for SpaceJam domain
+ * Purpose:     GraphQL object types for SpaceJam domain.
+ *              All enums are defined in common/enums.ts and imported here
+ *              so that entity files can import enums without touching this
+ *              file — breaking the circular dependency chain that caused
+ *              "Cannot read properties of undefined" in the webpack bundle.
  *
  * Author:      AmanVatsSharma
- * Last-updated: 2026-06-07
+ * Last-updated: 2026-09-30
  */
 
 import { Field, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
+import {
+  UserRole,
+  RoomType,
+  RoomStatus,
+  EventType,
+  EventStatus,
+  NotificationType,
+  NotificationPriority,
+  RequestType,
+  RequestStatus,
+  CenterStatus,
+  SeatType,
+  SeatStatus,
+  BookingStatus,
+  BillingCycle,
+  PlanStatus,
+  SubscriptionStatus,
+  PaymentMethod,
+  PaymentStatus,
+  RecurrencePatternEnum,
+  LeadStatus,
+  LeadSource,
+  InvoiceStatus,
+  PaymentFrequency,
+  ContractStatus,
+  DepositStatus,
+  DepositType,
+  OnboardingStatus,
+  CustomerStatus,
+} from '../../common/enums';
 
-// NOTE: the User entity is intentionally NOT imported at the top level here.
-// user.entity.ts imports enums from this file, so a static `import { User }`
-// forms a cycle that leaves the enums undefined when entity decorators
-// evaluate (TS hoists the import). We resolve User lazily inside the
-// @Field(() => …) arrow below, which runs at schema-build time after all
-// modules have loaded.
+// NOTE: User entity is resolved lazily (not a static top-level import) to
+// avoid the TS-hoist circular import that would leave enums undefined at
+// decorator-evaluation time.
 type UserType = import('../../typeorm/entities/user.entity').User;
 
 // ============================================================================
-// ENUMS ONLY - Pure registry for GraphQL enums
+// ENUMS - Registered for GraphQL
 // ============================================================================
-export enum RoomType {
-  BOARDROOM = 'BOARDROOM',
-  CONFERENCE = 'CONFERENCE',
-  MEETING_ROOM = 'MEETING_ROOM',
-  WORKSHOP = 'WORKSHOP',
-  TRAINING = 'TRAINING',
-}
-
-export enum RoomStatus {
-  AVAILABLE = 'AVAILABLE',
-  OCCUPIED = 'OCCUPIED',
-  MAINTENANCE = 'MAINTENANCE',
-  BOOKED = 'BOOKED',
-}
-
-// Event Enums
-export enum EventType {
-  MEETING = 'MEETING',
-  MEETING_ROOM = 'MEETING_ROOM',
-  CONFERENCE = 'CONFERENCE',
-  WORKSHOP = 'WORKSHOP',
-  TRAINING = 'TRAINING',
-  SOCIAL = 'SOCIAL',
-  OTHER = 'OTHER',
-}
-
-export enum EventStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  REJECTED = 'REJECTED',
-}
-
-// Notification Enums
-export enum NotificationType {
-  BOOKING = 'BOOKING',
-  PAYMENT = 'PAYMENT',
-  DEPOSIT = 'DEPOSIT',
-  LEAD = 'LEAD',
-  SYSTEM = 'SYSTEM',
-  REQUEST = 'REQUEST',
-  EVENT = 'EVENT',
-}
-
-export enum NotificationPriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-}
-
-// Request Enums
-export enum RequestType {
-  PRINTER = 'PRINTER',
-  UPGRADE = 'UPGRADE',
-  SERVICES = 'SERVICES',
-  EVENTS = 'EVENTS',
-  MAINTENANCE = 'MAINTENANCE',
-  CLEANING = 'CLEANING',
-  SECURITY = 'SECURITY',
-  OTHER = 'OTHER',
-}
-
-export enum RequestStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  REJECTED = 'REJECTED',
-}
-
-// Register new enums
 registerEnumType(RoomType, { name: 'RoomType' });
 registerEnumType(RoomStatus, { name: 'RoomStatus' });
 registerEnumType(EventType, { name: 'EventType' });
@@ -100,166 +59,10 @@ registerEnumType(RequestType, { name: 'RequestType' });
 registerEnumType(RequestStatus, { name: 'RequestStatus' });
 registerEnumType(NotificationType, { name: 'NotificationType' });
 registerEnumType(NotificationPriority, { name: 'NotificationPriority' });
-
-// Object Types
-// UserRole is defined in auth/user-role.enum.ts (a leaf module with no
-// circular dependencies) and re-exported here so existing imports keep
-// working. The canonical import path for non-GraphQL code is
-// `auth/user-role.enum.ts` or the `auth/roles.enum.ts` re-export.
-import { UserRole } from '../../auth/user-role.enum';
-
-export enum CenterStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  FULL = 'FULL',
-  MAINTENANCE = 'MAINTENANCE',
-}
-
-export enum SeatType {
-  HOT_DESK = 'HOT_DESK',
-  DEDICATED = 'DEDICATED',
-  CABIN = 'CABIN',
-  MEETING_ROOM = 'MEETING_ROOM',
-}
-
-export enum SeatStatus {
-  AVAILABLE = 'AVAILABLE',
-  OCCUPIED = 'OCCUPIED',
-  MAINTENANCE = 'MAINTENANCE',
-  RESERVED = 'RESERVED',
-}
-
-export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  CHECKED_IN = 'CHECKED_IN',
-  CHECKED_OUT = 'CHECKED_OUT',
-  CANCELLED = 'CANCELLED',
-  COMPLETED = 'COMPLETED',
-}
-
-// ─── Plans & Subscriptions (M2) ──────────────────────────────────────────
-// A Plan is a center's billable seat offering (seatType + billingCycle +
-// price). A Subscription is a customer's commitment to N seats of a plan.
-export enum BillingCycle {
-  DAILY = 'DAILY',
-  WEEKLY = 'WEEKLY',
-  MONTHLY = 'MONTHLY',
-  QUARTERLY = 'QUARTERLY',
-}
-
-export enum PlanStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  ARCHIVED = 'ARCHIVED',
-}
-
-export enum SubscriptionStatus {
-  ACTIVE = 'ACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  CANCELLED = 'CANCELLED',
-  EXPIRED = 'EXPIRED',
-  PENDING = 'PENDING',
-}
-
-export enum PaymentMethod {
-  CARD = 'CARD',
-  UPI = 'UPI',
-  WALLET = 'WALLET',
-  BANK_TRANSFER = 'BANK_TRANSFER',
-  // Offline/manual methods + online gateway payments (values already present
-  // in the invoices.payment_method DB enum).
-  CASH = 'CASH',
-  CHEQUE = 'CHEQUE',
-  NET_BANKING = 'NET_BANKING',
-  ONLINE = 'ONLINE',
-  QR = 'QR',
-}
-
-export enum PaymentStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED',
-}
-
-export enum RecurrencePatternEnum {
-  DAILY = 'DAILY',
-  WEEKLY = 'WEEKLY',
-  MONTHLY = 'MONTHLY',
-}
-
-export enum LeadStatus {
-  NEW = 'New',
-  VISITED = 'Visited',
-  NEGOTIATION = 'Negotiation',
-  CONVERTED = 'Converted',
-  COLD = 'Cold',
-}
-
-export enum LeadSource {
-  WEBSITE = 'Website',
-  REFERRAL = 'Referral',
-  WALK_IN = 'Walk-in',
-  SOCIAL = 'Social',
-  EMAIL = 'Email',
-}
-
 registerEnumType(RecurrencePatternEnum, { name: 'RecurrencePattern' });
 registerEnumType(LeadStatus, { name: 'LeadStatus' });
 registerEnumType(LeadSource, { name: 'LeadSource' });
-
-export enum InvoiceStatus {
-  DRAFT = 'Draft',
-  SENT = 'Sent',
-  PAID = 'Paid',
-  OVERDUE = 'Overdue',
-  CANCELLED = 'Cancelled',
-}
-
-export enum PaymentFrequency {
-  MONTHLY = 'Monthly',
-  QUARTERLY = 'Quarterly',
-  HALF_YEARLY = 'Half-Yearly',
-  YEARLY = 'Yearly',
-}
-
-export enum ContractStatus {
-  ACTIVE = 'Active',
-  EXPIRING_SOON = 'Expiring Soon',
-  EXPIRED = 'Expired',
-  TERMINATED = 'Terminated',
-}
-
-export enum DepositStatus {
-  HELD = 'Held',
-  RELEASED = 'Released',
-  REFUNDED = 'Refunded',
-  FROZEN = 'Frozen',
-  RELEASE_REQUESTED = 'Release Requested',
-}
-
-export enum DepositType {
-  SECURITY = 'Security',
-  ADVANCE = 'Advance',
-  OTHER = 'Other',
-}
-
-export enum OnboardingStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-}
-
 registerEnumType(OnboardingStatus, { name: 'OnboardingStatus' });
-
-export enum CustomerStatus {
-  ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
-  EXPIRING_SOON = 'Expiring Soon',
-  UPGRADED = 'Upgraded',
-}
-
 registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
 registerEnumType(PaymentFrequency, { name: 'PaymentFrequency' });
 registerEnumType(ContractStatus, { name: 'ContractStatus' });
@@ -273,14 +76,10 @@ registerEnumType(SeatStatus, { name: 'SeatStatus' });
 registerEnumType(BookingStatus, { name: 'BookingStatus' });
 registerEnumType(PaymentMethod, { name: 'PaymentMethod' });
 registerEnumType(PaymentStatus, { name: 'PaymentStatus' });
-registerEnumType(RecurrencePatternEnum, { name: 'RecurrencePattern' });
 // M2 enums — registered here (after declaration) so module-eval order is safe.
 registerEnumType(BillingCycle, { name: 'BillingCycle' });
 registerEnumType(PlanStatus, { name: 'PlanStatus' });
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
-
-// Re-export analytics DTOs from their dedicated file
-export * from './analytics.type';
 
 // ============================================================================
 // UNIQUE DTOs - Auth result types

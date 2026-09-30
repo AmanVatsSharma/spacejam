@@ -29,7 +29,7 @@ import {
   InvoiceStatus,
   SeatStatus,
   SubscriptionStatus,
-} from '../graphql/types/user.type';
+} from '../common/enums';
 import { computeNextBilling } from './billing';
 
 export interface BillingCycleResult {

@@ -1,6 +1,6 @@
 import { CenterScopedGuard } from './center-scoped.guard';
 import { CENTER_SCOPED_KEY } from '../decorators/center-scoped.decorator';
-import { UserRole } from '../../graphql/types/user.type';
+import { UserRole } from '../common/enums';
 import { ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 

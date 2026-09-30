@@ -17,7 +17,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
-import { PaymentMethod, PaymentStatus } from '../../graphql/types/user.type';
+import { PaymentMethod, PaymentStatus } from '../../common/enums';
 import { Booking } from './booking.entity';
 
 @Entity('payments')
