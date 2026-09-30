@@ -10,6 +10,11 @@ module.exports = {
       devtoolModuleFilenameTemplate: '[absolute-resource-path]',
     }),
   },
+  resolve: {
+    alias: {
+      '@enums': join(__dirname, 'src/common/enums.ts'),
+    },
+  },
   experiments: {
     outputModule: false,
   },
