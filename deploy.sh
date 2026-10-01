@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-source ~/.nvm/nvm.sh
+if [ -f ~/.nvm/nvm.sh ]; then source ~/.nvm/nvm.sh; fi
 
 echo "=== [1/6] Extracting latest code ==="
 # Kill any processes locking the directory
