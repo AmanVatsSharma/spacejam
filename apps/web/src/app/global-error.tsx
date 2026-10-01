@@ -9,14 +9,11 @@
  * Author:      AmanVatsSharma
  * Last-updated: 2026-09-30
  */
-'use client';
 
 export default function GlobalError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
 }) {
   return (
     <html>
@@ -34,8 +31,8 @@ export default function GlobalError({
               Error ID: {error.digest}
             </p>
           )}
-          <button
-            onClick={() => reset()}
+          <a
+            href="/"
             style={{
               marginTop: '1rem',
               padding: '0.5rem 1.5rem',
@@ -43,11 +40,12 @@ export default function GlobalError({
               border: 'none',
               background: '#FF6A2F',
               color: 'white',
-              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block',
             }}
           >
-            Try again
-          </button>
+            Go to home page
+          </a>
         </div>
       </body>
     </html>
