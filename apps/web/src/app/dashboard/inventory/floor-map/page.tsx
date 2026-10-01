@@ -240,7 +240,6 @@ export default function FloorMapPage() {
   const [activeFloorId, setActiveFloorId] = useState<string | null>(
     () => searchParams.get("floorId"),
   );
-  const [activeFilter, setActiveFilter] = useState<string>("All");
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
   // Search queries and zoom for the floor map
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -509,10 +508,6 @@ export default function FloorMapPage() {
   // Filter seats by status + the left-bar search query
   const filteredSeats = useMemo(() => {
     let result = seats;
-    if (activeFilter !== "All") {
-      const normalized = activeFilter.toUpperCase();
-      result = result.filter((s: any) => normalizeStatus(s.status) === normalized);
-    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter((s: any) =>
@@ -522,7 +517,7 @@ export default function FloorMapPage() {
       );
     }
     return result;
-  }, [seats, activeFilter, searchQuery]);
+  }, [seats, searchQuery]);
 
   // Seats actually rendered on the map (further narrowed by the map search box)
   const mapSeats = useMemo(() => {
@@ -590,31 +585,6 @@ export default function FloorMapPage() {
     [seats],
   );
 
-  // Legend counts from filtered view
-  const legendCounts = useMemo(() => {
-    const all = seats.length;
-    const available = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE").length;
-    const occupied = seats.filter((s: any) => normalizeStatus(s.status) === "OCCUPIED").length;
-    const maintenance = seats.filter((s: any) => normalizeStatus(s.status) === "MAINTENANCE").length;
-    
-    let upcomingCount = 0;
-    if (bookingsData?.bookings) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const upcomingSeatIds = new Set();
-      bookingsData.bookings.forEach((b: any) => {
-         if (b.status === "CONFIRMED" || b.status === "PENDING") {
-           const startDate = new Date(b.startDate);
-           if (startDate >= today && b.seat?.id) {
-             upcomingSeatIds.add(b.seat.id);
-           }
-         }
-      });
-      upcomingCount = seats.filter((s: any) => normalizeStatus(s.status) === "AVAILABLE" && upcomingSeatIds.has(s.id)).length;
-    }
-    const upcoming = upcomingCount;
-    return { all, available, occupied, maintenance, upcoming };
-  }, [seats, bookingsData]);
 
   // Compute upcoming bookings globally
   const upcomingSeatIds = useMemo(() => {
@@ -800,17 +770,6 @@ export default function FloorMapPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className={styles.filterPills}>
-            {["All", "Available", "Occupied", "Maintenance"].map(filter => (
-              <div
-                key={filter}
-                className={`${styles.filterPill} ${activeFilter === filter ? styles.filterPillActive : ''} active:scale-[0.97] transition-transform duration-150`}
-                onClick={() => setActiveFilter(filter)}
-              >
-                {filter}
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Stats Row */}
@@ -922,35 +881,7 @@ export default function FloorMapPage() {
               </div>
               <div className={styles.mapFilterIcon}>{Icons.filter}</div>
 
-              <div className={styles.mapLegend}>
-                <div className={styles.legendItem}>
-                  <div className={styles.legendDot} style={{ background: '#FF7847' }}></div>
-                  <span>All</span>
-                  <span className={`${styles.legendCount} ${styles.legendCountActive}`}>
-                    {legendCounts.all}
-                  </span>
-                </div>
-                <div className={styles.legendItem}>
-                  <div className={styles.legendDot} style={{ background: '#10B981' }}></div>
-                  <span>Available</span>
-                  <span className={styles.legendCount}>{legendCounts.available}</span>
-                </div>
-                <div className={styles.legendItem}>
-                  <div className={styles.legendDot} style={{ background: '#EF4444' }}></div>
-                  <span>Occupied</span>
-                  <span className={styles.legendCount}>{legendCounts.occupied}</span>
-                </div>
-                <div className={styles.legendItem}>
-                  <div className={styles.legendDot} style={{ background: '#6B7280' }}></div>
-                  <span>Under Maintenance</span>
-                  <span className={styles.legendCount}>{legendCounts.maintenance}</span>
-                </div>
-                <div className={styles.legendItem}>
-                  <div className={styles.legendDot} style={{ background: '#F59E0B' }}></div>
-                  <span>Upcoming</span>
-                  <span className={styles.legendCount}>{legendCounts.upcoming}</span>
-                </div>
-              </div>
+
             </div>
 
             <div className={styles.mapToolbarRight}>
