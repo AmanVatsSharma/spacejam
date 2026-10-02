@@ -11,7 +11,7 @@ fi
 # Preserve node_modules to avoid OOM
 mkdir -p /home/ubuntu/spacejam
 sudo tar -xzf /home/ubuntu/update.tar.gz -C /home/ubuntu/spacejam
-sudo chown -R ubuntu:ubuntu /home/ubuntu/spacejam
+
 sudo chmod -R u+w /home/ubuntu/spacejam
 
 echo ""
