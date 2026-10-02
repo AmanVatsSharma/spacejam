@@ -276,7 +276,7 @@ export default function CalendarPage() {
       {/* Side rail */}
       <div className={styles.sideColumn}>
         <TodayScheduleRail items={todayItems} />
-        <BirthdaysRail items={items.filter((i) => i.kind === "BIRTHDAY")} onWish={(name) => openModal("birthday")} />
+        <BirthdaysRail items={items.filter((i: any) => i.kind === "BIRTHDAY")} onWish={(name) => openModal("birthday")} />
         <Legend />
       </div>
 
@@ -720,7 +720,7 @@ function ScheduleVisitModal({ defaults, centerId, onClose, onCreated }: { defaul
 }
 
 function BookRoomModal({ defaults, centerId, onClose, onCreated }: { defaults: { date?: string; startTime?: string }; centerId?: string; onClose: () => void; onCreated?: () => void }) {
-  const { book, saving } = useBookRoom();
+  const { book, loading: saving } = useBookRoom();
   const [form, setForm] = useState({
     roomId: "", eventDate: defaults.date ?? toISODate(new Date()),
     startTime: defaults.startTime ?? "10:00", endTime: "11:00",

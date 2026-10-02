@@ -467,9 +467,10 @@ export function FloorMapEditor({
       if (d.kind === "zone") setZones((zs) => zs.map((z) => (z.id === d.id ? { ...z, x: nx, y: ny } : z)));
       else setLabels((ls) => ls.map((l) => (l.id === d.id ? { ...l, x: nx, y: ny } : l)));
     } else if (d.kind === "zoneResize") {
-      const minSpec = d.orig.kind ? (ZONE_KIND_SPECS as Record<string, { minW: number; minH: number } | undefined>)[d.orig.kind] : undefined;
-      const minW = minSpec?.minW ?? 1;
-      const minH = minSpec?.minH ?? 1;
+      const zMatch = zones.find((z) => z.id === d.id);
+      const minSpec = zMatch ? specOf(zMatch.kind) : undefined;
+      const minW = minSpec?.w ?? 1;
+      const minH = minSpec?.h ?? 1;
       const w = clamp(Math.round(g.x - d.orig.x + (d.orig.w ?? 1)), minW, CANVAS_COLS - d.orig.x);
       const h = clamp(Math.round(g.y - d.orig.y + (d.orig.h ?? 1)), minH, CANVAS_ROWS - d.orig.y);
       setZones((zs) => zs.map((z) => (z.id === d.id ? { ...z, w, h } : z)));

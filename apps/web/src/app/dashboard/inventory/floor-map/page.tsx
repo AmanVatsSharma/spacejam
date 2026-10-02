@@ -197,7 +197,7 @@ function CustomMapView({
           const colorClass =
             status === "AVAILABLE"
               ? styles.customMapSeatAvailable
-              : status === "OCCUPIED" || status === "BOOKED"
+              : status === "OCCUPIED"
                 ? styles.customMapSeatOccupied
                 : styles.customMapSeatOther;
           const w = s.w ?? 1;

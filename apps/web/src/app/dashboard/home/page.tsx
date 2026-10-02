@@ -157,7 +157,7 @@ export default function DashboardPage() {
   });
 
   // Pending service requests feed the Tasks & Compliance card.
-  const { requests } = useRequests({ pendingOnly: true });
+  const { requests } = useRequests({ status: "PENDING" });
   // Meeting rooms + events for the booking grid and "Events today" metric.
   const { rooms: rawRooms } = useMeetingRooms();
   const { events } = useEvents();

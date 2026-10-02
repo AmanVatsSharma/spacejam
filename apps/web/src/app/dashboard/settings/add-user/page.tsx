@@ -150,7 +150,7 @@ export default function AddUserPage() {
     password: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -326,7 +326,7 @@ export default function AddUserPage() {
                   <label className={styles.formLabel}>Assign Center <span className={styles.required}>*</span></label>
                   <select name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput}>
                     <option value="">Select a center…</option>
-                    {(centersData?.centers ?? []).map((c) => (
+                    {(centersData?.centers ?? []).map((c: any) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
@@ -472,7 +472,7 @@ export default function AddUserPage() {
                 <label className={styles.formLabel}>Select Center(s) <span className={styles.required}>*</span></label>
                 <select name="centerId" value={formData.centerId} onChange={handleChange} className={styles.formInput}>
                     <option value="">Select a center…</option>
-                    {(centersData?.centers ?? []).map((c) => (
+                    {(centersData?.centers ?? []).map((c: any) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
@@ -677,7 +677,7 @@ export default function AddUserPage() {
                     <div className={styles.reviewItem}>
                       <span className={styles.reviewLabel}>Assigned Center</span>
                       <span className={styles.reviewValue}>
-                      {(centersData?.centers ?? []).find((c) => c.id === formData.centerId)?.name || '-'}
+                      {(centersData?.centers ?? []).find((c: any) => c.id === formData.centerId)?.name || '-'}
                     </span>
                     </div>
                   </div>
