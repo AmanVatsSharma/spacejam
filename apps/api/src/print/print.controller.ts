@@ -9,12 +9,11 @@
  *
  * Author:      AmanVatsSharma
  * Last-updated: 2026-08-25
+ * Rebuilt:     2026-10-01 — switched to multer.diskStorage for runtime
+ *               compatibility with deployed Nest 11.
  */
 import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-// `multer` ships without bundled types; we treat its options as `any` below
-// to avoid pulling in @types/multer for a single upload route.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import * as multer from 'multer';
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB

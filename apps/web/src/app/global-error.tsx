@@ -10,10 +10,21 @@
  * Last-updated: 2026-09-30
  */
 
+'use client';
+// The global-error boundary must render `<html>` and `<body>` and is
+// inherently client-bound (it receives `reset`, a client hook). In Next.js
+// 16 + React 19 this combination breaks the static prerenderer because the
+// React 19 compiler inlines hook references that require a live context.
+// Forcing dynamic rendering skips SSG for this route — correct because
+// error boundaries only run when something has already gone wrong.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export default function GlobalError({
   error,
+  reset,
 }: {
   error: Error & { digest?: string };
+  reset: () => void;
 }) {
   return (
     <html>

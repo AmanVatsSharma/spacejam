@@ -241,9 +241,9 @@ export default function FloorMapPage() {
     () => searchParams.get("floorId"),
   );
   const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
-  // Search queries and zoom for the floor map
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [mapSearch, setMapSearch] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [zoom, setZoom] = useState<number>(1);
 
   // Add Space modal state
@@ -508,6 +508,9 @@ export default function FloorMapPage() {
   // Filter seats by status + the left-bar search query
   const filteredSeats = useMemo(() => {
     let result = seats;
+    if (statusFilter !== "ALL") {
+      result = result.filter((s: any) => normalizeStatus(s.status) === statusFilter);
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter((s: any) =>
@@ -517,7 +520,7 @@ export default function FloorMapPage() {
       );
     }
     return result;
-  }, [seats, searchQuery]);
+  }, [seats, searchQuery, statusFilter]);
 
   // Seats actually rendered on the map (further narrowed by the map search box)
   const mapSeats = useMemo(() => {
@@ -879,9 +882,29 @@ export default function FloorMapPage() {
                   onChange={(e) => setMapSearch(e.target.value)}
                 />
               </div>
-              <div className={styles.mapFilterIcon}>{Icons.filter}</div>
-
-
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{
+                  padding: '8px 32px 8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #E5E7EB',
+                  background: '#fff',
+                  fontSize: 13,
+                  color: '#1F1F1F',
+                  appearance: 'none',
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236A7282%22 stroke-width=%222%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E")',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  cursor: 'pointer',
+                  marginLeft: '8px'
+                }}
+              >
+                <option value="ALL">All Status</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="OCCUPIED">Occupied</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
             </div>
 
             <div className={styles.mapToolbarRight}>
@@ -936,7 +959,7 @@ export default function FloorMapPage() {
           ) : hasCustomMap && activeFloorId ? (
             <CustomMapView
               layout={activeFloorLayout}
-              seats={seats}
+              seats={mapSeats}
               onSeatClick={(seat: any) => setDetailSeatId(seat.id)}
               canEdit={canEditLayout}
               onEdit={() => setEditMode(true)}

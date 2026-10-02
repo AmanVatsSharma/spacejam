@@ -92,6 +92,12 @@ const seatTypeText = (t: string) =>
   : t === "MEETING_ROOM" ? "Meeting Room"
   : t;
 
+const getSeatTypeDimensions = (t: string) => {
+  if (t === "MEETING_ROOM") return { w: 4, h: 3 };
+  if (t === "CABIN") return { w: 2, h: 2 };
+  return { w: 1, h: 1 };
+};
+
 const newId = (p: string) => `${p}${Math.random().toString(36).slice(2, 9)}`;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -302,7 +308,7 @@ export function FloorMapEditor({
 
   /** First N free grid cells (row-major) not occupied by placed seats. */
   const findFreeSeatPositions = useCallback(
-    (count: number): { x: number; y: number }[] => {
+    (count: number, w: number = 1, h: number = 1): { x: number; y: number }[] => {
       const occupied = new Set<string>();
       for (const s of placed) {
         const pos = seatPos(s)!;
@@ -313,12 +319,27 @@ export function FloorMapEditor({
           }
         }
       }
+      
       const out: { x: number; y: number }[] = [];
+      const canFit = (x: number, y: number) => {
+        if (x + w > CANVAS_COLS || y + h > CANVAS_ROWS) return false;
+        for (let dx = 0; dx < w; dx++) {
+          for (let dy = 0; dy < h; dy++) {
+            if (occupied.has(`${x + dx},${y + dy}`)) return false;
+          }
+        }
+        return true;
+      };
+
       for (let y = 0; y < CANVAS_ROWS && out.length < count; y++) {
         for (let x = 0; x < CANVAS_COLS && out.length < count; x++) {
-          const key = `${x},${y}`;
-          if (!occupied.has(key)) {
-            occupied.add(key);
+          if (canFit(x, y)) {
+            // mark as occupied so subsequent seats don't overlap it
+            for (let dx = 0; dx < w; dx++) {
+              for (let dy = 0; dy < h; dy++) {
+                occupied.add(`${x + dx},${y + dy}`);
+              }
+            }
             out.push({ x, y });
           }
         }
@@ -521,7 +542,8 @@ export function FloorMapEditor({
   const generateBulkSeats = async () => {
     if (!onBulkCreateSeats || generating) return;
     const list = bulkNames.map((name) => ({ name, seatType: bulkSeatType }));
-    const free = findFreeSeatPositions(list.length);
+    const dims = getSeatTypeDimensions(bulkSeatType);
+    const free = findFreeSeatPositions(list.length, dims.w, dims.h);
     list.forEach((s, i) => {
       if (free[i]) pendingPlacementsRef.current[s.name] = free[i];
     });

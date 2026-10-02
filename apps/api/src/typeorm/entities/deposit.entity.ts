@@ -48,7 +48,7 @@ export class Deposit {
   depositType!: DepositType;
 
   @Field(() => DepositStatus)
-  @Column({ type: 'enum', enum: DepositStatus, default: 'HELD' })
+  @Column({ type: 'enum', enum: DepositStatus, default: 'Held' })
   status!: DepositStatus;
 
   @Field()

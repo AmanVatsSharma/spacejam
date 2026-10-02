@@ -50,7 +50,7 @@ async function main() {
       email,
       name,
       passwordHash,
-      role: UserRole.ADMIN,
+      role: UserRole.SUPER_ADMIN,
       active: true,
       emailVerified: true,
     });
@@ -58,7 +58,7 @@ async function main() {
     // eslint-disable-next-line no-console
     console.log(`created admin ${email}`);
   } else {
-    admin.role = UserRole.ADMIN;
+    admin.role = UserRole.SUPER_ADMIN;
     admin.active = true;
     admin.emailVerified = true;
     admin.name = name;

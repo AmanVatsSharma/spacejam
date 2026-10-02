@@ -15,11 +15,39 @@ import {
   COMPLETE_ONBOARDING,
   CREATE_CUSTOMER_DOCUMENT,
   GET_FLOORS,
-  ALLOCATE_CUSTOMER_SEATS,
+  CREATE_LEAD,
+  UPDATE_LEAD,
+  GET_PAYMENT_CONFIG,
+  CREATE_PAYMENT_ORDER,
+  VERIFY_PAYMENT,
 } from "@/lib/apollo/operations";
 import { useActiveCenter } from "@/contexts/active-center-context";
 import { useMeetingRooms, useBookRoom } from "@/hooks/use-operations";
 import { getAccessToken } from "@/lib/apollo/token-storage";
+
+type RazorpayInstance = { open: () => void; on: (e: string, h: Function) => void; };
+type RazorpayCtor = new (options: Record<string, unknown>) => RazorpayInstance;
+type RazorpayWindow = typeof window & { Razorpay?: RazorpayCtor; };
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const w = window as RazorpayWindow;
+    if (w.Razorpay) { resolve(true); return; }
+    const existing = document.getElementById("rzp-checkout-js");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(!!w.Razorpay));
+      existing.addEventListener("error", () => resolve(false));
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "rzp-checkout-js";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(!!w.Razorpay);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 /** Document slots collected in step 6 (Legal & Compliance). */
 type DocSlot = "pan" | "aadhaarFront" | "aadhaarBack" | "gst";
@@ -89,7 +117,16 @@ export default function OnboardingWizardPage() {
   // Active center (the manager's own center, or the admin's selection) —
   // customers must be attributed to a center or they never show up in the
   // center-scoped client report.
-  const { activeCenter } = useActiveCenter();
+  const { activeCenter, centers } = useActiveCenter();
+  const [selectedCenterId, setSelectedCenterId] = useState<string>("");
+  const initialCenterSet = useRef(false);
+
+  useEffect(() => {
+    if (activeCenter?.id && !initialCenterSet.current) {
+      setSelectedCenterId(activeCenter.id);
+      initialCenterSet.current = true;
+    }
+  }, [activeCenter]);
 
   // Step 6 — selected KYC files, uploaded on final submit.
   const [kycDocs, setKycDocs] = useState<Record<DocSlot, File | null>>({
@@ -102,8 +139,8 @@ export default function OnboardingWizardPage() {
   // ── Inventory seats for the active center — powers the per-person seat
   //    picker in step 2 and the final allocation call.
   const { data: floorsData } = useQuery(GET_FLOORS, {
-    variables: activeCenter?.id ? { centerId: activeCenter.id } : undefined,
-    skip: !activeCenter?.id,
+    variables: selectedCenterId ? { centerId: selectedCenterId } : undefined,
+    skip: !selectedCenterId,
     fetchPolicy: "cache-and-network",
     errorPolicy: "all",
   });
@@ -134,6 +171,12 @@ export default function OnboardingWizardPage() {
     );
 
   const [allocateCustomerSeats] = useMutation(ALLOCATE_CUSTOMER_SEATS);
+  const [createLeadMut] = useMutation(CREATE_LEAD);
+  const [updateLeadMut] = useMutation(UPDATE_LEAD);
+  const { data: payCfg } = useQuery(GET_PAYMENT_CONFIG);
+  const paymentConfig = payCfg?.paymentConfig;
+  const [createPaymentOrder] = useMutation(CREATE_PAYMENT_ORDER);
+  const [verifyPayment] = useMutation(VERIFY_PAYMENT);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -260,7 +303,7 @@ export default function OnboardingWizardPage() {
   const [showRoomBooking, setShowRoomBooking] = useState(false);
   // Meeting-room booking (real inventory + real book mutation).
   const { rooms: meetingRooms } = useMeetingRooms(
-    activeCenter?.id ? { centerId: activeCenter.id } : undefined,
+    selectedCenterId ? { centerId: selectedCenterId } : undefined,
   );
   const { book: bookMeetingRoom, loading: bookingRoom } = useBookRoom();
   const [roomBooking, setRoomBooking] = useState({
@@ -344,6 +387,7 @@ export default function OnboardingWizardPage() {
 
   const validateStep = (step: number): string | null => {
     if (step === 1) {
+      if (!selectedCenterId) return "Please select a center";
       if (!basicInfo.name?.trim()) return "Super User name is required";
       if (!basicInfo.phone?.trim()) return "Phone number is required";
       if (!basicInfo.phone.replace(/\D/g, "").match(/^\d{10,15}$/)) return "Enter a valid phone number (10-15 digits)";
@@ -357,13 +401,15 @@ export default function OnboardingWizardPage() {
       if (dobDate > new Date()) return "Date of birth cannot be in the future";
     }
     if (step === 4) {
-      // Bank details are mandatory — they are required for refunds.
-      if (!bankDetails.holderName?.trim()) return "Account holder name is required (needed for refunds)";
-      if (!bankDetails.accountNumber?.trim()) return "Account number is required (needed for refunds)";
-      if (!/^\d{9,18}$/.test(bankDetails.accountNumber.replace(/\s/g, ""))) return "Account number must be 9-18 digits";
-      if (!bankDetails.ifscCode?.trim()) return "IFSC code is required (needed for refunds)";
-      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode.trim().toUpperCase())) return "Enter a valid IFSC code (e.g. HDFC0001234)";
-      if (!bankDetails.bankName?.trim()) return "Select the bank (needed for refunds)";
+      // Bank details are mandatory only for Bank Transfer
+      if (paymentMode === "Bank Transfer") {
+        if (!bankDetails.holderName?.trim()) return "Account holder name is required";
+        if (!bankDetails.accountNumber?.trim()) return "Account number is required";
+        if (!/^\d{9,18}$/.test(bankDetails.accountNumber.replace(/\s/g, ""))) return "Account number must be 9-18 digits";
+        if (!bankDetails.ifscCode?.trim()) return "IFSC code is required";
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode.trim().toUpperCase())) return "Enter a valid IFSC code (e.g. HDFC0001234)";
+        if (!bankDetails.bankName?.trim()) return "Select the bank";
+      }
     }
     if (step === 6) {
       // Terms acceptance is mandatory before proceeding.
@@ -552,6 +598,36 @@ export default function OnboardingWizardPage() {
       // Step 7 — personalisation
       const communicationChannelVal = communicationChannel || undefined;
 
+      if (paymentMode === "Cheque") {
+        if (leadId && leadData?.lead) {
+          await updateLeadMut({
+            variables: {
+              id: leadId,
+              input: { status: "COLD" },
+            },
+          });
+          toast.success("Saved as Cold Lead (Cheque Payment)");
+        } else {
+          await createLeadMut({
+            variables: {
+              input: {
+                name: basicInfo.name || "New Lead",
+                email: basicInfo.email,
+                phone: basicInfo.phone,
+                company: basicInfo.company,
+                status: "COLD",
+                centerId: selectedCenterId,
+              },
+            },
+          });
+          toast.success("Created as Cold Lead (Cheque Payment)");
+        }
+        
+        try { localStorage.removeItem("onboarding_draft"); } catch {}
+        router.push("/dashboard/crm/leads");
+        return;
+      }
+
       let customerId: string;
       let onboardingId: string | undefined;
 
@@ -614,7 +690,7 @@ export default function OnboardingWizardPage() {
               communicationChannel: communicationChannelVal,
               // Attribute the customer to the active center so they appear
               // in the center-scoped client report.
-              centerId: activeCenter?.id,
+              centerId: selectedCenterId,
               // Token-wallet auto-recharge preferences (step 5).
               ...(additionalServices.tokenWallet
                 ? {
@@ -649,7 +725,8 @@ export default function OnboardingWizardPage() {
       else endDate.setMonth(endDate.getMonth() + 1);
       const endDateStr = endDate.toISOString().slice(0, 10);
 
-      await Promise.allSettled([
+      let createdInvoiceId: string | null = null;
+      const [depositRes, contractRes, invoiceRes] = await Promise.allSettled([
         depositAmount > 0
           ? createDeposit({
               variables: {
@@ -685,23 +762,21 @@ export default function OnboardingWizardPage() {
                   customerId,
                   customerName,
                   amount: depositAmount,
-                  // InvoiceStatus GraphQL literals are the enum KEYS
-                  // (SENT, not "Sent"/"Pending") — invalid values silently
-                  // failed invoice creation during onboarding (swallowed
-                  // by allSettled).
                   status: "SENT",
                   planName: resolvedPlanType || "Standard",
                 },
               },
             })
           : Promise.resolve(),
-      ]).then((results) => {
-        results.forEach((r, i) => {
-          if (r.status === "rejected") {
-            revenueErrors.push(["deposit", "contract", "invoice"][i]);
-          }
-        });
-      });
+      ]);
+
+      if (depositRes.status === "rejected") revenueErrors.push("deposit");
+      if (contractRes.status === "rejected") revenueErrors.push("contract");
+      if (invoiceRes.status === "rejected") {
+        revenueErrors.push("invoice");
+      } else if (invoiceRes.value) {
+        createdInvoiceId = (invoiceRes.value as any).data?.createInvoice?.id || null;
+      }
 
       // ── Seat allocation: book inventory seats for the new client so they
       //    appear in the floor map / table view immediately. Named picks are
@@ -824,6 +899,52 @@ export default function OnboardingWizardPage() {
         else toast.success(allocationToast);
       }
 
+      if ((paymentMode === "UPI" || paymentMode === "Card") && depositAmount > 0 && createdInvoiceId) {
+        if (!paymentConfig?.configured || !paymentConfig.keyId) {
+          toast.warning("Razorpay is not configured. Online payment skipped.");
+        } else {
+          try {
+            const loaded = await loadRazorpayScript();
+            const w = window as RazorpayWindow;
+            if (loaded && w.Razorpay) {
+              const { data: orderData } = await createPaymentOrder({
+                variables: { amount: depositAmount, invoiceId: createdInvoiceId }
+              });
+              const orderId = orderData?.createPaymentOrder;
+              if (orderId) {
+                new w.Razorpay({
+                  key: paymentConfig.keyId,
+                  order_id: orderId,
+                  name: "SpaceJam",
+                  description: `Onboarding Payment`,
+                  handler: async (resp: any) => {
+                    try {
+                      await verifyPayment({
+                        variables: {
+                          input: {
+                            razorpayOrderId: resp.razorpay_order_id,
+                            razorpayPaymentId: resp.razorpay_payment_id,
+                            razorpaySignature: resp.razorpay_signature,
+                            invoiceId: createdInvoiceId!,
+                          }
+                        }
+                      });
+                      toast.success("Online payment successful!");
+                    } catch {
+                      toast.error("Payment verification failed");
+                    }
+                  },
+                  modal: { ondismiss: () => {} }
+                }).open();
+              }
+            }
+          } catch (e) {
+             console.error("Razorpay error", e);
+             toast.error("Could not start Razorpay checkout");
+          }
+        }
+      }
+
       setSavedCustomerId(customerId);
       setCurrentStep(10);
     } catch (err: any) {
@@ -921,7 +1042,7 @@ export default function OnboardingWizardPage() {
     try {
       await bookMeetingRoom({
         roomId: roomBooking.roomId,
-        centerId: activeCenter?.id ?? "",
+        centerId: selectedCenterId,
         eventDate: roomBooking.eventDate,
         startTime: roomBooking.startTime,
         endTime,
@@ -1381,6 +1502,44 @@ export default function OnboardingWizardPage() {
                     </div>
 
                     <div className="h-px bg-gray-100" />
+
+                    {/* Center Selection (Super Admin only if >1 centers) */}
+                    {centers.length > 1 && (
+                      <>
+                        <div className="pb-4">
+                          <h3 className="text-[16px] font-bold text-[#101828] mb-5">Select Center</h3>
+                          <div className="flex flex-col gap-4">
+                            <div>
+                              <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Center <span className="text-[#FF6A2F]">*</span></label>
+                              <div className="relative">
+                                <select
+                                  value={selectedCenterId}
+                                  onChange={(e) => {
+                                    const newCenterId = e.target.value;
+                                    if (newCenterId !== selectedCenterId) {
+                                      setSelectedCenterId(newCenterId);
+                                      // Clear previously assigned seats since inventory belongs to the old center
+                                      setIndividuals(prev => prev.map(p => ({ ...p, seat: "" })));
+                                      if (selectedCenterId) {
+                                        toast.info("Center not assigned");
+                                      }
+                                    }
+                                  }}
+                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white"
+                                >
+                                  <option value="">Select a center</option>
+                                  {centers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="h-px bg-gray-100" />
+                      </>
+                    )}
 
                     {/* Company Information */}
                     <div>
@@ -2139,6 +2298,7 @@ export default function OnboardingWizardPage() {
                     </div>
 
                     {/* Linked Bank Account */}
+                    {paymentMode === "Bank Transfer" && (
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Linked Bank Account (For Refunds)</h3>
                       <div className="grid grid-cols-2 gap-4">
@@ -2210,6 +2370,8 @@ export default function OnboardingWizardPage() {
                         </div>
                       </div>
                     </div>
+                    )}
+
 
                     <div className="flex gap-3 p-4 bg-[#FF6A2F] rounded-xl text-white shadow-sm mt-2">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 shrink-0 mt-0.5">

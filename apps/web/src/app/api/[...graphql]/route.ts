@@ -12,9 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const API_SERVER_URL =
-  process.env.NEXT_PUBLIC_API_URL ??
-  process.env.INTERNAL_API_URL ??
-  'http://localhost:4000';
+  process.env.INTERNAL_API_URL ?? 'http://localhost:4000';
 
 export async function GET(request: NextRequest) {
   // GET is used by the Apollo DevTools / GraphQL playground for introspection.

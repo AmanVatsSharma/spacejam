@@ -9,7 +9,7 @@
  * Last-updated: 2026-07-22
  */
 import { Resolver, Query, Args, Mutation, ID, Int } from '@nestjs/graphql';
-import { NotFoundException, ForbiddenException, UseGuards } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { OnboardingStatus } from '@enums';
