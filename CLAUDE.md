@@ -2,210 +2,148 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+_Last audited against the code: 2026-10-02. Anything about the production server (paths, which `deploy.sh` copy is installed) cannot be verified from the repo — check before relying on it._
+
 ## Project Overview
 
 SpaceJam is a coworking space management system built as an Nx 22 monorepo.
 
 | App | Project | Tech |
 |-----|---------|------|
-| Web | `web` | Next.js 16 (React 19), Apollo GraphQL, Tailwind v4, CSS Modules |
-| API | `api` | NestJS 11, GraphQL (code-first), TypeORM, PostgreSQL, Redis |
-| Mobile | `mobile` | Expo SDK 57 (~54), React Native |
-| E2E | `web-e2e` | Playwright against the web app |
+| Web | `web` | Next.js 16 (React 19), Apollo Client, Tailwind v4, CSS Modules |
+| API | `api` | NestJS 11, GraphQL (code-first, Apollo), TypeORM, PostgreSQL, Redis |
+| Mobile | `mobile` | Expo + React Native — **SDK version is inconsistent, see [Mobile](#mobile-appsmobile)** |
+| E2E | `web-e2e`, `api-e2e` | Playwright (web), Jest (api) |
 
-Shared libraries live under `libs/`:
-- `libs/shared` — cross-app TS types
-- `libs/ui` — cross-app UI primitives
+Libraries under `libs/`: `libs/ui` (`@spacejam/ui`, consumed by web through a `file:../../libs/ui` dependency + `transpilePackages`) and `libs/shared` (`@spacejam/shared`, cross-app TS types — nothing imports it yet). Neither is in the root `workspaces` (`packages/*`, which is an empty dir, and `apps/*`).
 
-Package manager: npm workspaces (a `pnpm-lock.yaml` exists but `pnpm` may not be on PATH — use `npx nx`). Nx commands use `npx nx` (Nx is a devDependency, not globally installed).
+Package manager: npm workspaces (CI uses `npm ci`, `deploy.sh` uses `npm install`). A `pnpm-lock.yaml` also exists but pnpm may not be on PATH. Nx is a devDependency, not global — always `npx nx …`.
 
-See `AGENTS.md` for Nx workspace rules (scaffolding, generators, Beads integration) — load it for any task that touches Nx config, generators, or `nx-workspace` / `nx-generate` skills.
+Nx rules live in `AGENTS.md` (run tasks through `nx`, never guess CLI flags — check `--help`, use the `nx-generate` skill before scaffolding). Mobile has its own `apps/mobile/AGENTS.md`.
 
-## Server
+### What to ignore
 
-| Field | Value |
-|-------|-------|
-| IP | `145.223.22.72` |
-| Hostname | `srv2009485` (Hostinger VPS) |
-| SSH user | `root` |
-| SSH key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
-| OS | Ubuntu 26.04.1 LTS |
-| Node | v20.20.2 |
-| npm | 10.8.2 |
-| Domain | `admin.spacejam.in` |
-| SSL | Let's Encrypt |
-
-### Running processes (PM2, running as root)
-
-| Process | Path | Port |
-|---------|------|------|
-| `spacejam-web` | `/home/ubuntu/spacejam/apps/web` | 3000 |
-| `spacejam-api` | `/home/ubuntu/spacejam/apps/api/dist/main.js` | 4000 |
-
-### Nginx
-
-- Port 80/443 → `admin.spacejam.in`
-- `/` → port 3000 (Next.js)
-- `/api/graphql` → port 4000/graphql (NestJS)
-
-### Deployment
-
-Production deploys from the local repo to the server:
-
-```bash
-# 1. Package the repo (from local machine)
-cd C:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\spacejam
-tar -czf deploy.tar.gz --exclude=node_modules --exclude=dist --exclude=.next --exclude=.git .
-
-# 2. Upload and extract on server
-scp -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' deploy.tar.gz root@145.223.22.72:/root/
-ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
-  "rm -rf /home/ubuntu/spacejam && mkdir -p /home/ubuntu/spacejam && tar -xzf /root/deploy.tar.gz -C /home/ubuntu/spacejam"
-
-# 3. Install deps and build API on server
-ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
-  "cd /home/ubuntu/spacejam && npm install && NX_DAEMON=false npx nx build api"
-
-# 4. Write .env and restart via PM2
-ssh -i 'C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem' root@145.223.22.72 \
-  "cat > /home/ubuntu/spacejam/apps/api/.env << 'EOF'
-NODE_ENV=production
-PORT=4000
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=spacejam
-DATABASE_PASSWORD=spacejam
-DATABASE_NAME=spacejam
-DATABASE_URL=postgresql://spacejam:spacejam@localhost:5432/spacejam
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=<SECRET_c5b91ab9>uction-jwt-key-change-me
-JWT_ACCESS_EXPIRY=15m
-JWT_REFRESH_EXPIRY=7d
-REFRESH_TOKEN_SECRET=<SECRET_9d81af2c>uction-refresh-key-change-me
-CORS_ORIGIN=https://admin.spacejam.in
-FRONTEND_URL=https://admin.spacejam.in
-EOF
-pm2 restart spacejam-api --update-env
-pm2 restart spacejam-web"
-```
-
-Nx is installed as a devDependency (not globally); on the server use `npx nx` with `NX_DAEMON=false`. The Nx Cloud cache is not connected (workspace >3 days old) — that warning is harmless.
-
-### Old/dead paths (do NOT use)
-
-- `/home/ubuntu/deploy/` — stale web build artifacts, no longer used by any deploy script; current repo lives at `/home/ubuntu/spacejam`
-- `/root/spacejam/` — does not exist on the server
+- The repo root is littered with screenshots, tarballs, logs and scratch scripts (`*.png`, `*.tar.gz`, `*.log`, `req*.network-*`, `add_*.sql`, `fix_*.py`, `patch_*.py`, …). They are not source.
+- `.claude/worktrees/` holds full copies of the repo from past agent runs (gitignored). Exclude it from greps/globs or every hit appears twice.
+- `apps/design/` is a pile of Figma-comparison screenshots (no code). `deploy/` is a legacy PM2/standalone bundle that `deploy.sh` does not use.
+- Stale docs: `apps/api/ARCHITECTURE.md` still describes **Prisma** (the API uses TypeORM); `apps/api/src/graphql/schema.graphql` is hand-written and stale; root `README.md` is the stock Nx template.
+- `.bak*` files in `src/` (e.g. `onboarding.resolver.ts.bak3`) are leftovers.
 
 ## Development Commands
 
-### Running Apps
+### Running
 
 ```sh
-npx nx dev web          # Next.js dev server (port 3000)
-npx nx serve api        # NestJS dev server (port 3100)
-npx nx start mobile     # Expo dev server
+npx nx dev web          # Next dev server, port 3000
+npx nx serve api        # webpack build, then runs dist/main.js
+npx nx start mobile     # Expo dev server, port 8081
 ```
 
-The API can also be run directly after a build (faster iteration, avoids the `nx serve` webpack watch): `cd apps/api && npx nx build api --configuration=development && node dist/main.js`. It reads `apps/api/.env`. For a dev schema bootstrap, prefix with `DATABASE_SYNCHRONIZE=true` once (see Migration section).
+`.claude/launch.json` launches these three with ports 3000 / **3100** / 8081 — the API is on 3100 because `apps/api/.env` sets `PORT=3100`. The API's real default (`main.ts`) is **4000**, and the web side proxies to 4000 by default (`NEXT_PUBLIC_API_URL` for the dev rewrites in `next.config.js`, `INTERNAL_API_URL` for the `app/api/[...graphql]` route handler). If you run the API on another port, set both to match — the committed `apps/web/.env.local` currently has `INTERNAL_API_URL=http://localhost:4000` and `NEXT_PUBLIC_API_URL=/api`, so it does not point at a 3100 API as-is.
 
-### Building
+Faster API iteration (skips the `nx serve` watch): `cd apps/api && npx nx build api --configuration=development && node dist/main.js` (reads `apps/api/.env`; prefix `DATABASE_SYNCHRONIZE=true` once to bootstrap a dev schema).
+
+First admin user: see the usage block in the header of `apps/api/src/auth/scripts/seed-admin.ts` (`ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`, run with `ts-node` from the repo root).
+
+### Building and type-checking
 
 ```sh
-npx nx build web        # Next.js production build (webpack, standalone output)
-npx nx build api        # NestJS production build (webpack-cli, not tsc)
+npx nx build api                       # webpack-cli (NOT tsc) → apps/api/dist/main.js
+cd apps/web && npx next build --webpack   # what deploy.sh runs
+npx tsc --noEmit -p apps/web/tsconfig.json   # web type-check
 ```
 
-Note: `npx nx build web` fails on the `_global-error` page prerendering — a persistent Next.js 16 issue. **Ignore it**; `next start` and the dev server still work.
+- `apps/web/next.config.js` sets `typescript.ignoreBuildErrors: true`, so **`next build` does not catch type errors** — run the `tsc` command above (clean as of 2026-10-02). Web has no Nx `typecheck` target; `api`, `mobile` and the e2e projects do (`npx nx typecheck api`).
+- Historically `next build` failed prerendering `_global-error` (Next 16). `1bca817` (2026-10-01) made `global-error.tsx` a server component to fix it, and a full local `next build --webpack` passed on 2026-10-03 (static generation included); `deploy.sh` still tolerates a failing web build, so read the build output. Don't build in `apps/web` while `next dev` is running — both use `.next`; build a throwaway copy of `apps/web` (without its `package.json`, so Nx doesn't see a second project) instead.
+- There is no ESLint setup: `web` and `api` have no `lint` target.
 
 ### Tests
 
-```sh
-# Web unit tests (Vitest)
-npx nx test web
-npx nx test web -- --run path/to/file.test.ts    # single file, CI mode
-
-# API tests — run directly via vitest (no nx target exists):
-cd apps/api && npx vitest run src/path/to.spec.ts
-# The full auth + subscription + customer-employee suite:
-cd apps/api && npx vitest run src/auth/services/ src/subscription/ src/graphql/resolvers/customer-employee.resolver.spec.ts
-
-# Playwright E2E (web + api-e2e)
-npx nx e2e web
-npx nx e2e api-e2e
-npx nx e2e web -- --grep="test name"             # single test by name
-```
-
-### Formatting
+There are **no `test` Nx targets** (so `nx test …` / `nx affected -t test` do nothing); run vitest directly:
 
 ```sh
-npx nx format:check      # Prettier dry-run across workspace
-npx nx format:write      # Prettier fix across workspace
+# API — vitest (config: apps/api/vitest.config.ts)
+cd apps/api && npx vitest run                                        # all specs
+cd apps/api && npx vitest run src/auth/services/otp.service.spec.ts  # one file
+
+# Web — vitest, no config file or Nx target (2 test files)
+cd apps/web && npx vitest run src/proxy.test.ts
+
+# E2E
+npx nx e2e web-e2e                       # Playwright (project is web-e2e, not web)
+npx nx e2e api-e2e                       # Jest
 ```
 
-### Nx Utilities
+- `apps/api/vitest.config.mts` is dead/broken (imports `vite-tsconfig-paths`, which is not installed; wrong `../src` path). `vitest.config.ts` is the live one. `vitest.setup.ts` aliases `globalThis.jest = vi`, so Jest-style `jest.fn()` works in specs.
+- 3 tests in `apps/web/src/proxy.test.ts` (unauthenticated / expired-token redirects, non-admin role block) are **stale and fail**: `proxy.ts` deliberately stopped gating `/dashboard`. Fix the tests, not the proxy.
+- Mobile has no tests.
+
+### Formatting and Nx utilities
 
 ```sh
-npx nx show projects             # list all projects
-npx nx graph                     # visual project dependency graph
-npx nx sync                      # sync TypeScript project references
-npx nx sync:check                # verify references (for CI)
-npx nx affected:test --base=main # run tests affected by changes
+npx nx format:check          # Prettier dry-run (CI runs it with --base=origin/main)
+npx nx format:write
+npx nx show projects         # list projects
+npx nx graph                 # dependency graph
+npx nx sync / npx nx sync:check
 ```
+
+CI (`.github/workflows/ci.yml`, push to `main` + PRs): `nx format:check`, then `nx run-many -t lint test build typecheck e2e-ci` with Nx Cloud task distribution.
 
 ## Architecture
 
+### Request path
+
+```
+browser ─► nginx (prod) ─┬─ /api/graphql (exact) ─► API :4000 /graphql
+                         ├─ /api/*, /graphql ─────► API :4000
+                         └─ everything else ──────► Next.js :3000
+dev: Next rewrites() proxy /api/graphql, /api/print/upload, /uploads/* ─► API
+```
+
+- GraphQL is served at **`/graphql`** on the API. `setGlobalPrefix('api')` applies only to REST controllers (`/api/health`, `/api/metrics`, `/api/print/upload`, `/api/payments/webhook`); `POST /api/graphql` directly on the API is a 404. `/api/graphql` exists only via the web rewrite / nginx. (The startup log line printing `/api/graphql` is misleading.)
+- In prod nginx short-circuits `/api/*` and `/graphql` straight to the API, so Next's own `/api` handling only matters in dev or when hitting `next start` directly. `/uploads/*` has no nginx rule: it goes to Next, whose rewrite forwards it to the API (uploads are written to `<cwd>/uploads` and served at `/uploads/*`).
+- `apps/web/src/app/api/[...graphql]/route.ts` is a second, fallback GraphQL proxy (target `INTERNAL_API_URL`); its header comments mention port 3001 and `/api/graphql` and are stale.
+
 ### Frontend (`apps/web`)
 
-**App router structure** (`apps/web/src/app/`):
-- `(auth)` — login/register flows
-- `dashboard/` — main authenticated app (home, settings, meeting-room, events, etc.)
-- `set-up-new-center/` — onboarding wizard
-- `api/` — Next.js route handlers (REST global prefix)
-- `_global-error`, `error.tsx`, `not-found.tsx`, `layout.tsx`, `page.tsx` — root/error pages
+**App router** (`src/app/`): `(auth)` (login/register), `dashboard/` (home, crm, inventory, revenue, report, settings, `operations/{meeting-room,events,request,recurring-bookings}`, calendar, calendar-sync, audit, equipment, notifications, scheduled-reports), `set-up-new-center/` (onboarding wizard), `api/`, `global-error.tsx`, `error.tsx`, `not-found.tsx`, `layout.tsx`, `page.tsx`.
 
 **Data flow**:
-1. **GraphQL-first**: Pages consume data via `useQuery`/`useMutation` from domain hook files under `apps/web/src/hooks/` (e.g., `use-operations.ts`, `use-inventory.ts`, `use-crm.ts`). All operations are defined in `apps/web/src/lib/apollo/operations.ts`.
-2. **Auth**: JWT access + refresh tokens stored in cookies. `contexts/auth-context.tsx` manages user state. Apollo client attaches access tokens and refreshes silently on 401.
-3. **Route guard**: `proxy.ts` (Next.js 16) redirects authenticated users away from auth pages only. Dashboard auth is handled entirely client-side via the auth context — the Edge proxy cannot read localStorage. **Client-side RBAC**: `ClientLayout.tsx` (lines 148-173) redirects non-staff roles away from `/dashboard/settings/*`, `crm`, `revenue`, `inventory`, `report`, `audit`, `equipment`, `scheduled-reports`, `calendar-sync`, and `notifications`. This is UX routing only — the backend enforces real authorization via `@Roles` + `@CenterScoped` (see settings-auth-foundation spec). The Integrations settings page additionally self-gates with an in-component role check.
-4. **Apollo client**: `apps/web/src/lib/apollo/client.ts` — attaches access tokens, handles 401 → refresh → retry via `refreshTokensOnce()`. Uses memory token cache + cookie persistence. Server-side (SSR) client skips the refresh link.
+1. **GraphQL-first**: pages use `useQuery`/`useMutation` from domain hooks in `src/hooks/` (`use-operations.ts`, `use-inventory.ts`, `use-crm.ts`, …). Operations are hand-written in `src/lib/apollo/operations.ts` (+ `enterprise-operations.ts`). Web codegen is **not in use** — there is no generated file and `codegen.ts` points at a wrong relative path to the stale `schema.graphql`.
+2. **Auth**: JWT access + refresh tokens live in `localStorage` (`spacejam.access` / `spacejam.refresh`) and are mirrored to non-HttpOnly cookies `spacejam_access` / `spacejam_refresh` (`lib/apollo/token-storage.ts`) so the Edge proxy can see them. `contexts/auth-context.tsx` manages user state.
+3. **Apollo client** (`lib/apollo/client.ts`): attaches the access token; on 401 runs `refreshTokensOnce()` then retries. The SSR client skips the refresh link.
+4. **Route guard**: `src/proxy.ts` (Next 16's renamed middleware) only bounces *already-authenticated* users away from public routes (`/`, `/signin`, `/signup`, …) to `/dashboard`, and skips RSC requests. Dashboard auth is entirely client-side via the auth context.
+5. **Client-side RBAC**: the role-gate block in `app/dashboard/ClientLayout.tsx` redirects non-staff roles away from `settings/*`, `crm`, `revenue`, `inventory`, `report`, `audit`, `equipment`, `scheduled-reports`, `calendar-sync` and `notifications`, and trims the Settings tabs for `CENTER_MANAGER`. This is UX routing only — real authorization is the backend's `@Roles` + `@CenterScoped` (see `docs/superpowers/specs/2026-08-10-settings-auth-foundation-design.md`). The Integrations settings page additionally self-gates with an in-component role check.
 
-**Next.js config** (`apps/web/next.config.ts`):
-- `output: 'standalone'` — required for production deploy workflow
-- Rewrite: `/api/graphql` → `http://localhost:4000/graphql` (prod) or `NEXT_PUBLIC_API_URL` (dev)
-- The `/api/graphql` path is handled by Next.js rewrites, NOT the NestJS API directly
+**`apps/web/next.config.js`** (a `.js` file): `output: 'standalone'` (but `deploy.sh` runs `next start`, not the standalone server), timestamped `generateBuildId`, `ignoreBuildErrors: true`, and the three rewrites above (prod target `127.0.0.1:4000`).
 
 ### Backend (`apps/api`)
 
-**Module layout** (`apps/api/src/`): one folder per domain — `auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `observability`, `health`, `cache`, `config`, `graphql`, `typeorm`, `common`, `types`, `assets`, `app`, plus the newer `subscription` (Plans/Subscriptions/billing) and `integrations` (SMS + Razorpay config).
-
-- **GraphQL schema**: generated code-first (`autoSchemaFile: true` in `apps/api/src/graphql/graphql.config.ts`). The hand-written `apps/api/src/graphql/schema.graphql` is **stale** — do NOT treat it as authoritative; introspect the live endpoint instead.
-- **Entities & migrations**: TypeORM entities in `apps/api/src/typeorm/entities/`. Migrations in `apps/api/src/typeorm/migrations/`. **Every entity MUST be registered in BOTH `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) and the `data-source.ts` entities array**, or TypeORM metadata/synchronize breaks. Run via the migration scripts in `scripts/` (see Migrations below).
-  - **Prod PostgreSQL is < v11** (no `CREATE TYPE IF NOT EXISTS`) — migrations must use `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN null; END $$;` blocks
-  - Prod runs with `synchronize: false`, so any new entity requires an explicit `CREATE TABLE` migration
-- **Auth**: Passport + JWT strategy. Access tokens (15 min) + refresh tokens (7 days). **A global `APP_GUARD` (`GqlAuthGuard`) is registered in `app.module.ts`** — every resolver requires a valid JWT unless marked `@Public()`. `@CurrentUser()` injects the `JwtPayload` (`sub`, `email`, `role`, `centerId`, `sid`). Role-based authz via `@Roles(...)` + `RolesGuard` (reads `req.user.role`).
-  - **Phone OTP login** (M1): `requestOtp` / `verifyOtp` mutations provision `EMPLOYEE` / `COMPANY_ADMIN` / `MEMBER` users on first login. `OTP_DEV_BYPASS=true` returns a fixed dev code `000000` server-side; the mobile client has NO client-side bypass in release builds (only a `__DEV__`-gated dev shortcut).
-  - **Center scoping**: `centerScope(caller)` (`auth/helpers/center-scope.helper.ts`) returns a CENTER_MANAGER's `centerId`; resolvers apply it as `effectiveCenterId = scope ?? clientCenterId` so managers can't read cross-center data.
-- **Subscriptions & billing** (M2/M3): `Plan` (center's billable seat offering) → `Subscription` (customer commitment) → `BillingService.processSubscription` fans out into per-seat monthly Bookings (`Booking.planId` + `Booking.subscriptionId`) + an Invoice + advances `nextBillingDate`. Idempotent per cycle. `processDueSubscriptions` sweeps due subs — **but there is no cron scheduler yet**; it only runs on the admin "Run all due cycles" button.
-- **Integrations** (SMS + Razorpay): `app_settings` table holds platform config. `ConfigurableSmsProvider` routes OTP delivery to MSG91/Twilio based on config (console fallback when unconfigured). `RazorpayService` exposes `createOrder` + `verifyPayment`. Configured by a super-admin via the Integrations settings page (`@Roles(SUPER_ADMIN)`).
-- **Caching**: Redis-backed with in-memory fallback. DataLoader batching for N+1 prevention.
-- **Observability**: Pino logging (JSON), OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
-- **Build**: uses webpack-cli (configured in `apps/api/package.json` nx targets), NOT `tsc`. NOTE: `user.type.ts` ↔ `user.entity.ts` form a circular import; the `User` reference in `AuthPayload.user` is resolved lazily via `getUserType()` (do NOT re-add a top-level `import { User }`).
+- **Layout** (`src/`): one folder per domain (`auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `calendar`, `subscription`, `integrations`) plus infra (`observability`, `health`, `cache`, `config`, `typeorm`, `common`, `types`, `assets`, `app`). **GraphQL resolvers are centralized** in `src/graphql/resolvers/*.resolver.ts` (~35 files) next to `dataloaders/`, `guards/`, `inputs/`, `types/`, `enums/`, `scalars/`; domain folders mostly hold services/modules. `integrations/` keeps its own resolvers. Role names are in `auth/roles.enum.ts`.
+- **GraphQL schema**: code-first (`autoSchemaFile: true` in `graphql/graphql.config.ts`). **Introspection and the playground are disabled when `NODE_ENV=production`** — introspect a dev/local API, not prod. Complexity/depth limits via `GRAPHQL_MAX_COMPLEXITY` (default 1000) / `GRAPHQL_MAX_DEPTH`.
+- **Entities & migrations**: entities in `typeorm/entities/`. **Every entity MUST be registered in BOTH `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) and the `entities` array in `typeorm/data-source.ts`.** Prod runs `synchronize: false`, so new entities/columns need an explicit migration — see [Migrations](#migrations).
+- **Auth**: Passport + JWT. **A global `APP_GUARD` (`GqlAuthGuard`) is registered in `app.module.ts`** — every resolver requires a valid JWT unless marked `@Public()`. `@CurrentUser()` injects `JwtPayload` (`sub`, `email`, `role`, `centerId`, `sid`). Roles via `@Roles(...)` + `RolesGuard`. Token lifetimes are **hard-coded** (access `15m` in `auth.module.ts`, refresh `7d`) — `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` / `JWT_EXPIRES_IN` are not read anywhere.
+  - **Phone OTP login**: `requestOtp` / `verifyOtp` provision `EMPLOYEE` / `COMPANY_ADMIN` / `MEMBER` users on first login. `OTP_DEV_BYPASS=true` makes the server accept the fixed code `000000`.
+  - **Center scoping**: `centerScope(caller)` (`auth/helpers/center-scope.helper.ts`) returns a CENTER_MANAGER's `centerId`; resolvers use `effectiveCenterId = scope ?? clientCenterId` so managers can't read cross-center data.
+- **Subscriptions & billing**: `Plan` (a center's billable seat offering) → `Subscription` (customer commitment) → `BillingService.processSubscription` fans out into per-seat monthly Bookings (`Booking.planId` + `Booking.subscriptionId`) + an Invoice and advances `nextBillingDate`; idempotent per cycle. `BillingScheduler` (`subscription/billing-scheduler.ts`) sweeps `processDueSubscriptions` every 6 h with a plain `setInterval` (first run 60 s after boot) and has no distributed lock — single API instance only. The admin "Run all due cycles" button also works.
+- **Integrations** (`integrations/`; config lives in the `app_settings` table, edited by a SUPER_ADMIN on the Integrations settings page — not env vars): `ConfigurableSmsProvider` (MSG91/Twilio, console fallback when unconfigured), `whatsapp.service.ts` (Twilio/MSG91; throws when unconfigured instead of silently succeeding), `RazorpayService`. `payment.resolver.ts` exposes `paymentConfig` / `createPaymentOrder` / `verifyPayment` (the invoice "mark paid" flow; marks the invoice PAID when an `invoiceId` is passed); `POST /api/payments/webhook` verifies `x-razorpay-signature` over the raw body (`rawBody: true` in `main.ts`) and settles through the same ledger as the browser path. SUPER_ADMIN-only settings mutations: `saveRazorpayConfig` (validates the key live), `testRazorpayConnection`, `saveBankAccountConfig`, `saveChequeConfig`.
+- **Onboarding & payments** (`crm/onboarding.service.ts` is the authority; `onboarding.resolver.ts` is thin). The wizard makes ONE idempotent `submitOnboarding` call (client-generated `idempotencyKey`) instead of a browser-side chain of mutations, and **payment gates conversion**: *Razorpay* → application saved + server-created order recorded in the `payment_orders` ledger with a server-computed amount, client provisioned only after the payment is verified (browser `confirmOnboardingPayment` or the signed webhook — `PaymentOrdersService.settle` is idempotent and runs a per-purpose finalizer); *bank transfer* → UTR required and single-use, client provisioned immediately with a PAID invoice; *cheque* → the lead is saved **COLD** and the full application is parked in `onboardings.applicationData` — **no client, login, seats or invoice until staff `confirmChequeCleared`** (`markChequeBounced` keeps it cold; `assertLeadConvertible` makes `convertLead`, `convertLeadWithOnboarding` and `updateLead(status: Converted)` refuse while a cheque is clearing); *zero deposit* → provisioned immediately. Provisioning is a single DB transaction under a row lock (`provisionInTx`). GraphQL returns enum **names** (`PAID`, `SENT`) while the DB stores display values (`'Paid'`, `'Sent'`). Web side: `hooks/use-onboarding-payments.ts`, `components/ui/dashboard/onboarding-payment-ui.tsx`, `lib/razorpay-checkout.ts`, and the Pending payments page `/dashboard/crm/onboarding/pending`. API specs for this use `src/testing/fake-datasource.ts` (an in-memory DataSource with rollback and unique-constraint semantics).
+- **Caching**: Redis (`REDIS_URL`) with in-memory fallback; DataLoader batching against N+1.
+- **Observability**: Pino JSON logs, OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
+- **Build**: webpack-cli via an Nx `run-commands` target (`apps/api/webpack.config.js`), not `tsc`. `optimization.usedExports: false` is load-bearing — without it webpack tree-shakes classes referenced only inside `@Query(() => X)` decorators and the app dies with "metatype is not a constructor". The `@enums` alias (→ `src/common/enums.ts`) is declared separately in `webpack.config.js`, `vitest.config.ts` and `tsconfig.base.json`; keep them in sync.
+- `user.type.ts` ↔ `user.entity.ts` form a circular import; `AuthPayload.user` resolves lazily via `getUserType()` — do NOT re-add a top-level `import { User }`.
 
 ### Mobile (`apps/mobile`)
 
-Expo SDK 57 (~54). Structure under `apps/mobile/src/`:
-- `screens/` — one file per screen (~31 screens: Login, Home, MyBookings, Events, Wallet, Profile, Plans, MeetingRooms, etc.)
-- `navigation/AppNavigator.tsx` — single entry; `Stack` wraps a `Tab` whose set is **role-based** (EMPLOYEE/COMPANY_ADMIN get a Plans tab; staff/members get Home/Events/MyBookings/Profile) plus ~26 stack screens
-- `components/`, `lib/` (auth context, apollo client), `theme/` (tokens, animations)
-- Codegen via `codegen.ts` against the backend GraphQL schema
+- **Expo SDK is inconsistent — resolve before upgrading anything.** `package.json` (root and `apps/mobile`) pins `expo ~54.0.0` / `react-native 0.81.5`, and the hoisted `node_modules/expo` is 54.0.37. But `apps/mobile/node_modules/expo` is **57.0.7** with `react-native` 0.86.0 (also recorded in `package-lock.json`), and `apps/mobile/AGENTS.md` says "this project uses Expo SDK 57" and forbids SDK 54 docs. Check what is actually installed (`node -p "require('./apps/mobile/node_modules/expo/package.json').version"`) and read the matching versioned docs: https://docs.expo.dev/versions/v57.0.0/ (nested install + AGENTS.md) or v54.0.0 (committed manifests).
+- Structure under `src/`: `screens/` (one file per screen, ~40), `navigation/AppNavigator.tsx`, `components/`, `lib/` (auth context, apollo client), `theme/`.
+- **Navigation / role-based tabs**: `AppNavigator` wraps a `Tab` navigator in a `Stack`. Role buckets `STAFF_ROLES` (ADMIN, SUPER_ADMIN, CENTER_OWNER, CENTER_MANAGER, FINANCE, SUPPORT, STAFF) and `COMPANY_ROLES` (EMPLOYEE, COMPANY_ADMIN); default role `MEMBER`. Everyone gets Home / Events / MyBookings / Profile; only `COMPANY_ROLES` also get a Plans tab (the staff bucket currently has no effect).
+- **Login**: phone-number OTP (`REQUEST_OTP_MUTATION` / `VERIFY_OTP_MUTATION`). Release builds have no client-side bypass — only a `__DEV__`-gated shortcut that calls the real API with the server's dev code.
+- **Apollo/codegen**: operations in `src/lib/apollo/operations.ts`; endpoint from `EXPO_PUBLIC_GRAPHQL_HTTP_URL`, REST base from `EXPO_PUBLIC_REST_BASE`. `codegen.ts` targets `http://localhost:4000/api/graphql`, which is the wrong path (the API serves `/graphql`) and needs a non-production API with introspection on.
 
-**Login (M1)**: phone-number OTP — `REQUEST_OTP_MUTATION` / `VERIFY_OTP_MUTATION` against the backend. Release builds have NO client-side bypass; a `__DEV__`-only dev shortcut calls the real API with the server's dev code.
+**Mobile ↔ Web event mapping** (when adding event features on both surfaces):
 
-**Role-based routing (M4)**: `AppNavigator` builds the tab set from `user.role` (`STAFF_ROLES` / `COMPANY_ROLES` buckets in the file).
-
-Always check versioned Expo docs before writing mobile code: https://docs.expo.dev/versions/v57.0.0/
-
-**Mobile ↔ Web event mapping** (when adding new event features on both surfaces):
 | Mobile screen | Web counterpart |
 |---|---|
 | `EventsScreen` | `/dashboard/operations/events` |
@@ -215,177 +153,124 @@ Always check versioned Expo docs before writing mobile code: https://docs.expo.d
 
 ## Key Conventions
 
-- **Path alias**: `@/*` maps to `apps/web/src/*`.
-- **Styling**: Tailwind for layout/spacing; CSS Modules for component-specific styles, animations, and complex selectors. Responsive breakpoint: `compact:` (max-width 1023.98px).
-- **Tables**: wrap in `overflow-x-auto` for horizontal scroll at compact widths.
+- **Path alias**: `@/*` → `apps/web/src/*`.
+- **Styling**: Tailwind for layout/spacing; CSS Modules for component-specific styles, animations and complex selectors. Responsive breakpoint: `compact:` (max-width 1023.98px). Wrap tables in `overflow-x-auto` for horizontal scroll at compact widths.
 - **Design tokens** (use consistently, don't hardcode alternatives):
   - Primary orange `#FF6A2F` / `#FE7A47` (mobile variant), background `#FBF6F4`, card `#FFFFFF`, border `#E5E7EB`
   - Text: `#1F1F1F` / `#1A1D1F` (dark), `#4A5565` (gray), `#6A7282` / `#6F767E` (muted)
   - Cards: `border-radius: 14px` / `16px`, `padding: 16px 24px`. Buttons: `border-radius: 10px` / `16px`, `padding: 10px 20px`.
-- **File headers**: Every TS/TSX file should include the module/purpose/author/date header block.
-- **Toasts**: use `toast` from `sonner` (mounted in dashboard layout).
-- **Figma mappings**: meeting-room/events screen maps to Figma node `0:10554`; use `get_design_context` before making UI changes there.
-- **Mobile floating nav**: `FloatingNavBar` is rendered inside `TabNavigator` (in `AppNavigator.tsx`), not inside individual tab screens. Tab screens must use `activeTab` via `useNavigation()` state, not render their own nav bar.
-- **Mobile animations**: use `useFadeIn`, `useSlideIn`, `usePressFeedback`, `usePulse` from `apps/mobile/src/theme/animations.ts`; tokens from `theme/tokens.ts` (`palette`, `space`, `radius`, `elevation`, `duration`).
-- **Apollo operations**: centralized in `apps/web/src/lib/apollo/operations.ts` (web) and `apps/mobile/src/lib/apollo/operations.ts` (mobile). Re-run codegen after schema changes.
+- **Toasts**: `toast` from `sonner` (mounted in the dashboard layout).
+- **Figma**: the meeting-room/events screen maps to Figma node `0:10554`; use `get_design_context` before UI changes there.
+- **Mobile floating nav**: `FloatingNavBar` is rendered inside `TabNavigator` (in `AppNavigator.tsx`), not in individual tab screens; tab screens use `activeTab` via `useNavigation()` state.
+- **Mobile animations**: `useFadeIn`, `useSlideIn`, `usePressFeedback`, `usePulse` from `apps/mobile/src/theme/animations.ts`; tokens (`palette`, `space`, `radius`, `elevation`, `duration`) from `theme/tokens.ts`.
+- **Apollo operations** are centralized in `apps/web/src/lib/apollo/operations.ts` and `apps/mobile/src/lib/apollo/operations.ts` (hand-maintained; keep them in step with resolver changes).
 - **Prettier**: `singleQuote: true` (`.prettierrc`).
 
-### Mock-Fallback Convention
+## Known Limitations and Stubs (verified 2026-10-02)
 
-Most admin pages are now fully wired to live GraphQL data (no `MOCK_*` constants remain in `apps/web/src/app/dashboard/**`). The old mock-unwrap audit (2026-07-11) is stale.
-
-**Known limitations (current)**:
-- `npx nx build web` fails on `_global-error` page prerendering — **ignore**; dev server and `next start` still work.
-- `/dashboard/page.tsx` redirects to `/dashboard/home` (no longer a demo duplicate).
-- Settings pages persist via `Center.settings` jsonb (`useSettingsGroup`); toggles are real but behavior-enforcement in other modules is partial.
-- **Client-side RBAC is UX routing, not security**: `ClientLayout.tsx` (lines 148-173) redirects non-staff roles away from `/dashboard/settings/*`, `crm`, `revenue`, `inventory`, `report`, `audit`, `equipment`, `scheduled-reports`, `calendar-sync`, and `notifications`. This keeps the UI honest, but the backend `@Roles` + `@CenterScoped` guards are the real authorization barrier (see settings-auth-foundation spec). The Integrations page additionally self-gates via a role check in-component.
-- **Two parallel booking systems**: seat bookings → `bookings` table; meeting-room/event bookings → `events` table. Reporting (`dashboardMetrics`/`revenueReport`/`occupancyReport`) queries `bookings` only — meeting-room revenue is invisible to reports.
-- **Mobile**: seat-booking time slots are hardcoded constants (not real availability); the Plans subscribe path requires a `customerId` that `GET_ME` doesn't currently select; event booking from mobile fails because `GET_EVENT` omits `centerId`. See the verification audit for the full mobile gap list.
-- **Stubs (not yet wired)**: no billing cron scheduler; `processPayment`/`rechargeWallet` are balance bumps (Razorpay service exists but isn't called from checkout yet); calendar-sync `fetchExternal` returns `[]`; scheduled-reports has no `@Cron`; referral payouts never transition; employee email invites never sent; `regenerateRecoveryCodes` returns a mock array.
+- **Two parallel booking systems**: seat bookings → `bookings` table; meeting-room/event bookings → `events` table. Reporting (`dashboardMetrics` / `revenueReport` / `occupancyReport`) queries `bookings` only, so meeting-room revenue is invisible to reports.
+- `/dashboard/page.tsx` redirects to `/dashboard/home`. Settings pages persist via `Center.settings` jsonb (`useSettingsGroup`); toggles are real but enforcement in other modules is partial.
+- **Integrations UI gaps**: the Settings → Integrations page has no form yet for the bank-account / cheque-payee settings, no "Test connection" button and no webhook-URL display, although the API mutations exist (`saveBankAccountConfig`, `saveChequeConfig`, `testRazorpayConnection`). The Razorpay webhook URL to enter in the Razorpay dashboard is `https://admin.spacejam.in/api/payments/webhook`.
+- **Mobile**: seat-booking time slots are hardcoded `TIME_SLOTS` constants (`BookingDetailsScreen`, `FilterModal`, `MeetingRoomsScreen`), not real availability.
+- **Stubs**: `processPayment` / `rechargeWallet` are balance bumps (the booking resolver only has a "would integrate Razorpay/Stripe" comment — Razorpay is wired for onboarding and invoices only); calendar-sync `fetchExternal` throws "not yet implemented" (`sync()` swallows it and returns `false`) and `upsertInternal` is a no-op; scheduled-reports has no scheduler (no `@Cron` / `@nestjs/schedule` anywhere); referral payouts have no transition logic; employee email invites are never sent; the `regenerateRecoveryCodes` **resolver** returns hard-coded codes even though `AuthService.regenerateRecoveryCodes` is a real implementation.
 
 ## Environment Variables
 
-| Scope | File | Key vars |
-|-------|------|----------|
-| Backend | `apps/api/.env` | `DATABASE_*` (or `DATABASE_URL`), `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_*`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `OTP_DEV_BYPASS`, `DATABASE_SYNCHRONIZE` |
-| Frontend | `apps/web/.env.local` | `NEXT_PUBLIC_GRAPHQL_HTTP_URL`, `NEXT_PUBLIC_GRAPHQL_WS_URL` |
-| Mobile | `apps/mobile/.env` | Expo/EAS vars |
+| Scope | File | Variables |
+|-------|------|-----------|
+| API | `apps/api/.env` | `DATABASE_URL` **or** `DATABASE_HOST/PORT/USER/PASSWORD/NAME` (+ `DATABASE_SSL`, `DATABASE_POOL_SIZE`), `DATABASE_SYNCHRONIZE`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET`, `REDIS_URL`, `PORT`, `CORS_ORIGIN`, `NODE_ENV`, `OTP_DEV_BYPASS`, `WEB_APP_URL`, `LOG_LEVEL`, `GRAPHQL_MAX_COMPLEXITY` / `GRAPHQL_MAX_DEPTH` / `GRAPHQL_DEBUG` / `GRAPHQL_MASK_ERRORS`, `OTEL_*`, `SMTP_*` / `EMAIL_FROM`, `PASSWORD_*` / `LOCKOUT_*` / `BCRYPT_ROUNDS` / `TWO_FACTOR_ISSUER` |
+| Web | `apps/web/.env` / `.env.local` | `NEXT_PUBLIC_GRAPHQL_HTTP_URL`, `NEXT_PUBLIC_API_URL`, `INTERNAL_API_URL`, `NEXT_PUBLIC_ENABLE_DEV_LOGIN` |
+| Mobile | `apps/mobile/.env` | `EXPO_PUBLIC_GRAPHQL_HTTP_URL`, `EXPO_PUBLIC_REST_BASE` (+ Expo/EAS vars) |
 
-Backend env notes:
-- `OTP_DEV_BYPASS=true` — dev only. Makes `requestOtp` return the fixed code `000000` instead of sending SMS. **Must be `false` (unset) in production** or OTP login is open.
-- `DATABASE_SYNCHRONIZE=true` — opt-in. Lets TypeORM create/alter tables from entities (used for a one-off dev bootstrap). Prod leaves it off (migrations are the source of truth). The app `TypeOrmConfigModule` defaults `synchronize=false`.
-- SMS provider + Razorpay keys are **not** env vars — they live in the `app_settings` table, configured via the super-admin Integrations page.
+The list above is what the code actually reads; `apps/api/.env.example` (and the tracked `.env` files below) are partly stale — `JWT_ACCESS_EXPIRY`, `JWT_EXPIRES_IN`, `REDIS_HOST/PORT`, `DATABASE_MIGRATION_AUTO_RUN`, `FRONTEND_URL`, … are not read by the API.
 
-A reference `docker-compose.yml` is committed for local Postgres/Redis/NGINX/Prometheus/Grafana — not the deploy stack, just for spinning up dependencies.
+- **Tracked `.env` files**: `.env` (repo root), `apps/api/.env` and `apps/web/.env.local` are committed to git — they predate the `.gitignore` entry, which does not apply to already-tracked files. They hold local-dev values only; never put real or production secrets in them (`git archive HEAD` ships them; `deploy.sh` then overwrites the two `apps/*/.env` files, but the root `.env` is shipped as-is).
 
-`pnpm-workspace.yaml` declares `allowBuilds` for native modules (`sharp`, `sqlite3`, `@swc/core`, `nx`, etc.) — required for pnpm to install these from source.
+- `OTP_DEV_BYPASS=true` — dev only; the server accepts the fixed code `000000`. **Must be unset/`false` in production** or OTP login is open (`deploy.sh`'s `.env` template doesn't set it).
+- `DATABASE_SYNCHRONIZE=true` — opt-in schema sync for a throwaway dev DB. Prod leaves it off; on real data it lets TypeORM alter/drop columns to match entities.
+- `WEB_APP_URL` — base URL for emailed verify/reset/magic-link URLs; **defaults to `http://localhost:3000`**. `deploy.sh` sets `FRONTEND_URL`, which the API never reads, so prod email links will point at localhost unless `WEB_APP_URL` is set.
+- `NEXT_PUBLIC_GRAPHQL_WS_URL` appears in env files but nothing in `apps/web/src` reads it.
+- SMS, WhatsApp and Razorpay credentials are **not** env vars — they live in `app_settings` (SUPER_ADMIN → Settings → Integrations); OTP delivery and payments are no-ops until configured.
 
 ## Migrations
 
-New entities require a migration AND registration in both `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) and `data-source.ts`. Prod runs `synchronize: false`, so a missing migration means the table/column won't exist and the API errors on boot or first query.
+New entity ⇒ entity file in `typeorm/entities/`, register it in `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) **and** `data-source.ts`, and add a migration in `typeorm/migrations/` (naming `YYYYMMDDHHMMSS-Description.ts`; newest: `20261002100000-OnboardingPaymentLifecycle`). Prod is `synchronize: false`. Older notes say prod PostgreSQL is **< 11**, but `SERVER-HANDOFF.md` (2026-10-02) reports **18.6** — keep migrations conservative anyway:
 
-The migration files are `.ts` and the entity graph pulls in GraphQL decorators that don't evaluate outside the Nest app context, so the TypeORM CLI DataSource can't always load cleanly. To apply migrations on the server, use the raw-SQL bootstrap script (idempotent — safe to re-run):
+- no `CREATE TYPE IF NOT EXISTS` — use `DO $$ BEGIN CREATE TYPE …; EXCEPTION WHEN duplicate_object THEN null; END $$;` (and prefer `varchar` status columns validated in the app over new enum types — `ALTER TYPE … ADD VALUE` is awkward in a transaction)
+- use `IF NOT EXISTS` on tables/columns/indexes so every migration is safe to re-run.
 
-```sh
-# On the server, from the repo root, after deploy.sh has built the API:
-cd /home/ubuntu/spacejam
-node apps/api/dist/main.js &   # boot once so synchronize creates tables, OR:
-# Apply migrations manually via the raw SQL in each migration's up() method.
-```
+To apply a migration without loading the entity graph: run its real `up()` against a stub `QueryRunner` that just records each `query(sql)` string, wrap the result in `BEGIN; … COMMIT;`, review it, and apply it with `psql -X -v ON_ERROR_STOP=1 -f file.sql`.
 
-The current migration set (in `apps/api/src/typeorm/migrations/`):
-- `20260719000000_create_all_tables` — base schema
-- … additive migrations through `20260724010000-AddEmployeeSeatRelation`, `20260807000000-AddCustomerUserAndForeignKeys`
-- `20260809000000-AddOtpAndEmployeeUser` — M1: `otp_requests` table + `customer_employees.userId`
-- `20260809100000-AddPlansAndSubscriptions` — M2: `plans` + `subscriptions`
-- `20260809200000-AddBookingSubscriptionId` — M3: `bookings.subscriptionId`
-- `20260809300000-AddAuditLogCenterId` — hardening: `audit_logs.centerId`
-- `20260809400000-CreateAppSettings` — integrations: `app_settings`
-
-## Production Server
-
-### SSH Access
+Nothing applies migrations automatically: there is no `migrationsRun`, and `deploy.sh` does not run them. After deploying a change that needs schema updates, run from the repo root on the server:
 
 ```sh
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" root@145.223.22.72
+NODE_ENV=production npx tsx scripts/run-migrations.ts
 ```
+
+`NODE_ENV=production` is mandatory — `typeorm/data-source.ts` sets `synchronize: NODE_ENV !== 'production'`, so without it the script would try to sync the schema. This loads the whole entity graph; it has not been re-verified against the current schema, so if it fails to load, apply the migration's `up()` SQL by hand. `scripts/apply-migrations-raw.ts` is a no-entity-graph fallback but replays **only the three M1–M3 migrations** (OTP, plans/subscriptions, booking `subscriptionId`), not later ones.
+
+## Production
 
 | Field | Value |
-|---|---|
-| SSH user | `root` |
-| SSH key | `C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem` |
-| SSH key fingerprint | `SHA256:JA4HxvzAvWmbfhPDFxGFAJIk9gIcEy9OU41/PjNw57c` |
-| Production URL | `https://admin.spacejam.in` |
+|-------|-------|
+| Host | `145.223.22.72` (`srv2009485`, Hostinger VPS), Ubuntu 26.04.1 LTS |
+| URL | `https://admin.spacejam.in` (Let's Encrypt) |
+| SSH | `ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" root@145.223.22.72` (user `root`; key fingerprint `SHA256:JA4HxvzAvWmbfhPDFxGFAJIk9gIcEy9OU41/PjNw57c`) |
+| Node | v20.20.2 via NVM (`~/.nvm/versions/node/v20.20.2/`), npm 10.8.2 |
+| Repo | `/home/ubuntu/spacejam`. Do not use `/home/ubuntu/deploy/` (stale web artifacts); `/root/spacejam/` does not exist. |
 
-Security group: inbound **22, 80, 443**. Outbound: default.
+PM2 processes (run as root):
 
-### Server Environment
+| Process | Command / path | Port |
+|---------|----------------|------|
+| `spacejam-web` | `npx next start` in `/home/ubuntu/spacejam/apps/web` (`HOSTNAME=0.0.0.0`) | 3000 |
+| `spacejam-api` | `/home/ubuntu/spacejam/apps/api/dist/main.js` | 4000 |
 
-| Component | Detail |
-|---|---|
-| PM2 process (frontend) | `spacejam-web` — port 3000, `HOSTNAME=0.0.0.0` |
-| PM2 process (backend) | `spacejam-api` — port 4000 |
-| Node version | v20.20.2 (NVM managed, path: `~/.nvm/versions/node/v20.20.2/`) |
-| Repo path | `/home/ubuntu/spacejam` |
-| Next.js binary | **Hoisted** to `/home/ubuntu/spacejam/node_modules/next/dist/bin/next` (NOT `apps/web/node_modules/next/...`) |
-| Disk usage | **15% used** — ample free space |
+Nginx config is the tracked `nginx.conf` at the repo root (80 → 301 to HTTPS; routing as in [Request path](#request-path)).
 
-### PM2 Quirks (non-interactive SSH)
+### Shared server — read before touching it
 
-1. **Always prefix remote commands with `bash -lc`** — `pm2` and `node` are only on `$PATH` in a login shell that sources `~/.profile`:
-   ```sh
-   ssh -i "..." root@145.223.22.72 'bash -lc "pm2 status"'
-   ```
+The VPS is **shared with another live project, `arb-monitor`** (pm2 apps `arb-monitor-api` / `arb-monitor-ui`, nginx site `arbitary-vedpragya`, DB `arb_monitor`) on the **same pm2 daemon, nginx, PostgreSQL 18.6 and Redis**. The rules are in `C:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\arbitary\SERVER-HANDOFF.md` (verified 2026-10-02). For SpaceJam that means:
 
-2. **PM2 v7 PID file** — The auto-generated `pm2-root.service` uses `Type=forking` but PM2 v7 doesn't write the PID file. A drop-in override at `/etc/systemd/system/pm2-root.service.d/override.conf` fixes this (`Type=oneshot`, `PIDFile=` cleared). If you ever re-run `pm2 startup`, the override survives — verify with `systemctl cat pm2-root`.
+- **Do NOT run `deploy.sh` as-is.** It starts with `pm2 delete all` (deletes the neighbour's apps), overwrites both `.env` files with placeholder secrets and ends with `pm2 save` (rewrites the resurrect dump for everyone). Use name-scoped pm2 only (`pm2 restart spacejam-api`, `pm2 stop spacejam-web`); never `all`, `pm2 save` / `flush`, `pkill node`, or `systemctl restart nginx|postgresql|redis-server`. Reload (never restart) nginx, and only after `nginx -t`.
+- **`git archive HEAD` ships dev `.env` files** (`apps/api/.env` has `NODE_ENV=development`, `PORT=3100`). Extract with `--exclude='.env' --exclude='.env.*' --exclude='*/.env' --exclude='*/.env.*'` and keep a byte-for-byte copy to restore, or the API moves off port 4000 and nginx returns 502.
+- Touch only SpaceJam's own resources: `/home/ubuntu/spacejam`, DB `spacejam`, `spacejam-*` pm2 apps, the `spacejam` nginx site. Build with `nice -n 19` (2 vCPU / 7.7 GB shared). Before and after any pm2/nginx change confirm the neighbour is unchanged: `curl -sk -o /dev/null -w '%{http_code}' --resolve arbitary.vedpragya.com:443:127.0.0.1 https://arbitary.vedpragya.com/` → `200` (and `admin.spacejam.in` → `307`).
+- **SSH**: access is per-project keys that the server owner appends to `/root/.ssh/authorized_keys`. On 2026-10-03 the `Ap-south-2.pem` key above was **rejected** (`Permission denied (publickey,password)`, host key verified); a dedicated key, `~/.ssh/spacejam_deploy_ed25519`, was generated for the owner to authorize. Do not try other projects' keys, and avoid repeated failed logins (a security scanner runs on the box).
+- `:3000` and `:4000` listen on `0.0.0.0` with `ufw` inactive, so both answer straight from the internet, bypassing nginx/TLS (pre-existing).
 
-3. **Hoisted `next` binary** — The correct path is `/home/ubuntu/spacejam/node_modules/next/dist/bin/next`. The PM2 process is launched with `--cwd /home/ubuntu/spacejam/apps/web` so Next's own resolution works. Do NOT use `apps/web/node_modules/next/dist/bin/next`.
+### PM2 / SSH quirks
 
-### Deploy Workflow
+1. **Prefix remote commands with `bash -lc`** — `pm2` and `node` are only on `$PATH` in a login shell: `ssh -i "…" root@145.223.22.72 'bash -lc "pm2 status"'`.
+2. **PM2 v7 PID file** — the generated `pm2-root.service` uses `Type=forking` but PM2 v7 doesn't write the PID file. A drop-in at `/etc/systemd/system/pm2-root.service.d/override.conf` fixes it (`Type=oneshot`, `PIDFile=` cleared); it survives `pm2 startup`, verify with `systemctl cat pm2-root`.
+3. **`next` is hoisted** to `/home/ubuntu/spacejam/node_modules/next/dist/bin/next` (not `apps/web/node_modules/…`); PM2 launches web with `--cwd /home/ubuntu/spacejam/apps/web`.
 
-> **Before deploying**, ensure the new migrations will be applied — the API now depends on `otp_requests`, `plans`, `subscriptions`, `bookings.subscriptionId`, `audit_logs.centerId`, and `app_settings`. With `synchronize=false` in prod, a missing table means boot/runtime failure. Either run `DATABASE_SYNCHRONIZE=true` once after deploy (simplest) or apply each migration's SQL manually.
+### Deploy
+
+> **Legacy recipe — unsafe on the shared server** (see above: `pm2 delete all`, `.env` overwrite, `pm2 save`). Prefer a manual, name-scoped deploy: back up (code + builds + env, `pg_dump`), extract with the `.env` excludes, apply the additive migration SQL, `nice -n 19 npx nx build api`, stop `spacejam-web` → `npx next build --webpack` → `pm2 restart spacejam-api` / `spacejam-web` by name, then smoke-test and compare the neighbour. Build the web app locally first in a throwaway copy (the dev server's `.next` is in use).
 
 ```sh
-# 1. Build locally
-npx nx build web && npx nx build api
-
-# 2. Archive and copy
-cd <repo root>
+# 0. Commit first — `git archive HEAD` ships only committed files.
 git archive --format=tar.gz HEAD -o update.tar.gz
-scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz root@145.223.22.72:/root/
 
-# 3. SSH in and deploy
-ssh -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" root@145.223.22.72
-# Then run:
-bash /home/ubuntu/spacejam/deploy.sh   # lives at `/home/ubuntu/spacejam/deploy.sh`; the npm script path `scripts/deploy.sh` is broken
+# 1. Upload to the path deploy.sh extracts from.
+scp -i "C:\Users\ASUS TUF A15\Desktop\DevOPS\AWS_Key_Pairs\Ap-south-2.pem" update.tar.gz root@145.223.22.72:/home/ubuntu/update.tar.gz
 
-# 4. Apply new schema (one-off) — boot the API once with synchronize on so the
-#    new tables/columns are created, then restart normally:
-DATABASE_SYNCHRONIZE=true pm2 restart spacejam-api --update-env
-sleep 10   # let it create the schema
-# Then edit apps/api/.env to remove DATABASE_SYNCHRONIZE (or set false) and restart:
-pm2 restart spacejam-api --update-env
+# 2. Run the deploy (this is what `npm run deploy:prod` does).
+ssh -i "…Ap-south-2.pem" root@145.223.22.72 'bash -lc "/home/ubuntu/spacejam/deploy.sh"'
 
-# 5. After first deploy with integrations: log in as SUPER_ADMIN and configure
-#    Settings → Integrations (SMS provider + Razorpay). OTP delivery and
-#    payments are no-ops until this is done.
+# 3. Apply any schema changes — see Migrations. deploy.sh does not.
 ```
 
-The `deploy.sh` script:
-- Extracts the archive to `/home/ubuntu/spacejam`
-- Writes `.env` files for both `apps/web` and `apps/api`
-- Runs `npx nx build web` (frontend) and `npx nx build api` (backend via webpack-cli)
-- Starts/restarts PM2 processes: `spacejam-web` (frontend) and `spacejam-api` (backend)
-- Uses `pm2 resurrect` to restore the process list
+**Verify first:** the repo's `deploy.sh` extracts `/home/ubuntu/update.tar.gz`; an earlier version of this doc said to upload to `/root/`. If the server's copy of `deploy.sh` differs from the repo's, check it before deploying — see the first gotcha below.
 
-**`scripts/build_api.sh` and `scripts/rebuild_web.sh` have CRLF line-ending corruption** (Windows checkouts) — run their commands manually instead of invoking the scripts.
+What `deploy.sh` does, in order: `pm2 delete all` → stop the Nx daemon → extract the archive over `/home/ubuntu/spacejam` (no wipe, `node_modules` preserved) → **overwrite `apps/web/.env` and `apps/api/.env`** → delete `apps/web/.next`, `apps/api/dist`, `.nx/cache` → `npm install` → `NX_DAEMON=false npx nx build api` → `npx next build --webpack || true` + a stub `prerender-manifest.json` → `pm2 start` both apps + `pm2 save` → curl checks of `:3000` and `:4000/api/health`.
 
-**IMPORTANT — `OTP_DEV_BYPASS`**: ensure prod `apps/api/.env` does NOT have `OTP_DEV_BYPASS=true`. If left on, any caller can log in with code `000000`. Set it `false` or remove the line in production.
-
-### Production Runtime Facts (2026-07-12)
-
-- API listens on **port 4000**. `deploy.sh` writes `PORT=4000` to `.env`; `main.ts` defaults to 4000 if unset. nginx on :80/:443 proxies to both.
-
-### Environment Variables (Production)
-
-Frontend (`apps/web/.env`):
-- `NEXT_PUBLIC_GRAPHQL_HTTP_URL` — backend GraphQL endpoint (proxied by nginx)
-- `NEXT_PUBLIC_GRAPHQL_WS_URL` — WebSocket endpoint for subscriptions
-
-Backend (`apps/api/.env`):
-- `DATABASE_URL` (or `DATABASE_HOST`/`PORT`/`USER`/`PASSWORD`/`NAME`) — PostgreSQL connection
-- `JWT_SECRET` — JWT signing secret
-- `REFRESH_TOKEN_SECRET` — Refresh token secret
-- `REDIS_HOST` / `REDIS_PORT` — Redis connection
-- `PORT=4000` — Backend port
-- `CORS_ORIGIN` — Frontend origin for CORS
-- `FRONTEND_URL` — Frontend URL
-- `NODE_ENV=production`
-- `OTP_DEV_BYPASS` — **must be `false`/unset in prod** (dev returns code `000000`)
-- `DATABASE_SYNCHRONIZE` — leave unset/`false` in prod; set `true` only for a one-off schema bootstrap
-- SMS provider + Razorpay keys are configured at runtime via the Integrations settings page (stored in `app_settings`, not env)
-
----
+Gotchas:
+- `pm2 delete all` runs **before** extraction and the script has `set -e`, so a missing/misplaced archive aborts the deploy with **prod down**. It also kills every PM2 process on the box, not just SpaceJam's.
+- The web build failure is swallowed (`|| true`) and a stub manifest lets `next start` boot, so a broken web build still "deploys" — read the build output and load the site.
+- Both `.env` files are regenerated each run, so server-side `.env` edits don't survive. The template hard-codes **placeholder secrets** (`JWT_SECRET` / `REFRESH_TOKEN_SECRET` ending in `change-me`, DB password `spacejam`); move real secrets to a server-only file before treating prod as hardened.
+- Line endings: `.gitattributes` is saved as UTF-16, which git ignores (`git check-attr eol -- deploy.sh` → `unspecified`), so the intended `*.sh text eol=lf` rule is not in effect. Shell scripts can pick up CRLF on Windows checkouts and fail on the server (`bash\r`). Check `grep -c $'\r' deploy.sh` is 0 before deploying (it is, as of 2026-10-02).
+- `.github/workflows/deploy.yml` (push to `main`) SSHes in and runs `/home/ubuntu/spacejam/scripts/deploy.sh` — that file is **not in the repo** (the script is the root `deploy.sh`) and the workflow never uploads code. Treat it as non-functional until fixed.
 
 ## File Header Format
 
@@ -402,15 +287,11 @@ All TypeScript/TSX files should include this header:
  */
 ```
 
----
-
 ## Commit Conventions
 
 - No emoji in commit messages
 - Use imperative mood: "Add feature" not "Added feature"
 - Reference issue numbers if applicable
-
----
 
 ## Beads Issue Tracker
 
@@ -426,3 +307,4 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking -- do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Use `bd remember` for persistent knowledge -- do NOT use MEMORY.md files
 - Issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export
+- Do not commit or push without clear authority from the user's current request (see `AGENTS.md` → Session Completion)
