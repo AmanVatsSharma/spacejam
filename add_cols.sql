@@ -1,0 +1,17 @@
+ALTER TABLE customers 
+ADD COLUMN IF NOT EXISTS "gstNumber" varchar(100),
+ADD COLUMN IF NOT EXISTS "companyAddress" varchar(100),
+ADD COLUMN IF NOT EXISTS "companyType" varchar(50),
+ADD COLUMN IF NOT EXISTS "employeeCount" integer,
+ADD COLUMN IF NOT EXISTS "industry" varchar(100),
+ADD COLUMN IF NOT EXISTS "website" varchar(255),
+ADD COLUMN IF NOT EXISTS "planType" varchar(100),
+ADD COLUMN IF NOT EXISTS "alternateEmail" varchar(255),
+ADD COLUMN IF NOT EXISTS "alternatePhone" varchar(50),
+ADD COLUMN IF NOT EXISTS "dob" date,
+ADD COLUMN IF NOT EXISTS "emergencyContactName" varchar(255),
+ADD COLUMN IF NOT EXISTS "emergencyContactPhone" varchar(50),
+ADD COLUMN IF NOT EXISTS "communicationChannel" varchar(50),
+ADD COLUMN IF NOT EXISTS "autoRechargeEnabled" boolean default false,
+ADD COLUMN IF NOT EXISTS "autoRechargeContact" varchar(255),
+ADD COLUMN IF NOT EXISTS "autoRechargeThreshold" numeric(12,2);
