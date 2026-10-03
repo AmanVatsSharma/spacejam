@@ -9,8 +9,16 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { registerEnumType } from '@nestjs/graphql';
 import { CacheModule } from '../cache/cache.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { AuditModule } from '../auth/audit.module';
+import { OnboardingService } from './onboarding.service';
+import {
+  OnboardingOutcome,
+  OnboardingPaymentMethod,
+  OnboardingPaymentStatus,
+} from '../graphql/enums/onboarding-payment.enums';
 import { CrmResolver } from '../graphql/resolvers/crm.resolver';
 import { CustomerResolver } from '../graphql/resolvers/customer.resolver';
 import { OnboardingResolver } from '../graphql/resolvers/onboarding.resolver';
@@ -24,6 +32,12 @@ import { CustomerDocument } from '../typeorm/entities/customer-document.entity';
 import { User } from '../typeorm/entities/user.entity';
 import { EmailService } from '../auth/services/email.service';
 
+// GraphQL registration lives here (not in the enum file) so entities can import
+// the plain enums without pulling in GraphQL side-effects — see visit.enums.ts.
+registerEnumType(OnboardingPaymentMethod, { name: 'OnboardingPaymentMethod' });
+registerEnumType(OnboardingPaymentStatus, { name: 'OnboardingPaymentStatus' });
+registerEnumType(OnboardingOutcome, { name: 'OnboardingOutcome' });
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -36,10 +50,14 @@ import { EmailService } from '../auth/services/email.service';
     ]),
     CacheModule,
     // EmailService (provided below) reads its SMTP config from
-    // IntegrationSettingsService, which IntegrationsModule exports.
+    // IntegrationSettingsService, which IntegrationsModule exports; the
+    // onboarding service also uses its PaymentOrdersService / Razorpay config.
     IntegrationsModule,
+    // Audit trail for payments and onboarding (TypeORM-only; no auth cycle).
+    AuditModule,
   ],
   providers: [
+    OnboardingService,
     CrmResolver,
     CustomerResolver,
     OnboardingResolver,
@@ -51,6 +69,7 @@ import { EmailService } from '../auth/services/email.service';
     EmailService,
   ],
   exports: [
+    OnboardingService,
     CrmResolver,
     CustomerResolver,
     OnboardingResolver,

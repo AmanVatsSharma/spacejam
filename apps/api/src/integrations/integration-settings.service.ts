@@ -46,6 +46,21 @@ export interface QrPaymentConfig {
   payeeName: string;
 }
 
+/** The center's receiving bank account, shown to staff for NEFT/RTGS/IMPS payments. */
+export interface BankAccountConfig {
+  accountName: string;
+  accountNumber: string;
+  ifsc: string;
+  bankName: string;
+  branch: string;
+}
+
+/** Who cheques are made out to and any collection instructions. */
+export interface ChequeConfig {
+  payeeName: string;
+  instructions: string;
+}
+
 export interface EmailConfig {
   host: string;
   port: number;
@@ -132,6 +147,35 @@ export class IntegrationSettingsService {
   async isQrPaymentConfigured(): Promise<boolean> {
     const c = await this.getQrPaymentConfig();
     return !!c.upiId;
+  }
+
+  /** Receiving bank account for NEFT/RTGS/IMPS (app_settings keys payment.bank.*). */
+  async getBankAccountConfig(): Promise<BankAccountConfig> {
+    return {
+      accountName: (await this.getRaw('payment.bank.accountName')) ?? '',
+      accountNumber: (await this.getRaw('payment.bank.accountNumber')) ?? '',
+      ifsc: (await this.getRaw('payment.bank.ifsc')) ?? '',
+      bankName: (await this.getRaw('payment.bank.bankName')) ?? '',
+      branch: (await this.getRaw('payment.bank.branch')) ?? '',
+    };
+  }
+
+  async isBankAccountConfigured(): Promise<boolean> {
+    const c = await this.getBankAccountConfig();
+    return !!c.accountName && !!c.accountNumber && !!c.ifsc;
+  }
+
+  /** Cheque payee + instructions (app_settings keys payment.cheque.*). */
+  async getChequeConfig(): Promise<ChequeConfig> {
+    return {
+      payeeName: (await this.getRaw('payment.cheque.payeeName')) ?? '',
+      instructions: (await this.getRaw('payment.cheque.instructions')) ?? '',
+    };
+  }
+
+  async isChequeConfigured(): Promise<boolean> {
+    const c = await this.getChequeConfig();
+    return !!c.payeeName;
   }
 
   /** SMTP email config (app_settings keys email.*). Port defaults to 587. */

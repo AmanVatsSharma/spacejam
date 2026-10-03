@@ -2,53 +2,51 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client";
 import { toast } from "sonner";
-import {
-  CREATE_CUSTOMER,
-  GET_CUSTOMERS,
-  CONVERT_LEAD_WITH_ONBOARDING,
-  GET_LEAD,
-  CREATE_DEPOSIT,
-  CREATE_CONTRACT,
-  CREATE_INVOICE,
-  COMPLETE_ONBOARDING,
-  CREATE_CUSTOMER_DOCUMENT,
-  GET_FLOORS,
-  ALLOCATE_CUSTOMER_SEATS,
-  CREATE_LEAD,
-  UPDATE_LEAD,
-  GET_PAYMENT_CONFIG,
-  CREATE_PAYMENT_ORDER,
-  VERIFY_PAYMENT,
-} from "@/lib/apollo/operations";
+import { GET_LEAD, GET_FLOORS } from "@/lib/apollo/operations";
 import { useActiveCenter } from "@/contexts/active-center-context";
 import { useMeetingRooms, useBookRoom } from "@/hooks/use-operations";
 import { getAccessToken } from "@/lib/apollo/token-storage";
+import {
+  errorMessage,
+  formatInr,
+  usePaymentConfig,
+  useOnboardingPaymentActions,
+  type OnboardingResult,
+} from "@/hooks/use-onboarding-payments";
+import {
+  PaymentMethodDetails,
+  PaymentMethodPicker,
+  defaultMethod,
+  emptyPaymentForm,
+  toPaymentInput,
+  validatePaymentForm,
+  type PaymentFormState,
+} from "@/components/ui/dashboard/onboarding-payment-ui";
 
-type RazorpayInstance = { open: () => void; on: (e: string, h: Function) => void; };
-type RazorpayCtor = new (options: Record<string, unknown>) => RazorpayInstance;
-type RazorpayWindow = typeof window & { Razorpay?: RazorpayCtor; };
-
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    const w = window as RazorpayWindow;
-    if (w.Razorpay) { resolve(true); return; }
-    const existing = document.getElementById("rzp-checkout-js");
-    if (existing) {
-      existing.addEventListener("load", () => resolve(!!w.Razorpay));
-      existing.addEventListener("error", () => resolve(false));
-      return;
+/**
+ * What the SERVER did with the submit — drives the final screen. Always set
+ * from a real server response, never optimistically.
+ */
+type Completion =
+  | {
+      kind: "onboarded";
+      onboardingId: string;
+      customerId: string;
+      message: string;
+      seats?: { requested: number; booked: number; shortfall: number } | null;
     }
-    const script = document.createElement("script");
-    script.id = "rzp-checkout-js";
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => resolve(!!w.Razorpay);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+  | { kind: "cheque"; onboardingId: string; leadId?: string | null; chequeNumber?: string | null; amount: number; message: string }
+  | { kind: "unpaid"; onboardingId: string; amount: number; message: string };
+
+/** One key per wizard session: a double-click or retried submit resolves to the SAME onboarding. */
+const newIdempotencyKey = (): string =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+
+const isEmail = (v?: string | null): boolean => !!v && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 /** Document slots collected in step 6 (Legal & Compliance). */
 type DocSlot = "pan" | "aadhaarFront" | "aadhaarBack" | "gst";
@@ -109,9 +107,10 @@ export default function OnboardingWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Set only after the FULL save succeeds — the completion screen's
-  // actions navigate with it, so it can't render without a real customer.
-  const [savedCustomerId, setSavedCustomerId] = useState<string | null>(null);
+  // Set only from a real server response (see Completion) — the final screen
+  // can never render for a save that did not happen.
+  const [completion, setCompletion] = useState<Completion | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(newIdempotencyKey);
   const [leadId, setLeadId] = useState<string | null>(null);
   const [leadPrefilled, setLeadPrefilled] = useState(false);
 
@@ -171,13 +170,10 @@ export default function OnboardingWizardPage() {
       (ind, i) => i !== selfIndex && (ind.seat ?? "").toLowerCase() === seatName.toLowerCase(),
     );
 
-  const [allocateCustomerSeats] = useMutation(ALLOCATE_CUSTOMER_SEATS);
-  const [createLeadMut] = useMutation(CREATE_LEAD);
-  const [updateLeadMut] = useMutation(UPDATE_LEAD);
-  const { data: payCfg } = useQuery(GET_PAYMENT_CONFIG);
-  const paymentConfig = payCfg?.paymentConfig;
-  const [createPaymentOrder] = useMutation(CREATE_PAYMENT_ORDER);
-  const [verifyPayment] = useMutation(VERIFY_PAYMENT);
+  // Everything money-related is decided by the server (OnboardingService):
+  // one atomic call, payment gates conversion, safe to retry.
+  const { config: paymentConfig } = usePaymentConfig();
+  const { submit: submitOnboarding, collect: collectPayment, completeOnline } = useOnboardingPaymentActions();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -191,17 +187,10 @@ export default function OnboardingWizardPage() {
     skip: !leadId,
   });
 
-  const [createCustomer] = useMutation(CREATE_CUSTOMER, {
-    refetchQueries: [{ query: GET_CUSTOMERS }],
-  });
-  const [convertLeadWithOnboarding] = useMutation(CONVERT_LEAD_WITH_ONBOARDING, {
-    refetchQueries: [{ query: GET_CUSTOMERS }],
-  });
-  const [createDeposit] = useMutation(CREATE_DEPOSIT);
-  const [createContract] = useMutation(CREATE_CONTRACT);
-  const [createInvoice] = useMutation(CREATE_INVOICE);
-  const [completeOnboarding] = useMutation(COMPLETE_ONBOARDING);
-  const [createCustomerDocument] = useMutation(CREATE_CUSTOMER_DOCUMENT);
+  // (The old browser-side saga — createCustomer / createDeposit / createInvoice /
+  // createContract / allocateCustomerSeats / createCustomerDocument /
+  // completeOnboarding / Razorpay — is gone: it was ten uncoordinated calls
+  // with payment last and errors swallowed. See submitOnboarding on the API.)
 
   // Form State - Step 1 (Basic Information) — kept controlled so data
   // isn't lost when navigating between steps and so it can drive the
@@ -234,14 +223,27 @@ export default function OnboardingWizardPage() {
       if (typeof draft?.currentStep === "number" && draft.currentStep >= 1 && draft.currentStep <= 9) {
         setCurrentStep(draft.currentStep);
       }
-      if (draft?.paymentMode) setPaymentMode(draft.paymentMode);
+      if (["RAZORPAY", "BANK_TRANSFER", "CHEQUE"].includes(draft?.paymentMethod)) {
+        methodTouched.current = true;
+        setPaymentForm((p) => ({
+          ...p,
+          method: draft.paymentMethod,
+          chequeBank: typeof draft.chequeBank === "string" ? draft.chequeBank : p.chequeBank,
+          payerBank: typeof draft.payerBank === "string" ? draft.payerBank : p.payerBank,
+        }));
+      }
       if (draft?.billingCycle) setBillingCycle(draft.billingCycle);
       if (Array.isArray(draft?.individuals) && draft.individuals.length > 0) {
         setIndividuals(draft.individuals);
       }
       if (draft?.planType === 'Hot Desk' || draft?.planType === 'Customize Deal') setPlanType(draft.planType);
       if (draft?.bankDetails && typeof draft.bankDetails === 'object') {
-        setBankDetails((prev) => ({ ...prev, ...draft.bankDetails }));
+        // Only the non-sensitive parts are ever saved in the browser (see handleSaveDraft).
+        setBankDetails((prev) => ({
+          ...prev,
+          holderName: draft.bankDetails.holderName ?? prev.holderName,
+          bankName: draft.bankDetails.bankName ?? prev.bankName,
+        }));
       }
       if (draft?.customDeal && typeof draft.customDeal === 'object') {
         setCustomDeal((prev) => ({ ...prev, ...draft.customDeal }));
@@ -334,10 +336,21 @@ export default function OnboardingWizardPage() {
   });
 
   // Form State - Step 4
-  const [paymentMode, setPaymentMode] = useState<"UPI" | "Bank Transfer" | "Card" | "Cheque">("UPI");
+  // Payment method + its details (Razorpay / bank transfer UTR / cheque).
+  const [paymentForm, setPaymentForm] = useState<PaymentFormState>(emptyPaymentForm("RAZORPAY"));
+  const methodTouched = useRef(false);
+  const choosePaymentMethod = (method: PaymentFormState["method"]) => {
+    methodTouched.current = true;
+    setPaymentForm((p) => ({ ...p, method }));
+  };
+  // Until the user picks one, preselect online if the super admin set it up, else bank transfer.
+  useEffect(() => {
+    if (!methodTouched.current && paymentConfig) {
+      setPaymentForm((p) => ({ ...p, method: defaultMethod(paymentConfig) }));
+    }
+  }, [paymentConfig]);
   const [billingCycle, setBillingCycle] = useState<"Monthly" | "Quarterly" | "Annually">("Monthly");
   const [securityDepositAmount, setSecurityDepositAmount] = useState("₹ 50,000");
-  const [modeOfDeposit, setModeOfDeposit] = useState("Bank Transfer (NEFT/RTGS)");
   const [bankDetails, setBankDetails] = useState({
     holderName: "",
     accountNumber: "",
@@ -402,8 +415,17 @@ export default function OnboardingWizardPage() {
       if (dobDate > new Date()) return "Date of birth cannot be in the future";
     }
     if (step === 4) {
-      // Bank details are mandatory only for Bank Transfer
-      if (paymentMode === "Bank Transfer") {
+      const amount = parseAmount(securityDepositAmount);
+      if (amount > 10_000_000) return "The security deposit looks too large — check the amount";
+      // Money is whole paise: reject 3+ decimals instead of silently rounding what the client pays.
+      if (/\.\d{3,}/.test(String(securityDepositAmount ?? "").replace(/[^0-9.]/g, ""))) {
+        return "The security deposit can have at most 2 decimal places";
+      }
+      // Mirrors the server's rules (the server stays the authority).
+      const paymentProblem = validatePaymentForm(paymentForm, { amount, config: paymentConfig });
+      if (paymentProblem) return paymentProblem;
+      // The client's own bank account (for refunds) is required when they pay by bank transfer.
+      if (paymentForm.method === "BANK_TRANSFER" && amount > 0) {
         if (!bankDetails.holderName?.trim()) return "Account holder name is required";
         if (!bankDetails.accountNumber?.trim()) return "Account number is required";
         if (!/^\d{9,18}$/.test(bankDetails.accountNumber.replace(/\s/g, ""))) return "Account number must be 9-18 digits";
@@ -527,7 +549,9 @@ export default function OnboardingWizardPage() {
    * state so the wizard starts fresh without a page reload.
    */
   const resetWizard = () => {
-    setSavedCustomerId(null);
+    setCompletion(null);
+    setIdempotencyKey(newIdempotencyKey());
+    methodTouched.current = false;
     setBasicInfo({ name: "", phone: "", email: "", altContact: "", dob: "", company: "", gst: "" });
     setIndividuals([{ id: Date.now(), name: "", phone: "", email: "", dept: "", seat: "" }]);
     setEmployeeMode("bulk");
@@ -536,7 +560,7 @@ export default function OnboardingWizardPage() {
     setCustomDeal({ openSeats: 0, cabins: 0, durationMonths: 12, initialRent: 40000, yoyPercent: 5, startDate: "" });
     setSecurityDepositAmount("₹ 50,000");
     setBillingCycle("Monthly");
-    setPaymentMode("UPI");
+    setPaymentForm(emptyPaymentForm(defaultMethod(paymentConfig)));
     setBankDetails({ holderName: "", accountNumber: "", ifscCode: "", bankName: "" });
     setAdditionalServices({ meetingRoom: true, printing: true, valetParking: true, tokenWallet: true });
     setWalletDetails({ contactMethod: "phone", contactValue: "", threshold: "100", autoRecharge: true });
@@ -554,6 +578,65 @@ export default function OnboardingWizardPage() {
     }
   };
 
+  /** Upload a file once; a retried submit reuses the URL instead of uploading it again. */
+  const uploadedUrls = useRef(new Map<string, string>());
+  const uploadOnce = async (cacheKey: string, file: File): Promise<string> => {
+    const hit = uploadedUrls.current.get(cacheKey);
+    if (hit) return hit;
+    const url = await uploadDocumentFile(file);
+    uploadedUrls.current.set(cacheKey, url);
+    return url;
+  };
+
+  /** Turn the server's answer into the final screen. */
+  const showOutcome = (result: OnboardingResult, amount: number, unpaidMessage?: string) => {
+    try {
+      localStorage.removeItem("onboarding_draft"); // the application is saved server-side now
+    } catch {
+      /* ignore */
+    }
+    const ob = result.onboarding;
+    const customerId = result.customer?.id ?? ob.customerId ?? null;
+    if (result.outcome === "ONBOARDED" && customerId) {
+      setCompletion({ kind: "onboarded", onboardingId: ob.id, customerId, message: result.message, seats: result.seats });
+      if (result.seats && result.seats.shortfall > 0) {
+        toast.warning(
+          `Seats booked: ${result.seats.booked}/${result.seats.requested} — not enough inventory (${result.seats.shortfall} unassigned)`,
+        );
+      }
+    } else if (result.outcome === "AWAITING_CHEQUE_CLEARANCE") {
+      setCompletion({ kind: "cheque", onboardingId: ob.id, leadId: result.lead?.id ?? ob.leadId, chequeNumber: ob.chequeNumber, amount, message: result.message });
+    } else {
+      setCompletion({ kind: "unpaid", onboardingId: ob.id, amount, message: unpaidMessage ?? result.message });
+    }
+    setCurrentStep(10);
+  };
+
+  /** Re-open online payment for an application whose first attempt didn't complete. */
+  const retryOnlinePayment = async () => {
+    if (!completion || completion.kind !== "unpaid" || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const result = await collectPayment(completion.onboardingId, { method: "RAZORPAY" });
+      if (result.outcome === "PENDING_ONLINE_PAYMENT" && result.razorpay) {
+        const online = await completeOnline(result);
+        if (online.kind === "onboarded") {
+          toast.success(online.result.message);
+          showOutcome(online.result, completion.amount);
+        } else {
+          toast.warning(online.message);
+          setCompletion({ ...completion, message: online.message });
+        }
+      } else {
+        showOutcome(result, completion.amount);
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     // Pre-flight: surface every required-field problem BEFORE any network
@@ -568,397 +651,104 @@ export default function OnboardingWizardPage() {
     }
     setIsSubmitting(true);
     try {
-      // ── Collect the full onboarding payload from every step's state so
-      //    nothing the admin entered is dropped on submit.
-      const contactName = basicInfo.name?.trim() || undefined;
-      const contactEmail = basicInfo.email?.trim() || undefined;
-      const contactPhone = basicInfo.phone?.trim() || undefined;
-      const companyName = basicInfo.company?.trim() || undefined;
-      const companyAddress = undefined; // collected visually but no dedicated field yet
-      const gstNumber = basicInfo.gst?.trim() || undefined;
-      const alternateEmail = basicInfo.altContact?.trim() || undefined;
-      // Only send a dob when it parses to a real date — an Invalid Date
-      // used to fail the entire createCustomer mutation.
-      const rawDob = basicInfo.dob?.trim() || undefined;
-      const parsedDob = rawDob ? new Date(rawDob) : null;
-      const dob = parsedDob && !Number.isNaN(parsedDob.getTime()) ? rawDob : undefined;
-      const emergencyContact = undefined;
-      const emergencyPhone = undefined;
+      // 1) Upload the KYC files and the signature FIRST. If an upload fails
+      //    nothing has been created yet, so there is nothing to clean up.
+      const documents: { name: string; documentType: string; fileUrl: string; fileSize?: string; mimeType?: string }[] = [];
+      for (const slot of (Object.keys(DOC_META) as DocSlot[]).filter((x) => kycDocs[x])) {
+        const file = kycDocs[slot]!;
+        const fileUrl = await uploadOnce(`${slot}:${file.name}:${file.size}:${file.lastModified}`, file);
+        documents.push({ name: DOC_META[slot].label, documentType: DOC_META[slot].documentType, fileUrl, fileSize: String(file.size), mimeType: file.type || undefined });
+      }
+      if (signatureData?.startsWith("data:")) {
+        const blob = await (await fetch(signatureData)).blob();
+        const file = new File([blob], "signed-agreement.png", { type: "image/png" });
+        const fileUrl = await uploadOnce(`signature:${signatureData.length}:${signatureData.slice(-48)}`, file);
+        documents.push({ name: "Signed Agreement", documentType: "agreement", fileUrl, fileSize: String(blob.size), mimeType: "image/png" });
+      }
 
-      // Step 3 — membership & space
-      const resolvedPlanType =
-        planType === "Customize Deal" ? "Custom" : planType || undefined;
-      const employeeCount =
-        individuals.length > 0 ? individuals.length : undefined;
-
-      // Step 4 — finance & deposits. Parse the security deposit amount
-      // ("₹ 50,000" → 50000) so revenue rows get a real figure, not 0.
+      // 2) ONE atomic, idempotent call. The server validates everything, takes
+      //    (or defers) payment according to the method, and only then creates
+      //    the client — a cheque keeps the lead COLD until it clears.
       const depositAmount = parseAmount(securityDepositAmount);
-      const paymentFrequency = billingCycle || "Monthly";
-
-      // Step 7 — personalisation
-      const communicationChannelVal = communicationChannel || undefined;
-
-      if (paymentMode === "Cheque") {
-        if (leadId && leadData?.lead) {
-          await updateLeadMut({
-            variables: {
-              id: leadId,
-              input: { status: "COLD" },
-            },
-          });
-          toast.success("Saved as Cold Lead (Cheque Payment)");
-        } else {
-          await createLeadMut({
-            variables: {
-              input: {
-                name: basicInfo.name || "New Lead",
-                email: basicInfo.email,
-                phone: basicInfo.phone,
-                company: basicInfo.company,
-                status: "COLD",
-                centerId: selectedCenterId,
+      const team = individuals.filter((i) => i.name?.trim() || i.seat?.trim());
+      const isCustom = planType === "Customize Deal";
+      const alt = basicInfo.altContact?.trim() ?? "";
+      const input: Record<string, unknown> = {
+        idempotencyKey,
+        ...(leadId && leadData?.lead ? { leadId } : {}),
+        centerId: selectedCenterId,
+        contactName: basicInfo.name.trim(),
+        contactEmail: basicInfo.email.trim(),
+        contactPhone: basicInfo.phone.trim().replace(/[^\d+]/g, ""),
+        companyName: basicInfo.company.trim(),
+        gstNumber: basicInfo.gst?.trim() || undefined,
+        // The "alternate contact" field accepts an email or a phone number.
+        ...(isEmail(alt) ? { alternateEmail: alt } : alt.replace(/\D/g, "").length >= 7 ? { alternatePhone: alt } : {}),
+        dob: basicInfo.dob?.trim() || undefined,
+        communicationChannel,
+        planType: isCustom ? "Custom" : planType,
+        billingCycle,
+        seatType: planType === "Hot Desk" ? "HOT_DESK" : "ANY",
+        seatCount: Math.max(1, team.length),
+        ...(isCustom
+          ? {
+              durationMonths: Math.min(120, Math.max(1, Math.round(customDeal.durationMonths || 12))),
+              monthlyRent: Math.round(Number(customDeal.initialRent) * 100) / 100 || undefined,
+              startDate: customDeal.startDate || undefined,
+            }
+          : {}),
+        members: team.map((i) => ({
+          name: i.name?.trim() || undefined,
+          phone: i.phone?.trim() || undefined,
+          email: isEmail(i.email) ? i.email.trim() : undefined,
+          department: i.dept?.trim() || undefined,
+          seatName: i.seat?.trim() || undefined,
+        })),
+        depositAmount,
+        payment: toPaymentInput(paymentForm, depositAmount),
+        ...(paymentForm.method === "BANK_TRANSFER" && depositAmount > 0 && bankDetails.accountNumber
+          ? {
+              refundAccount: {
+                holderName: bankDetails.holderName.trim(),
+                accountNumber: bankDetails.accountNumber.replace(/\s/g, ""),
+                ifsc: bankDetails.ifscCode.trim().toUpperCase(),
+                bankName: bankDetails.bankName.trim(),
               },
-            },
-          });
-          toast.success("Created as Cold Lead (Cheque Payment)");
+            }
+          : {}),
+        ...(additionalServices.tokenWallet
+          ? {
+              autoRechargeEnabled: walletDetails.autoRecharge,
+              autoRechargeContact: walletDetails.contactValue?.trim() || undefined,
+              ...(Number(walletDetails.threshold) > 0 ? { autoRechargeThreshold: Math.round(Number(walletDetails.threshold)) } : {}),
+            }
+          : {}),
+        documents,
+      };
+
+      const result = await submitOnboarding(input);
+
+      // 3) Razorpay: the server created the order — show Checkout, then have
+      //    the SERVER verify it. Closing the window is not a failure: the
+      //    application stays saved and can be retried (or the webhook completes it).
+      if (result.outcome === "PENDING_ONLINE_PAYMENT" && result.razorpay) {
+        const online = await completeOnline(result);
+        if (online.kind === "onboarded") {
+          toast.success(online.result.message);
+          showOutcome(online.result, depositAmount);
+        } else {
+          toast.warning(online.message);
+          showOutcome(online.result, depositAmount, online.message);
         }
-        
-        try { localStorage.removeItem("onboarding_draft"); } catch {}
-        router.push("/dashboard/crm/leads");
         return;
       }
 
-      let customerId: string;
-      let onboardingId: string | undefined;
-
-      if (leadId && leadData?.lead) {
-        const result = await convertLeadWithOnboarding({
-          variables: {
-            id: leadId,
-            contactName,
-            contactEmail,
-            contactPhone,
-            companyName,
-            companyAddress,
-            gstNumber,
-            alternateEmail,
-            alternatePhone: undefined,
-            dob,
-            planType: resolvedPlanType,
-            seatCount: employeeCount,
-            employeeCount,
-            emergencyContact,
-            emergencyPhone: undefined,
-            communicationChannel: communicationChannelVal,
-            notes: undefined,
-            provisionLogin: true,
-            ...(additionalServices.tokenWallet
-              ? {
-                  autoRechargeEnabled: walletDetails.autoRecharge,
-                  autoRechargeContact: walletDetails.contactValue?.trim() || undefined,
-                  ...(Number(walletDetails.threshold) > 0
-                    ? { autoRechargeThreshold: Number(walletDetails.threshold) }
-                    : {}),
-                }
-              : {}),
-          },
-        });
-        customerId = result.data.convertLeadWithOnboarding.customer.id;
-        onboardingId = result.data.convertLeadWithOnboarding.onboarding?.id;
-        toast.success("Lead converted to customer!");
-      } else {
-        const result = await createCustomer({
-          variables: {
-            input: {
-              name: basicInfo.name || "New Client",
-              email: basicInfo.email || "",
-              phone: basicInfo.phone || "",
-              company: basicInfo.company || "",
-              // CustomerStatus enum values are UPPERCASE — "Active" was
-              // rejected by GraphQL validation and silently killed the
-              // entire createCustomer mutation.
-              status: "ACTIVE",
-              gstNumber,
-              companyAddress,
-              planType: resolvedPlanType,
-              employeeCount,
-              alternateEmail,
-              alternatePhone: undefined,
-              dob: dob ? new Date(dob) : undefined,
-              emergencyContactName: emergencyContact,
-              emergencyContactPhone: undefined,
-              communicationChannel: communicationChannelVal,
-              // Attribute the customer to the active center so they appear
-              // in the center-scoped client report.
-              centerId: selectedCenterId,
-              // Token-wallet auto-recharge preferences (step 5).
-              ...(additionalServices.tokenWallet
-                ? {
-                    autoRechargeEnabled: walletDetails.autoRecharge,
-                    autoRechargeContact: walletDetails.contactValue?.trim() || undefined,
-                    ...(Number(walletDetails.threshold) > 0
-                      ? { autoRechargeThreshold: Number(walletDetails.threshold) }
-                      : {}),
-                  }
-                : {}),
-            },
-          },
-        });
-        customerId = result.data.createCustomer.id;
-        toast.success("Customer onboarded successfully!");
-      }
-
-      // ── Revenue records: only create what we actually collected, with the
-      //    real values. The deposit row uses the parsed security deposit; the
-      //    contract mirrors the chosen plan + billing cycle; the invoice is
-      //    seeded at the deposit amount so finance has a real starting point.
-      //    All three are awaited so a failure surfaces (non-fatal to the
-      //    customer, but the admin is told).
-      const today = new Date().toISOString().slice(0, 10);
-      const customerName = basicInfo.name || "New Client";
-      const revenueErrors: string[] = [];
-
-      // Contract term: ~1 billing cycle from today (rough but real dates).
-      const endDate = new Date();
-      if (billingCycle === "Annually") endDate.setFullYear(endDate.getFullYear() + 1);
-      else if (billingCycle === "Quarterly") endDate.setMonth(endDate.getMonth() + 3);
-      else endDate.setMonth(endDate.getMonth() + 1);
-      const endDateStr = endDate.toISOString().slice(0, 10);
-
-      let createdInvoiceId: string | null = null;
-      const [depositRes, contractRes, invoiceRes] = await Promise.allSettled([
-        depositAmount > 0
-          ? createDeposit({
-              variables: {
-                input: {
-                  customerId,
-                  customerName,
-                  amount: depositAmount,
-                  type: "Security",
-                  receivedDate: today,
-                  notes: `Auto-created during onboarding (${modeOfDeposit || paymentMode})`,
-                },
-              },
-            })
-          : Promise.resolve(),
-        createContract({
-          variables: {
-            input: {
-              customerId,
-              customerName,
-              startDate: today,
-              endDate: endDateStr,
-              amount: depositAmount,
-              planName: resolvedPlanType || "Standard",
-              paymentFrequency,
-              autoRenew: false,
-            },
-          },
-        }),
-        depositAmount > 0
-          ? createInvoice({
-              variables: {
-                input: {
-                  customerId,
-                  customerName,
-                  amount: depositAmount,
-                  status: "SENT",
-                  planName: resolvedPlanType || "Standard",
-                },
-              },
-            })
-          : Promise.resolve(),
-      ]);
-
-      if (depositRes.status === "rejected") revenueErrors.push("deposit");
-      if (contractRes.status === "rejected") revenueErrors.push("contract");
-      if (invoiceRes.status === "rejected") {
-        revenueErrors.push("invoice");
-      } else if (invoiceRes.value) {
-        createdInvoiceId = (invoiceRes.value as any).data?.createInvoice?.id || null;
-      }
-
-      // ── Seat allocation: book inventory seats for the new client so they
-      //    appear in the floor map / table view immediately. Named picks are
-      //    honored; everyone else is auto-assigned the next available seat.
-      const wantedSeats = Math.max(1, individuals.filter((i) => i.name?.trim()).length || 1);
-      let allocationToast = "";
-      try {
-        const allocResult = await allocateCustomerSeats({
-          variables: {
-            input: {
-              customerId,
-              seatType: planType === "Hot Desk" ? "HOT_DESK" : "ANY",
-              months: billingCycle === "Annually" ? 12 : billingCycle === "Quarterly" ? 3 : 1,
-              count: wantedSeats,
-              individuals: individuals
-                .filter((i) => i.name?.trim())
-                .map((i) => ({
-                  name: i.name.trim(),
-                  phone: i.phone?.trim() || undefined,
-                  email: i.email?.trim() || undefined,
-                  seatName: i.seat?.trim() || undefined,
-                })),
-            },
-          },
-        });
-        const alloc = allocResult.data?.allocateCustomerSeats;
-        if (alloc) {
-          allocationToast =
-            alloc.shortfall && alloc.shortfall > 0
-              ? `Seats booked: ${alloc.booked}/${alloc.requested} — not enough inventory (${alloc.shortfall} unassigned)`
-              : `Seats booked in inventory: ${alloc.booked}`;
-        }
-      } catch (err: any) {
-        allocationToast = `Seat allocation failed: ${err?.graphQLErrors?.[0]?.message ?? err?.message ?? "unknown error"}`;
-      }
-
-      // ── Signed agreement image (step 9): upload as an agreement document.
-      if (signatureData?.startsWith("data:")) {
-        try {
-          const blob = await (await fetch(signatureData)).blob();
-          const file = new File([blob], "signed-agreement.png", { type: "image/png" });
-          const fileUrl = await uploadDocumentFile(file);
-          await createCustomerDocument({
-            variables: {
-              input: {
-                customerId,
-                name: "Signed Agreement",
-                documentType: "agreement",
-                fileUrl,
-                fileSize: String(blob.size),
-                mimeType: "image/png",
-              },
-            },
-          });
-        } catch {
-          toast.warning("Could not save the signed agreement image — collect it from the customer later.");
-        }
-      }
-
-      // ── Step 6 documents: upload each selected KYC file and attach it to
-      //    the new customer. Non-fatal per file — the customer is already
-      //    created; the admin is told which uploads need a retry.
-      const docSlots = (Object.keys(DOC_META) as DocSlot[]).filter(
-        (slot) => kycDocs[slot],
-      );
-      const docErrors: string[] = [];
-      if (docSlots.length > 0) {
-        const docResults = await Promise.allSettled(
-          docSlots.map(async (slot) => {
-            const file = kycDocs[slot]!;
-            const fileUrl = await uploadDocumentFile(file);
-            await createCustomerDocument({
-              variables: {
-                input: {
-                  customerId,
-                  name: DOC_META[slot].label,
-                  documentType: DOC_META[slot].documentType,
-                  fileUrl,
-                  fileSize: String(file.size),
-                  mimeType: file.type || undefined,
-                },
-              },
-            });
-          }),
-        );
-        docResults.forEach((r, i) => {
-          if (r.status === "rejected") docErrors.push(DOC_META[docSlots[i]].label);
-        });
-      }
-
-      // ── B4: flip the onboarding record to COMPLETED once the customer +
-      //    paperwork exist. Non-fatal if it fails — the customer is created.
-      if (onboardingId) {
-        try {
-          await completeOnboarding({ variables: { id: onboardingId } });
-        } catch {
-          // Swallow — completion is bookkeeping; the conversion itself succeeded.
-        }
-      }
-
-      // Clear any saved draft now that onboarding succeeded.
-      try {
-        localStorage.removeItem("onboarding_draft");
-      } catch {
-        /* ignore */
-      }
-
-      if (revenueErrors.length > 0) {
-        toast.warning(
-          `Customer created, but some revenue records failed: ${revenueErrors.join(", ")}. You can add them manually from the customer page.`,
-        );
-      }
-      if (docErrors.length > 0) {
-        toast.warning(
-          `Customer created, but these document uploads failed: ${docErrors.join(", ")}. You can upload them from the customer's Documents tab.`,
-        );
-      }
-      if (allocationToast) {
-        if (/failed|not enough/i.test(allocationToast)) toast.warning(allocationToast);
-        else toast.success(allocationToast);
-      }
-
-      if ((paymentMode === "UPI" || paymentMode === "Card") && depositAmount > 0 && createdInvoiceId) {
-        if (!paymentConfig?.configured || !paymentConfig.keyId) {
-          toast.warning("Razorpay is not configured. Online payment skipped.");
-        } else {
-          try {
-            const loaded = await loadRazorpayScript();
-            const w = window as RazorpayWindow;
-            if (loaded && w.Razorpay) {
-              const { data: orderData } = await createPaymentOrder({
-                variables: { amount: depositAmount, invoiceId: createdInvoiceId }
-              });
-              const orderId = orderData?.createPaymentOrder;
-              if (orderId) {
-                new w.Razorpay({
-                  key: paymentConfig.keyId,
-                  order_id: orderId,
-                  name: "SpaceJam",
-                  description: `Onboarding Payment`,
-                  handler: async (resp: any) => {
-                    try {
-                      await verifyPayment({
-                        variables: {
-                          input: {
-                            razorpayOrderId: resp.razorpay_order_id,
-                            razorpayPaymentId: resp.razorpay_payment_id,
-                            razorpaySignature: resp.razorpay_signature,
-                            invoiceId: createdInvoiceId!,
-                          }
-                        }
-                      });
-                      toast.success("Online payment successful!");
-                    } catch {
-                      toast.error("Payment verification failed");
-                    }
-                  },
-                  modal: { ondismiss: () => {} }
-                }).open();
-              }
-            }
-          } catch (e) {
-             console.error("Razorpay error", e);
-             toast.error("Could not start Razorpay checkout");
-          }
-        }
-      }
-
-      setSavedCustomerId(customerId);
-      setCurrentStep(10);
-    } catch (err: any) {
+      if (result.outcome === "ONBOARDED" || result.outcome === "AWAITING_CHEQUE_CLEARANCE") toast.success(result.message);
+      else toast.warning(result.message);
+      showOutcome(result, depositAmount);
+    } catch (err) {
       console.error(err);
-      const detail =
-        err?.graphQLErrors?.[0]?.message ||
-        err?.networkError?.message ||
-        err?.message;
-      toast.error(
-        detail
-          ? `Failed to complete onboarding: ${detail}`
-          : "Failed to complete onboarding. Please try again.",
-      );
+      toast.error(`Could not complete onboarding: ${errorMessage(err)}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1066,11 +856,14 @@ export default function OnboardingWizardPage() {
         JSON.stringify({
           basicInfo,
           currentStep,
-          paymentMode,
+          paymentMethod: paymentForm.method,
+          chequeBank: paymentForm.chequeBank,
+          payerBank: paymentForm.payerBank,
           billingCycle,
           individuals,
           planType,
-          bankDetails,
+          // Never keep the client's account number / IFSC in the browser.
+          bankDetails: { holderName: bankDetails.holderName, bankName: bankDetails.bankName },
           customDeal,
           walletDetails,
           additionalServices,
@@ -2207,41 +2000,6 @@ export default function OnboardingWizardPage() {
 
                 {currentStep === 4 && (
                   <div className="flex flex-col gap-8 pb-4">
-                    {/* Payment Mode Preference */}
-                    <div>
-                      <h3 className="text-[14px] font-bold text-[#101828] mb-3">Payment Mode Preference</h3>
-                      <div className="flex gap-4">
-                        <button
-                          onClick={() => setPaymentMode("UPI")}
-                          className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "UPI" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
-                        >
-                          <span className={`text-[16px] font-bold mb-1 ${paymentMode === "UPI" ? "text-[#FF6A2F]" : "text-gray-700"}`}>G Pay</span>
-                          <span className={`text-[12px] font-bold ${paymentMode === "UPI" ? "text-[#101828]" : ""}`}>UPI</span>
-                        </button>
-                        <button
-                          onClick={() => setPaymentMode("Bank Transfer")}
-                          className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Bank Transfer" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
-                        >
-                          <svg className="w-6 h-6 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
-                          <span className={`text-[12px] font-bold ${paymentMode === "Bank Transfer" ? "text-[#101828]" : ""}`}>Bank Transfer</span>
-                        </button>
-                        <button
-                          onClick={() => setPaymentMode("Card")}
-                          className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Card" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
-                        >
-                          <svg className="w-6 h-6 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                          <span className={`text-[12px] font-bold ${paymentMode === "Card" ? "text-[#101828]" : ""}`}>Card</span>
-                        </button>
-                        <button
-                          onClick={() => setPaymentMode("Cheque")}
-                          className={`flex-1 flex flex-col items-center justify-center py-4 rounded-xl border ${paymentMode === "Cheque" ? "border-[#FF6A2F] bg-[#FFF8F6]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} transition-colors`}
-                        >
-                          <svg className="w-6 h-6 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                          <span className={`text-[12px] font-bold ${paymentMode === "Cheque" ? "text-[#101828]" : ""}`}>Cheque</span>
-                        </button>
-                      </div>
-                    </div>
-
                     {/* Billing Cycle */}
                     <div>
                       <h3 className="text-[14px] font-bold text-[#101828] mb-3">Billing Cycle</h3>
@@ -2279,29 +2037,45 @@ export default function OnboardingWizardPage() {
                       </div>
                     </div>
 
-                    {/* Deposit Info */}
-                    <div className="flex flex-col gap-4">
-                      <div>
-                        <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Security Deposit Amount</label>
-                        <input type="text" value={securityDepositAmount} onChange={(e) => setSecurityDepositAmount(e.target.value)} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] text-gray-900 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]" />
-                      </div>
-                      <div>
-                        <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Mode of Deposit</label>
-                        <div className="relative">
-                          <select value={modeOfDeposit} onChange={(e) => setModeOfDeposit(e.target.value)} className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] text-gray-700 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white">
-                            <option>Bank Transfer (NEFT/RTGS)</option>
-                            <option>Cheque</option>
-                            <option>UPI</option>
-                          </select>
-                          <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
+                    {/* Security deposit */}
+                    <div>
+                      <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Security Deposit Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        data-testid="deposit-amount"
+                        value={securityDepositAmount}
+                        onChange={(e) => setSecurityDepositAmount(e.target.value)}
+                        className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] text-gray-900 focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F]"
+                      />
+                      <p className="text-[12px] text-gray-500 mt-1.5">
+                        {parseAmount(securityDepositAmount) > 0 ? (
+                          <>
+                            Amount payable now:{" "}
+                            <b className="text-[#101828]" data-testid="amount-payable">{formatInr(parseAmount(securityDepositAmount))}</b> — collected before the client is activated.
+                          </>
+                        ) : (
+                          "No deposit — nothing to collect; the client is onboarded as soon as you finish."
+                        )}
+                      </p>
                     </div>
 
-                    {/* Linked Bank Account */}
-                    {paymentMode === "Bank Transfer" && (
+                    {/* Payment method */}
                     <div>
-                      <h3 className="text-[14px] font-bold text-[#101828] mb-3">Linked Bank Account (For Refunds)</h3>
+                      <h3 className="text-[14px] font-bold text-[#101828] mb-3">How is the deposit paid?</h3>
+                      <PaymentMethodPicker value={paymentForm.method} onChange={choosePaymentMethod} config={paymentConfig} />
+                    </div>
+                    <PaymentMethodDetails
+                      form={paymentForm}
+                      onChange={setPaymentForm}
+                      config={paymentConfig}
+                      amount={parseAmount(securityDepositAmount)}
+                    />
+
+                    {/* Linked Bank Account */}
+                    {paymentForm.method === "BANK_TRANSFER" && parseAmount(securityDepositAmount) > 0 && (
+                    <div>
+                      <h3 className="text-[14px] font-bold text-[#101828] mb-3">Client Bank Account (For Refunds)</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-[12px] text-gray-700 font-medium mb-1.5">Account Holder Name <span className="text-[#FF6A2F]">*</span></label>
@@ -2372,6 +2146,7 @@ export default function OnboardingWizardPage() {
                       </div>
                     </div>
                     )}
+
 
 
                     <div className="flex gap-3 p-4 bg-[#FF6A2F] rounded-xl text-white shadow-sm mt-2">
@@ -3030,10 +2805,25 @@ export default function OnboardingWizardPage() {
                             <p className="text-[14px] font-medium text-gray-900">{securityDepositAmount}</p>
                           </div>
                           <div>
-                            <p className="text-[12px] text-gray-500 mb-0.5">Payment Mode</p>
-                            <p className="text-[14px] font-medium text-gray-900">{paymentMode}</p>
+                            <p className="text-[12px] text-gray-500 mb-0.5">Payment</p>
+                            <p className="text-[14px] font-medium text-gray-900" data-testid="review-payment">
+                              {parseAmount(securityDepositAmount) <= 0
+                                ? "Nothing to collect"
+                                : paymentForm.method === "RAZORPAY"
+                                  ? "Online (Razorpay)"
+                                  : paymentForm.method === "BANK_TRANSFER"
+                                    ? `Bank transfer · UTR ${paymentForm.utr || "—"}`
+                                    : `Cheque #${paymentForm.chequeNumber || "—"} · ${paymentForm.chequeBank || "—"}`}
+                            </p>
                           </div>
-                          {bankDetails.bankName && (
+                          {paymentForm.method === "CHEQUE" && parseAmount(securityDepositAmount) > 0 && (
+                            <div className="col-span-2">
+                              <p className="text-[12px] text-[#B4410F] bg-[#FFF8F6] border border-[#FFE0D3] rounded-lg px-3 py-2">
+                                The client will be saved as a <b>Cold lead</b> and onboarded once the cheque clears — confirm clearance from Pending payments.
+                              </p>
+                            </div>
+                          )}
+                          {paymentForm.method === "BANK_TRANSFER" && bankDetails.bankName && (
                             <div>
                               <p className="text-[12px] text-gray-500 mb-0.5">Linked Bank (Refunds)</p>
                               <p className="text-[14px] font-medium text-gray-900">
@@ -3266,84 +3056,127 @@ export default function OnboardingWizardPage() {
                   </div>
                 )}
 
-                {currentStep === 10 && savedCustomerId && (
-                  <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative z-10 overflow-y-auto">
+                {currentStep === 10 && completion && (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 bg-white relative z-10 overflow-y-auto" data-testid={`completion-${completion.kind}`}>
                     <div className="max-w-md w-full flex flex-col items-center text-center">
-                      <div className="relative mb-6 mt-12">
-                        <div className="w-24 h-24 bg-[#E5F7ED] rounded-full flex items-center justify-center relative z-10 mx-auto">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-10 h-10 text-[#21A366]"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        </div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 opacity-70 pointer-events-none">
-                          <div className="absolute top-2 left-4 w-2 h-2 rounded-full bg-[#FFD166]"></div>
-                          <div className="absolute top-8 right-6 w-3 h-3 rounded-full bg-[#118AB2]"></div>
-                          <div className="absolute bottom-6 left-8 w-2.5 h-2.5 rounded-sm bg-[#EF476F] rotate-45"></div>
-                          <div className="absolute bottom-10 right-4 w-2 h-2 rounded-full bg-[#06D6A0]"></div>
-                        </div>
-                      </div>
-
-                      <h2 className="text-[24px] font-bold text-gray-900 mb-2">Onboarding Completed Successfully 🎉</h2>
-                      <p className="text-[14px] text-gray-500 mb-8 leading-relaxed">
-                        The client account is now active and ready to use workspace.
-                      </p>
-
-                      <button
-                        onClick={() => router.push(`/dashboard/crm/customers/${savedCustomerId}`)}
-                        className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm"
-                      >
-                        Go to client Dashboard
-                      </button>
-
-                      <div className="flex items-center gap-3 w-full mb-8">
-                        <button
-                          onClick={() => router.push(`/dashboard/crm/customers/${savedCustomerId}`)}
-                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                          View Client Profile
-                        </button>
-                        <button
-                          onClick={resetWizard}
-                          className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                          Add Another Client
-                        </button>
-                      </div>
-
-                      <div className="w-full text-left bg-gray-50/50 border border-gray-100 rounded-xl overflow-hidden">
-                        <div className="p-4 bg-[#F2FAF5] flex items-center gap-3 border-b border-gray-100">
-                          <div className="w-6 h-6 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          </div>
-                          <h3 className="text-[14px] font-bold text-gray-900">Client Setup Summary</h3>
-                        </div>
-                        <div className="p-5 flex flex-col gap-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      {completion.kind === "onboarded" && (
+                        <>
+                          <div className="relative mb-6 mt-12">
+                            <div className="w-24 h-24 bg-[#E5F7ED] rounded-full flex items-center justify-center relative z-10 mx-auto">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-10 h-10 text-[#21A366]"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                             </div>
-                            <span className="text-[14px] text-gray-700 font-medium">Membership Assigned</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          <h2 className="text-[24px] font-bold text-gray-900 mb-2">Onboarding Completed Successfully 🎉</h2>
+                          <p className="text-[14px] text-gray-500 mb-8 leading-relaxed">{completion.message}</p>
+
+                          <button
+                            onClick={() => router.push(`/dashboard/crm/customers/${completion.customerId}`)}
+                            className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm"
+                          >
+                            Go to client Dashboard
+                          </button>
+                          <div className="flex items-center gap-3 w-full mb-8">
+                            <button
+                              onClick={() => router.push(`/dashboard/crm/customers/${completion.customerId}`)}
+                              className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50"
+                            >
+                              View Client Profile
+                            </button>
+                            <button onClick={resetWizard} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50">
+                              Add Another Client
+                            </button>
+                          </div>
+
+                          <div className="w-full text-left bg-gray-50/50 border border-gray-100 rounded-xl overflow-hidden">
+                            <div className="p-4 bg-[#F2FAF5] flex items-center gap-3 border-b border-gray-100">
+                              <div className="w-6 h-6 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                              <h3 className="text-[14px] font-bold text-gray-900">Client Setup Summary</h3>
                             </div>
-                            <span className="text-[14px] text-gray-700 font-medium">Seats Allocated</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <div className="p-5 flex flex-col gap-3.5">
+                              {[
+                                "Client account & login created",
+                                completion.seats
+                                  ? completion.seats.shortfall > 0
+                                    ? `Seats: ${completion.seats.booked} of ${completion.seats.requested} booked — ${completion.seats.shortfall} still unassigned (not enough inventory)`
+                                    : `Seats allocated (${completion.seats.booked})`
+                                  : "Seats allocated",
+                                "Deposit, invoice & contract recorded",
+                                "Documents & agreement saved",
+                              ].map((line) => (
+                                <div key={line} className="flex items-center gap-3">
+                                  <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                  </div>
+                                  <span className="text-[14px] text-gray-700 font-medium text-left">{line}</span>
+                                </div>
+                              ))}
                             </div>
-                            <span className="text-[14px] text-gray-700 font-medium">Billing Configured</span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-[#21A366] text-white flex items-center justify-center shrink-0">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                            </div>
-                            <span className="text-[14px] text-gray-700 font-medium">Services Enabled</span>
+                        </>
+                      )}
+
+                      {completion.kind === "cheque" && (
+                        <>
+                          <div className="w-24 h-24 bg-[#FFF4E5] rounded-full flex items-center justify-center mx-auto mb-6 mt-12">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-10 text-[#B25E09]"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                           </div>
-                        </div>
-                      </div>
+                          <h2 className="text-[24px] font-bold text-gray-900 mb-2">Saved as a Cold Lead</h2>
+                          <p className="text-[14px] text-gray-500 mb-6 leading-relaxed">{completion.message}</p>
+                          <div className="w-full text-left bg-[#FFF8F6] border border-[#FFE0D3] rounded-xl p-5 mb-6 text-[13px] text-[#B4410F] leading-relaxed">
+                            <p className="font-bold mb-1">What happens next</p>
+                            <ul className="list-disc pl-5 space-y-1">
+                              <li>The full application is saved — nobody needs to re-enter it.</li>
+                              <li>No client account, seats or paid invoice exist yet.</li>
+                              <li>When the bank clears cheque <b>#{completion.chequeNumber}</b> ({formatInr(completion.amount)}), open <b>Pending payments</b> and confirm it — that creates the client.</li>
+                            </ul>
+                          </div>
+                          <button
+                            onClick={() => router.push("/dashboard/crm/onboarding/pending")}
+                            className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm"
+                          >
+                            Go to Pending payments
+                          </button>
+                          <div className="flex items-center gap-3 w-full">
+                            <button onClick={() => router.push("/dashboard/crm/leads")} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50">
+                              View Cold Leads
+                            </button>
+                            <button onClick={resetWizard} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50">
+                              Add Another Client
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {completion.kind === "unpaid" && (
+                        <>
+                          <div className="w-24 h-24 bg-[#EEF4FF] rounded-full flex items-center justify-center mx-auto mb-6 mt-12">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-10 h-10 text-[#1D4ED8]"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                          </div>
+                          <h2 className="text-[24px] font-bold text-gray-900 mb-2">Payment not completed yet</h2>
+                          <p className="text-[14px] text-gray-500 mb-6 leading-relaxed">{completion.message}</p>
+                          <p className="text-[13px] text-gray-500 mb-6">The application is saved ({formatInr(completion.amount)} due). The client is created as soon as the payment is confirmed.</p>
+                          {paymentConfig?.configured && (
+                            <button
+                              onClick={() => void retryOnlinePayment()}
+                              disabled={isSubmitting}
+                              data-testid="retry-online"
+                              className="w-full py-3 bg-[#FF6A2F] text-white rounded-xl text-[15px] font-semibold hover:bg-[#E55A20] transition-colors mb-4 shadow-sm disabled:opacity-60"
+                            >
+                              {isSubmitting ? "Opening payment…" : "Retry online payment"}
+                            </button>
+                          )}
+                          <div className="flex items-center gap-3 w-full">
+                            <button onClick={() => router.push("/dashboard/crm/onboarding/pending")} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50">
+                              Pay another way
+                            </button>
+                            <button onClick={resetWizard} className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[14px] font-medium hover:bg-gray-50">
+                              Add Another Client
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -3379,7 +3212,17 @@ export default function OnboardingWizardPage() {
                     disabled={isSubmitting}
                     className="flex items-center gap-2 px-5 py-2.5 bg-[#FF6A2F] text-white rounded-lg text-[14px] font-semibold hover:bg-[#E55A20] transition-all active:scale-[0.97] shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {currentStep === 9 ? (isSubmitting ? "Completing…" : "Complete Onboarding") : "Continue"}
+                    {currentStep === 9
+                      ? isSubmitting
+                        ? "Working…"
+                        : parseAmount(securityDepositAmount) <= 0
+                          ? "Complete Onboarding"
+                          : paymentForm.method === "RAZORPAY"
+                            ? "Pay & Complete"
+                            : paymentForm.method === "CHEQUE"
+                              ? "Save as Cold Lead"
+                              : "Record Payment & Complete"
+                      : "Continue"}
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>

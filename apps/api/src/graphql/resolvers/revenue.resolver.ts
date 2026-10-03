@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-02
  */
 import { Resolver, Query, Args, Mutation, ID } from '@nestjs/graphql';
-import { NotFoundException, Logger } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException, Logger, UseGuards } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -31,6 +31,9 @@ import { EmailService } from '../../auth/services/email.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '@enums';
 
 @Resolver(() => InvoiceEntity)
 export class InvoiceResolver {
@@ -121,12 +124,30 @@ export class InvoiceResolver {
     return true;
   }
 
+  /**
+   * Record an OFFLINE payment (cash / UPI QR / bank / cheque) against an
+   * invoice. Staff only, and a CENTER_MANAGER can only touch their own
+   * center's invoices — previously any signed-in user (even a MEMBER) could
+   * mark any invoice paid. Online payments settle through the payment ledger.
+   */
   @Mutation(() => InvoiceEntity)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_MANAGER)
   async markInvoicePaid(
     @Args('id', { type: () => ID }) id: string,
     @Args('paymentMethod', { type: () => PaymentMethod, nullable: true }) paymentMethod?: PaymentMethod,
     @Args('paymentReference', { nullable: true }) paymentReference?: string,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<InvoiceEntity> {
+    const existing = await this.invoiceRepo.findOne({ where: { id } });
+    if (!existing) throw new NotFoundException('Invoice not found');
+    const scope = caller ? centerScope(caller) : undefined;
+    if (scope && existing.centerId && existing.centerId !== scope) {
+      throw new ForbiddenException('This invoice belongs to a different center.');
+    }
+    if (existing.status === InvoiceStatus.CANCELLED) {
+      throw new BadRequestException('A cancelled invoice cannot be marked as paid.');
+    }
     await this.invoiceRepo.update(id, {
       status: InvoiceStatus.PAID,
       paidDate: new Date(),

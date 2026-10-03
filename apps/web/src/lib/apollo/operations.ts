@@ -442,6 +442,30 @@ export const GET_ONBOARDINGS = gql`
       completedAt
       createdAt
       updatedAt
+      # Payment lifecycle (cheque / online / bank transfer)
+      paymentStatus
+      paymentMethod
+      paymentAmount
+      paymentReference
+      chequeNumber
+      chequeBank
+      chequeDate
+      chequeClearedAt
+      transferDate
+      payerBank
+      invoiceId
+      verifiedAt
+      failureReason
+      cancelledAt
+      center {
+        id
+        name
+      }
+      lead {
+        id
+        name
+        status
+      }
     }
   }
 `;
@@ -2495,6 +2519,9 @@ export const GET_INTEGRATION_STATUS = gql`
       emailConfigured
       whatsappConfigured
       qrConfigured
+      bankConfigured
+      chequeConfigured
+      razorpayWebhookConfigured
     }
   }
 `;
@@ -2551,7 +2578,9 @@ export const SEND_TEST_WHATSAPP = gql`
   }
 `;
 
-// Payment gateway status for checkout flows (exposes key id + mode only).
+// Payment config for checkout flows: Razorpay key id + mode (never the secret),
+// the UPI QR, and — returned to STAFF only — the receiving bank account and
+// cheque payee.
 export const GET_PAYMENT_CONFIG = gql`
   query GetPaymentConfig {
     paymentConfig {
@@ -2562,6 +2591,15 @@ export const GET_PAYMENT_CONFIG = gql`
       qrUpiId
       qrImagePath
       qrPayeeName
+      bankConfigured
+      bankAccountName
+      bankAccountNumber
+      bankIfsc
+      bankName
+      bankBranch
+      chequeConfigured
+      chequePayeeName
+      chequeInstructions
     }
   }
 `;
@@ -2575,6 +2613,143 @@ export const CREATE_PAYMENT_ORDER = gql`
 export const VERIFY_PAYMENT = gql`
   mutation VerifyPayment($input: VerifyPaymentInput!) {
     verifyPayment(input: $input)
+  }
+`;
+
+// ─── Super-admin payment settings (Razorpay test / bank account / cheque) ───
+export const TEST_RAZORPAY_CONNECTION = gql`
+  mutation TestRazorpayConnection($keyId: String, $keySecret: String) {
+    testRazorpayConnection(keyId: $keyId, keySecret: $keySecret) {
+      ok
+      message
+      mode
+    }
+  }
+`;
+
+export const SAVE_BANK_ACCOUNT_CONFIG = gql`
+  mutation SaveBankAccountConfig($input: SaveBankAccountConfigInput!) {
+    saveBankAccountConfig(input: $input)
+  }
+`;
+
+export const SAVE_CHEQUE_CONFIG = gql`
+  mutation SaveChequeConfig($input: SaveChequeConfigInput!) {
+    saveChequeConfig(input: $input)
+  }
+`;
+
+/* ============ Onboarding — atomic submit + payment lifecycle ============
+ * The wizard makes ONE call (submitOnboarding). The server decides what the
+ * payment method means:
+ *   RAZORPAY       → application saved + an order to pay; client created after
+ *                    the payment verifies
+ *   BANK_TRANSFER  → client created now with the UTR recorded
+ *   CHEQUE         → lead saved as COLD; client created only when staff confirm
+ *                    the cheque cleared
+ */
+export const ONBOARDING_RESULT_FRAGMENT = gql`
+  fragment OnboardingResultFields on SubmitOnboardingResult {
+    outcome
+    message
+    onboarding {
+      id
+      status
+      paymentStatus
+      paymentMethod
+      paymentAmount
+      paymentReference
+      chequeNumber
+      chequeBank
+      chequeDate
+      transferDate
+      customerId
+      leadId
+      invoiceId
+      failureReason
+      cancelledAt
+    }
+    lead {
+      id
+      status
+      customerId
+    }
+    customer {
+      id
+      name
+      email
+    }
+    razorpay {
+      orderId
+      keyId
+      amountPaise
+      currency
+      description
+      prefillName
+      prefillEmail
+      prefillContact
+    }
+    seats {
+      requested
+      booked
+      shortfall
+    }
+  }
+`;
+
+export const SUBMIT_ONBOARDING = gql`
+  mutation SubmitOnboarding($input: SubmitOnboardingInput!) {
+    submitOnboarding(input: $input) {
+      ...OnboardingResultFields
+    }
+  }
+  ${ONBOARDING_RESULT_FRAGMENT}
+`;
+
+export const CONFIRM_ONBOARDING_PAYMENT = gql`
+  mutation ConfirmOnboardingPayment($input: ConfirmOnboardingPaymentInput!) {
+    confirmOnboardingPayment(input: $input) {
+      ...OnboardingResultFields
+    }
+  }
+  ${ONBOARDING_RESULT_FRAGMENT}
+`;
+
+export const COLLECT_ONBOARDING_PAYMENT = gql`
+  mutation CollectOnboardingPayment($onboardingId: ID!, $payment: OnboardingPaymentInput!) {
+    collectOnboardingPayment(onboardingId: $onboardingId, payment: $payment) {
+      ...OnboardingResultFields
+    }
+  }
+  ${ONBOARDING_RESULT_FRAGMENT}
+`;
+
+export const CONFIRM_CHEQUE_CLEARED = gql`
+  mutation ConfirmChequeCleared($onboardingId: ID!, $clearedOn: String, $remarks: String) {
+    confirmChequeCleared(onboardingId: $onboardingId, clearedOn: $clearedOn, remarks: $remarks) {
+      ...OnboardingResultFields
+    }
+  }
+  ${ONBOARDING_RESULT_FRAGMENT}
+`;
+
+export const MARK_CHEQUE_BOUNCED = gql`
+  mutation MarkChequeBounced($onboardingId: ID!, $reason: String!) {
+    markChequeBounced(onboardingId: $onboardingId, reason: $reason) {
+      id
+      paymentStatus
+      failureReason
+    }
+  }
+`;
+
+export const CANCEL_ONBOARDING = gql`
+  mutation CancelOnboarding($onboardingId: ID!, $reason: String) {
+    cancelOnboarding(onboardingId: $onboardingId, reason: $reason) {
+      id
+      cancelledAt
+      failureReason
+    }
   }
 `;
 

@@ -119,6 +119,7 @@ describe('CrmResolver', () => {
   let resolver: CrmResolver;
   let repo: ReturnType<typeof buildMockRepo>;
   let cache: ReturnType<typeof buildMockCache>;
+  let onboardingService: { assertLeadConvertible: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     repo = buildMockRepo([
@@ -127,11 +128,13 @@ describe('CrmResolver', () => {
       makeLead({ id: 'lead-3', name: 'Charlie', email: 'charlie@test.com', status: LeadStatus.NEW, source: LeadSource.WEBSITE }),
     ]);
     cache = buildMockCache();
-    // New CrmResolver signature: (cache, dataSource, leadRepo, customerRepo, onboardingRepo).
+    // CrmResolver signature: (cache, dataSource, leadRepo, customerRepo, onboardingRepo, onboardingService).
     // The query tests below don't touch the transaction path, so a minimal
-    // dataSource mock is sufficient.
+    // dataSource mock is sufficient. The onboarding service is stubbed (its own
+    // spec covers the cheque guard); here the guard simply allows conversion.
     const dataSourceMock = { transaction: async (cb: any) => cb(repo) } as any;
-    resolver = new CrmResolver(cache as any, dataSourceMock, repo as any, repo as any, repo as any);
+    onboardingService = { assertLeadConvertible: vi.fn(async () => {}) };
+    resolver = new CrmResolver(cache as any, dataSourceMock, repo as any, repo as any, repo as any, onboardingService as any);
   });
 
   // ── Query: leads ──────────────────────────────────────────────────
@@ -257,6 +260,30 @@ describe('CrmResolver', () => {
       expect(cache.invalidatePattern).toHaveBeenCalledWith('leads:*');
       expect(cache.del).toHaveBeenCalledWith('lead:lead-1');
     });
+
+    it('cannot be used to flip a cheque-pending lead to Converted by hand (cheque clients stay cold)', async () => {
+      onboardingService.assertLeadConvertible.mockRejectedValueOnce(
+        new Error('This lead has a cheque awaiting clearance'),
+      );
+      await expect(
+        resolver.updateLead('lead-1', { status: LeadStatus.CONVERTED } as UpdateLeadInput),
+      ).rejects.toThrow(/cheque awaiting clearance/);
+      expect(onboardingService.assertLeadConvertible).toHaveBeenCalledWith('lead-1');
+      // nothing was written: the lead is still New
+      const lead = await resolver.lead('lead-1');
+      expect((lead as any).status).toBe(LeadStatus.NEW);
+    });
+
+    it('still allows Converted when no cheque is pending', async () => {
+      const updated = await resolver.updateLead('lead-1', { status: LeadStatus.CONVERTED } as UpdateLeadInput);
+      expect((updated as any).status).toBe(LeadStatus.CONVERTED);
+      expect(onboardingService.assertLeadConvertible).toHaveBeenCalledWith('lead-1');
+    });
+
+    it('does not consult the payment guard for other status moves', async () => {
+      await resolver.updateLead('lead-1', { status: LeadStatus.NEGOTIATION } as UpdateLeadInput);
+      expect(onboardingService.assertLeadConvertible).not.toHaveBeenCalled();
+    });
   });
 
   // ── Mutation: convertLead ─────────────────────────────────────────
@@ -269,6 +296,32 @@ describe('CrmResolver', () => {
     it('should invalidate cache on convert', async () => {
       await resolver.convertLead('lead-1');
       expect(cache.invalidatePattern).toHaveBeenCalledWith('leads:*');
+    });
+
+    it('refuses to convert a lead whose cheque is still clearing (cheque clients stay cold)', async () => {
+      onboardingService.assertLeadConvertible.mockRejectedValueOnce(
+        new Error('This lead has a cheque awaiting clearance'),
+      );
+      await expect(resolver.convertLead('lead-1')).rejects.toThrow(/cheque awaiting clearance/);
+      // nothing was written: the lead is still New
+      const lead = await resolver.lead('lead-1');
+      expect((lead as any).status).toBe(LeadStatus.NEW);
+    });
+
+    it('still lets an already-converted lead pass idempotently without re-checking', async () => {
+      const result = await resolver.convertLead('lead-2'); // seeded as CONVERTED
+      expect((result as any).status).toBe(LeadStatus.CONVERTED);
+      expect(onboardingService.assertLeadConvertible).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Mutation.convertLeadWithOnboarding', () => {
+    it('refuses to convert a lead whose cheque is still clearing', async () => {
+      onboardingService.assertLeadConvertible.mockRejectedValueOnce(
+        new Error('This lead has a cheque awaiting clearance'),
+      );
+      await expect(resolver.convertLeadWithOnboarding('lead-1')).rejects.toThrow(/cheque awaiting clearance/);
+      expect(onboardingService.assertLeadConvertible).toHaveBeenCalledWith('lead-1');
     });
   });
 

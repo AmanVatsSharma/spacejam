@@ -32,6 +32,7 @@ import {
   QueryError,
   QueryEmpty,
 } from '@/components/ui/query-status';
+import { errorMessage } from '@/hooks/use-onboarding-payments';
 import styles from './leads.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -406,8 +407,9 @@ export default function LeadsPage() {
       try {
         await updateLead({ variables: { id: leadId, input: { status } } });
         toast.success('Lead status updated');
-      } catch {
-        toast.error('Failed to update lead status');
+      } catch (err) {
+        // Surface the server's reason, e.g. "cheque awaiting clearance — confirm it from Pending payments".
+        toast.error(errorMessage(err));
       }
     },
     [updateLead],

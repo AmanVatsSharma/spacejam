@@ -166,6 +166,21 @@ export class Customer {
     @Column({ name: 'autoRechargeThreshold', type: 'int', nullable: true })
     autoRechargeThreshold?: number | null;
 
+    // ─── Refund bank account (captured during onboarding). Sensitive
+    // financial data: intentionally NOT decorated with @Field, so it can never
+    // leak through the customer queries that any signed-in user can call.
+    @Column({ name: 'refundAccountHolder', type: 'varchar', length: 120, nullable: true })
+    refundAccountHolder?: string | null;
+
+    @Column({ name: 'refundAccountNumber', type: 'varchar', length: 34, nullable: true })
+    refundAccountNumber?: string | null;
+
+    @Column({ name: 'refundIfsc', type: 'varchar', length: 11, nullable: true })
+    refundIfsc?: string | null;
+
+    @Column({ name: 'refundBankName', type: 'varchar', length: 120, nullable: true })
+    refundBankName?: string | null;
+
 
     // Relations
     @Field(() => Center, { nullable: true })

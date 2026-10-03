@@ -4,25 +4,28 @@
  * Purpose:     Covers the integrations extensions: saveEmailConfig key
  *              writes + secret masking, email/whatsapp configured flags,
  *              WhatsAppService provider routing (twilio path with mocked
- *              fetch), the Razorpay webhook signature verification +
- *              invoice-PAID marking, verifyPayment invoice marking, and
- *              markInvoicePaid paymentMethod persistence.
+ *              fetch), and markInvoicePaid paymentMethod persistence.
  *
- * Author:      ZCode
- * Last-updated: 2026-08-27
+ *              The Razorpay webhook and verifyPayment tests that used to live
+ *              here asserted the old behaviour (trusting `notes.invoiceId` and
+ *              any client-supplied invoiceId). That logic now settles through
+ *              the payment_orders ledger and is covered by
+ *              payments-webhook.controller.spec.ts, payment-orders.service.spec.ts,
+ *              payment.resolver.spec.ts and razorpay.service.spec.ts.
+ *
+ * Author:      ZCode · Claude Sonnet 5.5 (2026-10-02 update)
+ * Last-updated: 2026-10-02
  */
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { createHmac } from 'node:crypto';
+import { BadRequestException } from '@nestjs/common';
 
 import { IntegrationSettingsService } from './integration-settings.service';
 import { IntegrationSettingsResolver } from './integration-settings.resolver';
 import { WhatsAppService } from './whatsapp.service';
-import { PaymentsWebhookController } from './payments-webhook.controller';
-import { PaymentResolver } from './payment.resolver';
 import { RazorpayService } from './razorpay.service';
 import { EmailService } from '../auth/services/email.service';
+import { AuditService } from '../auth/services/audit.service';
 import { AppSetting } from '../typeorm/entities/app-setting.entity';
 import { Invoice } from '../typeorm/entities/invoice.entity';
 import { InvoiceResolver } from '../graphql/resolvers/revenue.resolver';
@@ -71,6 +74,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: repo },
           { provide: EmailService, useValue: {} },
         ],
@@ -111,6 +116,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: repo },
           { provide: EmailService, useValue: {} },
         ],
@@ -140,6 +147,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: withCreds },
           { provide: EmailService, useValue: {} },
         ],
@@ -157,6 +166,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: withoutCreds },
           { provide: EmailService, useValue: {} },
         ],
@@ -175,6 +186,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: repo },
           { provide: EmailService, useValue: {} },
         ],
@@ -188,6 +201,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: consoleRepo },
           { provide: EmailService, useValue: {} },
         ],
@@ -249,6 +264,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: settingsRepo() },
           { provide: EmailService, useValue: {} },
         ],
@@ -268,6 +285,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: settingsRepo() },
           { provide: EmailService, useValue: { sendTest } },
         ],
@@ -284,6 +303,8 @@ describe('Integrations extensions', () => {
           IntegrationSettingsService,
           IntegrationSettingsResolver,
           WhatsAppService,
+          RazorpayService,
+          { provide: AuditService, useValue: { record: jest.fn() } },
           { provide: getRepositoryToken(AppSetting), useValue: settingsRepo() },
           {
             provide: EmailService,
@@ -296,149 +317,6 @@ describe('Integrations extensions', () => {
       await expect(moduleRef.get(IntegrationSettingsResolver).sendTestEmail('x@y.z')).rejects.toThrow(
         'Email is not configured.',
       );
-    });
-  });
-
-  describe('payments webhook', () => {
-    const WEBHOOK_SECRET = 'whsec_test_123';
-
-    function capturedPayload(invoiceId: string) {
-      return JSON.stringify({
-        event: 'payment.captured',
-        payload: {
-          payment: {
-            entity: { id: 'pay_123', notes: { invoiceId } },
-          },
-        },
-      });
-    }
-
-    async function build(repo: ReturnType<typeof settingsRepo>, invoices: ReturnType<typeof invoiceRepo>) {
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          IntegrationSettingsService,
-          PaymentsWebhookController,
-          { provide: getRepositoryToken(AppSetting), useValue: repo },
-          { provide: getRepositoryToken(Invoice), useValue: invoices },
-        ],
-      }).compile();
-      return moduleRef.get(PaymentsWebhookController);
-    }
-
-    function req(body: string, signature: string) {
-      return {
-        headers: { 'x-razorpay-signature': signature },
-        rawBody: Buffer.from(body, 'utf8'),
-      } as any;
-    }
-
-    it('accepts a valid signature and marks the invoice PAID (ONLINE)', async () => {
-      const repo = settingsRepo({ 'razorpay.webhookSecret': { value: WEBHOOK_SECRET, secret: true } });
-      const invoices = invoiceRepo();
-      invoices.findOne.mockResolvedValue({ id: 'inv-1', status: InvoiceStatus.SENT });
-      const controller = await build(repo, invoices);
-
-      const body = capturedPayload('inv-1');
-      const sig = createHmac('sha256', WEBHOOK_SECRET).update(body, 'utf8').digest('hex');
-      const out = await controller.handleWebhook(req(body, sig));
-
-      expect(out).toEqual({ received: true });
-      expect(invoices.update).toHaveBeenCalledWith('inv-1', {
-        status: InvoiceStatus.PAID,
-        paidDate: expect.any(Date),
-        paymentMethod: 'ONLINE',
-      });
-    });
-
-    it('rejects an invalid signature with 401 and never touches the invoice', async () => {
-      const repo = settingsRepo({ 'razorpay.webhookSecret': { value: WEBHOOK_SECRET, secret: true } });
-      const invoices = invoiceRepo();
-      const controller = await build(repo, invoices);
-
-      const body = capturedPayload('inv-1');
-      await expect(controller.handleWebhook(req(body, 'deadbeef'))).rejects.toThrow(
-        UnauthorizedException,
-      );
-      expect(invoices.update).not.toHaveBeenCalled();
-    });
-
-    it('is idempotent: an already-PAID invoice is not updated again', async () => {
-      const repo = settingsRepo({ 'razorpay.webhookSecret': { value: WEBHOOK_SECRET, secret: true } });
-      const invoices = invoiceRepo();
-      invoices.findOne.mockResolvedValue({ id: 'inv-1', status: InvoiceStatus.PAID });
-      const controller = await build(repo, invoices);
-
-      const body = capturedPayload('inv-1');
-      const sig = createHmac('sha256', WEBHOOK_SECRET).update(body, 'utf8').digest('hex');
-      await controller.handleWebhook(req(body, sig));
-      expect(invoices.update).not.toHaveBeenCalled();
-    });
-
-    it('still returns 200 for a valid signature when the invoice is unknown', async () => {
-      const repo = settingsRepo({ 'razorpay.webhookSecret': { value: WEBHOOK_SECRET, secret: true } });
-      const invoices = invoiceRepo();
-      invoices.findOne.mockResolvedValue(null);
-      const controller = await build(repo, invoices);
-
-      const body = capturedPayload('missing-inv');
-      const sig = createHmac('sha256', WEBHOOK_SECRET).update(body, 'utf8').digest('hex');
-      await expect(controller.handleWebhook(req(body, sig))).resolves.toEqual({ received: true });
-      expect(invoices.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('verifyPayment marks invoice PAID', () => {
-    it('marks the referenced invoice PAID with paymentMethod ONLINE on success', async () => {
-      const invoices = invoiceRepo();
-      invoices.findOne.mockResolvedValue({ id: 'inv-9', status: InvoiceStatus.SENT });
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          PaymentResolver,
-          {
-            provide: RazorpayService,
-            useValue: { verifyPayment: jest.fn().mockResolvedValue(true) },
-          },
-          { provide: IntegrationSettingsService, useValue: {} },
-          { provide: getRepositoryToken(Invoice), useValue: invoices },
-        ],
-      }).compile();
-
-      const resolver = moduleRef.get(PaymentResolver);
-      const ok = await resolver.verifyPayment({
-        razorpayOrderId: 'order_1',
-        razorpayPaymentId: 'pay_1',
-        razorpaySignature: 'sig',
-        invoiceId: 'inv-9',
-      });
-      expect(ok).toBe(true);
-      expect(invoices.update).toHaveBeenCalledWith('inv-9', {
-        status: InvoiceStatus.PAID,
-        paidDate: expect.any(Date),
-        paymentMethod: 'ONLINE',
-      });
-    });
-
-    it('returns false and skips the invoice when the signature is invalid', async () => {
-      const invoices = invoiceRepo();
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          PaymentResolver,
-          {
-            provide: RazorpayService,
-            useValue: { verifyPayment: jest.fn().mockResolvedValue(false) },
-          },
-          { provide: IntegrationSettingsService, useValue: {} },
-          { provide: getRepositoryToken(Invoice), useValue: invoices },
-        ],
-      }).compile();
-
-      const ok = await moduleRef.get(PaymentResolver).verifyPayment({
-        razorpayOrderId: 'order_1',
-        razorpayPaymentId: 'pay_1',
-        razorpaySignature: 'bad',
-      });
-      expect(ok).toBe(false);
-      expect(invoices.update).not.toHaveBeenCalled();
     });
   });
 
@@ -459,6 +337,48 @@ describe('Integrations extensions', () => {
         status: InvoiceStatus.PAID,
         paidDate: expect.any(Date),
         paymentMethod: 'CHEQUE',
+      });
+    });
+
+    describe('authorization (offline "mark paid" moves real money records)', () => {
+      const build = async (invoice: any) => {
+        const invoices = invoiceRepo();
+        invoices.findOne.mockResolvedValue(invoice);
+        const moduleRef = await Test.createTestingModule({
+          providers: [
+            InvoiceResolver,
+            { provide: CacheService, useValue: { invalidatePattern: jest.fn(), del: jest.fn() } },
+            { provide: getRepositoryToken(Invoice), useValue: invoices },
+          ],
+        }).compile();
+        return { resolver: moduleRef.get(InvoiceResolver), invoices };
+      };
+      const manager = (centerId: string): any => ({ sub: 'm', email: 'm@x.test', role: 'CENTER_MANAGER', centerId, sid: 's', typ: 'access' });
+
+      it('is staff-only (SUPER_ADMIN, CENTER_MANAGER) — a MEMBER can no longer mark invoices paid', () => {
+        const proto: any = InvoiceResolver.prototype;
+        expect(Reflect.getMetadata('roles', proto.markInvoicePaid)).toEqual(['SUPER_ADMIN', 'CENTER_MANAGER']);
+      });
+
+      it('a center manager cannot mark another center\'s invoice paid', async () => {
+        const { resolver, invoices } = await build({ id: 'inv-x', status: InvoiceStatus.SENT, centerId: 'center-b' });
+        await expect(resolver.markInvoicePaid('inv-x', undefined, undefined, manager('center-a'))).rejects.toThrow(/different center/);
+        expect(invoices.update).not.toHaveBeenCalled();
+      });
+
+      it('allows a manager on their own center\'s invoice', async () => {
+        const { resolver, invoices } = await build({ id: 'inv-x', status: InvoiceStatus.SENT, centerId: 'center-a' });
+        await resolver.markInvoicePaid('inv-x', 'CHEQUE' as any, '123456', manager('center-a'));
+        expect(invoices.update).toHaveBeenCalledWith('inv-x', expect.objectContaining({ status: InvoiceStatus.PAID, paymentMethod: 'CHEQUE', paymentReference: '123456' }));
+      });
+
+      it('refuses a cancelled invoice and an unknown one', async () => {
+        const cancelled = await build({ id: 'inv-c', status: InvoiceStatus.CANCELLED });
+        await expect(cancelled.resolver.markInvoicePaid('inv-c')).rejects.toThrow(/cancelled invoice/);
+        expect(cancelled.invoices.update).not.toHaveBeenCalled();
+
+        const missing = await build(null);
+        await expect(missing.resolver.markInvoicePaid('nope')).rejects.toThrow(/Invoice not found/);
       });
     });
 

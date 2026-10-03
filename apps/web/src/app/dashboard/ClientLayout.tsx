@@ -82,6 +82,8 @@ const SECTION_TABS: Record<string, HeaderTab[]> = {
     { id: 'leads', label: 'Leads', href: '/dashboard/crm/leads' },
     { id: 'customers', label: 'Customers', href: '/dashboard/crm/customers' },
     { id: 'onboarding', label: 'Onboarding', href: '/dashboard/crm/onboarding' },
+    // Cheques awaiting clearance, unfinished online payments, failed attempts.
+    { id: 'pending', label: 'Pending payments', href: '/dashboard/crm/onboarding/pending' },
   ],
   operations: [
     {

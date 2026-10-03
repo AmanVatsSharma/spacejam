@@ -2,33 +2,47 @@
  * File:        apps/api/src/integrations/payments-webhook.controller.ts
  * Module:      API · Integrations · Payments Webhook
  * Purpose:     Public REST endpoint (POST /api/payments/webhook) receiving
- *              Razorpay webhook events. Verifies the x-razorpay-signature
- *              HMAC-SHA256 over the raw request body against the configured
- *              webhook secret; on payment.captured it marks the referenced
- *              invoice PAID (ONLINE), idempotently. Always 200 for valid
- *              signatures (Razorpay retries non-2xx aggressively).
+ *              Razorpay webhook events. Authenticates the call by verifying
+ *              x-razorpay-signature (HMAC-SHA256 over the RAW body, constant-
+ *              time compare) against the webhook secret a super-admin saved in
+ *              Settings → Integrations.
  *
- * Author:      ZCode
- * Last-updated: 2026-08-27
+ *              Events are settled through PaymentOrdersService, which looks the
+ *              order up in OUR ledger (never trusting `notes` from the payload)
+ *              and settles idempotently:
+ *                payment.captured / order.paid / payment.authorized → settle
+ *                payment.failed                                     → record reason
+ *              This is what completes an onboarding or invoice when the browser
+ *              closed right after the customer paid.
+ *
+ *              Response policy (Razorpay retries non-2xx for ~24h):
+ *                - bad signature            → 401 (never processed)
+ *                - permanent problem (4xx)  → 200, logged (a retry can't fix it)
+ *                - transient problem (5xx)  → 500, so Razorpay retries; safe
+ *                                             because settlement is idempotent
+ *
+ * Author:      ZCode (original) · Claude Sonnet 5.5 (ledger-based rewrite)
+ * Last-updated: 2026-10-02
  */
 import {
   Controller,
   Post,
   Req,
   HttpCode,
+  HttpException,
   BadRequestException,
   UnauthorizedException,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { createHmac } from 'crypto';
 import type { Request } from 'express';
 import type { RawBodyRequest } from '@nestjs/common';
 
 import { IntegrationSettingsService } from './integration-settings.service';
+import { PaymentOrdersService } from './payment-orders.service';
+import { RazorpayPayment, safeEqual } from './razorpay.service';
 import { Public } from '../auth/decorators/public.decorator';
-import { Invoice } from '../typeorm/entities/invoice.entity';
-import { InvoiceStatus, PaymentMethod } from '@enums';
 
 @Controller('payments')
 export class PaymentsWebhookController {
@@ -36,8 +50,7 @@ export class PaymentsWebhookController {
 
   constructor(
     private readonly settings: IntegrationSettingsService,
-    @InjectRepository(Invoice)
-    private readonly invoiceRepo: Repository<Invoice>,
+    private readonly orders: PaymentOrdersService,
   ) {}
 
   @Post('webhook')
@@ -59,51 +72,55 @@ export class PaymentsWebhookController {
     }
 
     // Razorpay signs HMAC-SHA256(rawBody, webhookSecret).
-    const crypto = await import('crypto');
-    const expected = crypto.createHmac('sha256', cfg.webhookSecret).update(rawBody).digest('hex');
-    const valid =
-      expected.length === signature.length &&
-      crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
-    if (!valid) {
+    const expected = createHmac('sha256', cfg.webhookSecret).update(rawBody).digest('hex');
+    if (!safeEqual(expected, signature)) {
       this.logger.warn('Razorpay webhook signature mismatch — rejecting.');
       throw new UnauthorizedException('Invalid webhook signature.');
     }
 
-    // Signature is valid: always acknowledge 200, even if processing below
-    // fails, so Razorpay doesn't retry a payload we already accepted.
+    let payload: any;
     try {
-      const payload = JSON.parse(rawBody.toString('utf8'));
-      if (payload?.event === 'payment.captured') {
-        const notes =
-          payload?.payload?.payment?.entity?.notes ?? payload?.notes ?? undefined;
-        const invoiceId = notes?.invoiceId;
-        if (invoiceId) {
-          await this.markInvoicePaid(invoiceId);
-        }
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      // Authenticated but unparseable: nothing a retry could fix.
+      this.logger.error('Razorpay webhook body is not valid JSON; acknowledging.');
+      return { received: true };
+    }
+
+    const event: string | undefined = payload?.event;
+    const payment: RazorpayPayment | undefined = payload?.payload?.payment?.entity;
+
+    try {
+      switch (event) {
+        case 'payment.captured':
+        case 'order.paid':
+        case 'payment.authorized':
+          if (payment) {
+            const result = await this.orders.settleFromWebhook(payment);
+            if (result) {
+              this.logger.log(
+                `Webhook ${event}: order ${result.order.providerOrderId} ${
+                  result.alreadySettled ? 'already settled' : 'settled'
+                }.`,
+              );
+            }
+          }
+          break;
+        case 'payment.failed':
+          if (payment) await this.orders.recordFailure(payment);
+          break;
+        default:
+          // Other events (refunds, disputes, …) aren't handled yet.
+          break;
       }
     } catch (err: any) {
-      this.logger.error(`Razorpay webhook processing failed: ${err?.message}`);
+      if (err instanceof HttpException && err.getStatus() < 500) {
+        this.logger.error(`Webhook ${event} not processable (permanent): ${err.message}`);
+        return { received: true };
+      }
+      this.logger.error(`Webhook ${event} failed (will be retried by Razorpay): ${err?.message}`);
+      throw new InternalServerErrorException('Webhook processing failed.');
     }
     return { received: true };
-  }
-
-  /** Idempotent: only updates when the invoice exists and is not yet PAID. */
-  private async markInvoicePaid(invoiceId: string): Promise<void> {
-    try {
-      const invoice = await this.invoiceRepo.findOne({ where: { id: invoiceId } });
-      if (!invoice) {
-        this.logger.warn(`Razorpay webhook: invoice ${invoiceId} not found.`);
-        return;
-      }
-      if (invoice.status === InvoiceStatus.PAID) return;
-      await this.invoiceRepo.update(invoiceId, {
-        status: InvoiceStatus.PAID,
-        paidDate: new Date(),
-        paymentMethod: PaymentMethod.ONLINE,
-      });
-      this.logger.log(`Razorpay webhook marked invoice ${invoiceId} PAID.`);
-    } catch (err: any) {
-      this.logger.error(`Failed to mark invoice ${invoiceId} paid: ${err?.message}`);
-    }
   }
 }

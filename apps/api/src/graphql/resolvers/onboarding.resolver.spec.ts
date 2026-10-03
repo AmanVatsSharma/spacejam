@@ -1,302 +1,313 @@
 /**
  * File:        apps/api/src/graphql/resolvers/onboarding.resolver.spec.ts
  * Module:      API · Onboarding Resolver Tests
- * Purpose:     Integration-style unit tests for OnboardingResolver.
- *              Builds a Nest TestingModule with the real resolver, a mocked
- *              OnboardingRepository, and a mocked CacheService — then drives
- *              the full happy-path flow end-to-end at the resolver layer:
+ * Purpose:     Tests for the hardened OnboardingResolver, run against an
+ *              in-memory database (see testing/fake-datasource.ts):
  *
- *                  1. createOnboarding → row created with PENDING
- *                  2. advanceOnboardingStatus → PENDING → IN_PROGRESS
- *                  3. advanceOnboardingStatus → IN_PROGRESS → COMPLETED (stamps completedAt)
- *                  4. advanceOnboardingStatus → idempotent (no-op when already COMPLETED)
- *                  5. completeOnboarding → direct jump to COMPLETED (even from PENDING)
- *                  6. updateOnboarding → patches arbitrary fields (companyName, etc.)
- *                  7. deleteOnboarding → row removed, cache invalidated
- *                  8. onboardings / onboarding / onboardingCount → queries
+ *                - the class is staff-only (SUPER_ADMIN, CENTER_MANAGER) behind
+ *                  the auth + roles guards
+ *                - queries are center-scoped: a CENTER_MANAGER never sees another
+ *                  center's onboardings, whatever centerId the client sends;
+ *                  cancelled ones are hidden unless asked for; page size capped
+ *                - the status machine: an onboarding can only be COMPLETED once
+ *                  its client exists AND payment is settled — it used to be one
+ *                  call away from any state, by any signed-in user
+ *                - centerId can't be edited (it would move a record between
+ *                  centers); delete is refused once money or a client exists
+ *                - the payment-lifecycle mutations delegate to OnboardingService
  *
- *              This is the same file the earlier summary claimed to verify
- *              against the live API; instead we verify deterministically here
- *              with jest fakes, so no production rows are created or mutated.
+ *              (The earlier version of this file asserted the unguarded
+ *              behaviour — e.g. completeOnboarding jumping straight from PENDING.)
  *
- * Author:      Claude Fable 5.1
- * Last-updated: 2026-09-30
+ * Author:      Claude Fable 5.1 (original) · Claude Sonnet 5.5 (rewrite for the hardened resolver)
+ * Last-updated: 2026-10-02
  */
-
-import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Onboarding } from '../../typeorm/entities/onboarding.entity';
-import { OnboardingStatus } from '@enums';
+import 'reflect-metadata';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { OnboardingStatus, UserRole } from '@enums';
 import { OnboardingResolver } from './onboarding.resolver';
-import { CacheService } from '../../cache/cache.service';
+import { FakeDb } from '../../testing/fake-datasource';
+import { Onboarding } from '../../typeorm/entities/onboarding.entity';
+import { OnboardingPaymentStatus } from '../enums/onboarding-payment.enums';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 
-// ──────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────
-const UUID = (n = 0) => `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`;
-const NOW = new Date('2026-09-30T12:00:00.000Z');
+const CENTER_A = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+const CENTER_B = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
-/** Seed an Onboarding entity as it would look freshly created. */
-function freshOnboarding(overrides: Partial<Onboarding> = {}): Onboarding {
-    return {
-        id: UUID(1),
-        leadId: null,
-        customerId: null,
-        status: OnboardingStatus.PENDING,
-        companyName: null,
-        companyAddress: null,
-        gstNumber: null,
-        planType: null,
-        seatCount: null,
-        contactName: null,
-        contactEmail: null,
-        contactPhone: null,
-        emergencyContact: null,
-        emergencyPhone: null,
-        idProofUrl: null,
-        agreementUrl: null,
-        completedAt: null,
-        notes: null,
-        assignedToId: null,
-        centerId: null,
-        lead: undefined,
-        customer: undefined,
-        assignedTo: undefined,
-        center: undefined,
-        createdAt: NOW,
-        updatedAt: NOW,
-        ...overrides,
-    } as Onboarding;
+const user = (role: UserRole, centerId: string | null = null): any => ({
+  sub: `u-${role}`,
+  email: 'x@y.test',
+  role,
+  centerId,
+  sid: 's',
+  typ: 'access',
+});
+const SUPER = user(UserRole.SUPER_ADMIN);
+const MGR_A = user(UserRole.CENTER_MANAGER, CENTER_A);
+
+function build() {
+  const db = new FakeDb().onInsert(Onboarding, (r) => {
+    r.status ??= OnboardingStatus.PENDING;
+    r.paymentStatus ??= OnboardingPaymentStatus.NOT_REQUIRED;
+  });
+  const cache = { invalidatePattern: vi.fn(async () => {}), del: vi.fn(async () => {}) };
+  const service = {
+    submit: vi.fn(async () => 'submitted'),
+    confirmOnlinePayment: vi.fn(async () => 'confirmed'),
+    collectPayment: vi.fn(async () => 'collected'),
+    confirmChequeCleared: vi.fn(async () => 'cleared'),
+    markChequeBounced: vi.fn(async () => 'bounced'),
+    cancel: vi.fn(async () => 'cancelled'),
+  };
+  const resolver = new OnboardingResolver(cache as any, db.getRepository(Onboarding) as any, service as any);
+  return { db, resolver, cache, service };
 }
 
-let resolver: OnboardingResolver;
-let repo: any;
-let cacheInvalidate: jest.Mock;
-let cacheDel: jest.Mock;
+const row = (over: Record<string, unknown> = {}) => ({
+  id: `ob-${Math.random().toString(36).slice(2, 8)}`,
+  status: OnboardingStatus.PENDING,
+  paymentStatus: OnboardingPaymentStatus.NOT_REQUIRED,
+  centerId: CENTER_A,
+  companyName: 'Acme',
+  contactName: 'Asha',
+  contactEmail: 'asha@acme.test',
+  cancelledAt: null,
+  customerId: null,
+  ...over,
+});
 
-async function build() {
-    repo = {
-        create: jest.fn(),
-        save: jest.fn(),
-        find: jest.fn(),
-        findOne: jest.fn(),
-        update: jest.fn().mockResolvedValue(undefined),
-        delete: jest.fn().mockResolvedValue(undefined),
-        count: jest.fn(),
-    };
-    cacheInvalidate = jest.fn().mockResolvedValue(undefined);
-    cacheDel = jest.fn().mockResolvedValue(undefined);
+describe('OnboardingResolver', () => {
+  let h: ReturnType<typeof build>;
+  beforeEach(() => {
+    h = build();
+  });
 
-    const moduleRef = await Test.createTestingModule({
-        providers: [
-            OnboardingResolver,
-            { provide: getRepositoryToken(Onboarding), useValue: repo },
-            { provide: CacheService, useValue: { invalidatePattern: cacheInvalidate, del: cacheDel } },
-        ],
-    }).compile();
-    resolver = moduleRef.get(OnboardingResolver);
-}
+  // ── access control ────────────────────────────────────────────────────
+  describe('access control', () => {
+    it('is staff-only: SUPER_ADMIN and CENTER_MANAGER behind GqlAuthGuard + RolesGuard', () => {
+      expect(Reflect.getMetadata('roles', OnboardingResolver)).toEqual([UserRole.SUPER_ADMIN, UserRole.CENTER_MANAGER]);
+      const guards: any[] = Reflect.getMetadata('__guards__', OnboardingResolver);
+      expect(guards).toEqual(expect.arrayContaining([GqlAuthGuard, RolesGuard]));
+    });
+  });
 
-// ──────────────────────────────────────────────
-// Tests
-// ──────────────────────────────────────────────
-describe('OnboardingResolver — full status-transition flow', () => {
-    beforeEach(build);
+  // ── queries ───────────────────────────────────────────────────────────
+  describe('onboardings()', () => {
+    beforeEach(() => {
+      h.db.seed(Onboarding, [
+        row({ id: 'a1', centerId: CENTER_A, companyName: 'Acme' }),
+        row({ id: 'a2', centerId: CENTER_A, companyName: 'Globex', paymentStatus: OnboardingPaymentStatus.AWAITING_CLEARANCE }),
+        row({ id: 'a3', centerId: CENTER_A, companyName: 'Hidden Co', cancelledAt: new Date() }),
+        row({ id: 'b1', centerId: CENTER_B, companyName: 'Initech' }),
+      ]);
+    });
+    const ids = (list: any[]) => list.map((r) => r.id).sort();
 
-    // ── 1. createOnboarding ────────────────────
-    describe('createOnboarding', () => {
-        it('creates a row in PENDING and persists companyName/companyAddress', async () => {
-            const saved = freshOnboarding({
-                id: UUID(10),
-                companyName: 'TestCorp',
-                companyAddress: '123 Main St',
-            });
-            repo.create.mockReturnValue(saved);
-            repo.save.mockResolvedValue(saved);
-
-            const input = {
-                companyName: 'TestCorp',
-                companyAddress: '123 Main St',
-            } as any;
-            const result = await resolver.createOnboarding(input);
-
-            expect(repo.create).toHaveBeenCalledWith({
-                ...input,
-                status: OnboardingStatus.PENDING,
-            });
-            expect(result.companyName).toBe('TestCorp');
-            expect(result.companyAddress).toBe('123 Main St');
-            expect(result.status).toBe(OnboardingStatus.PENDING);
-            expect(cacheInvalidate).toHaveBeenCalledWith('onboardings:*');
-        });
-
-        it('defaults to PENDING when no status is supplied', async () => {
-            const saved = freshOnboarding();
-            repo.create.mockReturnValue(saved);
-            repo.save.mockResolvedValue(saved);
-
-            await resolver.createOnboarding({} as any);
-            expect(repo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ status: OnboardingStatus.PENDING }),
-            );
-        });
+    it('a center manager only ever sees their own center — a client-supplied centerId is ignored', async () => {
+      expect(ids(await h.resolver.onboardings({ centerId: CENTER_B } as any, MGR_A))).toEqual(['a1', 'a2']);
+      expect(ids(await h.resolver.onboardings(undefined, MGR_A))).toEqual(['a1', 'a2']);
     });
 
-    // ── 2. advanceOnboardingStatus ────────────
-    describe('advanceOnboardingStatus', () => {
-        it('PENDING → IN_PROGRESS', async () => {
-            const inProgress = freshOnboarding({ status: OnboardingStatus.IN_PROGRESS });
-            repo.findOne.mockResolvedValueOnce(freshOnboarding()).mockResolvedValueOnce(inProgress);
-            repo.update.mockResolvedValue(undefined);
-
-            const result = await resolver.advanceOnboardingStatus(UUID(1));
-
-            expect(repo.update).toHaveBeenCalledWith(UUID(1), {
-                status: OnboardingStatus.IN_PROGRESS,
-            });
-            expect(result.status).toBe(OnboardingStatus.IN_PROGRESS);
-            expect(result.completedAt).toBeNull();
-        });
-
-        it('IN_PROGRESS → COMPLETED and stamps completedAt', async () => {
-            const completed = freshOnboarding({
-                status: OnboardingStatus.COMPLETED,
-                completedAt: NOW,
-            });
-            repo.findOne
-                .mockResolvedValueOnce(freshOnboarding({ status: OnboardingStatus.IN_PROGRESS }))
-                .mockResolvedValueOnce(completed);
-            repo.update.mockResolvedValue(undefined);
-
-            const result = await resolver.advanceOnboardingStatus(UUID(1));
-
-            expect(repo.update).toHaveBeenCalledWith(UUID(1), {
-                status: OnboardingStatus.COMPLETED,
-                completedAt: expect.any(Date),
-            });
-            expect(result.status).toBe(OnboardingStatus.COMPLETED);
-            expect(result.completedAt).toEqual(NOW);
-        });
-
-        it('is idempotent when already COMPLETED — returns existing row unchanged', async () => {
-            const alreadyDone = freshOnboarding({
-                status: OnboardingStatus.COMPLETED,
-                completedAt: NOW,
-            });
-            repo.findOne.mockResolvedValue(alreadyDone);
-
-            const result = await resolver.advanceOnboardingStatus(UUID(1));
-
-            expect(repo.update).not.toHaveBeenCalled();
-            expect(result.status).toBe(OnboardingStatus.COMPLETED);
-            expect(result.completedAt).toEqual(NOW);
-        });
-
-        it('throws NotFoundException for an unknown id', async () => {
-            repo.findOne.mockResolvedValue(null);
-            await expect(resolver.advanceOnboardingStatus(UUID(99)))
-                .rejects.toThrow(NotFoundException);
-            expect(repo.update).not.toHaveBeenCalled();
-        });
+    it('a super admin sees all centers, or can filter to one', async () => {
+      expect(ids(await h.resolver.onboardings(undefined, SUPER))).toEqual(['a1', 'a2', 'b1']);
+      expect(ids(await h.resolver.onboardings({ centerId: CENTER_B } as any, SUPER))).toEqual(['b1']);
     });
 
-    // ── 3. completeOnboarding (shortcut) ──────
-    describe('completeOnboarding', () => {
-        it('jumps straight to COMPLETED and stamps completedAt even from PENDING', async () => {
-            const completed = freshOnboarding({
-                status: OnboardingStatus.COMPLETED,
-                completedAt: NOW,
-            });
-            repo.findOne
-                .mockResolvedValueOnce(freshOnboarding())
-                .mockResolvedValueOnce(completed);
-            repo.update.mockResolvedValue(undefined);
-
-            const result = await resolver.completeOnboarding(UUID(1));
-
-            expect(repo.update).toHaveBeenCalledWith(UUID(1), {
-                status: OnboardingStatus.COMPLETED,
-                completedAt: expect.any(Date),
-            });
-            expect(result.status).toBe(OnboardingStatus.COMPLETED);
-            expect(result.completedAt).toEqual(NOW);
-        });
+    it('hides cancelled applications unless includeCancelled is set', async () => {
+      expect(ids(await h.resolver.onboardings({ includeCancelled: true } as any, SUPER))).toEqual(['a1', 'a2', 'a3', 'b1']);
     });
 
-    // ── 4. updateOnboarding ───────────────────
-    describe('updateOnboarding', () => {
-        it('updates arbitrary fields (e.g. companyName) and reloads relations', async () => {
-            const updated = freshOnboarding({ companyName: 'NewName' });
-            repo.findOne
-                .mockResolvedValueOnce(freshOnboarding())
-                .mockResolvedValueOnce(updated);
-            repo.update.mockResolvedValue(undefined);
-
-            const result = await resolver.updateOnboarding(UUID(1), {
-                companyName: 'NewName',
-            } as any);
-
-            expect(repo.update).toHaveBeenCalledWith(UUID(1), {
-                companyName: 'NewName',
-            });
-            expect(result.companyName).toBe('NewName');
-            expect(cacheInvalidate).toHaveBeenCalledWith('onboardings:*');
-            expect(cacheDel).toHaveBeenCalledWith(`onboarding:${UUID(1)}`);
-        });
+    it('filters by payment status (e.g. cheques waiting on the bank)', async () => {
+      const list = await h.resolver.onboardings({ paymentStatus: OnboardingPaymentStatus.AWAITING_CLEARANCE } as any, SUPER);
+      expect(ids(list)).toEqual(['a2']);
     });
 
-    // ── 5. deleteOnboarding ───────────────────
-    describe('deleteOnboarding', () => {
-        it('deletes and invalidates cache', async () => {
-            repo.delete.mockResolvedValue({ affected: 1 } as any);
-
-            const result = await resolver.deleteOnboarding(UUID(1));
-
-            expect(repo.delete).toHaveBeenCalledWith(UUID(1));
-            expect(result).toBe(true);
-            expect(cacheInvalidate).toHaveBeenCalledWith('onboardings:*');
-            expect(cacheDel).toHaveBeenCalledWith(`onboarding:${UUID(1)}`);
-        });
+    it('searches company, contact name and email case-insensitively and literally (no LIKE wildcards)', async () => {
+      expect(ids(await h.resolver.onboardings({ search: 'globe' } as any, SUPER))).toEqual(['a2']);
+      expect(ids(await h.resolver.onboardings({ search: 'ASHA@acme' } as any, SUPER))).toEqual(['a1', 'a2', 'b1']);
+      // "%" must not match everything
+      expect(await h.resolver.onboardings({ search: '%' } as any, SUPER)).toEqual([]);
     });
 
-    // ── 6. Queries ────────────────────────────
-    describe('queries', () => {
-        it('onboardings() filters by status and centerId', async () => {
-            repo.find.mockResolvedValue([freshOnboarding(), freshOnboarding()]);
-
-            const result = await resolver.onboardings({
-                status: OnboardingStatus.PENDING,
-                centerId: UUID(5),
-                limit: 10,
-                offset: 0,
-            } as any);
-
-            expect(repo.find).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: {
-                        status: OnboardingStatus.PENDING,
-                        centerId: UUID(5),
-                    },
-                    relations: expect.arrayContaining(['lead', 'customer', 'assignedTo', 'center']),
-                    order: { createdAt: 'DESC' },
-                    take: 10,
-                    skip: 0,
-                }),
-            );
-            expect(result).toHaveLength(2);
-        });
-
-        it('onboarding(id) loads a single row', async () => {
-            repo.findOne.mockResolvedValue(freshOnboarding({ id: UUID(7) }));
-            const result = await resolver.onboarding(UUID(7));
-            expect(result?.id).toBe(UUID(7));
-        });
-
-        it('onboardingCount returns a number', async () => {
-            repo.count.mockResolvedValue(42);
-            const result = await resolver.onboardingCount(OnboardingStatus.PENDING);
-            expect(result).toBe(42);
-        });
+    it('caps the page size', async () => {
+      const spy = vi.spyOn((h.resolver as any).onboardingRepo, 'find');
+      await h.resolver.onboardings({ limit: 5_000_000 } as any, SUPER);
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ take: 200 }));
     });
+  });
+
+  describe('onboarding(id) / onboardingCount()', () => {
+    beforeEach(() => {
+      h.db.seed(Onboarding, [row({ id: 'a1', centerId: CENTER_A }), row({ id: 'b1', centerId: CENTER_B }), row({ id: 'a9', centerId: CENTER_A, cancelledAt: new Date() })]);
+    });
+
+    it('refuses to return another center\'s onboarding to a manager', async () => {
+      expect((await h.resolver.onboarding('a1', MGR_A))?.id).toBe('a1');
+      await expect(h.resolver.onboarding('b1', MGR_A)).rejects.toThrow(ForbiddenException);
+      expect(await h.resolver.onboarding('nope', MGR_A)).toBeNull();
+    });
+
+    it('counts only non-cancelled onboardings, scoped to the manager\'s center', async () => {
+      expect(await h.resolver.onboardingCount(undefined, SUPER)).toBe(2);
+      expect(await h.resolver.onboardingCount(undefined, MGR_A)).toBe(1);
+    });
+  });
+
+  // ── status machine ────────────────────────────────────────────────────
+  describe('completing an onboarding', () => {
+    it('refuses to complete one whose client does not exist yet (e.g. a cheque still clearing)', async () => {
+      h.db.seed(Onboarding, [row({ id: 'chq', paymentStatus: OnboardingPaymentStatus.AWAITING_CLEARANCE })]);
+      await expect(h.resolver.completeOnboarding('chq', SUPER)).rejects.toThrow(/cannot be completed yet/);
+      expect(h.db.byId<any>(Onboarding, 'chq').status).toBe(OnboardingStatus.PENDING);
+    });
+
+    it('refuses when the client exists but the payment is not confirmed', async () => {
+      h.db.seed(Onboarding, [row({ id: 'unpaid', customerId: 'cust-1', paymentStatus: OnboardingPaymentStatus.PENDING })]);
+      await expect(h.resolver.completeOnboarding('unpaid', SUPER)).rejects.toThrow(BadRequestException);
+    });
+
+    it('completes once the client exists and the payment is settled (PAID or not required)', async () => {
+      h.db.seed(Onboarding, [
+        row({ id: 'paid', customerId: 'c1', paymentStatus: OnboardingPaymentStatus.PAID }),
+        row({ id: 'free', customerId: 'c2', paymentStatus: OnboardingPaymentStatus.NOT_REQUIRED }),
+      ]);
+      const paid = await h.resolver.completeOnboarding('paid', SUPER);
+      expect(paid.status).toBe(OnboardingStatus.COMPLETED);
+      expect(paid.completedAt).toBeInstanceOf(Date);
+      expect((await h.resolver.completeOnboarding('free', SUPER)).status).toBe(OnboardingStatus.COMPLETED);
+    });
+
+    it('is idempotent on an already-completed onboarding', async () => {
+      const at = new Date('2026-01-01');
+      h.db.seed(Onboarding, [row({ id: 'done', status: OnboardingStatus.COMPLETED, completedAt: at, customerId: 'c', paymentStatus: OnboardingPaymentStatus.PAID })]);
+      const res = await h.resolver.completeOnboarding('done', SUPER);
+      expect(res.completedAt).toEqual(at);
+    });
+
+    it('404s on an unknown id and 403s across centers', async () => {
+      h.db.seed(Onboarding, [row({ id: 'b1', centerId: CENTER_B, customerId: 'c', paymentStatus: OnboardingPaymentStatus.PAID })]);
+      await expect(h.resolver.completeOnboarding('missing', SUPER)).rejects.toThrow(NotFoundException);
+      await expect(h.resolver.completeOnboarding('b1', MGR_A)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('advanceOnboardingStatus', () => {
+    it('PENDING → IN_PROGRESS', async () => {
+      h.db.seed(Onboarding, [row({ id: 'p' })]);
+      expect((await h.resolver.advanceOnboardingStatus('p', SUPER)).status).toBe(OnboardingStatus.IN_PROGRESS);
+    });
+
+    it('IN_PROGRESS → COMPLETED only when settled; stamps completedAt', async () => {
+      h.db.seed(Onboarding, [
+        row({ id: 'ok', status: OnboardingStatus.IN_PROGRESS, customerId: 'c', paymentStatus: OnboardingPaymentStatus.NOT_REQUIRED }),
+        row({ id: 'blocked', status: OnboardingStatus.IN_PROGRESS, customerId: null, paymentStatus: OnboardingPaymentStatus.PENDING }),
+      ]);
+      const ok = await h.resolver.advanceOnboardingStatus('ok', SUPER);
+      expect(ok.status).toBe(OnboardingStatus.COMPLETED);
+      expect(ok.completedAt).toBeInstanceOf(Date);
+      await expect(h.resolver.advanceOnboardingStatus('blocked', SUPER)).rejects.toThrow(BadRequestException);
+    });
+
+    it('is a no-op once COMPLETED', async () => {
+      h.db.seed(Onboarding, [row({ id: 'd', status: OnboardingStatus.COMPLETED, customerId: 'c' })]);
+      expect((await h.resolver.advanceOnboardingStatus('d', SUPER)).status).toBe(OnboardingStatus.COMPLETED);
+    });
+  });
+
+  describe('updateOnboarding', () => {
+    it('updates ordinary fields but never moves a record to another center', async () => {
+      h.db.seed(Onboarding, [row({ id: 'u1', centerId: CENTER_A })]);
+      const res = await h.resolver.updateOnboarding('u1', { companyName: 'NewName', centerId: CENTER_B } as any, SUPER);
+      expect(res.companyName).toBe('NewName');
+      expect(res.centerId).toBe(CENTER_A);
+    });
+
+    it('cannot be used to force COMPLETED around the payment rules', async () => {
+      h.db.seed(Onboarding, [row({ id: 'u2', paymentStatus: OnboardingPaymentStatus.AWAITING_CLEARANCE })]);
+      await expect(h.resolver.updateOnboarding('u2', { status: OnboardingStatus.COMPLETED } as any, SUPER)).rejects.toThrow(BadRequestException);
+      expect(h.db.byId<any>(Onboarding, 'u2').status).toBe(OnboardingStatus.PENDING);
+    });
+
+    it('is center-scoped', async () => {
+      h.db.seed(Onboarding, [row({ id: 'ub', centerId: CENTER_B })]);
+      await expect(h.resolver.updateOnboarding('ub', { notes: 'x' } as any, MGR_A)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('createOnboarding (legacy)', () => {
+    it('pins a center manager to their own center and defaults to PENDING', async () => {
+      const saved = await h.resolver.createOnboarding({ companyName: 'X' } as any, MGR_A);
+      expect(saved.centerId).toBe(CENTER_A);
+      expect(saved.status).toBe(OnboardingStatus.PENDING);
+    });
+
+    it('refuses another center for a manager, and refuses creating one already COMPLETED', async () => {
+      await expect(h.resolver.createOnboarding({ centerId: CENTER_B } as any, MGR_A)).rejects.toThrow(ForbiddenException);
+      await expect(h.resolver.createOnboarding({ status: OnboardingStatus.COMPLETED } as any, SUPER)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('deleteOnboarding', () => {
+    it('deletes an onboarding that never produced a client or took money', async () => {
+      h.db.seed(Onboarding, [row({ id: 'del', paymentStatus: OnboardingPaymentStatus.FAILED })]);
+      expect(await h.resolver.deleteOnboarding('del', SUPER)).toBe(true);
+      expect(h.db.count(Onboarding)).toBe(0);
+      expect(h.cache.invalidatePattern).toHaveBeenCalledWith('onboardings:*');
+    });
+
+    it('refuses once a client exists, money was taken, or a cheque is clearing — cancel instead', async () => {
+      h.db.seed(Onboarding, [
+        row({ id: 'client', customerId: 'c1' }),
+        row({ id: 'paid', paymentStatus: OnboardingPaymentStatus.PAID }),
+        row({ id: 'cheque', paymentStatus: OnboardingPaymentStatus.AWAITING_CLEARANCE }),
+      ]);
+      await expect(h.resolver.deleteOnboarding('client', SUPER)).rejects.toThrow(/cannot be deleted/);
+      await expect(h.resolver.deleteOnboarding('paid', SUPER)).rejects.toThrow(/cannot be deleted/);
+      await expect(h.resolver.deleteOnboarding('cheque', SUPER)).rejects.toThrow(/cancel the onboarding instead/);
+      expect(h.db.count(Onboarding)).toBe(3);
+    });
+
+    it('404s when missing and is center-scoped', async () => {
+      h.db.seed(Onboarding, [row({ id: 'bb', centerId: CENTER_B })]);
+      await expect(h.resolver.deleteOnboarding('zzz', SUPER)).rejects.toThrow(NotFoundException);
+      await expect(h.resolver.deleteOnboarding('bb', MGR_A)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ── payment lifecycle delegates to the service ────────────────────────
+  describe('payment lifecycle mutations', () => {
+    it('submitOnboarding → service.submit(input, caller)', async () => {
+      const input = { idempotencyKey: 'k' } as any;
+      expect(await h.resolver.submitOnboarding(input, MGR_A)).toBe('submitted');
+      expect(h.service.submit).toHaveBeenCalledWith(input, MGR_A);
+    });
+
+    it('confirmOnboardingPayment passes the Razorpay triple and the caller', async () => {
+      await h.resolver.confirmOnboardingPayment(
+        { onboardingId: 'o1', razorpayOrderId: 'order_1', razorpayPaymentId: 'pay_1', razorpaySignature: 'sig' } as any,
+        MGR_A,
+      );
+      expect(h.service.confirmOnlinePayment).toHaveBeenCalledWith(
+        { onboardingId: 'o1', razorpayOrderId: 'order_1', razorpayPaymentId: 'pay_1', razorpaySignature: 'sig' },
+        MGR_A,
+      );
+    });
+
+    it('collect / clear / bounce / cancel delegate with their arguments', async () => {
+      const payment = { method: 'CHEQUE' } as any;
+      await h.resolver.collectOnboardingPayment('o1', payment, MGR_A);
+      expect(h.service.collectPayment).toHaveBeenCalledWith('o1', payment, MGR_A);
+
+      await h.resolver.confirmChequeCleared('o1', '2026-10-01', 'ok', MGR_A);
+      expect(h.service.confirmChequeCleared).toHaveBeenCalledWith('o1', { clearedOn: '2026-10-01', remarks: 'ok' }, MGR_A);
+
+      await h.resolver.markChequeBounced('o1', 'NSF', MGR_A);
+      expect(h.service.markChequeBounced).toHaveBeenCalledWith('o1', 'NSF', MGR_A);
+
+      await h.resolver.cancelOnboarding('o1', 'changed mind', MGR_A);
+      expect(h.service.cancel).toHaveBeenCalledWith('o1', 'changed mind', MGR_A);
+    });
+  });
 });

@@ -13,8 +13,12 @@ import {
     IsEmail,
     IsEnum,
     IsInt,
+    IsBoolean,
+    Max,
+    Min,
 } from 'class-validator';
 import { OnboardingStatus } from '@enums';
+import { OnboardingPaymentStatus } from '../enums/onboarding-payment.enums';
 
 @InputType()
 export class CreateOnboardingInput {
@@ -205,6 +209,18 @@ export class OnboardingFiltersInput {
     @IsOptional()
     status?: OnboardingStatus;
 
+    /** e.g. AWAITING_CLEARANCE to list cheques waiting on the bank. */
+    @Field(() => OnboardingPaymentStatus, { nullable: true })
+    @IsEnum(OnboardingPaymentStatus)
+    @IsOptional()
+    paymentStatus?: OnboardingPaymentStatus;
+
+    /** Cancelled applications are hidden unless this is true. */
+    @Field(() => Boolean, { nullable: true })
+    @IsBoolean()
+    @IsOptional()
+    includeCancelled?: boolean;
+
     @Field(() => ID, { nullable: true })
     @IsString()
     @IsOptional()
@@ -222,11 +238,14 @@ export class OnboardingFiltersInput {
 
     @Field(() => Int, { nullable: true })
     @IsInt()
+    @Min(1)
+    @Max(200)
     @IsOptional()
     limit?: number;
 
     @Field(() => Int, { nullable: true })
     @IsInt()
+    @Min(0)
     @IsOptional()
     offset?: number;
 }

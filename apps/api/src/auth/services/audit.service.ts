@@ -63,7 +63,16 @@ export type AuditAction =
   | 'USER_ROLE_CHANGE'
   | 'USER_ACTIVE_CHANGE'
   | 'USER_CREATE'
-  | 'USER_DELETE';
+  | 'USER_DELETE'
+  // Payments & onboarding (added 2026-10-02, enterprise onboarding).
+  | 'INTEGRATION_SETTINGS_UPDATE'
+  | 'ONBOARDING_SUBMIT'
+  | 'ONBOARDING_PROVISIONED'
+  | 'ONBOARDING_PAYMENT_CONFIRMED'
+  | 'ONBOARDING_CHEQUE_CLEARED'
+  | 'ONBOARDING_CHEQUE_BOUNCED'
+  | 'ONBOARDING_CANCELLED'
+  | 'INVOICE_MARKED_PAID';
 
 export interface AuditEntry {
   action: AuditAction;

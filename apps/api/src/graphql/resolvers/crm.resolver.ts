@@ -21,11 +21,10 @@ import { User as UserEntity } from '../../typeorm/entities/user.entity';
 import { CustomerStatus } from '@enums';
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 import { CacheService } from '../../cache/cache.service';
-import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { UseGuards } from '@nestjs/common';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { OnboardingService } from '../../crm/onboarding.service';
 
 /**
  * Payload for convertLeadWithOnboarding — returns both the new customer
@@ -57,6 +56,9 @@ export class CrmResolver {
     private customerRepo: Repository<CustomerEntity>,
     @InjectRepository(OnboardingEntity)
     private onboardingRepo: Repository<OnboardingEntity>,
+    // Used to keep cheque clients COLD: a lead whose cheque is still clearing
+    // can't be converted by hand — only by confirming the cheque.
+    private readonly onboardingService: OnboardingService,
   ) {}
 
   @Query(() => [LeadEntity])
@@ -123,6 +125,12 @@ export class CrmResolver {
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateLeadInput
   ): Promise<LeadEntity> {
+    // A status edit must not be a back door around the payment rule: a lead whose
+    // cheque is still clearing cannot be flipped to Converted by hand — it becomes a
+    // client only when staff confirm the cheque (same guard as the convert mutations).
+    if (input.status === LeadStatus.CONVERTED) {
+      await this.onboardingService.assertLeadConvertible(id);
+    }
     await this.leadRepo.update(id, input);
     const lead = await this.leadRepo.findOne({
       where: { id },
@@ -150,6 +158,7 @@ export class CrmResolver {
       await this.cache.invalidatePattern('leads:*');
       return lead;
     }
+    await this.onboardingService.assertLeadConvertible(id);
 
     // Auto-create Customer from lead data
     const newCustomer = this.customerRepo.create({
@@ -298,6 +307,11 @@ export class CrmResolver {
       relations: ['assignedTo'],
     });
     if (!lead) throw new NotFoundException('Lead not found');
+    // A cheque client stays a cold lead until the cheque clears (idempotent
+    // re-conversion of an already-converted lead is still allowed).
+    if (!(lead.status === LeadStatus.CONVERTED && lead.customerId)) {
+      await this.onboardingService.assertLeadConvertible(id);
+    }
 
     // Center attribution: lead center ?? caller's own center. Without this,
     // leads created before center attribution existed converted into
