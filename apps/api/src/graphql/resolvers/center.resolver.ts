@@ -42,7 +42,7 @@ import { deepMergeSettings, sanitizeSettings } from '../../common/utils/settings
 import { sanitizeFloorLayout } from '../../common/utils/floor-layout.util';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
-import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { centerScope, requireCenterScope } from '../../auth/helpers/center-scope.helper';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CenterScoped } from '../../auth/decorators/center-scoped.decorator';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -116,9 +116,12 @@ export class CenterResolver {
     @CurrentUser() caller?: JwtPayload,
   ): Promise<CenterEntity[]> {
     const userId = context.req.user?.id;
-    // Center managers see only their assigned center; super admins (no scope)
-    // see all centers they own (legacy `owner` column) or all centers.
-    const scope = caller ? centerScope(caller) : undefined;
+    // Center managers see only their assigned center (a manager with no center is
+    // refused rather than handed every center). A super admin works in EVERY center,
+    // so they get them all: the legacy `owner` column used to narrow this to just the
+    // centers they "own" whenever they owned any, which hid the rest from every
+    // center picker (e.g. when onboarding a client into another center).
+    const scope = requireCenterScope(caller);
     if (scope) {
       return this.centerRepo.find({
         where: { id: scope } as any,
@@ -128,15 +131,10 @@ export class CenterResolver {
     if (!userId) {
       return [];
     }
-
-    const centers = await this.centerRepo.find({
-      where: { owner: userId } as any,
+    return this.centerRepo.find({
       relations: ['location', 'floors'],
+      order: { name: 'ASC' } as any,
     });
-    // Super admins with no owned centers still see everything.
-    return centers.length
-      ? centers
-      : this.centerRepo.find({ relations: ['location', 'floors'] });
   }
 
   @Mutation(() => CenterEntity)

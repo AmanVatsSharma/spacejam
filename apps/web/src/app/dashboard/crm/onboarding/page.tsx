@@ -117,16 +117,18 @@ export default function OnboardingWizardPage() {
   // Active center (the manager's own center, or the admin's selection) —
   // customers must be attributed to a center or they never show up in the
   // center-scoped client report.
-  const { activeCenter, centers } = useActiveCenter();
-  const [selectedCenterId, setSelectedCenterId] = useState<string>("");
-  const initialCenterSet = useRef(false);
-
-  useEffect(() => {
-    if (activeCenter?.id && !initialCenterSet.current) {
-      setSelectedCenterId(activeCenter.id);
-      initialCenterSet.current = true;
-    }
-  }, [activeCenter]);
+  const { activeCenter, centers, loading: centersLoading, error: centersError, reload: reloadCenters } = useActiveCenter();
+  // The staff member's explicit pick, if it is still one of their centers…
+  const [chosenCenterId, setChosenCenterId] = useState<string>("");
+  // …otherwise the active center, otherwise the only center there is. DERIVED rather
+  // than copied into state from an effect, so a center that has loaded can never be
+  // left "unselected" (which used to dead-end step 1 with "Please select a center"
+  // and no way to pick one).
+  const selectedCenterId =
+    (chosenCenterId && centers.some((c) => c.id === chosenCenterId) ? chosenCenterId : "") ||
+    activeCenter?.id ||
+    centers[0]?.id ||
+    "";
 
   // Step 6 — selected KYC files, uploaded on final submit.
   const [kycDocs, setKycDocs] = useState<Record<DocSlot, File | null>>({
@@ -1297,43 +1299,63 @@ export default function OnboardingWizardPage() {
 
                     <div className="h-px bg-gray-100" />
 
-                    {/* Center Selection (Super Admin only if >1 centers) */}
-                    {centers.length > 1 && (
-                      <>
-                        <div className="pb-4">
-                          <h3 className="text-[16px] font-bold text-[#101828] mb-5">Select Center</h3>
-                          <div className="flex flex-col gap-4">
-                            <div>
-                              <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Center <span className="text-[#FF6A2F]">*</span></label>
-                              <div className="relative">
-                                <select
-                                  value={selectedCenterId}
-                                  onChange={(e) => {
-                                    const newCenterId = e.target.value;
-                                    if (newCenterId !== selectedCenterId) {
-                                      setSelectedCenterId(newCenterId);
-                                      // Clear previously assigned seats since inventory belongs to the old center
-                                      setIndividuals(prev => prev.map(p => ({ ...p, seat: "" })));
-                                      if (selectedCenterId) {
-                                        toast.info("Center not assigned");
-                                      }
-                                    }
-                                  }}
-                                  className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white"
-                                >
-                                  <option value="">Select a center</option>
-                                  {centers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                                <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
+                    {/* Center — always shown, so it is clear where the client is being onboarded */}
+                    <div className="pb-4" data-testid="onboarding-center">
+                      <h3 className="text-[16px] font-bold text-[#101828] mb-5">Center</h3>
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <label className="block text-[13px] text-gray-700 font-medium mb-1.5">Center <span className="text-[#FF6A2F]">*</span></label>
+                          {centers.length > 1 ? (
+                            <div className="relative">
+                              <select
+                                value={selectedCenterId}
+                                onChange={(e) => {
+                                  const newCenterId = e.target.value;
+                                  if (newCenterId && newCenterId !== selectedCenterId) {
+                                    setChosenCenterId(newCenterId);
+                                    // Seats belong to a center's inventory, so earlier picks no longer apply.
+                                    setIndividuals(prev => prev.map(p => ({ ...p, seat: "" })));
+                                    toast.info("Center changed — seat choices were cleared");
+                                  }
+                                }}
+                                className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#FF6A2F] focus:ring-1 focus:ring-[#FF6A2F] appearance-none bg-white"
+                                data-testid="onboarding-center-select"
+                              >
+                                {centers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
                             </div>
-                          </div>
+                          ) : centers.length === 1 ? (
+                            <div className="w-full h-11 px-4 border border-gray-200 rounded-lg text-[14px] bg-gray-50 text-gray-700 flex items-center" data-testid="onboarding-center-fixed">
+                              {centers[0].name}
+                            </div>
+                          ) : centersLoading ? (
+                            <p className="text-[13px] text-gray-500">Loading your centers…</p>
+                          ) : (
+                            <div className="rounded-lg border border-[#FFE0D3] bg-[#FFF8F6] p-4 text-[13px] leading-relaxed text-[#B4410F]" data-testid="onboarding-center-missing">
+                              <p className="font-semibold mb-1">
+                                {centersError ? "We couldn't load your centers." : "No center is available for your account."}
+                              </p>
+                              <p>
+                                {centersError
+                                  ? `${centersError} A center is required to onboard a client.`
+                                  : "A center is required to onboard a client. Ask a super admin to assign you to a center, or add one under Settings → Center."}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => reloadCenters()}
+                                className="mt-3 px-4 py-2 bg-white border border-[#FFD0BC] text-[#B4410F] rounded-lg text-[13px] font-semibold hover:bg-[#FFF1EB] transition-colors"
+                              >
+                                Try again
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <div className="h-px bg-gray-100" />
-                      </>
-                    )}
+                      </div>
+                    </div>
+                    <div className="h-px bg-gray-100" />
 
                     {/* Company Information */}
                     <div>

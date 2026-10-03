@@ -45,6 +45,10 @@ interface ActiveCenterContextValue {
   activeCenter?: ActiveCenter;
   /** True while GET_MY_CENTERS is in flight. */
   loading: boolean;
+  /** Why the centers could not be loaded (network / permission), if they could not. */
+  error: string | null;
+  /** Ask the server for the caller's centers again. */
+  reload: () => void;
   /** Switch the active center (persisted). No-op for unknown ids. */
   setActiveCenter: (centerId: string) => void;
 }
@@ -65,10 +69,17 @@ export function ActiveCenterProvider({ children }: { children: ReactNode }) {
     setRestored(true);
   }, []);
 
-  const { data, loading } = useQuery(GET_MY_CENTERS, {
+  const { data, loading, error, refetch } = useQuery(GET_MY_CENTERS, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'all',
   });
+  // errorPolicy 'all' keeps partial data, so an error only matters when nothing came back.
+  const errorMessage = !data?.myCenters?.length
+    ? (error?.graphQLErrors?.[0]?.message || error?.networkError?.message || error?.message || null)
+    : null;
+  const reload = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   const centers: ActiveCenter[] = useMemo(
     () =>
@@ -117,9 +128,11 @@ export function ActiveCenterProvider({ children }: { children: ReactNode }) {
       centers,
       activeCenter,
       loading: loading || !restored,
+      error: errorMessage,
+      reload,
       setActiveCenter,
     }),
-    [centers, activeCenter, loading, restored, setActiveCenter],
+    [centers, activeCenter, loading, restored, errorMessage, reload, setActiveCenter],
   );
 
   return (
