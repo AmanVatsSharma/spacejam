@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-06
  */
 import { Resolver, Query, Args, Mutation, Int, ID } from '@nestjs/graphql';
-import { NotFoundException, Logger } from '@nestjs/common';
+import { NotFoundException, Logger, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, DataSource } from 'typeorm';
 // @ts-ignore
@@ -28,10 +28,17 @@ import {
 import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
-import { centerScope } from '../../auth/helpers/center-scope.helper';
-import { ForbiddenException } from '@nestjs/common';
+import { assertCenterAccess, requireCenterScope, writeCenterId } from '../../auth/helpers/center-scope.helper';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
+// Customers are staff data (contact, GST, ID documents, deposits, invoices). Open sign-up
+// issues a MEMBER token, so a valid JWT alone must not be enough; among staff a
+// CENTER_MANAGER is further limited to their own center.
 @Resolver(() => CustomerEntity)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_MANAGER)
 export class CustomerResolver {
     private readonly logger = new Logger(CustomerResolver.name);
 
@@ -50,7 +57,7 @@ export class CustomerResolver {
         @CurrentUser() caller?: JwtPayload,
     ): Promise<CustomerEntity[]> {
         const where: any = {};
-        const scope = caller ? centerScope(caller) : undefined;
+        const scope = requireCenterScope(caller);
         const effectiveCenterId = scope ?? filters?.centerId;
         if (effectiveCenterId) where.centerId = effectiveCenterId;
 
@@ -71,11 +78,16 @@ export class CustomerResolver {
     }
 
     @Query(() => CustomerEntity, { nullable: true })
-    async customer(@Args('id', { type: () => ID }) id: string): Promise<CustomerEntity | null> {
-        return this.customerRepo.findOne({
+    async customer(
+        @Args('id', { type: () => ID }) id: string,
+        @CurrentUser() caller?: JwtPayload,
+    ): Promise<CustomerEntity | null> {
+        const customer = await this.customerRepo.findOne({
             where: { id },
             relations: { center: true, deposits: true, contracts: true, invoices: true, employees: { seat: true } },
         });
+        if (customer) assertCenterAccess(caller, customer.centerId, 'customer');
+        return customer;
     }
 
     @Mutation(() => CustomerEntity)
@@ -88,12 +100,10 @@ export class CustomerResolver {
         // convertLeadWithOnboarding path: every customer has an Onboarding
         // record in its pipeline and, where possible, a self-service login.
         //
-        // Center attribution: the UI historically never sent centerId, so
-        // customers landed with centerId=null and became invisible to
-        // center-scoped list queries (the "client report" a CENTER_MANAGER
-        // sees). Default to the caller's own center when scope exists.
-        const scope = caller ? centerScope(caller) : undefined;
-        const effectiveCenterId = input.centerId ?? scope ?? null;
+        // Center attribution: a manager's customers always belong to their own
+        // center (naming another is refused); a super admin may pick one. Without a
+        // center a customer is invisible to center-scoped list queries.
+        const effectiveCenterId = writeCenterId(caller, input.centerId);
         const effectiveInput = { ...input, centerId: effectiveCenterId };
         input = effectiveInput;
         const savedId = await this.dataSource.transaction(async (manager) => {
@@ -166,7 +176,12 @@ export class CustomerResolver {
     async updateCustomer(
         @Args('id', { type: () => ID }) id: string,
         @Args('input') input: UpdateCustomerInput,
+        @CurrentUser() caller?: JwtPayload,
     ): Promise<CustomerEntity> {
+        const existing = await this.customerRepo.findOne({ where: { id } });
+        if (!existing) throw new NotFoundException('Customer not found');
+        assertCenterAccess(caller, existing.centerId, 'customer');
+        if (input.centerId) writeCenterId(caller, input.centerId); // a manager cannot move a customer away
         await this.customerRepo.update(id, input);
         const customer = await this.customerRepo.findOne({
             where: { id },
@@ -179,7 +194,13 @@ export class CustomerResolver {
     }
 
     @Mutation(() => Boolean)
-    async deleteCustomer(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+    async deleteCustomer(
+        @Args('id', { type: () => ID }) id: string,
+        @CurrentUser() caller?: JwtPayload,
+    ): Promise<boolean> {
+        // Deleting a customer that does not exist stays a harmless no-op.
+        const existing = await this.customerRepo.findOne({ where: { id } });
+        if (existing) assertCenterAccess(caller, existing.centerId, 'customer');
         // Clean up Onboarding rows that reference this customer so we don't
         // leave orphaned paperwork behind (the DB FK cascade added by the
         // 20260807000000 migration will also catch this, but we do it here
@@ -205,19 +226,15 @@ export class CustomerResolver {
     ): Promise<number> {
         const where: any = status ? { status } : {};
         // Center managers count only their center's customers.
-        const scope = caller ? centerScope(caller) : undefined;
+        const scope = requireCenterScope(caller);
         if (scope) where.centerId = scope;
         return this.customerRepo.count({ where });
     }
 
-    /** Reject if a center manager targets a customer in another center. */
-    private async assertCenterAccess(customerId: string, caller?: JwtPayload): Promise<void> {
-        const scope = caller ? centerScope(caller) : undefined;
-        if (!scope) return; // super admin → allow.
+    /** Reject if a center manager targets a customer in another center (a missing customer just yields empty results). */
+    private async assertCustomerAccess(customerId: string, caller?: JwtPayload): Promise<void> {
         const customer = await this.customerRepo.findOne({ where: { id: customerId } });
-        if (customer && customer.centerId && customer.centerId !== scope) {
-            throw new ForbiddenException('This customer belongs to a different center.');
-        }
+        if (customer) assertCenterAccess(caller, customer.centerId, 'customer');
     }
 
     @Query(() => [DepositEntity])
@@ -225,7 +242,7 @@ export class CustomerResolver {
         @Args('customerId', { type: () => ID }) customerId: string,
         @CurrentUser() caller?: JwtPayload,
     ): Promise<DepositEntity[]> {
-        await this.assertCenterAccess(customerId, caller);
+        await this.assertCustomerAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.deposits', 'deposit')
@@ -241,7 +258,7 @@ export class CustomerResolver {
         @Args('customerId', { type: () => ID }) customerId: string,
         @CurrentUser() caller?: JwtPayload,
     ): Promise<ContractEntity[]> {
-        await this.assertCenterAccess(customerId, caller);
+        await this.assertCustomerAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.contracts', 'contract')
@@ -257,7 +274,7 @@ export class CustomerResolver {
         @Args('customerId', { type: () => ID }) customerId: string,
         @CurrentUser() caller?: JwtPayload,
     ): Promise<InvoiceEntity[]> {
-        await this.assertCenterAccess(customerId, caller);
+        await this.assertCustomerAccess(customerId, caller);
         return this.customerRepo
             .createQueryBuilder('customer')
             .leftJoinAndSelect('customer.invoices', 'invoice')

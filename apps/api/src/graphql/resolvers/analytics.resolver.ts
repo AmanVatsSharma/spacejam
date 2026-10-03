@@ -10,9 +10,11 @@
 import { Resolver, Query, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
-import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { requireCenterScope } from '../../auth/helpers/center-scope.helper';
 import { CacheService } from '../../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
@@ -21,13 +23,18 @@ import {
   PaymentStatus,
   SeatStatus,
   SeatType,
+  UserRole,
 } from '@enums';
 import { DashboardMetrics, MetricTrend, OccupancyDay, OccupancyReport, RevenueReport, SeatTypeOccupancy, TimePeriod } from '../types/analytics.type';
 import { Booking as BookingEntity } from '../../typeorm/entities/booking.entity';
 import { Seat as SeatEntity } from '../../typeorm/entities/seat.entity';
 import { Payment as PaymentEntity } from '../../typeorm/entities/payment.entity';
 
+// Revenue, occupancy and dashboard figures are staff data: open sign-up issues a MEMBER
+// token, so a valid JWT alone must not be enough. A manager is further limited to their center.
 @Resolver(() => DashboardMetrics)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_MANAGER)
 export class AnalyticsResolver {
   constructor(
     private cache: CacheService,
@@ -44,7 +51,7 @@ export class AnalyticsResolver {
     @Args('centerId', { type: () => ID, nullable: true }) centerId?: string,
     @CurrentUser() caller?: JwtPayload,
   ): Promise<DashboardMetrics> {
-    const scope = caller ? centerScope(caller) : undefined;
+    const scope = requireCenterScope(caller);
     const effectiveCenterId = scope ?? centerId;
     const cacheKey = effectiveCenterId ? `metrics:dashboard:${effectiveCenterId}` : 'metrics:dashboard:global';
 
@@ -173,7 +180,7 @@ export class AnalyticsResolver {
   ): Promise<RevenueReport> {
     // Center managers see only their center's revenue; scope overrides the
     // client-supplied centerId (defense in depth).
-    const scope = caller ? centerScope(caller) : undefined;
+    const scope = requireCenterScope(caller);
     const effectiveCenterId = scope ?? centerId;
     const cacheKey = effectiveCenterId ? `revenue:report:${effectiveCenterId}` : 'revenue:report:global';
 
@@ -281,7 +288,7 @@ export class AnalyticsResolver {
   ): Promise<OccupancyReport> {
     // Center managers are restricted to their center; if a manager calls
     // without/with another centerId, override to their scope.
-    const scope = caller ? centerScope(caller) : undefined;
+    const scope = requireCenterScope(caller);
     const effectiveCenterId = scope ?? centerId;
     if (!effectiveCenterId) {
       return { centerId: '', byDay: [], bySeatType: [], averageRate: 0 } as unknown as OccupancyReport;

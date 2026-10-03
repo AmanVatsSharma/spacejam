@@ -7,7 +7,7 @@
  * Last-updated: 2026-07-21
  */
 import { Resolver, Query, Args, Mutation, Context, ID, ObjectType, Field, Int } from '@nestjs/graphql';
-import { NotFoundException, Logger } from '@nestjs/common';
+import { NotFoundException, Logger, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 // @ts-ignore
@@ -23,7 +23,10 @@ import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/cr
 import { CacheService } from '../../cache/cache.service';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
-import { centerScope } from '../../auth/helpers/center-scope.helper';
+import { assertCenterAccess, requireCenterScope, writeCenterId } from '../../auth/helpers/center-scope.helper';
+import { GqlAuthGuard } from '../../auth/guards/gql-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { OnboardingService } from '../../crm/onboarding.service';
 
 /**
@@ -43,7 +46,11 @@ export class ConvertLeadResult {
   onboarding!: OnboardingEntity;
 }
 
+// Leads are staff data. Open sign-up issues a MEMBER token, so a valid JWT alone
+// must not be enough; among staff a CENTER_MANAGER is further limited to their center.
 @Resolver(() => LeadEntity)
+@UseGuards(GqlAuthGuard, RolesGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.CENTER_MANAGER)
 export class CrmResolver {
   private readonly logger = new Logger(CrmResolver.name);
 
@@ -67,7 +74,7 @@ export class CrmResolver {
     @CurrentUser() caller?: JwtPayload,
   ): Promise<LeadEntity[]> {
     const where: any = {};
-    const scope = caller ? centerScope(caller) : undefined;
+    const scope = requireCenterScope(caller);
     const effectiveCenterId = scope ?? filters?.centerId;
     if (effectiveCenterId) where.centerId = effectiveCenterId;
 
@@ -92,11 +99,15 @@ export class CrmResolver {
   }
 
   @Query(() => LeadEntity, { nullable: true })
-  async lead(@Args('id', { type: () => ID }) id: string): Promise<LeadEntity | null> {
+  async lead(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<LeadEntity | null> {
     const lead = await this.leadRepo.findOne({
       where: { id },
       relations: ['assignedTo'],
     });
+    if (lead) assertCenterAccess(caller, lead.centerId, 'lead');
     return lead;
   }
 
@@ -106,11 +117,10 @@ export class CrmResolver {
     @Context() context: any
   ): Promise<LeadEntity> {
     const userId = context.req?.user?.id;
-    // Attribute the lead to the caller's center when none was supplied, so
-    // converted customers inherit a centerId and stay visible in scoped
-    // list queries (the center-manager client report).
-    const scope = context.req?.user ? centerScope(context.req.user) : undefined;
-    const effectiveInput = { ...input, centerId: input.centerId ?? scope ?? null };
+    // A manager's leads always belong to their own center (naming another is
+    // refused); a super admin may pick one. Attributing the center here is what
+    // lets converted customers inherit it and stay visible in scoped lists.
+    const effectiveInput = { ...input, centerId: writeCenterId(context.req?.user, input.centerId) };
     const newLead = this.leadRepo.create({
       ...effectiveInput,
       ...(userId ? { assignedToId: userId } : {}),
@@ -123,8 +133,16 @@ export class CrmResolver {
   @Mutation(() => LeadEntity)
   async updateLead(
     @Args('id', { type: () => ID }) id: string,
-    @Args('input') input: UpdateLeadInput
+    @Args('input') input: UpdateLeadInput,
+    @CurrentUser() caller?: JwtPayload,
   ): Promise<LeadEntity> {
+    // Center first: a manager must learn nothing about another center's lead
+    // (not even that a cheque is pending on it) and cannot move one of theirs away.
+    const existing = await this.leadRepo.findOne({ where: { id } });
+    if (!existing) throw new NotFoundException('Lead not found');
+    assertCenterAccess(caller, existing.centerId, 'lead');
+    if (input.centerId) writeCenterId(caller, input.centerId);
+
     // A status edit must not be a back door around the payment rule: a lead whose
     // cheque is still clearing cannot be flipped to Converted by hand — it becomes a
     // client only when staff confirm the cheque (same guard as the convert mutations).
@@ -152,6 +170,7 @@ export class CrmResolver {
       relations: ['assignedTo'],
     });
     if (!lead) throw new NotFoundException('Lead not found');
+    assertCenterAccess(caller, lead.centerId, 'lead');
 
     // Check if already converted
     if (lead.status === LeadStatus.CONVERTED) {
@@ -168,7 +187,7 @@ export class CrmResolver {
       company: lead.company,
       location: lead.location,
       notes: lead.notes,
-      centerId: lead.centerId ?? (caller ? centerScope(caller) : undefined) ?? null,
+      centerId: lead.centerId ?? requireCenterScope(caller) ?? null,
       status: CustomerStatus.ACTIVE,
       joinDate: new Date(),
       totalBookings: 0,
@@ -195,7 +214,13 @@ export class CrmResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteLead(@Args('id', { type: () => ID }) id: string): Promise<boolean> {
+  async deleteLead(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentUser() caller?: JwtPayload,
+  ): Promise<boolean> {
+    // Deleting a lead that does not exist stays a harmless no-op.
+    const lead = await this.leadRepo.findOne({ where: { id } });
+    if (lead) assertCenterAccess(caller, lead.centerId, 'lead');
     await this.leadRepo.delete(id);
     await this.cache.invalidatePattern('leads:*');
     await this.cache.del(`lead:${id}`);
@@ -209,7 +234,7 @@ export class CrmResolver {
   ): Promise<number> {
     const where: any = status ? { status } : {};
     // Center managers count only their center's leads.
-    const scope = caller ? centerScope(caller) : undefined;
+    const scope = requireCenterScope(caller);
     if (scope) where.centerId = scope;
     return this.leadRepo.count({ where });
   }
@@ -307,6 +332,7 @@ export class CrmResolver {
       relations: ['assignedTo'],
     });
     if (!lead) throw new NotFoundException('Lead not found');
+    assertCenterAccess(caller, lead.centerId, 'lead');
     // A cheque client stays a cold lead until the cheque clears (idempotent
     // re-conversion of an already-converted lead is still allowed).
     if (!(lead.status === LeadStatus.CONVERTED && lead.customerId)) {
@@ -316,7 +342,7 @@ export class CrmResolver {
     // Center attribution: lead center ?? caller's own center. Without this,
     // leads created before center attribution existed converted into
     // customers with centerId=null — invisible to center-scoped queries.
-    const callerScope = caller ? centerScope(caller) : undefined;
+    const callerScope = requireCenterScope(caller);
     const effectiveCenterId = lead.centerId ?? callerScope ?? null;
 
     // Resolve all overrides once (form value ?? lead value).

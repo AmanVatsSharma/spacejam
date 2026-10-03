@@ -10,8 +10,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ForbiddenException } from '@nestjs/common';
 import { CrmResolver } from './crm.resolver';
-import { LeadStatus, LeadSource } from '@enums';
+import { LeadStatus, LeadSource, UserRole } from '@enums';
 
 import { CreateLeadInput, UpdateLeadInput, LeadFiltersInput } from '../inputs/crm.input';
 
@@ -365,6 +366,93 @@ describe('CrmResolver', () => {
       // Convert
       const converted = await resolver.convertLead(created.id);
       expect((converted as any).status).toBe('Converted');
+    });
+  });
+
+  // ── Access by id is center-scoped ─────────────────────────────────
+  // Role gating (staff only) is covered in staff-only-resolvers.spec.ts. Among
+  // staff, a CENTER_MANAGER may only touch their own center's leads — by id as
+  // well as in lists — and a manager with no center must not become unrestricted.
+  describe('access by id is center-scoped', () => {
+    const user = (role: UserRole, centerId: string | null): any => ({
+      sub: `u-${role}`,
+      email: 'u@x.test',
+      role,
+      centerId,
+      sid: 's',
+      typ: 'access',
+    });
+    const MGR_1 = user(UserRole.CENTER_MANAGER, 'center-1');
+    const MGR_NO_CENTER = user(UserRole.CENTER_MANAGER, null);
+    const SUPER = user(UserRole.SUPER_ADMIN, null);
+    const ctx = (u: any) => ({ req: { user: u } }) as any;
+
+    beforeEach(async () => {
+      await repo.save(makeLead({ id: 'lead-other', name: 'Other', centerId: 'center-2' }));
+      await repo.save(makeLead({ id: 'lead-nocenter', name: 'Orphan', centerId: null }));
+    });
+
+    it('lead(): a manager reads their own center only; a super admin reads any', async () => {
+      await expect(resolver.lead('lead-1', MGR_1)).resolves.toMatchObject({ id: 'lead-1' });
+      await expect(resolver.lead('lead-other', MGR_1)).rejects.toThrow(ForbiddenException);
+      await expect(resolver.lead('lead-nocenter', MGR_1)).rejects.toThrow(ForbiddenException);
+      await expect(resolver.lead('lead-other', SUPER)).resolves.toMatchObject({ id: 'lead-other' });
+      await expect(resolver.lead('ghost', MGR_1)).resolves.toBeNull();
+    });
+
+    it('updateLead(): a manager cannot edit another center\'s lead, nor move one of theirs away', async () => {
+      await expect(resolver.updateLead('lead-other', { name: 'Hacked' } as UpdateLeadInput, MGR_1)).rejects.toThrow(ForbiddenException);
+      expect(((await resolver.lead('lead-other', SUPER)) as any).name).toBe('Other');
+
+      await expect(resolver.updateLead('lead-1', { centerId: 'center-2' } as UpdateLeadInput, MGR_1)).rejects.toThrow(ForbiddenException);
+      expect(((await resolver.lead('lead-1', SUPER)) as any).centerId).toBe('center-1');
+
+      const ok = await resolver.updateLead('lead-1', { name: 'Alice 2' } as UpdateLeadInput, MGR_1);
+      expect(ok.name).toBe('Alice 2');
+    });
+
+    it('deleteLead(): a manager cannot delete another center\'s lead; deleting a missing one stays a harmless no-op', async () => {
+      await expect(resolver.deleteLead('lead-other', MGR_1)).rejects.toThrow(ForbiddenException);
+      await expect(resolver.lead('lead-other', SUPER)).resolves.toMatchObject({ id: 'lead-other' });
+
+      await expect(resolver.deleteLead('lead-1', MGR_1)).resolves.toBe(true);
+      await expect(resolver.deleteLead('ghost-id', MGR_1)).resolves.toBe(true);
+    });
+
+    it('convertLead(): a manager cannot convert another center\'s lead', async () => {
+      await expect(resolver.convertLead('lead-other', MGR_1)).rejects.toThrow(ForbiddenException);
+      expect(onboardingService.assertLeadConvertible).not.toHaveBeenCalled();
+      expect(((await resolver.lead('lead-other', SUPER)) as any).status).toBe(LeadStatus.NEW);
+    });
+
+    it('convertLeadWithOnboarding(): a manager cannot convert another center\'s lead', async () => {
+      // id + every optional @Args + the caller, whatever their count
+      const call = (id: string, caller: any) => {
+        const args: any[] = Array(resolver.convertLeadWithOnboarding.length).fill(undefined);
+        args[0] = id;
+        args[args.length - 1] = caller;
+        return (resolver.convertLeadWithOnboarding as any)(...args);
+      };
+      await expect(call('lead-other', MGR_1)).rejects.toThrow(ForbiddenException);
+      expect(onboardingService.assertLeadConvertible).not.toHaveBeenCalled();
+    });
+
+    it('createLead(): a manager always creates in their own center and cannot name another one', async () => {
+      const own = await resolver.createLead({ name: 'N', email: 'n@x.test' } as CreateLeadInput, ctx(MGR_1));
+      expect((own as any).centerId).toBe('center-1');
+
+      await expect(
+        resolver.createLead({ name: 'M', email: 'm@x.test', centerId: 'center-2' } as CreateLeadInput, ctx(MGR_1)),
+      ).rejects.toThrow(ForbiddenException);
+
+      const picked = await resolver.createLead({ name: 'S', email: 's@x.test', centerId: 'center-9' } as CreateLeadInput, ctx(SUPER));
+      expect((picked as any).centerId).toBe('center-9');
+    });
+
+    it('a manager with no center is refused instead of becoming unrestricted', async () => {
+      await expect(resolver.leads(undefined, MGR_NO_CENTER)).rejects.toThrow(/not assigned to a center/);
+      await expect(resolver.leadCount(undefined, MGR_NO_CENTER)).rejects.toThrow(ForbiddenException);
+      await expect(resolver.lead('lead-1', MGR_NO_CENTER)).rejects.toThrow(ForbiddenException);
     });
   });
 });
