@@ -23,7 +23,7 @@
 import { Resolver, Query, Args, Mutation, ID, Int } from '@nestjs/graphql';
 import { BadRequestException, ForbiddenException, NotFoundException, UseGuards } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, ILike, IsNull, Repository } from 'typeorm';
+import { FindOptionsWhere, IsNull, Repository } from 'typeorm';
 import { OnboardingStatus, UserRole } from '@enums';
 import { Onboarding } from '../../typeorm/entities/onboarding.entity';
 import {
@@ -46,7 +46,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../../auth/types/jwt-payload.type';
 import { centerScope } from '../../auth/helpers/center-scope.helper';
 import { OnboardingService } from '../../crm/onboarding.service';
-import { escapeLike } from '../../crm/onboarding-application';
+import { buildOnboardingWhere } from '../../crm/onboarding-filters';
 
 const RELATIONS = ['lead', 'customer', 'assignedTo', 'center'];
 const MAX_PAGE = 200;
@@ -69,22 +69,9 @@ export class OnboardingResolver {
         @Args('filters', { nullable: true }) filters?: OnboardingFiltersInput,
         @CurrentUser() caller?: JwtPayload,
     ): Promise<Onboarding[]> {
-        const base: FindOptionsWhere<Onboarding> = {};
         // A center manager only ever sees their own center, whatever the client sends.
-        const centerId = (caller ? centerScope(caller) : undefined) ?? filters?.centerId;
-        if (centerId) base.centerId = centerId;
-        if (filters?.status) base.status = filters.status;
-        if (filters?.paymentStatus) base.paymentStatus = filters.paymentStatus;
-        if (filters?.assignedToId) base.assignedToId = filters.assignedToId;
-        if (!filters?.includeCancelled) base.cancelledAt = IsNull();
-
-        const term = filters?.search?.trim();
-        const where: FindOptionsWhere<Onboarding> | FindOptionsWhere<Onboarding>[] = term
-            ? ['companyName', 'contactName', 'contactEmail'].map((field) => ({
-                  ...base,
-                  [field]: ILike(`%${escapeLike(term)}%`),
-              }))
-            : base;
+        const where = buildOnboardingWhere(filters, caller ? centerScope(caller) : undefined);
+        if (!where) return [];
 
         return this.onboardingRepo.find({
             where,

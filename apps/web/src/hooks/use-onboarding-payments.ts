@@ -126,9 +126,6 @@ export interface PendingOnboarding {
   lead?: { id: string; name: string; status: string } | null;
 }
 
-/** States in which an application still needs money (or a decision) before a client exists. */
-export const OPEN_PAYMENT_STATES: OnboardingPaymentStatus[] = ['PENDING', 'AWAITING_CLEARANCE', 'FAILED'];
-
 // ── helpers ─────────────────────────────────────────────────────────────────
 /** Best human-readable message from an Apollo / network / thrown error. */
 export function errorMessage(err: unknown): string {
@@ -160,20 +157,18 @@ export function usePaymentConfig() {
   return { config: data?.paymentConfig ?? null, loading, error, refetch };
 }
 
-/** Applications that still need money: online pending, cheque awaiting clearance, failed/bounced. */
+/**
+ * Applications that still need money: online pending, cheque awaiting clearance, failed/bounced.
+ * The SERVER decides what that means (`needsPayment`) across every row — filtering a page of
+ * the newest onboardings here used to drop old pending cheques once enough newer ones existed.
+ */
 export function usePendingOnboardings(opts: { pollMs?: number } = {}) {
   const { data, loading, error, refetch } = useQuery<{ onboardings: PendingOnboarding[] }>(GET_ONBOARDINGS, {
-    variables: { filters: { limit: 200 } },
+    variables: { filters: { needsPayment: true, limit: 200 } },
     fetchPolicy: 'cache-and-network',
     pollInterval: opts.pollMs,
   });
-  const pending = useMemo(
-    () =>
-      (data?.onboardings ?? []).filter(
-        (o) => !o.customerId && !o.cancelledAt && OPEN_PAYMENT_STATES.includes(o.paymentStatus),
-      ),
-    [data],
-  );
+  const pending = useMemo(() => data?.onboardings ?? [], [data]);
   return { pending, loading, error, refetch };
 }
 

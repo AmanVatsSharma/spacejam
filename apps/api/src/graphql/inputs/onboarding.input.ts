@@ -215,6 +215,16 @@ export class OnboardingFiltersInput {
     @IsOptional()
     paymentStatus?: OnboardingPaymentStatus;
 
+    /**
+     * Only applications that still need money before a client exists: payment pending,
+     * awaiting cheque clearance, or failed — and not yet provisioned. Decided on the
+     * server over every row; `paymentStatus`, if also given, narrows it further.
+     */
+    @Field(() => Boolean, { nullable: true })
+    @IsBoolean()
+    @IsOptional()
+    needsPayment?: boolean;
+
     /** Cancelled applications are hidden unless this is true. */
     @Field(() => Boolean, { nullable: true })
     @IsBoolean()
