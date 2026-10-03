@@ -106,7 +106,7 @@ export class Customer {
     gstNumber?: string;
 
     @Field(() => String, { nullable: true })
-    @Column({ type: 'varchar', length: 100, nullable: true })
+    @Column({ type: 'text', nullable: true })
     companyAddress?: string;
 
     @Field(() => String, { nullable: true })

@@ -108,12 +108,18 @@ export class OnboardingPaymentLifecycle20261002100000 implements MigrationInterf
       CREATE INDEX IF NOT EXISTS "IDX_INVOICES_PAYMENT_REFERENCE" ON "invoices" ("paymentReference");
     `);
 
+    // Bookkeeping for DBs that track migrations; a DB bootstrapped via synchronize has no such table.
     await queryRunner.query(`
-      INSERT INTO "migrations" (timestamp, name)
-      SELECT 20261002100000, 'OnboardingPaymentLifecycle20261002100000'
-      WHERE NOT EXISTS (
-        SELECT 1 FROM "migrations" WHERE name = 'OnboardingPaymentLifecycle20261002100000'
-      );
+      DO $$
+      BEGIN
+        IF to_regclass('public.migrations') IS NOT NULL THEN
+          INSERT INTO "migrations" (timestamp, name)
+          SELECT 20261002100000, 'OnboardingPaymentLifecycle20261002100000'
+          WHERE NOT EXISTS (
+            SELECT 1 FROM "migrations" WHERE name = 'OnboardingPaymentLifecycle20261002100000'
+          );
+        END IF;
+      END $$;
     `);
   }
 
