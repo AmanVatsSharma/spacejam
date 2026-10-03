@@ -296,6 +296,24 @@ export class OnboardingService implements OnModuleInit {
     this.assertCenterAccess(caller, row.centerId);
     if (row.cancelledAt) throw new BadRequestException('This onboarding was cancelled.');
     if (row.customerId) throw new ConflictException('This client is already onboarded.');
+
+    // The ledger flips an order to PAID in its own statement and only then runs the
+    // finalizer, so a provisioning failure can leave "money received, client not
+    // created". Taking money again (online, cheque or transfer) would collect it
+    // twice: finish the onboarding from the payment we already hold. The finalizer
+    // is idempotent, and if it fails again the real reason surfaces to staff.
+    const settled = (await this.paymentOrders.listForOnboarding(row.id)).find(
+      (o) => o.status === PaymentOrderStatus.PAID,
+    );
+    if (settled) {
+      await this.finalizeOnlinePayment(settled, {
+        paymentId: settled.providerPaymentId ?? settled.providerOrderId,
+        actorId: caller.sub,
+        source: 'checkout',
+      });
+      return this.describe(await this.loadOrFail(row.id));
+    }
+
     const app = this.applicationOf(row);
 
     const now = new Date();

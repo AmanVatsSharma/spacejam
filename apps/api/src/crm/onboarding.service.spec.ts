@@ -652,6 +652,76 @@ describe('OnboardingService', () => {
   });
 
   // ════════════════════════════════════════════════════════════════════════
+  describe('money already received online, client not yet provisioned', () => {
+    /**
+     * The ledger flips an order to PAID in its own statement and only then runs the
+     * finalizer, so a provisioning failure leaves: application PENDING + order PAID.
+     * Offering to take the money again from that state is how a client gets charged twice.
+     */
+    async function stuckAfterOnlinePayment() {
+      const ctx = build();
+      const res = await ctx.service.submit(baseInput({ payment: RAZORPAY }), SUPER);
+      Object.assign(ctx.orders[0], { status: PaymentOrderStatus.PAID, providerPaymentId: 'pay_PAID01', paidAt: NOW });
+      return { ...ctx, id: res.onboarding.id };
+    }
+
+    it('retrying the online payment finishes the onboarding from the settled order instead of opening a second one', async () => {
+      const { service, db, orders, paymentOrders, id } = await stuckAfterOnlinePayment();
+
+      const res = await service.collectPayment(id, RAZORPAY, SUPER);
+
+      expect(res.outcome).toBe(OnboardingOutcome.ONBOARDED);
+      expect(orders).toHaveLength(1);
+      expect(paymentOrders.createOrder).toHaveBeenCalledTimes(1);
+      expect(db.count(Customer)).toBe(1);
+      expect(db.all<any>(Invoice)[0]).toMatchObject({
+        status: InvoiceStatus.PAID,
+        paymentMethod: PaymentMethod.ONLINE,
+        paymentReference: 'pay_PAID01',
+      });
+    });
+
+    it('recording a cheque does not collect the money a second time either', async () => {
+      const { service, db, orders, id } = await stuckAfterOnlinePayment();
+
+      const res = await service.collectPayment(id, CHEQUE(), SUPER);
+
+      expect(res.outcome).toBe(OnboardingOutcome.ONBOARDED);
+      expect(orders).toHaveLength(1);
+      expect(db.count(Invoice)).toBe(1);
+      expect(db.all<any>(Invoice)[0]).toMatchObject({ paymentMethod: PaymentMethod.ONLINE, paymentReference: 'pay_PAID01' });
+      expect(db.byId<any>(Onboarding, id).chequeNumber ?? null).toBeNull();
+    });
+
+    it('recording a bank transfer does not collect the money a second time either', async () => {
+      const { service, db, id } = await stuckAfterOnlinePayment();
+
+      const res = await service.collectPayment(id, TRANSFER(), SUPER);
+
+      expect(res.outcome).toBe(OnboardingOutcome.ONBOARDED);
+      expect(db.count(Invoice)).toBe(1);
+      expect(db.count(Deposit)).toBe(1);
+      expect(db.all<any>(Invoice)[0]).toMatchObject({ paymentMethod: PaymentMethod.ONLINE, paymentReference: 'pay_PAID01' });
+    });
+
+    it('when finishing from the settled order fails, the real error surfaces, no new order is opened, and the next attempt completes it', async () => {
+      const { service, db, orders, paymentOrders, id } = await stuckAfterOnlinePayment();
+      db.failSavesOf(Contract, new Error('contract insert failed'));
+
+      await expect(service.collectPayment(id, RAZORPAY, SUPER)).rejects.toThrow('contract insert failed');
+      expect(orders).toHaveLength(1);
+      expect(paymentOrders.createOrder).toHaveBeenCalledTimes(1);
+      expectNothingProvisioned(db);
+
+      db.clearFailures();
+      const ok = await service.collectPayment(id, RAZORPAY, SUPER);
+      expect(ok.outcome).toBe(OnboardingOutcome.ONBOARDED);
+      expect(db.count(Customer)).toBe(1);
+      expect(orders).toHaveLength(1);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
   describe('idempotency & duplicates', () => {
     it('a retried submit with the same key returns the same onboarding and creates nothing twice', async () => {
       const { service, db } = build();
