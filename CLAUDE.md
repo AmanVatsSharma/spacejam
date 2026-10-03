@@ -118,6 +118,12 @@ dev: Next rewrites() proxy /api/graphql, /api/print/upload, /uploads/* ─► AP
 
 **`apps/web/next.config.js`** (a `.js` file): `output: 'standalone'` (but `deploy.sh` runs `next start`, not the standalone server), timestamped `generateBuildId`, `ignoreBuildErrors: true`, and the three rewrites above (prod target `127.0.0.1:4000`).
 
+**Frontend pitfalls (found 2026-10-03)**:
+- `ClientLayout.tsx` must call **every hook before its early `return null`**. An effect sat after it, so any hard reload of a dashboard URL (auth: loading → loaded) crashed the whole dashboard with React error #310 ("Something went wrong"); client-side navigation after login hid it. Fixed — don't reintroduce hooks below the `isLoading`/`!user` returns.
+- `isDevLoginAvailable` (auth-context) is true on `localhost` / `127.0.0.1` **regardless of** `NEXT_PUBLIC_ENABLE_DEV_LOGIN`. There a hard reload briefly sees `isLoading=false, user=null`, so the layout bounces through `/signin` and loses deep links, and the dev "Quick login" panel shows. To see production behavior, browse via the machine's LAN IP (e.g. `http://192.168.x.x:3000`). Production must have `NEXT_PUBLIC_ENABLE_DEV_LOGIN=false` (the server's `.env.local` once had `true`, shipped from the tracked dev file).
+- `apps/web-e2e` is a **real tracked Nx project** (Playwright). Never reuse that name for a scratch copy of the web app — use a unique name (e.g. `apps/web-buildcheck`) with no `package.json`, and never run `next build` in `apps/web` while `next dev` is up.
+- Browser-checking recipe: build the web copy, run the API bundle on **:4000** (the prod rewrite target) against a scratch DB, sign in, and drive the UI with Playwright; a real Razorpay Checkout can't load from a stub, so inject a fake `window.Razorpay` that records its options, register the payment in the stub, then call the recorded `handler` with a correctly signed result.
+
 ### Backend (`apps/api`)
 
 - **Layout** (`src/`): one folder per domain (`auth`, `user`, `center`, `booking`, `meeting-room`, `event`, `crm`, `revenue`, `enterprise`, `wallet`, `notification`, `offer`, `referral`, `request`, `statement`, `support`, `print`, `analytics`, `calendar`, `subscription`, `integrations`) plus infra (`observability`, `health`, `cache`, `config`, `typeorm`, `common`, `types`, `assets`, `app`). **GraphQL resolvers are centralized** in `src/graphql/resolvers/*.resolver.ts` (~35 files) next to `dataloaders/`, `guards/`, `inputs/`, `types/`, `enums/`, `scalars/`; domain folders mostly hold services/modules. `integrations/` keeps its own resolvers. Role names are in `auth/roles.enum.ts`.
@@ -132,6 +138,8 @@ dev: Next rewrites() proxy /api/graphql, /api/print/upload, /uploads/* ─► AP
 - **Caching**: Redis (`REDIS_URL`) with in-memory fallback; DataLoader batching against N+1.
 - **Observability**: Pino JSON logs, OpenTelemetry tracing, Prometheus metrics at `/api/metrics`.
 - **Build**: webpack-cli via an Nx `run-commands` target (`apps/api/webpack.config.js`), not `tsc`. `optimization.usedExports: false` is load-bearing — without it webpack tree-shakes classes referenced only inside `@Query(() => X)` decorators and the app dies with "metatype is not a constructor". The `@enums` alias (→ `src/common/enums.ts`) is declared separately in `webpack.config.js`, `vitest.config.ts` and `tsconfig.base.json`; keep them in sync.
+- **Startup guard** (`auth/helpers/secret-guard.ts`, called first in `main.ts`): with `NODE_ENV=production` the API refuses to start if `JWT_SECRET` is missing / shorter than 32 chars / a placeholder, `REFRESH_TOKEN_SECRET` (when set) is weak, or `OTP_DEV_BYPASS=true`. Keep it: the auth code still falls back to the hard-coded `'dev-jwt-secret'` when the variable is unset.
+- **Env loading**: `ConfigModule` reads `.env` relative to the process cwd (`envFilePath: '.env'`). pm2 starts the API with cwd `/home/ubuntu/spacejam`, so on the server the file that matters is the **repo-root `.env`**, not `apps/api/.env`. `NODE_ENV=production` also turns GraphQL introspection/playground off, masks unexpected errors (HTTP-status exceptions such as 400/401/403/404/409 keep their message), enables helmet and restricts CORS to `CORS_ORIGIN`.
 - `user.type.ts` ↔ `user.entity.ts` form a circular import; `AuthPayload.user` resolves lazily via `getUserType()` — do NOT re-add a top-level `import { User }`.
 
 ### Mobile (`apps/mobile`)
@@ -170,7 +178,7 @@ dev: Next rewrites() proxy /api/graphql, /api/print/upload, /uploads/* ─► AP
 
 - **Two parallel booking systems**: seat bookings → `bookings` table; meeting-room/event bookings → `events` table. Reporting (`dashboardMetrics` / `revenueReport` / `occupancyReport`) queries `bookings` only, so meeting-room revenue is invisible to reports.
 - `/dashboard/page.tsx` redirects to `/dashboard/home`. Settings pages persist via `Center.settings` jsonb (`useSettingsGroup`); toggles are real but enforcement in other modules is partial.
-- **Integrations UI gaps**: the Settings → Integrations page has no form yet for the bank-account / cheque-payee settings, no "Test connection" button and no webhook-URL display, although the API mutations exist (`saveBankAccountConfig`, `saveChequeConfig`, `testRazorpayConnection`). The Razorpay webhook URL to enter in the Razorpay dashboard is `https://admin.spacejam.in/api/payments/webhook`.
+- **Razorpay setup (Settings → Integrations, SUPER_ADMIN)**: enter key id / secret / webhook secret (saving verifies new keys with Razorpay first; "Test connection" checks without saving), and register `https://admin.spacejam.in/api/payments/webhook` in the Razorpay dashboard for `payment.captured`, `order.paid` and `payment.failed` (the page shows the URL with Copy and whether the webhook secret is saved). The same page holds the receiving bank account and the cheque payee shown to staff in the onboarding payment step. Payment is not verified by the browser alone — see *Onboarding & payments*.
 - **Mobile**: seat-booking time slots are hardcoded `TIME_SLOTS` constants (`BookingDetailsScreen`, `FilterModal`, `MeetingRoomsScreen`), not real availability.
 - **Stubs**: `processPayment` / `rechargeWallet` are balance bumps (the booking resolver only has a "would integrate Razorpay/Stripe" comment — Razorpay is wired for onboarding and invoices only); calendar-sync `fetchExternal` throws "not yet implemented" (`sync()` swallows it and returns `false`) and `upsertInternal` is a no-op; scheduled-reports has no scheduler (no `@Cron` / `@nestjs/schedule` anywhere); referral payouts have no transition logic; employee email invites are never sent; the `regenerateRecoveryCodes` **resolver** returns hard-coded codes even though `AuthService.regenerateRecoveryCodes` is a real implementation.
 
@@ -194,10 +202,12 @@ The list above is what the code actually reads; `apps/api/.env.example` (and the
 
 ## Migrations
 
-New entity ⇒ entity file in `typeorm/entities/`, register it in `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) **and** `data-source.ts`, and add a migration in `typeorm/migrations/` (naming `YYYYMMDDHHMMSS-Description.ts`; newest: `20261002100000-OnboardingPaymentLifecycle`). Prod is `synchronize: false`. Older notes say prod PostgreSQL is **< 11**, but `SERVER-HANDOFF.md` (2026-10-02) reports **18.6** — keep migrations conservative anyway:
+New entity ⇒ entity file in `typeorm/entities/`, register it in `ALL_ENTITIES` (`typeorm/typeorm.module.ts`) **and** `data-source.ts`, and add a migration in `typeorm/migrations/` (naming `YYYYMMDDHHMMSS-Description.ts`; newest: `20261003000000-BaselineIndexes`). Prod is `synchronize: false`. Older notes say prod PostgreSQL is **< 11**, but `SERVER-HANDOFF.md` (2026-10-02) reports **18.6** — keep migrations conservative anyway:
 
 - no `CREATE TYPE IF NOT EXISTS` — use `DO $$ BEGIN CREATE TYPE …; EXCEPTION WHEN duplicate_object THEN null; END $$;` (and prefer `varchar` status columns validated in the app over new enum types — `ALTER TYPE … ADD VALUE` is awkward in a transaction)
 - use `IF NOT EXISTS` on tables/columns/indexes so every migration is safe to re-run.
+
+**Fresh database** (a new dev DB, or the production rebuild): boot the API once with `DATABASE_SYNCHRONIZE=true` on an **empty** database — the schema comes from the entities (this works since `Invoice.status`'s default was fixed to `InvoiceStatus.DRAFT`; it previously failed on any DB) — then apply `20261002100000-OnboardingPaymentLifecycle` and `20261003000000-BaselineIndexes` (idempotent; they add the indexes the entity decorators don't declare, notably `UQ_ONBOARDINGS_IDEMPOTENCY_KEY`). `scripts/baseline-schema.sql` is the schema-only dump of exactly that result (47 tables); restore it into an empty DB as the owner role. **Never run synchronize on a database that holds data** — it drops and re-adds columns whose type differs. Production's DB had no `migrations` table and had drifted months behind the entities (found 2026-10-03: ~17 tables and many columns missing, four tables owned by `postgres` so the app role got "permission denied"); the full-deploy script rebuilds it from the baseline (`db-build` + `switch`) rather than patching it.
 
 To apply a migration without loading the entity graph: run its real `up()` against a stub `QueryRunner` that just records each `query(sql)` string, wrap the result in `BEGIN; … COMMIT;`, review it, and apply it with `psql -X -v ON_ERROR_STOP=1 -f file.sql`.
 
@@ -232,10 +242,10 @@ Nginx config is the tracked `nginx.conf` at the repo root (80 → 301 to HTTPS; 
 
 The VPS is **shared with another live project, `arb-monitor`** (pm2 apps `arb-monitor-api` / `arb-monitor-ui`, nginx site `arbitary-vedpragya`, DB `arb_monitor`) on the **same pm2 daemon, nginx, PostgreSQL 18.6 and Redis**. The rules are in `C:\Users\ASUS TUF A15\Desktop\DevOPS\Workspace\arbitary\SERVER-HANDOFF.md` (verified 2026-10-02). For SpaceJam that means:
 
-- **Do NOT run `deploy.sh` as-is.** It starts with `pm2 delete all` (deletes the neighbour's apps), overwrites both `.env` files with placeholder secrets and ends with `pm2 save` (rewrites the resurrect dump for everyone). Use name-scoped pm2 only (`pm2 restart spacejam-api`, `pm2 stop spacejam-web`); never `all`, `pm2 save` / `flush`, `pkill node`, or `systemctl restart nginx|postgresql|redis-server`. Reload (never restart) nginx, and only after `nginx -t`.
+- **Do NOT run `deploy.sh` as-is.** It starts with `pm2 delete all` (deletes the neighbour's apps), overwrites both `.env` files with placeholder secrets and ends with `pm2 save` (rewrites the resurrect dump for everyone). Use name-scoped pm2 only (`pm2 restart spacejam-api`, `pm2 stop spacejam-web`); never `all`, `pm2 save` / `flush`, `pkill node`, or `systemctl restart nginx|postgresql|redis-server`. Reload (never restart) nginx, and only after `nginx -t`. Use `scripts/shared-server-deploy.sh` instead (see *Deploy*).
 - **`git archive HEAD` ships dev `.env` files** (`apps/api/.env` has `NODE_ENV=development`, `PORT=3100`). Extract with `--exclude='.env' --exclude='.env.*' --exclude='*/.env' --exclude='*/.env.*'` and keep a byte-for-byte copy to restore, or the API moves off port 4000 and nginx returns 502.
 - Touch only SpaceJam's own resources: `/home/ubuntu/spacejam`, DB `spacejam`, `spacejam-*` pm2 apps, the `spacejam` nginx site. Build with `nice -n 19` (2 vCPU / 7.7 GB shared). Before and after any pm2/nginx change confirm the neighbour is unchanged: `curl -sk -o /dev/null -w '%{http_code}' --resolve arbitary.vedpragya.com:443:127.0.0.1 https://arbitary.vedpragya.com/` → `200` (and `admin.spacejam.in` → `307`).
-- **SSH**: access is per-project keys that the server owner appends to `/root/.ssh/authorized_keys`. On 2026-10-03 the `Ap-south-2.pem` key above was **rejected** (`Permission denied (publickey,password)`, host key verified); a dedicated key, `~/.ssh/spacejam_deploy_ed25519`, was generated for the owner to authorize. Do not try other projects' keys, and avoid repeated failed logins (a security scanner runs on the box).
+- **SSH**: access is per-project keys that the server owner appends to `/root/.ssh/authorized_keys`. On 2026-10-03 the `Ap-south-2.pem` key above was **rejected** (`Permission denied (publickey,password)`, host key verified). The working key is `~/.ssh/spacejam_prod_ed25519` (comment `spacejam-prod-deploy-claude-20261003`, authorized by the owner; remove with `sed -i '/spacejam-prod-deploy-claude-20261003/d' /root/.ssh/authorized_keys` when no longer needed). Do not try other projects' keys, and avoid repeated failed logins (a security scanner runs on the box).
 - `:3000` and `:4000` listen on `0.0.0.0` with `ufw` inactive, so both answer straight from the internet, bypassing nginx/TLS (pre-existing).
 
 ### PM2 / SSH quirks
@@ -246,7 +256,22 @@ The VPS is **shared with another live project, `arb-monitor`** (pm2 apps `arb-mo
 
 ### Deploy
 
-> **Legacy recipe — unsafe on the shared server** (see above: `pm2 delete all`, `.env` overwrite, `pm2 save`). Prefer a manual, name-scoped deploy: back up (code + builds + env, `pg_dump`), extract with the `.env` excludes, apply the additive migration SQL, `nice -n 19 npx nx build api`, stop `spacejam-web` → `npx next build --webpack` → `pm2 restart spacejam-api` / `spacejam-web` by name, then smoke-test and compare the neighbour. Build the web app locally first in a throwaway copy (the dev server's `.next` is in use).
+**Use `scripts/shared-server-deploy.sh`** (the shared-server-safe replacement for `deploy.sh`; locally rehearsed, first real run pending as of 2026-10-03). It only touches `/home/ubuntu/spacejam`, the `spacejam` database, `spacejam-*` pm2 apps (always by name) and our own nginx site file, and takes backups first. Stages, in order: `prepare` (backups of code/builds/env/nginx file + a verified `pg_dump`; extract with the `.env` excludes; harden env — `NODE_ENV=production`, `CORS_ORIGIN`/`WEB_APP_URL`, fresh random `JWT_SECRET`/`REFRESH_TOKEN_SECRET`, `NEXT_PUBLIC_ENABLE_DEV_LOGIN=false`; build the API) → `db-build` (create `spacejam_new` aside, restore the baseline schema as the app role, copy `users centers floors locations seats`, verify counts/FK integrity/ownership) → `web` (stop `spacejam-web`, build; the old `.next` is restored if the build fails) → `switch` (stop the API, swap the databases by `RENAME`, start API then web) → `nginx` (`client_max_body_size 20m` in our site file; `nginx -t`; reload) → `verify` → `finish` (drop `spacejam_old`). `update` is the later code-only deploy; `rollback` swaps the databases back and restores the code/env backup.
+
+```sh
+git archive --format=tar.gz HEAD -o spacejam-deploy.tar.gz     # commit first — only committed files ship
+KEY=~/.ssh/spacejam_prod_ed25519
+scp -i $KEY spacejam-deploy.tar.gz root@145.223.22.72:/root/spacejam-deploy.tar.gz
+scp -i $KEY scripts/baseline-schema.sql root@145.223.22.72:/root/final-schema.sql      # first full deploy only
+scp -i $KEY scripts/shared-server-deploy.sh root@145.223.22.72:/root/spacejam-deploy2.sh
+# first full deploy (stops at the first failing stage):
+ssh -i $KEY -o ServerAliveInterval=30 root@145.223.22.72 'S="bash -l /root/spacejam-deploy2.sh"; $S prepare && $S db-build && $S web && $S switch && $S nginx && $S verify'
+# later code-only deploys:   ... '$S update && $S verify'
+```
+
+**Claude Code's auto-mode classifier refuses to launch this script on the production server** (denied twice on 2026-10-03, no reason given, and it says not to retry). Run the `ssh` line yourself with the `!` prefix, or change the permission mode first.
+
+> **Legacy `deploy.sh` recipe below — unsafe on the shared server** (`pm2 delete all`, `.env` overwrite, `pm2 save`). Kept for reference only.
 
 ```sh
 # 0. Commit first — `git archive HEAD` ships only committed files.
