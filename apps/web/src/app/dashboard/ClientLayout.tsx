@@ -143,6 +143,21 @@ function getTabsForPath(pathname: string | null): {
   return { tabs, activeId: active?.id };
 }
 
+/** Admin-only route prefixes: settings/*, crm/*, revenue/*, inventory/*, report/*, audit, equipment, scheduled-reports, calendar-sync, notifications. */
+const ADMIN_ROUTE_PREFIXES = [
+  '/dashboard/settings',
+  '/dashboard/crm',
+  '/dashboard/revenue',
+  '/dashboard/inventory',
+  '/dashboard/report',
+  '/dashboard/audit',
+  '/dashboard/equipment',
+  '/dashboard/scheduled-reports',
+  '/dashboard/calendar-sync',
+  '/dashboard/notifications',
+];
+const STAFF_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'CENTER_OWNER', 'CENTER_MANAGER', 'FINANCE', 'SUPPORT', 'STAFF']);
+
 export default function DashboardLayout({
   children,
 }: {
@@ -166,6 +181,21 @@ export default function DashboardLayout({
     }
   }, [user, isLoading, router]);
 
+  // ── Client-side RBAC ───────────────────────────────────────────────────
+  // Backend resolvers enforce roles (@Roles), but this keeps the UI honest:
+  // a MEMBER/EMPLOYEE browsing to an admin-only route is bounced to Home
+  // instead of seeing a form they can't actually submit.
+  // NOTE: every hook must run BEFORE the early returns below. This effect used
+  // to sit after them, so on a hard page load (auth: loading → loaded) React saw
+  // an extra hook and crashed the whole dashboard with error #310.
+  useEffect(() => {
+    if (!user) return; // still loading — don't redirect yet.
+    const isAdmin = STAFF_ROLES.has(user.role);
+    if (!isAdmin && ADMIN_ROUTE_PREFIXES.some((p) => pathname?.startsWith(p))) {
+      router.replace('/dashboard/home');
+    }
+  }, [user, pathname, router]);
+
   // Don't render the dashboard shell until auth has resolved. The initial
   // SSR HTML contains the full dashboard layout; without this guard the
   // user would see a flash of sidebar/header before the redirect commits.
@@ -185,33 +215,6 @@ export default function DashboardLayout({
 
   // Update tabs if section is 'settings'
   const finalTabs = (pathname?.startsWith('/dashboard/settings') ? settingsTabs : tabs);
-
-  // ── Client-side RBAC ───────────────────────────────────────────────────
-  // Backend resolvers enforce roles (@Roles), but this keeps the UI honest:
-  // a MEMBER/EMPLOYEE browsing to an admin-only route is bounced to Home
-  // instead of seeing a form they can't actually submit. Admin routes:
-  // settings/*, crm/*, revenue/*, inventory/*, report/*, audit, equipment,
-  // scheduled-reports, calendar-sync, notifications.
-  const ADMIN_ROUTE_PREFIXES = [
-    '/dashboard/settings',
-    '/dashboard/crm',
-    '/dashboard/revenue',
-    '/dashboard/inventory',
-    '/dashboard/report',
-    '/dashboard/audit',
-    '/dashboard/equipment',
-    '/dashboard/scheduled-reports',
-    '/dashboard/calendar-sync',
-    '/dashboard/notifications',
-  ];
-  const STAFF_ROLES = new Set(['ADMIN', 'SUPER_ADMIN', 'CENTER_OWNER', 'CENTER_MANAGER', 'FINANCE', 'SUPPORT', 'STAFF']);
-  useEffect(() => {
-    if (!user) return; // still loading — don't redirect yet.
-    const isAdmin = STAFF_ROLES.has(user.role);
-    if (!isAdmin && ADMIN_ROUTE_PREFIXES.some((p) => pathname?.startsWith(p))) {
-      router.replace('/dashboard/home');
-    }
-  }, [user, pathname, router]);
 
   return (
     <div className="min-h-screen bg-[#FBF6F4]">

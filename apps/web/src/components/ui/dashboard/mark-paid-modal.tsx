@@ -10,7 +10,7 @@
  *                 method (UPI/Cash/Cheque/Net banking/Bank transfer/…).
  *
  * Author:      ZCode
- * Last-updated: 2026-08-27
+ * Last-updated: 2026-10-03
  */
 
 import { useEffect, useState } from "react";
@@ -23,16 +23,7 @@ import {
   CREATE_PAYMENT_ORDER,
   VERIFY_PAYMENT,
 } from "@/lib/apollo/operations";
-
-interface RazorpayInstance {
-  open: () => void;
-}
-
-type RazorpayCtor = new (options: Record<string, unknown>) => RazorpayInstance;
-
-type RazorpayWindow = typeof window & {
-  Razorpay?: RazorpayCtor;
-};
+import { openRazorpayCheckout } from "@/lib/razorpay-checkout";
 
 export interface MarkPaidInvoice {
   id: string;
@@ -59,37 +50,6 @@ const PAYMENT_METHODS: { value: string; label: string }[] = [
   { value: "CARD", label: "Card" },
   { value: "WALLET", label: "Wallet" },
 ];
-
-const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
-
-/** Injects the Razorpay Checkout <script> once and resolves when it is usable. */
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") {
-      resolve(false);
-      return;
-    }
-    const w = window as RazorpayWindow;
-    if (w.Razorpay) {
-      resolve(true);
-      return;
-    }
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${RAZORPAY_SCRIPT_URL}"]`,
-    );
-    if (existing) {
-      existing.addEventListener("load", () => resolve(!!w.Razorpay));
-      existing.addEventListener("error", () => resolve(false));
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = RAZORPAY_SCRIPT_URL;
-    script.async = true;
-    script.onload = () => resolve(!!w.Razorpay);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
 
 const formatINR = (n: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -166,13 +126,7 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
     if (!paymentConfig?.configured || !paymentConfig.keyId) return;
     setBusy(true);
     try {
-      const loaded = await loadRazorpayScript();
-      const w = window as RazorpayWindow;
-      if (!loaded || !w.Razorpay) {
-        toast.error("Could not load Razorpay checkout. Check your connection and try again.");
-        return;
-      }
-
+      // The server creates the order (and fixes the amount to the invoice total).
       const { data } = await createPaymentOrder({
         variables: { amount: dueAmount, invoiceId: invoice.id },
       });
@@ -182,37 +136,40 @@ export function MarkPaidModal({ isOpen, onClose, invoice, onPaid }: MarkPaidModa
         return;
       }
 
-      // The order already encodes the amount — no need to pass `amount` here.
-      new w.Razorpay({
-        key: paymentConfig.keyId,
-        order_id: orderId,
-        name: "SpaceJam",
+      const outcome = await openRazorpayCheckout({
+        keyId: paymentConfig.keyId,
+        orderId,
         description: `Invoice ${invoiceLabel}`,
-        handler: async (resp: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            await verifyPayment({
-              variables: {
-                input: {
-                  razorpayOrderId: resp.razorpay_order_id,
-                  razorpayPaymentId: resp.razorpay_payment_id,
-                  razorpaySignature: resp.razorpay_signature,
-                  invoiceId: invoice.id,
-                },
-              },
-            });
-            toast.success("Payment verified — invoice paid");
-            onPaid?.();
-            onClose();
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Payment verification failed");
-          }
+        onAttemptFailed: (reason) => toast.error(`Payment attempt failed: ${reason}`),
+      });
+      if (outcome.status === "unavailable") {
+        toast.error(outcome.reason);
+        return;
+      }
+      if (outcome.status === "dismissed") {
+        toast.info("Payment window closed — the invoice is still unpaid.");
+        return;
+      }
+
+      // The browser saying "paid" is not enough: the server checks the signature.
+      // It returns false only for a bad signature (anything else throws).
+      const { data: verified } = await verifyPayment({
+        variables: {
+          input: {
+            razorpayOrderId: outcome.orderId,
+            razorpayPaymentId: outcome.paymentId,
+            razorpaySignature: outcome.signature,
+            invoiceId: invoice.id,
+          },
         },
-        modal: { ondismiss: () => {} },
-      }).open();
+      });
+      if (verified?.verifyPayment === true) {
+        toast.success("Payment verified — invoice paid");
+        onPaid?.();
+        onClose();
+      } else {
+        toast.error("The payment could not be verified, so the invoice was NOT marked paid. If money was debited, contact support with the Razorpay payment id.");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start online payment");
     } finally {

@@ -2,12 +2,15 @@
  * File:        apps/web/src/app/dashboard/settings/integrations/page.tsx
  * Module:      Web · Dashboard · Settings · Integrations
  * Purpose:     Super-admin-only page to configure platform integrations:
- *              SMS provider (MSG91/Twilio) for OTP delivery, and Razorpay
- *              for payments. Shows connection status badges and save forms.
+ *              SMS provider (MSG91/Twilio) for OTP delivery; Razorpay for
+ *              payments (with a live "Test connection" and the webhook URL to
+ *              register); the receiving bank account and the cheque payee that
+ *              the onboarding payment step shows to staff. Shows connection
+ *              status badges and save forms.
  *              The backend resolver guards every read/write with @Roles(SUPER_ADMIN).
  *
  * Author:      ZCode
- * Last-updated: 2026-08-09
+ * Last-updated: 2026-10-03
  */
 'use client';
 
@@ -23,10 +26,14 @@ import {
   SAVE_QR_PAYMENT_CONFIG,
   SAVE_EMAIL_CONFIG,
   SAVE_WHATSAPP_CONFIG,
+  SAVE_BANK_ACCOUNT_CONFIG,
+  SAVE_CHEQUE_CONFIG,
+  TEST_RAZORPAY_CONNECTION,
   SEND_TEST_EMAIL,
   SEND_TEST_WHATSAPP,
 } from '@/lib/apollo/operations';
 import { useAuth } from '@/contexts/auth-context';
+import { errorMessage } from '@/hooks/use-onboarding-payments';
 
 function keyValue(rows: { key: string; value: string }[], key: string): string {
   return rows.find((r) => r.key === key)?.value ?? '';
@@ -38,7 +45,7 @@ export default function IntegrationsSettingsPage() {
 
   const { data: statusData, refetch: refetchStatus } = useQuery(GET_INTEGRATION_STATUS);
   const { data: smsData } = useQuery(GET_INTEGRATION_SETTINGS, { variables: { group: 'sms' } });
-  const { data: payData } = useQuery(GET_INTEGRATION_SETTINGS, { variables: { group: 'payment' } });
+  const { data: payData, refetch: refetchPay } = useQuery(GET_INTEGRATION_SETTINGS, { variables: { group: 'payment' } });
   const { data: emailData } = useQuery(GET_INTEGRATION_SETTINGS, { variables: { group: 'email' } });
   const { data: waData } = useQuery(GET_INTEGRATION_SETTINGS, { variables: { group: 'whatsapp' } });
 
@@ -183,6 +190,107 @@ export default function IntegrationsSettingsPage() {
     sendTestWa({ variables: { to: testWa.phone.trim(), message: testWa.message } });
   };
 
+  // ── Razorpay connection test + webhook URL, receiving bank account, cheque payee ──
+  // These feed the onboarding payment step: staff see the bank account / cheque payee
+  // there, and online payments are verified with the keys + webhook configured here.
+  const [bank, setBank] = useState({ accountName: '', accountNumber: '', ifsc: '', bankName: '', branch: '' });
+  const [cheque, setCheque] = useState({ payeeName: '', instructions: '' });
+  const [rzpCheck, setRzpCheck] = useState<{ ok: boolean; message: string; mode: string } | null>(null);
+  const [origin, setOrigin] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  useEffect(() => {
+    const r = (payData?.integrationSettings ?? []) as { key: string; value: string }[];
+    if (!r.length) return;
+    setBank({
+      accountName: keyValue(r, 'payment.bank.accountName'),
+      accountNumber: keyValue(r, 'payment.bank.accountNumber'),
+      ifsc: keyValue(r, 'payment.bank.ifsc'),
+      bankName: keyValue(r, 'payment.bank.bankName'),
+      branch: keyValue(r, 'payment.bank.branch'),
+    });
+    setCheque({
+      payeeName: keyValue(r, 'payment.cheque.payeeName'),
+      instructions: keyValue(r, 'payment.cheque.instructions'),
+    });
+  }, [payData]);
+
+  const afterPaymentSave = (message: string) => {
+    toast.success(message);
+    refetchStatus();
+    refetchPay();
+  };
+  const [saveBank, { loading: savingBank }] = useMutation(SAVE_BANK_ACCOUNT_CONFIG, {
+    onCompleted: () => afterPaymentSave('Bank account saved'),
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  const [saveCheque, { loading: savingCheque }] = useMutation(SAVE_CHEQUE_CONFIG, {
+    onCompleted: () => afterPaymentSave('Cheque payee saved'),
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  const [testRzp, { loading: testingRzp }] = useMutation(TEST_RAZORPAY_CONNECTION);
+
+  const isMasked = (v: string) => v.startsWith('••••');
+
+  /** Check the key pair against Razorpay without saving. Untouched (masked) fields test the stored values. */
+  const handleTestRazorpay = async () => {
+    setRzpCheck(null);
+    try {
+      const { data } = await testRzp({
+        variables: {
+          keyId: !rzp.keyId.trim() || isMasked(rzp.keyId) ? null : rzp.keyId.trim(),
+          keySecret: !rzp.keySecret.trim() || isMasked(rzp.keySecret) ? null : rzp.keySecret.trim(),
+        },
+      });
+      setRzpCheck(data.testRazorpayConnection);
+    } catch (e) {
+      setRzpCheck({ ok: false, message: errorMessage(e), mode: '' });
+    }
+  };
+
+  // Typing a key id picks the matching mode so "test key + live mode" can't be saved by accident.
+  const handleKeyIdChange = (value: string) => {
+    const mode = value.startsWith('rzp_live_') ? 'live' : value.startsWith('rzp_test_') ? 'test' : rzp.mode;
+    setRzp({ ...rzp, keyId: value, mode });
+    setRzpCheck(null);
+  };
+
+  // Same rules as the API (SaveBankAccountConfigInput) — the server stays the authority.
+  const handleSaveBank = () => {
+    const accountName = bank.accountName.trim();
+    const accountNumber = bank.accountNumber.replace(/\s/g, '');
+    const ifsc = bank.ifsc.trim().toUpperCase();
+    if (accountName.length < 2) { toast.error('Enter the account holder name'); return; }
+    if (!/^\d{9,18}$/.test(accountNumber)) { toast.error('Account number must be 9–18 digits'); return; }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error('IFSC must look like HDFC0001234'); return; }
+    saveBank({
+      variables: {
+        input: { accountName, accountNumber, ifsc, bankName: bank.bankName.trim() || null, branch: bank.branch.trim() || null },
+      },
+    });
+  };
+
+  const handleSaveCheque = () => {
+    const payeeName = cheque.payeeName.trim();
+    if (payeeName.length < 2) { toast.error('Enter who cheques should be made out to'); return; }
+    saveCheque({ variables: { input: { payeeName, instructions: cheque.instructions.trim() || null } } });
+  };
+
+  const webhookUrl = `${origin}/api/payments/webhook`;
+  const copyWebhookUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(webhookUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error('Copy failed — select the URL and copy it manually');
+    }
+  };
+
   // ── Manual UPI QR payment config ─────────────────────────────────────────
   const [qr, setQr] = useState({ upiId: '', payeeName: '', imagePath: '' });
   const [qrUploading, setQrUploading] = useState(false);
@@ -260,7 +368,7 @@ export default function IntegrationsSettingsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-semibold text-[#1F1F1F]">Integrations</h1>
-        <p className="text-sm text-[#6A7282]">Platform-level configuration for SMS (OTP), email, WhatsApp, and payment gateway. Super-admin only.</p>
+        <p className="text-sm text-[#6A7282]">Platform-level configuration for SMS (OTP), email, WhatsApp, the payment gateway, and the bank account and cheque details used when onboarding clients. Super-admin only.</p>
       </div>
 
       {/* SMS Provider */}
@@ -337,7 +445,7 @@ export default function IntegrationsSettingsPage() {
             <span className="text-sm font-medium text-[#1F1F1F]">Key ID</span>
             <input
               value={rzp.keyId.startsWith('••••') ? '' : rzp.keyId}
-              onChange={(e) => setRzp({ ...rzp, keyId: e.target.value })}
+              onChange={(e) => handleKeyIdChange(e.target.value)}
               placeholder={rzp.keyId.startsWith('••••') ? `${rzp.keyId} (enter new to replace)` : 'rzp_test_… / rzp_live_…'}
               className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
             />
@@ -374,12 +482,195 @@ export default function IntegrationsSettingsPage() {
             </select>
           </label>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => saveRzp({ variables: { input: rzp } })}
+            disabled={savingRzp}
+            data-testid="rzp-save"
+            className="rounded-[10px] bg-[#FF6A2F] px-4 py-2 text-sm font-medium text-white hover:bg-[#FE7A47] disabled:opacity-50"
+          >
+            {savingRzp ? 'Saving…' : 'Save Razorpay config'}
+          </button>
+          <button
+            type="button"
+            onClick={handleTestRazorpay}
+            disabled={testingRzp}
+            data-testid="rzp-test"
+            className="rounded-[10px] border border-[#E5E7EB] bg-white px-4 py-2 text-sm font-medium text-[#1F1F1F] hover:bg-[#FBF6F4] disabled:opacity-50"
+          >
+            {testingRzp ? 'Checking with Razorpay…' : 'Test connection'}
+          </button>
+          <span className="text-xs text-[#6A7282]">Saving also verifies new keys with Razorpay first, so a typo can't break payments.</span>
+        </div>
+        {rzpCheck && (
+          <div
+            data-testid="rzp-test-result"
+            className={`rounded-[10px] border px-3 py-2 text-sm ${
+              rzpCheck.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
+            {rzpCheck.ok ? '✓ ' : ''}
+            {rzpCheck.message}
+          </div>
+        )}
+
+        {/* Webhook: lets Razorpay confirm a payment even when the customer closes the tab mid-way. */}
+        <div className="space-y-2 rounded-[10px] border border-[#E5E7EB] bg-[#FBF6F4] p-4" data-testid="rzp-webhook">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-[#1F1F1F]">Webhook (recommended)</span>
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                status?.razorpayWebhookConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {status?.razorpayWebhookConfigured ? 'Secret saved' : 'Secret not set'}
+            </span>
+          </div>
+          <p className="text-xs text-[#4A5565]">
+            In the Razorpay Dashboard go to Settings → Webhooks → Add new webhook. Use the URL below, enter the Webhook Secret from above, and enable{' '}
+            <b>payment.captured</b>, <b>order.paid</b> and <b>payment.failed</b>.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={webhookUrl}
+              data-testid="rzp-webhook-url"
+              onFocus={(e) => e.currentTarget.select()}
+              className="w-full rounded-[10px] border border-[#E5E7EB] bg-white px-3 py-2 font-mono text-xs text-[#1F1F1F]"
+            />
+            <button
+              type="button"
+              onClick={copyWebhookUrl}
+              className="shrink-0 rounded-[10px] border border-[#E5E7EB] bg-white px-3 py-2 text-xs font-medium text-[#1F1F1F] hover:bg-gray-50"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          {status?.razorpayConfigured && !status?.razorpayWebhookConfigured && (
+            <p className="text-xs text-amber-800">
+              Without the webhook, a payment made after the customer closes the browser tab is only matched when staff retry it from Pending payments.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Receiving bank account (NEFT / RTGS / IMPS) */}
+      <section className="space-y-4 rounded-[14px] border border-[#E5E7EB] bg-white p-6" data-testid="bank-config">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-[#1F1F1F]">Bank account (NEFT / RTGS / IMPS)</h2>
+            <p className="text-xs text-[#6A7282]">
+              Shown to staff when a client pays the onboarding deposit by bank transfer, so they can share the right account. The client's UTR is recorded as the payment reference.
+            </p>
+          </div>
+          <StatusBadge ok={status?.bankConfigured} label="Bank account" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 compact:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Account holder name</span>
+            <input
+              value={bank.accountName}
+              onChange={(e) => setBank({ ...bank, accountName: e.target.value })}
+              placeholder="As printed on the bank account"
+              data-testid="bank-account-name"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Account number</span>
+            <input
+              value={bank.accountNumber}
+              inputMode="numeric"
+              onChange={(e) => setBank({ ...bank, accountNumber: e.target.value.replace(/[^\d\s]/g, '') })}
+              placeholder="9–18 digits"
+              data-testid="bank-account-number"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">IFSC code</span>
+            <input
+              value={bank.ifsc}
+              maxLength={11}
+              onChange={(e) => setBank({ ...bank, ifsc: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+              placeholder="e.g. HDFC0001234"
+              data-testid="bank-ifsc"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Bank name</span>
+            <input
+              value={bank.bankName}
+              onChange={(e) => setBank({ ...bank, bankName: e.target.value })}
+              placeholder="optional"
+              data-testid="bank-name"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Branch</span>
+            <input
+              value={bank.branch}
+              onChange={(e) => setBank({ ...bank, branch: e.target.value })}
+              placeholder="optional"
+              data-testid="bank-branch"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
         <button
-          onClick={() => saveRzp({ variables: { input: rzp } })}
-          disabled={savingRzp}
+          onClick={handleSaveBank}
+          disabled={savingBank}
+          data-testid="bank-save"
           className="rounded-[10px] bg-[#FF6A2F] px-4 py-2 text-sm font-medium text-white hover:bg-[#FE7A47] disabled:opacity-50"
         >
-          {savingRzp ? 'Saving…' : 'Save Razorpay config'}
+          {savingBank ? 'Saving…' : 'Save bank account'}
+        </button>
+      </section>
+
+      {/* Cheque payee */}
+      <section className="space-y-4 rounded-[14px] border border-[#E5E7EB] bg-white p-6" data-testid="cheque-config">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-[#1F1F1F]">Cheques</h2>
+            <p className="text-xs text-[#6A7282]">
+              Who cheques are made out to, and how to hand them in. A client who pays by cheque is saved as a Cold lead and becomes a client only after staff confirm the cheque cleared.
+            </p>
+          </div>
+          <StatusBadge ok={status?.chequeConfigured} label="Cheque payee" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 compact:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-[#1F1F1F]">Payee name</span>
+            <input
+              value={cheque.payeeName}
+              onChange={(e) => setCheque({ ...cheque, payeeName: e.target.value })}
+              placeholder="e.g. SpaceJam Workspaces Pvt Ltd"
+              data-testid="cheque-payee"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="space-y-1 compact:col-span-2">
+            <span className="text-sm font-medium text-[#1F1F1F]">Instructions for clients (optional)</span>
+            <textarea
+              value={cheque.instructions}
+              maxLength={500}
+              rows={3}
+              onChange={(e) => setCheque({ ...cheque, instructions: e.target.value })}
+              placeholder="e.g. Hand it in at the front desk of any center, Mon–Sat 10am–6pm. Write the company name on the back."
+              data-testid="cheque-instructions"
+              className="w-full rounded-[10px] border border-[#E5E7EB] px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <button
+          onClick={handleSaveCheque}
+          disabled={savingCheque}
+          data-testid="cheque-save"
+          className="rounded-[10px] bg-[#FF6A2F] px-4 py-2 text-sm font-medium text-white hover:bg-[#FE7A47] disabled:opacity-50"
+        >
+          {savingCheque ? 'Saving…' : 'Save cheque settings'}
         </button>
       </section>
 

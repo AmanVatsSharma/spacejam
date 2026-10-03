@@ -32,7 +32,7 @@ import {
   QueryError,
   QueryEmpty,
 } from '@/components/ui/query-status';
-import { errorMessage } from '@/hooks/use-onboarding-payments';
+import { errorMessage, formatInr, usePendingOnboardings } from '@/hooks/use-onboarding-payments';
 import styles from './leads.module.css';
 
 /* ----------------------------- Types ----------------------------- */
@@ -327,6 +327,19 @@ export default function LeadsPage() {
   /* ── Apollo data ── */
   const { leads, loading, error, refetch } = useLeads();
 
+  /* ── Cold leads whose cheque is still clearing ──
+   * A client who pays by cheque is saved as a COLD lead and becomes a client only
+   * when staff confirm the cheque cleared (Pending payments). Flag those leads and
+   * keep "Convert" from sending staff down the manual path the server refuses. */
+  const { pending: pendingOnboardings } = usePendingOnboardings({ pollMs: 30000 });
+  const chequeByLead = useMemo(() => {
+    const m = new Map<string, (typeof pendingOnboardings)[number]>();
+    for (const o of pendingOnboardings) {
+      if (o.leadId && o.paymentStatus === 'AWAITING_CLEARANCE') m.set(o.leadId, o);
+    }
+    return m;
+  }, [pendingOnboardings]);
+
   /* ── Filtered leads (must be before selected so selected can reference it) ── */
   const filtered = useMemo(() => {
     let result = leads.filter((l) => {
@@ -418,9 +431,14 @@ export default function LeadsPage() {
   /* ── Handlers ── */
   const handleConvertToClient = useCallback(
     (leadId: string) => {
+      if (chequeByLead.has(leadId)) {
+        toast.info('This lead has a cheque awaiting clearance — confirm it from Pending payments.');
+        router.push('/dashboard/crm/onboarding/pending');
+        return;
+      }
       router.push(`/dashboard/crm/onboarding?leadId=${leadId}`);
     },
-    [router],
+    [router, chequeByLead],
   );
 
   const handleAddLead = useCallback(
@@ -728,6 +746,15 @@ export default function LeadsPage() {
                           {l.status}
                           {Icon.PillCaret}
                         </span>
+                        {chequeByLead.has(l.id) && (
+                          <span
+                            data-testid="cheque-pending-badge"
+                            title={`Cheque #${chequeByLead.get(l.id)?.chequeNumber ?? ''} awaiting clearance`}
+                            className="ml-2 inline-block rounded-full bg-[#FFF4E5] px-2 py-0.5 text-[11px] font-semibold text-[#B25E09]"
+                          >
+                            Cheque pending
+                          </span>
+                        )}
                       </td>
                       <td>{l.lastContact}</td>
                     </tr>
@@ -778,6 +805,16 @@ export default function LeadsPage() {
               ))}
             </div>
 
+            {chequeByLead.has(selected.id) && (
+              <div
+                data-testid="cheque-pending-notice"
+                className="mb-4 rounded-lg border border-[#FFE0D3] bg-[#FFF8F6] p-3 text-[12px] leading-relaxed text-[#B4410F]"
+              >
+                Cheque #{chequeByLead.get(selected.id)?.chequeNumber} (
+                {formatInr(chequeByLead.get(selected.id)?.paymentAmount)}) is awaiting clearance. This lead becomes a
+                client when staff confirm the cheque cleared.
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               <button
                 onClick={() =>
@@ -852,7 +889,7 @@ export default function LeadsPage() {
                     strokeLinejoin="round"
                   />
                 </svg>
-                Convert to Client
+                {chequeByLead.has(selected.id) ? 'Review cheque payment' : 'Convert to Client'}
               </button>
             </div>
           </div>

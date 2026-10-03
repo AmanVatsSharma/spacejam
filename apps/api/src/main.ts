@@ -15,8 +15,14 @@ import cookieParser from 'cookie-parser';
 import * as path from 'path';
 import * as fs from 'fs';
 import { AppModule } from './app/app.module';
+import { assertProductionSecrets } from './auth/helpers/secret-guard';
 
 async function bootstrap() {
+  // Fail closed: in production never start with a missing/placeholder signing secret
+  // (the auth code would otherwise fall back to 'dev-jwt-secret') or the OTP dev bypass.
+  // ConfigModule has already loaded .env into process.env when AppModule was imported.
+  assertProductionSecrets();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     // Keep the raw request body around so the Razorpay webhook controller

@@ -14,6 +14,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useApolloClient, gql } from '@apollo/client';
 import { toast } from 'sonner';
+import type { OnboardingPaymentMethod, OnboardingPaymentStatus } from '@/hooks/use-onboarding-payments';
 import {
   GET_LEADS,
   GET_LEAD,
@@ -85,6 +86,21 @@ export interface Onboarding {
   completedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Payment lifecycle (Razorpay / bank transfer / cheque) — GraphQL enum NAMES, see use-onboarding-payments.ts
+  paymentStatus?: OnboardingPaymentStatus;
+  paymentMethod?: OnboardingPaymentMethod | null;
+  paymentAmount?: number | null;
+  paymentReference?: string | null;
+  chequeNumber?: string | null;
+  chequeBank?: string | null;
+  chequeDate?: string | null;
+  chequeClearedAt?: string | null;
+  transferDate?: string | null;
+  payerBank?: string | null;
+  invoiceId?: string | null;
+  verifiedAt?: string | null;
+  failureReason?: string | null;
+  cancelledAt?: string | null;
 }
 
 // ═══════════════════════════════════════════════════════
